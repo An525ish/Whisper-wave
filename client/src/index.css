@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,300;1,9..40,400;1,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap');
+
+:root {
+  color: rgb(235, 236, 236);
+  font-family: 'DM Sans', sans-serif !important;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    --color-primary: 42, 33, 54;
+    --color-background: 33, 26, 42;
+    --color-background-alt: 35, 29, 44;
+
+    --color-text: 235, 236, 236;
+    --color-text-300: #ebecec80;
+    --color-text-700: #ebececcc;
+
+    --color-background-gradient-start: #393046;
+    --color-background-gradient-end: #2d2537;
+
+    --color-border: 53, 47, 61;
+  }
+}
