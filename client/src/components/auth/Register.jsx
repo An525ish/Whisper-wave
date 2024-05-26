@@ -1,7 +1,7 @@
 import InputField from '../ui/InputField'
 import { useForm } from 'react-hook-form';
 import { validateFullname, validatePassword, validateUsername } from '@/lib/validators';
-import Avatar from '../ui/Avatar';
+import AvatarInput from '../ui/AvatarInput';
 
 const Register = ({ setIsLogin }) => {
 
@@ -26,7 +26,7 @@ const Register = ({ setIsLogin }) => {
     return (
         <div className='w-full'>
             <div className='flex justify-center'>
-                <Avatar />
+                <AvatarInput />
             </div>
 
             <form action="" onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4 items-center w-4/5 lg:w-3/5 mx-auto my-8'>

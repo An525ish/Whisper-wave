@@ -77,6 +77,7 @@ module.exports = {
         DEFAULT: '#5698FF',
         light: '#5698FF33',
       },
+      transparent: 'transparent',
     },
     extend: {
       fontFamily: {
@@ -85,7 +86,7 @@ module.exports = {
       },
       backgroundImage: {
         'gradient-background':
-          'linear-gradient(180deg, var(--color-background-gradient-start) 0%, var(--color-background-gradient-end) 100%)',
+          'linear-gradient(90deg, #211a2a 0%, var(--color-background-gradient-start) 30%, var(--color-background-gradient-end) 70%, #211a2a 100%)',
         'gradient-dark-black':
           'linear-gradient(180deg, #393046 0%, #2D2537 100%)',
         'gradient-line-fade-dark':

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import avatar from '../../assets/avatar.png'
 
-const Avatar = () => {
+const AvatarInput = () => {
     const [file, setFile] = useState(avatar)
 
     const handleChange = (e) => {
@@ -29,4 +29,4 @@ const Avatar = () => {
     )
 }
 
-export default Avatar
+export default AvatarInput

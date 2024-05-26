@@ -1,7 +1,10 @@
+import AppWrapper from "@/layout/AppWrapper"
 
 const Chat = () => {
     return (
-        <div>Chat</div>
+        <AppWrapper>
+            Chat
+        </AppWrapper>
     )
 }
 

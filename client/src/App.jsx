@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import './App.css'
 
-let user = false;
+let user = true;
 
 export const ProtectedRoutes = ({ user, children, redirect = '/auth' }) => {
   if (!user) return <Navigate to={redirect} />
@@ -34,7 +34,7 @@ let router = createBrowserRouter([
         }
       },
       {
-        path: "chat",
+        path: "chat/:chatId",
         lazy: async () => {
           let Chat = await import("@/pages/Chat")
           return { Component: Chat.default }
@@ -52,7 +52,7 @@ let router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return <div onContextMenu={e => e.preventDefault()}><RouterProvider router={router} /></div>
 }
 export default App
 

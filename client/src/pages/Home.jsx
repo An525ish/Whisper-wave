@@ -1,7 +1,10 @@
+import AppWrapper from "@/layout/AppWrapper"
 
 const Home = () => {
     return (
-        <div>Home</div>
+        <AppWrapper>
+            Home
+        </AppWrapper>
     )
 }
 

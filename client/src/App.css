@@ -5,3 +5,57 @@ img {
   -webkit-user-select: none;
   -ms-user-select: none;
 }
+
+.gradient-border {
+  position: relative;
+  padding: 10px; /* Add padding to create space for the content */
+}
+
+.gradient-border::before,
+.gradient-border::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.5px; /* Adjust the border thickness as needed */
+  background: linear-gradient(
+    90deg,
+    rgba(235, 236, 236, 0) 9.64%,
+    rgba(235, 236, 236, 0.3) 53.3%,
+    rgba(235, 236, 236, 0) 98.67%
+  );
+}
+
+.gradient-border::before {
+  top: 0;
+}
+
+.gradient-border::after {
+  bottom: 0;
+}
+
+.border-gradient {
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-image: linear-gradient(
+    180deg,
+    rgba(235, 236, 236, 0) 8.85%,
+    rgba(235, 236, 236, 0.3) 48.96%,
+    rgba(235, 236, 236, 0) 90.63%
+  );
+}
+
+.gradient-border-b::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0; /* Set bottom position to 0 */
+  height: 1.5px; /* Adjust the border thickness as needed */
+  background: linear-gradient(
+    90deg,
+    rgba(235, 236, 236, 0) 9.64%,
+    rgba(235, 236, 236, 0.3) 53.3%,
+    rgba(235, 236, 236, 0) 98.67%
+  );
+}

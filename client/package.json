@@ -12,8 +12,10 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-helmet-async": "^2.0.5",
     "react-hook-form": "^7.51.5",
-    "react-router-dom": "^6.23.1"
+    "react-router-dom": "^6.23.1",
+    "react-swipeable-views": "^0.14.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",
