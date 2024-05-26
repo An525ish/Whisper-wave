@@ -99,6 +99,9 @@ module.exports = {
         'gradient-action-button-red':
           'linear-gradient(180deg, #CB525B 0%, #7A242A 100%)',
       },
+      boxShadow: {
+        'border-separation': '0px 0 8px 8px rgba(0, 0, 0, 0.08)',
+      },
     },
   },
   plugins: [

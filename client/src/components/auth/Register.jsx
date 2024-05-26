@@ -29,7 +29,7 @@ const Register = ({ setIsLogin }) => {
                 <Avatar />
             </div>
 
-            <form action="" onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4 items-center w-3/5 mx-auto my-8'>
+            <form action="" onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4 items-center w-4/5 lg:w-3/5 mx-auto my-8'>
                 <InputField
                     type="text"
                     name='fullname'

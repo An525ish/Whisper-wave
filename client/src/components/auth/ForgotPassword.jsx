@@ -26,7 +26,7 @@ const ForgotPassword = ({ setIsForget }) => {
         <div className='w-full'>
             <img src={avatar} alt="" className='h-[10rem] w-[10rem] mx-auto border-4 rounded-full p-4 shadow-lg' />
 
-            <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4 items-center w-3/5 mx-auto my-8'>
+            <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4 items-center w-4/5 lg:w-3/5 mx-auto my-8'>
                 <InputField
                     type="email"
                     name="email"
