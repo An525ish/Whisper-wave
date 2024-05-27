@@ -1,11 +1,11 @@
-import TabView from '@/components/ui/swipable-tabs/TabView'
 import ChatHeader from './ChatHeader'
+import ChatTabView from './ChatTabView'
 
 const ChatListPanel = () => {
     return (
         <div className='max-w-[25rem]'>
             <ChatHeader />
-            <TabView />
+            <ChatTabView />
         </div>
     )
 }
