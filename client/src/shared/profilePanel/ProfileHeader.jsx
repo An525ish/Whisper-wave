@@ -1,14 +1,34 @@
 import NotificationIcon from "@/components/icons/Notification";
-import Dropdown from "@/components/ui/Dropdown"
-import { useState } from "react";
+import Dropdown from "@/components/ui/Dropdown";
+import { useState, useEffect, useRef } from "react";
+import NotificationPanel from "../notificationPanel/NotificationPanel";
 
 const ProfileHeader = () => {
-    const [isNotification, setIsNotification] = useState(false)
+    const [isNotification, setIsNotification] = useState(false);
+    const notificationRef = useRef(null);
+    const iconRef = useRef(null);
+
     const handleLogout = () => {
         console.log('Option 1 selected');
     };
 
-    const handleNotificationToggle = () => setIsNotification(prev => !prev)
+    const handleNotificationToggle = () => setIsNotification(prev => !prev);
+
+    const handleClickOutside = (e) => {
+        if (
+            notificationRef.current && !notificationRef.current.contains(e.target) &&
+            iconRef.current && !iconRef.current.contains(e.target)
+        ) {
+            setIsNotification(false);
+        }
+    };
+
+    useEffect(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     const options = [
         { label: 'Logout', handler: handleLogout },
@@ -16,11 +36,13 @@ const ProfileHeader = () => {
 
     return (
         <div className="relative">
-            <div className="flex justify-end gap-16 items-center p-4">
+            <div className="flex justify-between items-center p-4">
                 <div
+                    ref={iconRef}
                     className="relative border border-border rounded-lg bg-primary p-1 cursor-pointer"
-                    onClick={handleNotificationToggle}>
-                    <NotificationIcon className={'hover:stroke-body'} />
+                    onClick={handleNotificationToggle}
+                >
+                    <NotificationIcon className={`hover:stroke-body ${isNotification && 'stroke-body'}`} />
                     {true && <div className="absolute -right-1 -top-1 w-3 h-3 rounded-full border-2 border-red-dark bg-red animate-pulse"></div>}
                 </div>
 
@@ -35,8 +57,14 @@ const ProfileHeader = () => {
                     <Dropdown options={options} name={'name'} />
                 </div>
             </div>
-        </div>
-    )
-}
 
-export default ProfileHeader
+            {isNotification && (
+                <div ref={notificationRef}>
+                    <NotificationPanel isNotification={isNotification} />
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default ProfileHeader;
