@@ -1,7 +1,7 @@
 import NotificationIcon from "@/components/icons/Notification";
 import Dropdown from "@/components/ui/Dropdown";
 import { useState, useEffect, useRef } from "react";
-import NotificationPanel from "../notificationPanel/NotificationPanel";
+import NotificationDialog from "../notificationDialog/NotificationDialog";
 
 const ProfileHeader = () => {
     const [isNotification, setIsNotification] = useState(false);
@@ -60,7 +60,7 @@ const ProfileHeader = () => {
 
             {isNotification && (
                 <div ref={notificationRef}>
-                    <NotificationPanel isNotification={isNotification} />
+                    <NotificationDialog isNotification={isNotification} />
                 </div>
             )}
         </div>

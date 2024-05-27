@@ -1,7 +1,4 @@
-import { useParams } from 'react-router-dom';
-import ChatList from '@/shared/chatPanel/ChatList';
 import TabView from '@/components/ui/swipable-tabs/TabView';
-import { NotificationItem } from './NotificationItems';
 import { FriendRequestList, NotificationList } from './NotificationLists';
 
 const tabsData = Object.freeze({
