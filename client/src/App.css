@@ -59,3 +59,23 @@ img {
     rgba(235, 236, 236, 0) 98.67%
   );
 }
+
+.half-border {
+  border-image: linear-gradient(
+      to right,
+      transparent 0%,
+      #6a6573 20%,
+      transparent 60%
+    )
+    100% 1;
+}
+
+.full-border {
+  border-image: linear-gradient(
+      to right,
+      transparent 0%,
+      #6a6573 50%,
+      transparent 100%
+    )
+    100% 1;
+}

@@ -123,6 +123,21 @@ module.exports = {
               display: 'block',
             },
           },
+          // Custom scrollbar with no track and custom thumb
+          '.scrollbar-custom': {
+            '&::-webkit-scrollbar': {
+              width: '12px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: '#4A5568', // Customize thumb color
+              borderRadius: '6px',
+              border: '3px solid transparent', // Add space around thumb
+              backgroundClip: 'content-box', // Adjust thumb size
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent', // Hide track
+            },
+          },
         },
         ['responsive']
       );

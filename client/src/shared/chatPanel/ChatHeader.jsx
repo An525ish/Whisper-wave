@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Searchbar from './Searchbar'
+import Searchbar from '../Searchbar';
 
 const ChatHeader = () => {
 

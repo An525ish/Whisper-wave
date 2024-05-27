@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import SwipeableViews from 'react-swipeable-views';
 import Tabs from './Tab';
-import ChatList from '@/shared/ChatList';
 import { useParams } from 'react-router-dom';
+import ChatList from '@/shared/chatPanel/ChatList';
 
 const tabsData = Object.freeze({
     0: {
