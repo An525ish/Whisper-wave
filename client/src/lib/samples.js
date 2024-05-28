@@ -56,3 +56,198 @@ export const chats = [
     members: ['1', '2'],
   },
 ];
+
+export const user = {
+  _id: 'fdsfasfs',
+  name: 'Anish',
+};
+
+export const sampleMessage = [
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://drive.google.com/file/d/1jSd1BJWltjKx6GGN5J2eFEJn4IYQSIOb/view',
+      },
+    ],
+    content: 'L *uda ka Message hai',
+    _id: 'sfnsdjkfsdnfkjsbnd',
+    sender: {
+      _id: 'user.342id',
+      name: 'Someone',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/howto/img_avatar.png',
+      },
+    ],
+    content: 'Pta nii kya dikkat hai',
+    _id: 'fdsfasfs3fsdkfd',
+    sender: {
+      _id: 'fdsfasfs',
+      name: 'Anish',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+      },
+    ],
+    content: 'Hiii bsdk',
+    _id: 'sfnsdjkfsdnfkjsb',
+    sender: {
+      _id: 'user.32id',
+      name: 'Someone',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [],
+    content: 'ajib aadmi hai',
+    _id: 'fdsfasfsfsdfdsf',
+    sender: {
+      _id: 'fdsfasfs',
+      name: 'Anish',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/howto/img_avatar.png',
+      },
+    ],
+    content: 'L *uda ka Message hai',
+    _id: 'sfnsdjkfsdnfkjsbnd',
+    sender: {
+      _id: 'user.342id',
+      name: 'Someone',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/howto/img_avatar.png',
+      },
+    ],
+    content: 'Pta nii kya dikkat hai',
+    _id: 'fdsfasfs3fsdkfd',
+    sender: {
+      _id: 'fdsfasfs',
+      name: 'Anish',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/howto/img_avatar.png',
+      },
+    ],
+    content: 'Hiii bsdk',
+    _id: 'sfnsdjkfsdnfkjsb',
+    sender: {
+      _id: 'user.32id',
+      name: 'Someone',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/howto/img_avatar.png',
+      },
+    ],
+    content: 'ajib aadmi hai',
+    _id: 'fdsfasfsfsdfdsf',
+    sender: {
+      _id: 'fdsfasfs',
+      name: 'Anish',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/howto/img_avatar.png',
+      },
+    ],
+    content: 'L *uda ka Message hai',
+    _id: 'sfnsdjkfsdnfkjsbnd',
+    sender: {
+      _id: 'user.342id',
+      name: 'Someone',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/howto/img_avatar.png',
+      },
+    ],
+    content: 'Pta nii kya dikkat hai',
+    _id: 'fdsfasfs3fsdkfd',
+    sender: {
+      _id: 'fdsfasfs',
+      name: 'Anish',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/howto/img_avatar.png',
+      },
+    ],
+    content: 'Hiii bsdk',
+    _id: 'sfnsdjkfsdnfkjsb',
+    sender: {
+      _id: 'user.32id',
+      name: 'Someone',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+  {
+    attachments: [
+      {
+        public_id: 'asdsad',
+        url: 'https://www.w3schools.com/howto/img_avatar.png',
+      },
+    ],
+    content: 'ajib aadmi hai',
+    _id: 'fdsfasfsfsdfdsf',
+    sender: {
+      _id: 'fdsfasfs',
+      name: 'Anish',
+    },
+    chat: 'chatld',
+    createdAt: '2024-12-31T18:29:59.999Z',
+  },
+];

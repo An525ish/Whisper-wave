@@ -1,7 +1,7 @@
 import AvatarCard from "@/components/ui/AvatarCard"
 import { Link } from "react-router-dom"
 
-const ChatItem = ({
+const ChatListItem = ({
     avatar = [],
     name,
     _id,
@@ -31,4 +31,4 @@ const ChatItem = ({
     )
 }
 
-export default ChatItem
+export default ChatListItem

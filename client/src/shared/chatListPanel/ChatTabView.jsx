@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import ChatList from '@/shared/chatPanel/ChatList';
+import ChatList from '@/shared/chatListPanel/ChatList';
 import TabView from '@/components/ui/swipable-tabs/TabView';
 import { chats } from '@/lib/samples';
 

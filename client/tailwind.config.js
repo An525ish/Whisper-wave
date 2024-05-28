@@ -99,6 +99,10 @@ module.exports = {
           'linear-gradient(180deg, #1FA56A 0%, #16754B 100%)',
         'gradient-action-button-red':
           'linear-gradient(180deg, #CB525B 0%, #7A242A 100%)',
+        'glass-background':
+          'radial-gradient(at 47% 33%, hsl(161.45, 84%, 48%) 0, transparent 59%), radial-gradient(at 82% 65%, hsl(264, 21%, 14%) 0, transparent 55%)',
+        'image-background':
+          "url('https://images.unsplash.com/photo-1628498188904-036f5e25e93e?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
       },
       boxShadow: {
         'border-separation': '0px 0 8px 8px rgba(0, 0, 0, 0.08)',

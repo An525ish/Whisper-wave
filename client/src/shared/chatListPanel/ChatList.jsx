@@ -1,4 +1,4 @@
-import ChatItem from "./ChatItem"
+import ChatListItem from "./ChatListItem"
 
 const ChatList = ({
     chats = [],
@@ -21,7 +21,7 @@ const ChatList = ({
                 const isOnline = members?.some(() => onlineUsers.includes(_id))
 
                 return (
-                    <ChatItem
+                    <ChatListItem
                         key={_id}
                         avatar={avatar}
                         name={name}
