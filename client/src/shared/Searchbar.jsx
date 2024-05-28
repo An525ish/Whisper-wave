@@ -69,7 +69,7 @@ export default function Searchbar({ searchText, setSearchText }) {
                     </div>
                 )}
                 <div
-                    className={`relative transition-all duration-300 ease-in-out ${isSearchBarFocused ? 'w-48 opacity-100' : 'w-0 opacity-0'
+                    className={`relative transition-all duration-300 ease-in-out ${isSearchBarFocused ? 'w-44 opacity-100' : 'w-0 opacity-0'
                         }`}
                     onMouseLeave={() => !isSearchBarClicked && setIsSearchBarFocused(false)}
                 >

@@ -13,7 +13,7 @@ const ChatItem = ({
     newMessageAlert,
     handleDeleteChat
 }) => {
-
+    console.log(newMessageAlert)
     return (
         <Link to={`/chat/${_id}`} onContextMenu={(e) => handleDeleteChat(e, _id, groupChat)}>
             <div className={`flex gap-2 items-center p-4 gradient-border cursor-pointer rounded-lg hover:bg-gradient-background ${sameSender && 'bg-gradient-background'}`}>
@@ -24,7 +24,7 @@ const ChatItem = ({
                         <p className="font-medium">{name}</p>
                         {isOnline ? <div className="w-3 h-3 rounded-full bg-green animate-pulse"></div> : <p className="text-xs text-body-300">2 hours ago</p>}
                     </div>
-                    {newMessageAlert && <p className={`text-sm text-body-700`}>{newMessageAlert.count} New Message</p>}
+                    <p className={`text-sm text-body-700`}>{newMessageAlert ? `${newMessageAlert?.count} New Message` : `Last Message`}</p>
                 </div>
             </div>
         </Link>
