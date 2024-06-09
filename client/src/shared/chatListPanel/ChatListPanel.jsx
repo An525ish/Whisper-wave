@@ -1,4 +1,4 @@
-import ChatHeader from './ChatHeader'
+import ChatHeader from './ChatListHeader'
 import ChatTabView from './ChatTabView'
 
 const ChatListPanel = () => {
