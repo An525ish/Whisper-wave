@@ -1,7 +1,7 @@
 import DialogWrapper from "@/components/ui/DialogWrapper"
 import InputField from "@/components/ui/InputField";
 import { useForm } from "react-hook-form";
-import GroupChatItem from "./GroupChatItem";
+import GroupChatItem from "./SuggestionListItem";
 import Searchbar from "@/shared/Searchbar";
 import { useState } from "react";
 import { chats as users } from "@/lib/samples";

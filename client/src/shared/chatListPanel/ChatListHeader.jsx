@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Searchbar from '../Searchbar';
 import CreateGroupIcon from '@/components/icons/CreateGroup';
-import GroupChatDialog from './groupChatPanel/GroupChatDialog';
+import GroupChatDialog from './createGroupPanel/CreateGroupDialog';
 
 const ChatHeader = () => {
 
