@@ -23,7 +23,7 @@ const ChatHeader = () => {
                         <Searchbar searchText={searchText} setSearchText={setSearchText} />
                     </div>
                     <div className='z-20 cursor-pointer' onClick={handlToggle}>
-                        <CreateGroupIcon className={'w-6'} />
+                        <CreateGroupIcon className={'w-6 fill-white'} />
                     </div>
                 </div>
             </div>

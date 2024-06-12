@@ -1,8 +1,10 @@
-import React from 'react'
+import AdminWrapper from "@/layout/AdminWrapper"
 
 const Dashboard = () => {
     return (
-        <div>Dashboard</div>
+        <AdminWrapper>
+            Dashboard
+        </AdminWrapper>
     )
 }
 

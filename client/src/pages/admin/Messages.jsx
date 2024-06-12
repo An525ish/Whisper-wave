@@ -1,8 +1,10 @@
-import React from 'react'
+import AdminWrapper from '@/layout/AdminWrapper'
 
 const Messages = () => {
     return (
-        <div>Messages</div>
+        <AdminWrapper>
+            Messages
+        </AdminWrapper>
     )
 }
 

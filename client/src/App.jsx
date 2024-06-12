@@ -1,8 +1,8 @@
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import './App.css'
 
-let user = false;
-let admin = false;
+let user = true;
+let admin = true;
 
 export const ProtectedRoutes = ({ user, children, redirect = '/auth' }) => {
   if (!user) return <Navigate to={redirect} />

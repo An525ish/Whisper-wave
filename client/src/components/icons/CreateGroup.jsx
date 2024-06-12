@@ -1,6 +1,6 @@
 const CreateGroupIcon = ({ ...props }) => {
     return (
-        <svg {...props} id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.88 95.35" fill="#ebecec"
+        <svg {...props} id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.88 95.35" fill="#ebecec80"
             stroke="white"
             strokeWidth="1"
             strokeLinecap="round"
