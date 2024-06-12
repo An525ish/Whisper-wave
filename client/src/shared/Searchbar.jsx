@@ -8,7 +8,7 @@ const cardsData = [
     // Add more cards as needed
 ];
 
-export default function Searchbar({ searchText, setSearchText }) {
+export default function Searchbar({ searchText, setSearchText, width = 'w-44' }) {
     const [isSearchBarFocused, setIsSearchBarFocused] = useState(false);
     const [isSearchBarClicked, setIsSearchBarClicked] = useState(false);
     const inputRef = useRef(null);
@@ -69,7 +69,7 @@ export default function Searchbar({ searchText, setSearchText }) {
                     </div>
                 )}
                 <div
-                    className={`relative transition-all duration-300 ease-in-out ${isSearchBarFocused ? 'w-44 opacity-100' : 'w-0 opacity-0'
+                    className={`relative transition-all duration-300 ease-in-out ${isSearchBarFocused ? `${width} opacity-100` : 'w-0 opacity-0'
                         }`}
                     onMouseLeave={() => !isSearchBarClicked && setIsSearchBarFocused(false)}
                 >

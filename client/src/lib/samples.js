@@ -116,7 +116,7 @@ export const sampleMessage = [
         url: 'https://drive.google.com/file/d/1jSd1BJWltjKx6GGN5J2eFEJn4IYQSIOb/view',
       },
     ],
-    content: 'L *uda ka Message hai',
+    content: 'Aur bhai kaisa hai ?',
     _id: 'sfnsdjkfsdnfkjsbnd',
     sender: {
       _id: 'user.342id',
@@ -148,7 +148,7 @@ export const sampleMessage = [
         url: 'https://www.w3schools.com/html/mov_bbb.mp4',
       },
     ],
-    content: 'Hiii bsdk',
+    content: 'Hiii birooooooooooos',
     _id: 'sfnsdjkfsdnfkjsb',
     sender: {
       _id: 'user.32id',

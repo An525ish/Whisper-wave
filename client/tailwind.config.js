@@ -91,6 +91,8 @@ module.exports = {
           'linear-gradient(180deg, #393046 0%, #2D2537 100%)',
         'gradient-line-fade-dark':
           'linear-gradient(90deg, rgba(235, 236, 236, 0.00) 8.85%, rgba(235, 236, 236, 0.30) 48.96%, rgba(235, 236, 236, 0.00) 90.63%)',
+        'gradient-line-fade-light':
+          'linear-gradient(90deg, rgba(0, 0, 0, 0.00) 8.85%, rgba(0, 0, 0, 0.30) 48.96%, rgba(235, 236, 236, 0.00) 90.63%)',
         'gradient-black-landing':
           'linear-gradient(180deg, rgba(0, 0, 0, 0.00) 0%, #000 23.65%, rgba(0, 0, 0, 0.00) 100%)',
         'gradient-text-balck':

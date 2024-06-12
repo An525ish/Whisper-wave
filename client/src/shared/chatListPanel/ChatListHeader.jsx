@@ -22,7 +22,7 @@ const ChatHeader = () => {
                     <div className='cursor-pointer'>
                         <Searchbar searchText={searchText} setSearchText={setSearchText} />
                     </div>
-                    <div className='z-50 cursor-pointer' onClick={handlToggle}>
+                    <div className='z-20 cursor-pointer' onClick={handlToggle}>
                         <CreateGroupIcon className={'w-6'} />
                     </div>
                 </div>

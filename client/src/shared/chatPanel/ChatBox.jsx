@@ -12,7 +12,7 @@ const ChatBox = ({ data, user }) => {
     return (
         <>
             <div className={`max-w-[70%] w-fit border-2 border-green-light pl-2 py-2 pr-4 rounded-b-xl
-         ${sameSender ? 'rounded-s-[2rem] self-end pl-4' : 'rounded-e-[2rem] self-start'} shadow-2xl`}>
+         ${sameSender ? 'rounded-s-[2rem] self-end pl-4' : 'rounded-e-[2rem] self-start'} shadow-lg`}>
                 <p className="Capitalize text-green font-medium tracking-wider">{sender.name}</p>
 
                 {attachments.length > 0 &&
