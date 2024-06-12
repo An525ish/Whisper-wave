@@ -1,7 +1,8 @@
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import './App.css'
 
-let user = true;
+let user = false;
+let admin = false;
 
 export const ProtectedRoutes = ({ user, children, redirect = '/auth' }) => {
   if (!user) return <Navigate to={redirect} />
@@ -9,6 +10,53 @@ export const ProtectedRoutes = ({ user, children, redirect = '/auth' }) => {
 }
 
 let router = createBrowserRouter([
+  {
+    path: "/admin",
+    element: <ProtectedRoutes user={!admin} redirect="/admin/dashboard" />,
+    children: [
+      {
+        path: "",
+        lazy: async () => {
+          let AdminAuth = await import("@/pages/admin/AdminAuth")
+          return { Component: AdminAuth.default }
+        },
+      },
+    ]
+  },
+  {
+    path: "/admin/*",
+    element: <ProtectedRoutes user={admin} redirect="/admin" />,
+    children: [
+      {
+        path: "dashboard",
+        lazy: async () => {
+          let Dashboard = await import("@/pages/admin/Dashboard")
+          return { Component: Dashboard.default }
+        },
+      },
+      {
+        path: "users",
+        lazy: async () => {
+          let Users = await import("@/pages/admin/Users")
+          return { Component: Users.default }
+        },
+      },
+      {
+        path: "messages",
+        lazy: async () => {
+          let Messages = await import("@/pages/admin/Messages")
+          return { Component: Messages.default }
+        },
+      },
+      {
+        path: "groups",
+        lazy: async () => {
+          let Groups = await import("@/pages/admin/Groups")
+          return { Component: Groups.default }
+        },
+      },
+    ]
+  },
   {
     path: "/auth",
     element: <ProtectedRoutes user={!user} redirect="/" />,
