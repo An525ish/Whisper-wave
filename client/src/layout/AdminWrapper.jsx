@@ -46,7 +46,7 @@ const AdminWrapper = ({ children }) => {
                     />
                 ))}
             </Sidebar>
-            <main className='p-4'>
+            <main className='p-4 w-full h-screen overflow-y-auto scrollbar-hide'>
                 {children}
             </main>
         </div>

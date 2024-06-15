@@ -75,7 +75,7 @@ module.exports = {
       },
       blue: {
         DEFAULT: '#5698FF',
-        light: '#5698FF33',
+        light: '#5698FF63',
       },
       transparent: 'transparent',
     },
@@ -84,9 +84,29 @@ module.exports = {
         sans: ['var(--font-dm-sans)', 'sans-serif'],
         display: ['var(--font-dm-serif-display)', 'serif'],
       },
+      boxShadow: {
+        blue: '0 0 10px rgba(0, 0, 255, 0.8)',
+        green: '0 0 10px rgba(0, 255, 0, 0.8)',
+        orange: '0 0 10px rgba(255, 165, 0, 0.8)',
+        glowBlue: '0 0 10px rgba(0, 0, 255, 0.8)',
+        glowGreen: '0 0 10px rgba(0, 255, 0, 0.8)',
+        glowOrange: '0 0 10px rgba(255, 165, 0, 0.8)',
+      },
       backgroundImage: {
         'gradient-background':
           'linear-gradient(90deg, #211a2a 0%, var(--color-background-gradient-start) 30%, var(--color-background-gradient-end) 70%, #211a2a 100%)',
+        'gradient-green':
+          'linear-gradient(180deg, #01C36D 0%, #01C16C 0.01%, #019C57 100%)',
+        'gradient-linear-green':
+          'linear-gradient(180deg, #03AA69 0%, #005E37 100%)',
+        'gradient-idea-green':
+          'linear-gradient(180deg, #74D680 0%, #378B29 100%)',
+        'gradient-idea-blue':
+          'linear-gradient(180deg, #09C6F920 0%, #045DE920 100%)',
+        'gradient-idea-orange':
+          'linear-gradient(145.73deg, #FF9933 3.96%, #D14545 100%)',
+        'gradient-idea-gold':
+          'linear-gradient(180deg, #E1B763 0%, #B18940 100%)',
         'gradient-dark-black':
           'linear-gradient(180deg, #393046 0%, #2D2537 100%)',
         'gradient-line-fade-dark':
@@ -105,9 +125,6 @@ module.exports = {
           'radial-gradient(at 47% 33%, hsl(161.45, 84%, 48%) 0, transparent 59%), radial-gradient(at 82% 65%, hsl(264, 21%, 14%) 0, transparent 55%)',
         'image-background':
           "url('https://images.unsplash.com/photo-1628498188904-036f5e25e93e?q=80&w=1000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
-      },
-      boxShadow: {
-        'border-separation': '0px 0 8px 8px rgba(0, 0, 0, 0.08)',
       },
     },
   },
