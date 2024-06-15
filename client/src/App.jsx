@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import './App.css'
+import AdminWrapper from "./layout/AdminWrapper";
 
 let user = true;
 let admin = true;
@@ -25,7 +26,10 @@ let router = createBrowserRouter([
   },
   {
     path: "/admin/*",
-    element: <ProtectedRoutes user={admin} redirect="/admin" />,
+    element:
+      <ProtectedRoutes user={admin} redirect="/admin" >
+        <AdminWrapper />
+      </ProtectedRoutes>,
     children: [
       {
         path: "dashboard",

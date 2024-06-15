@@ -1,4 +1,3 @@
-import AdminWrapper from "@/layout/AdminWrapper"
 import avatar from '@/assets/avatar.png';
 import Table from "@/components/tables/Table";
 import Searchbar from "@/components/ui/searchbar/Searchbar";
@@ -42,25 +41,23 @@ const Groups = () => {
     const [searchText, setSearchText] = useState('')
 
     return (
-        <AdminWrapper>
-            <div className=''>
-                <p className='font-medium border-b full-border w-fit text-2xl mx-auto px-12 py-2 mb-12'>Groups Status</p>
+        <div className=''>
+            <p className='font-medium border-b full-border w-fit text-2xl mx-auto px-12 py-2 mb-12'>Groups Status</p>
 
-                <div className="w-full px-12 mb-8">
-                    <Searchbar
-                        className={'w-[18rem] mx-auto '}
-                        searchText={searchText}
-                        setSearchText={setSearchText}
-                    />
-                </div>
-
-                <Table
-                    header={['Group Id', 'Name', 'Members', 'Created By', 'Admins', 'Attachments']}
-                    content={tableData}
-                    fixed={false}
+            <div className="w-full px-12 mb-8">
+                <Searchbar
+                    className={'w-[18rem] mx-auto '}
+                    searchText={searchText}
+                    setSearchText={setSearchText}
                 />
             </div>
-        </AdminWrapper>
+
+            <Table
+                header={['Group Id', 'Name', 'Members', 'Created By', 'Admins', 'Attachments']}
+                content={tableData}
+                fixed={false}
+            />
+        </div>
     )
 }
 

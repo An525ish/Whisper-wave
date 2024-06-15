@@ -4,6 +4,7 @@ import DashboardIcon from '@/components/icons/Dashboard';
 import MembersIcon from '@/components/icons/Members';
 import Sidebar from '@/components/sidebar/Sidebar';
 import SidebarItem from '@/components/sidebar/SidebarItem';
+import { Outlet } from 'react-router-dom';
 
 const sidebarItems = Object.freeze([
     {
@@ -32,7 +33,7 @@ const sidebarItems = Object.freeze([
     },
 ]);
 
-const AdminWrapper = ({ children }) => {
+const AdminWrapper = () => {
 
     return (
         <div className='flex'>
@@ -47,7 +48,7 @@ const AdminWrapper = ({ children }) => {
                 ))}
             </Sidebar>
             <main className='p-4 w-full h-screen overflow-y-auto scrollbar-hide'>
-                {children}
+                <Outlet />
             </main>
         </div>
     );
