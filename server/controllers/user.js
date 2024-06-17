@@ -10,7 +10,7 @@ export const getProfile = async (req, res, next) => {
     if (!user) return next(errorHandler(404, 'No user found in the database'));
 
     res.status(200).json({
-      status: true,
+      success: true,
       data: user,
     });
   } catch (error) {
@@ -40,7 +40,7 @@ export const updateProfile = async (req, res, next) => {
     await user.save();
 
     res.status(200).json({
-      status: true,
+      success: true,
       message: 'Profile updated successfully',
     });
   } catch (error) {
