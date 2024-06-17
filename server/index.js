@@ -4,6 +4,7 @@ import DbConnect from './utils/db-connect.js';
 import { authRouter } from './routes/auth.js';
 import { globalErrorHandler } from './middlewares/globalErrorHandler.js';
 import cookieParser from 'cookie-parser';
+import { userRouter } from './routes/user.js';
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 app.use('/api/auth', authRouter);
+app.use('/api/user', userRouter);
 
 app.use(globalErrorHandler);
 
