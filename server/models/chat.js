@@ -13,11 +13,13 @@ const chatSchema = Schema(
     creator: {
       type: Types.ObjectId,
       ref: 'User',
+      required: true,
     },
     members: [
       {
         type: Types.ObjectId,
         ref: 'User',
+        required: true,
       },
     ],
   },
