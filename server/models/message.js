@@ -18,10 +18,12 @@ const msgSchema = Schema(
     sender: {
       type: Types.ObjectId,
       ref: 'User',
+      required: true,
     },
     chat: {
       type: Types.ObjectId,
       ref: 'Chat',
+      required: true,
     },
   },
   {

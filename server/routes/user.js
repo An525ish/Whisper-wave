@@ -12,5 +12,5 @@ userRouter.use(auth);
 
 //protected resources
 userRouter.get('/get-profile', getProfile);
-userRouter.patch('/update-profile', updateProfile);
+userRouter.put('/update-profile', updateProfile);
 userRouter.delete('/delete-profile', deleteProfile);
