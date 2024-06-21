@@ -30,7 +30,9 @@ app.use(globalErrorHandler);
   try {
     await DbConnect();
     app.listen(PORT, () => {
-      console.log(`server is running on port : ${PORT}`);
+      console.log(
+        `server is running on port : ${PORT} in ${process.env.NODE_ENV} mode`
+      );
     });
   } catch (error) {
     console.error('Failed to start the server:', error.message);
