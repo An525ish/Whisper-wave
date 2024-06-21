@@ -3,7 +3,7 @@ import mongoose, { Schema, Types, model } from 'mongoose';
 const msgSchema = Schema(
   {
     content: String,
-    attachment: [
+    attachments: [
       {
         publicId: {
           type: String,
