@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import { userRouter } from './routes/user.js';
 import { chatRouter } from './routes/chat.js';
 import { messageRouter } from './routes/message.js';
+import { friendRequestRouter } from './routes/request.js';
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/message', messageRouter);
+app.use('/api/friend-request', friendRequestRouter);
 
 app.use(globalErrorHandler);
 
