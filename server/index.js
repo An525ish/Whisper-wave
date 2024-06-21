@@ -6,7 +6,7 @@ import { globalErrorHandler } from './middlewares/globalErrorHandler.js';
 import cookieParser from 'cookie-parser';
 import { userRouter } from './routes/user.js';
 import { chatRouter } from './routes/chat.js';
-import { seedUsers } from './seeders/user.js';
+import { messageRouter } from './routes/message.js';
 
 const app = express();
 
@@ -20,13 +20,13 @@ app.use(cookieParser());
 app.use('/api/auth', authRouter);
 app.use('/api/user', userRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/message', messageRouter);
 
 app.use(globalErrorHandler);
 
 (async () => {
   try {
     await DbConnect();
-
     app.listen(PORT, () => {
       console.log(`server is running on port : ${PORT}`);
     });
