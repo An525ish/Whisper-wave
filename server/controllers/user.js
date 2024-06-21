@@ -1,6 +1,7 @@
 import { compare, hash } from 'bcrypt';
 import { User } from '../models/user.js';
 import { errorHandler } from '../utils/errorHandler.js';
+import { Chat } from '../models/chat.js';
 
 export const getProfile = async (req, res, next) => {
   try {
@@ -58,4 +59,29 @@ export const deleteProfile = async (req, res, next) => {
       message: 'User Deleted Successfully',
     });
   } catch (error) {}
+};
+
+export const searchUser = async (req, res, next) => {
+  const { name = '' } = req.query;
+
+  const myChats = await Chat.find({ groupChat: false, members: req.userId });
+
+  const myChatsMembers = myChats.flatMap(({ members }) => members);
+
+  const allOtherMembers = await User.find({
+    _id: { $nin: myChatsMembers },
+    name: { $regex: name, $options: 'i' }, // anish - can be searched by sh and i is case insensitive
+  });
+
+  const users = allOtherMembers.map(({ _id, name, avatar }) => ({
+    _id,
+    name,
+    avatar: avatar.url,
+  }));
+
+  res.status(200).json({
+    success: true,
+    message: 'Fetched member successfully',
+    data: users,
+  });
 };
