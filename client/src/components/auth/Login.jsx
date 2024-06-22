@@ -2,8 +2,13 @@ import avatar from '@/assets/avatar.png'
 import { useForm } from 'react-hook-form';
 import InputField from '../ui/InputField';
 import { validatePassword, validateUsername } from '@/lib/validators';
+import { postRequest } from '@/utils/api';
+import { useDispatch } from 'react-redux';
+import { userExist } from '@/redux/reducers/auth';
+import toast from 'react-hot-toast';
 
 const Login = ({ setIsLogin, setIsForget }) => {
+    const dispatch = useDispatch()
 
     const {
         register,
@@ -13,12 +18,11 @@ const Login = ({ setIsLogin, setIsForget }) => {
 
     const onSubmit = async (data) => {
         try {
-            console.log(data)
-            //   const response = await axios.post('https://your-api-endpoint.com/register', data);
-            //   console.log('Registration successful:', response.data);
+            const response = await postRequest('/auth/signIn', data);
+            dispatch(userExist(true))
+            toast.success(response.message)
         } catch (error) {
-            console.error('Error registering user:', error);
-            // Handle error (e.g., show error message to the user)
+            toast.error(error?.message || 'Something went wrong')
         }
     };
 

@@ -2,14 +2,31 @@ import NotificationIcon from "@/components/icons/Notification";
 import Dropdown from "@/components/ui/Dropdown";
 import { useState, useEffect, useRef } from "react";
 import NotificationDialog from "../notificationDialog/NotificationDialog";
+import toast from "react-hot-toast";
+import { postRequest } from "@/utils/api";
+import { useDispatch, useSelector } from "react-redux";
+import { userNotExist } from "@/redux/reducers/auth";
+import LeaveGroupIcon from "@/components/icons/LeaveGroup";
 
 const ProfileHeader = () => {
     const [isNotification, setIsNotification] = useState(false);
     const notificationRef = useRef(null);
     const iconRef = useRef(null);
 
-    const handleLogout = () => {
-        console.log('Option 1 selected');
+    const dispatch = useDispatch()
+    const { user } = useSelector(state => state.auth)
+
+    const userName = user.name.split(' ')[0]
+
+    console.log(user)
+    const handleLogout = async () => {
+        try {
+            const res = await postRequest('/auth/signOut')
+            dispatch(userNotExist())
+            toast.success(res.message)
+        } catch (error) {
+            toast.error(error.message)
+        }
     };
 
     const handleNotificationToggle = () => setIsNotification(prev => !prev);
@@ -31,7 +48,7 @@ const ProfileHeader = () => {
     }, []);
 
     const options = [
-        { label: 'Logout', handler: handleLogout },
+        { label: 'Logout', Icon: LeaveGroupIcon, handler: handleLogout },
     ];
 
     return (
@@ -47,14 +64,14 @@ const ProfileHeader = () => {
                 </div>
 
                 <div className="flex relative items-center">
-                    <div className="w-10 h-10 overflow-hidden rounded-full absolute z-10 -left-6 bottom">
+                    <div className="w-10 h-10 overflow-hidden border-2 border-primary rounded-full absolute z-10 -left-6 bottom">
                         <img
-                            src="https://www.gravatar.com/avatar/2c7d99fe281ecd3bcd65ab915bac6dd5?s=250"
-                            alt=""
-                            className=""
+                            src={user.avatar.url}
+                            alt={user.name}
+                            className="w-full object-cover"
                         />
                     </div>
-                    <Dropdown options={options} name={'name'} />
+                    <Dropdown options={options} name={userName} />
                 </div>
             </div>
 

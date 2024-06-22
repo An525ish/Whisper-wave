@@ -2,8 +2,15 @@ import InputField from '../ui/InputField'
 import { useForm } from 'react-hook-form';
 import { validateFullname, validatePassword, validateUsername } from '@/lib/validators';
 import AvatarInput from '../ui/AvatarInput';
+import { postRequest } from '@/utils/api';
+import { useState } from 'react'
+import { useDispatch } from 'react-redux';
+import { userExist } from '@/redux/reducers/auth';
+import toast from 'react-hot-toast';
 
 const Register = ({ setIsLogin }) => {
+    const [avatar, setAvatar] = useState(null)
+    const dispatch = useDispatch()
 
     const {
         register,
@@ -14,25 +21,27 @@ const Register = ({ setIsLogin }) => {
 
     const onSubmit = async (data) => {
         try {
-            console.log(data)
-            //   const response = await axios.post('https://your-api-endpoint.com/register', data);
-            //   console.log('Registration successful:', response.data);
+            const response = await postRequest('/auth/signUp', { avatar, ...data }, { 'Content-Type': 'multipart/form-data' });
+            dispatch(userExist(true))
+            toast.success(response.message)
         } catch (error) {
-            console.error('Error registering user:', error);
-            // Handle error (e.g., show error message to the user)
+            toast.error(error?.response?.data?.message || 'Something went wrong')
         }
     };
 
     return (
         <div className='w-full'>
             <div className='flex justify-center'>
-                <AvatarInput />
+                <AvatarInput
+                    file={avatar}
+                    setFile={setAvatar}
+                />
             </div>
 
-            <form action="" onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4 items-center w-4/5 lg:w-3/5 mx-auto my-8'>
+            <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4 items-center w-4/5 lg:w-3/5 mx-auto my-8'>
                 <InputField
                     type="text"
-                    name='fullname'
+                    name='name'
                     placeholder='Fullname'
                     register={register}
                     validate={validateFullname}

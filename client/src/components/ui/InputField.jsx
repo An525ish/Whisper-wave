@@ -1,8 +1,6 @@
 const InputField = ({ name, type, placeholder, className, register, validate, errors, ...rest }) => {
     return (
         <>
-            {errors[name] && <p className="text-red text-left text-2xs">{errors[name]?.message}</p>}
-
             <input
                 type={type}
                 name={name}
@@ -11,6 +9,8 @@ const InputField = ({ name, type, placeholder, className, register, validate, er
                 {...register(name, !!validate && { validate })}
                 {...rest}
             />
+
+            {errors[name] && <p className="text-red text-left text-2xs">{errors[name]?.message}</p>}
         </>
     );
 };
