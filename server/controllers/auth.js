@@ -1,19 +1,17 @@
 import { compare, hash } from 'bcrypt';
 import { User } from '../models/user.js';
 import { errorHandler } from '../utils/errorHandler.js';
-import { generateToken } from '../utils/services.js';
+import { generateToken, uploadToCloudinary } from '../utils/services.js';
 import { cookieOption } from '../constants/constant.js';
 
 export const signUp = async (req, res, next) => {
   const { name, username, password, bio } = req.body;
+  const avatarFile = req.file;
 
   if (!name || !username || !password)
-    return next(errorHandler(404, 'All inputs are required'));
+    return next(errorHandler(400, 'All inputs are required'));
 
-  const avatar = {
-    publicId: 'fsfsd',
-    url: 'sfsdf',
-  };
+  if (!avatarFile) return next(errorHandler(400, 'Please upload an avatar'));
 
   try {
     const userExist = await User.findOne({ username });
@@ -21,6 +19,16 @@ export const signUp = async (req, res, next) => {
     if (userExist) next(errorHandler(409, 'User already exist'));
 
     const hashedPassword = await hash(password, 10);
+
+    const uploadedAvatar = await uploadToCloudinary([avatarFile]);
+
+    if (!uploadedAvatar || !uploadedAvatar.length === 0)
+      return next(errorHandler(400, 'Failed to upload avatar'));
+
+    const avatar = {
+      publicId: uploadedAvatar[0].public_id,
+      url: uploadedAvatar[0].url,
+    };
 
     const user = await User.create({
       name,
@@ -37,7 +45,7 @@ export const signUp = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'User created Successfullly',
+      message: 'Registered Successfullly',
     });
   } catch (error) {
     next(error);

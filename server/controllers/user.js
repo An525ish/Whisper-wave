@@ -12,7 +12,7 @@ export const getProfile = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: user,
+      user,
     });
   } catch (error) {
     next(error);
@@ -81,7 +81,6 @@ export const searchUser = async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: 'Fetched member successfully',
     data: users,
   });
 };

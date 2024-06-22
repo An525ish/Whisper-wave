@@ -34,20 +34,21 @@ const Dropdown = ({ options, name }) => {
                     tabIndex="-1"
                 >
                     <div className="py-1" role="none">
-                        {options.map((option, index) => (
-                            <li
+                        {options.map(({ label, Icon, handler }, index) => (
+                            <p
                                 key={index}
-                                className="text-gray-700 block px-4 py-0.5 text-sm"
+                                className="text-body-300 hover:text-body flex items-center px-4 py-0.5 group text-sm cursor-pointer"
                                 role="menuitem"
                                 tabIndex="-1"
                                 id={`menu-item-${index}`}
                                 onClick={() => {
-                                    option.handler();
+                                    handler();
                                     setIsOpen(false);
                                 }}
                             >
-                                {option.label}
-                            </li>
+                                {Icon && <Icon className={'w-3 h-4 mr-2 group-hover:fill-white'} />}
+                                {label}
+                            </p>
                         ))}
                     </div>
                 </div>
