@@ -1,7 +1,6 @@
-import { useParams } from 'react-router-dom';
 import ChatList from '@/shared/chatListPanel/ChatList';
 import TabView from '@/components/ui/swipable-tabs/TabView';
-import { chats } from '@/lib/samples';
+import { useMyChatsQuery } from '@/redux/reducers/apis/api';
 
 const tabsData = Object.freeze({
     0: {
@@ -13,38 +12,51 @@ const tabsData = Object.freeze({
         name: 'Personal',
     },
     2: {
-        id: 'groups',
+        id: 'group',
         name: 'Groups',
     },
 });
 
-const ChatTabView = () => {
-    const { chatId } = useParams()
+const ChatTabView = ({ searchText }) => {
+    const { data, isLoading } = useMyChatsQuery();
 
     const handleDeleteChat = (e, _id, groupChat) => {
-        e.preventDefault()
-        console.log('delete', _id, groupChat)
-    }
+        e.preventDefault();
+        console.log('delete', _id, groupChat);
+    };
 
-    const personalChats = chats.filter((chat) => !chat.groupChat)
-    const groupChats = chats.filter((chat) => chat.groupChat)
+    // Filter chats based on search text
+    const filteredChats = (chats) => {
+        return chats?.filter((chat) =>
+            chat.name.toLowerCase().includes(searchText.toLowerCase())
+        );
+    };
+
+    const personalChats = filteredChats(data?.chats?.filter((chat) => !chat.groupChat));
+    const groupChats = filteredChats(data?.chats?.filter((chat) => chat.groupChat));
+    const allChats = filteredChats(data?.chats);
 
     return (
         <>
             <TabView tabsData={tabsData}>
-                {(activeTabIndex) => (
+                {(activeTabIndex) =>
                     Object.values(tabsData).map((tab) => (
                         <ChatList
                             key={tab.id}
-                            chats={activeTabIndex == 1 ? personalChats : activeTabIndex == 2 ? groupChats : chats}
-                            chatId={chatId}
+                            type={tab.id}
+                            isLoading={isLoading}
+                            chats={
+                                activeTabIndex == 1 ? personalChats
+                                    : activeTabIndex == 2 ? groupChats
+                                        : allChats
+                            }
                             handleDeleteChat={handleDeleteChat}
                         />
                     ))
-                )}
+                }
             </TabView>
         </>
-    )
-}
+    );
+};
 
-export default ChatTabView
+export default ChatTabView;

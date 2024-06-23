@@ -16,16 +16,27 @@ export const getMessages = async (req, res, next) => {
         .sort({ createdAt: -1 })
         .limit(resultPerPage)
         .skip(skip)
-        .populate('sender', 'name avatar'),
+        .lean()
+        .populate('sender', 'name avatar')
+        .populate('chat', 'groupChat'),
       Message.countDocuments({ chat: chatId }),
     ]);
 
     if (!messages) return next(errorHandler(400, 'No chat found'));
 
+    const customMessages = messages.map(({ sender, chat, ...rest }) => ({
+      ...rest,
+      chat: chat._id,
+      sender: {
+        ...sender,
+        avatar: sender.avatar.url,
+      },
+    }));
+
     res.status(200).json({
       success: true,
-      message: 'Messages fetched successfully',
-      data: messages,
+      groupChat: messages[0].chat.groupChat,
+      data: customMessages,
       totalPages: Math.ceil(totalMessages / resultPerPage) || 0,
     });
   } catch (error) {

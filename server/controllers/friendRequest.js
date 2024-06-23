@@ -123,20 +123,27 @@ export const getMyfriends = async (req, res, next) => {
       members: userId,
     }).populate('members', 'name avatar');
 
-    const friends = chats.map(({ members }) => {
-      const otherMember = members.find(
+    const friends = chats.flatMap(({ members }) => {
+      const otherMembers = members.filter(
         (member) => member._id.toString() !== userId.toString()
       );
 
-      return {
-        _id: otherMember._id,
-        name: otherMember.name,
-        avatar: otherMember.avatar.url,
-      };
+      return otherMembers.map((member) => ({
+        _id: member._id,
+        name: member.name,
+        avatar: member.avatar?.url,
+      }));
     });
 
     if (chatId) {
       const chat = await Chat.findById(chatId);
+
+      if (!chat) {
+        return res.status(404).json({
+          success: false,
+          message: 'Chat not found',
+        });
+      }
 
       const availableFriends = friends.filter(
         (friend) => !chat.members.includes(friend._id)
@@ -144,19 +151,13 @@ export const getMyfriends = async (req, res, next) => {
 
       return res.status(200).json({
         success: true,
-        message: 'Friends fetched successfully',
-        data: {
-          friends: availableFriends,
-        },
+        data: availableFriends,
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Friends fetched successfully',
-      data: {
-        friends,
-      },
+      data: friends,
     });
   } catch (error) {
     next(error);

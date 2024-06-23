@@ -1,7 +1,6 @@
 import avatar from '@/assets/avatar.png'
 import { useForm } from 'react-hook-form';
 import InputField from '../ui/InputField';
-import { validatePassword, validateUsername } from '@/lib/validators';
 import { postRequest } from '@/utils/api';
 import { useDispatch } from 'react-redux';
 import { userExist } from '@/redux/reducers/auth';
@@ -36,7 +35,6 @@ const Login = ({ setIsLogin, setIsForget }) => {
                     name="username"
                     placeholder='Username'
                     register={register}
-                    validate={validateUsername}
                     errors={errors}
                 />
 
@@ -45,7 +43,6 @@ const Login = ({ setIsLogin, setIsForget }) => {
                     name='password'
                     placeholder='Password'
                     register={register}
-                    validate={validatePassword}
                     errors={errors}
                 />
 
