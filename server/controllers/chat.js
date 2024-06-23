@@ -60,59 +60,73 @@ export const updateGroupDetails = async (req, res, next) => {
 
 export const getMyChats = async (req, res, next) => {
   const userId = req.userId;
-  const { page = 1 } = req.query;
+
+  const page = parseInt(req.query.page) || 1;
   const resultPerPage = 20;
 
   try {
     const [chats, totalChats] = await Promise.all([
       Chat.find({ members: userId })
         .populate('members', 'name username email avatar')
-        .sort({ updatedAt: -1 }) // latest at first
+        .sort({ updatedAt: -1 })
         .skip((page - 1) * resultPerPage)
-        .limit(Number(resultPerPage)),
+        .limit(resultPerPage)
+        .lean(), // Use lean() for better performance
       Chat.countDocuments({ members: userId }),
     ]);
 
-    // Customize the response based on chat type
     const customizedChats = chats.map(({ _id, name, members, groupChat }) => {
-      const otherMember = members.find(
+      const otherMembers = members.filter(
         (member) => member._id.toString() !== userId.toString()
       );
 
       return {
         _id,
         groupChat,
-        name: groupChat ? name : otherMember.name,
+        name: groupChat ? name : otherMembers[0]?.name || 'Unknown',
         avatar: groupChat
-          ? members.slice(0, 3).map(({ avatar }) => avatar.url)
-          : [otherMember.avatar.url],
-        members: members
-          .filter((member) => member._id.toString() !== userId.toString())
-          .map((member) => member._id),
+          ? members
+              .slice(0, 3)
+              .map((member) => member.avatar?.url)
+              .filter(Boolean)
+          : [otherMembers[0]?.avatar?.url].filter(Boolean),
+        members: otherMembers.map((member) => member._id),
       };
     });
 
     res.status(200).json({
       success: true,
-      message: 'Chats retrieved successfully',
-      data: {
-        chats: customizedChats,
-        totalPages: Math.ceil(totalChats / resultPerPage) || 0,
-      },
+      chats: customizedChats,
+      totalPages: Math.ceil(totalChats / resultPerPage) || 0,
     });
   } catch (error) {
-    next(errorHandler(500, 'Failed to retrieve chats'));
+    console.error('Error in getMyChats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while fetching chats',
+    });
   }
 };
 
 export const getChatDetails = async (req, res, next) => {
+  const userId = req.userId;
+
   try {
     if (req.query.populate === 'true') {
       const chat = await Chat.findById(req.query.id)
         .populate('members', 'name avatar')
+        .populate('creator', 'name avatar')
         .lean();
 
       if (!chat) return next(errorHandler(400, 'No chat found'));
+
+      const otherMembers = chat.members.filter(
+        (member) => member._id.toString() !== userId.toString()
+      );
+
+      chat.creator.avatar = chat.creator.avatar.url;
+
+      chat.avatar = chat.groupChat ? null : [otherMembers[0]?.avatar?.url];
 
       chat.members = chat.members.map((member) => ({
         _id: member._id,
@@ -122,7 +136,6 @@ export const getChatDetails = async (req, res, next) => {
 
       res.status(200).json({
         success: true,
-        message: 'Chat detals fetched successfully',
         data: chat,
       });
     } else {
@@ -132,7 +145,6 @@ export const getChatDetails = async (req, res, next) => {
 
       res.status(200).json({
         success: true,
-        message: 'Chat detals fetched successfully',
         data: chat,
       });
     }

@@ -3,9 +3,8 @@ import Searchbar from '../Searchbar';
 import CreateGroupIcon from '@/components/icons/CreateGroup';
 import GroupChatDialog from './createGroupPanel/CreateGroupDialog';
 
-const ChatHeader = () => {
+const ChatHeader = ({ searchText, setSearchText }) => {
 
-    const [searchText, setSearchText] = useState('');
     const [isCreateGroup, setIsCreateGroup] = useState(false);
 
     const handlToggle = () => setIsCreateGroup(prev => !prev)

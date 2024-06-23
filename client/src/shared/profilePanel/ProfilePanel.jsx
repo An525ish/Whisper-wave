@@ -1,25 +1,48 @@
+import Image from '@/components/ui/Image'
 import Carousel from '@/components/ui/carousel/Carousel'
 import { fileData } from '@/lib/features'
+import { useChatDetailsQuery } from '@/redux/reducers/apis/api'
+import { getFirstName } from '@/utils/helper'
+import { useParams } from 'react-router-dom'
 
 const ProfilePanel = () => {
+
+    const { chatId } = useParams()
+
+    const { data: profileDetails, isLoading } = useChatDetailsQuery({
+        id: chatId,
+        populate: true
+    })
+
+    if (isLoading) return <>Loading...</>
+
+    const profileData = profileDetails?.data
+    const { name, creator, members, avatar, groupChat } = profileData
+    console.log(members)
+
+    const creatorName = getFirstName(creator?.name);
+
     return (
         <div className="relative bg-background-alt rounded-2xl mt-16 h-[78vh] py-2">
             <div className="w-24 h-24 rounded-full bg-primary absolute -top-14 left-1/2 -translate-x-1/2 overflow-hidden z-10 border-8 border-background">
-                <img src="https://www.gravatar.com/avatar/2c7d99fe281ecd3bcd65ab915bac6dd5?s=250" alt="" className="object-cover" />
+                <Image src={avatar} className={'w-full'} />
             </div>
 
-            <p className="text-center text-xl font-medium mt-10">Name</p>
+            <p className="text-center text-xl w-52 truncate mx-auto capitalize font-medium mt-10">{name}</p>
 
             <div className='overflow-y-auto scrollbar-hide h-[65vh]'>
-                {true && <div className='p-4 flex gap-4 h-[12rem]'>
+                {groupChat && <div className='p-4 flex gap-4 h-[12rem]'>
                     <div className='flex-[1]'>
-                        <img src="https://www.gravatar.com/avatar/2c7d99fe281ecd3bcd65ab915bac6dd5?s=250" alt="" className='object-fill w-28 h-28 rounded-full bg-background-alt border-2 border-white' />
-                        <p className='font-medium text-center text-lg capitalize mt-2 text-body'>John Doe</p>
+                        <Image src={creator.avatar} alt="" className='object-fill w-28 h-28 rounded-full bg-background-alt border-2 border-white' />
+                        <p className='font-medium text-center text-lg capitalize mt-2 w-28 truncate text-body'>{creatorName}</p>
                         <p className='text-xs text-center text-body-700 border-0 border-b full-border pb-1 tracking-widest'>Creator</p>
                     </div>
 
                     <div className=''>
-                        <Carousel className={'w-[12rem] h-full'} />
+                        <Carousel
+                            members={members}
+                            className={'w-[12rem] h-full'}
+                        />
                     </div>
                 </div>}
 
