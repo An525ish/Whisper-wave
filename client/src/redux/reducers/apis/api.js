@@ -43,6 +43,7 @@ const api = createApi({
 export const {
   useMyChatsQuery,
   useChatDetailsQuery,
+  useLazyMyFriendsQuery,
   useMyFriendsQuery,
   useGetMessagesQuery,
 } = api;

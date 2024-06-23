@@ -7,8 +7,10 @@ export const getProfile = async (req, res, next) => {
   try {
     const userId = req.userId;
 
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).lean();
     if (!user) return next(errorHandler(404, 'No user found in the database'));
+
+    user.avatar = user.avatar.url;
 
     res.status(200).json({
       success: true,
