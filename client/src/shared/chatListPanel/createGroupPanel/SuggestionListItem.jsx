@@ -7,7 +7,7 @@ const GroupChatItem = ({ data, isSelected, handleSelectMember }) => {
             className={`flex gap-2 items-center px-4 cursor-pointer rounded-lg group`}
             onClick={() => handleSelectMember(_id)}
         >
-            <AvatarCard avatars={avatar} />
+            <AvatarCard avatars={[avatar]} />
 
             <div className="flex-[1]">
                 <div className="flex justify-between items-center">

@@ -7,6 +7,8 @@ import { postRequest } from "@/utils/api";
 import { useDispatch, useSelector } from "react-redux";
 import { userNotExist } from "@/redux/reducers/auth";
 import LeaveGroupIcon from "@/components/icons/LeaveGroup";
+import { getFirstName } from "@/utils/helper";
+import Image from "@/components/ui/Image";
 
 const ProfileHeader = () => {
     const [isNotification, setIsNotification] = useState(false);
@@ -15,8 +17,9 @@ const ProfileHeader = () => {
 
     const dispatch = useDispatch()
     const { user } = useSelector(state => state.auth)
+    const { name, avatar } = user;
 
-    const userName = user?.name?.split(' ')[0]
+    const userName = getFirstName(name)
 
     const handleLogout = async () => {
         try {
@@ -64,9 +67,9 @@ const ProfileHeader = () => {
 
                 <div className="flex relative items-center">
                     <div className="w-10 h-10 overflow-hidden border-2 border-primary rounded-full absolute z-10 -left-6 bottom">
-                        <img
-                            src={user?.avatar?.url}
-                            alt={user?.name}
+                        <Image
+                            src={avatar}
+                            alt={userName}
                             className="w-full object-cover"
                         />
                     </div>

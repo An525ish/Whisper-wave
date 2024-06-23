@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import GroupChatItem from "./SuggestionListItem";
 import Searchbar from "@/shared/Searchbar";
 import { useState } from "react";
-import { chats as users } from "@/lib/samples";
+import { useMyFriendsQuery } from "@/redux/reducers/apis/api";
 
 const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
     const [searchText, setSearchText] = useState('');
@@ -13,12 +13,13 @@ const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
         register,
         handleSubmit,
         formState: { errors }
-    } = useForm({ mode: 'onChange' });
+    } = useForm();
+
+    const { data: friends, isLoading, error } = useMyFriendsQuery({})
 
     const [selectedMembers, setSelectedMembers] = useState([])
 
     const handleSelectMember = (id) => {
-        console.log(id)
         setSelectedMembers(prev => prev.includes(id) ? prev.filter(el => el !== id) : [...prev, id])
     }
 
@@ -32,6 +33,12 @@ const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
             // Handle error (e.g., show error message to the user)
         }
     };
+
+    if (error) return <div>Error: {error.message}</div>
+
+    const friendsData = friends?.data || []
+    const filteredMembers = friendsData.filter((friend) => friend.name.toLowerCase().includes(searchText.toLowerCase()))
+
 
     return (
         <DialogWrapper isOpen={isCreateGroup}>
@@ -47,13 +54,13 @@ const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
                         type="text"
                         name='groupname'
                         autoFocus={true}
-                        placeholder='Group Name'
+                        placeholder='Type your Group Name...'
                         register={register}
                         errors={errors}
                     />
                 </div>
 
-                <div className='cursor-pointer py-2 flex justify-between items-center border full-border'>
+                <div className='py-2 flex justify-between items-center border full-border'>
                     <span className="text-body-700">Search For Members :</span>
                     <Searchbar searchText={searchText} setSearchText={setSearchText} />
                 </div>
@@ -61,16 +68,17 @@ const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
                 <div>
                     <p className="text-body-300 font-medium my-4">Suggested</p>
 
-                    <div className="flex flex-col gap-4 overflow-y-auto h-[58vh] scrollbar-hide">
-                        {users.map((member) =>
-                            <GroupChatItem
-                                key={member._id}
-                                data={member}
-                                isSelected={selectedMembers.includes(member._id)}
-                                handleSelectMember={handleSelectMember}
-                            />
-                        )}
-                    </div>
+                    {isLoading ? <p>Fetching Your Friends...</p> :
+                        <div className="flex flex-col gap-4 overflow-y-auto h-[58vh] scrollbar-hide">
+                            {filteredMembers.map((friend) =>
+                                <GroupChatItem
+                                    key={friend._id}
+                                    data={friend}
+                                    isSelected={selectedMembers.includes(friend._id)}
+                                    handleSelectMember={handleSelectMember}
+                                />
+                            )}
+                        </div>}
                 </div>
 
             </div>
