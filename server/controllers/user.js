@@ -2,6 +2,7 @@ import { compare, hash } from 'bcrypt';
 import { User } from '../models/user.js';
 import { errorHandler } from '../utils/errorHandler.js';
 import { Chat } from '../models/chat.js';
+import { Request } from '../models/request.js';
 
 export const getProfile = async (req, res, next) => {
   try {
@@ -70,16 +71,26 @@ export const searchUser = async (req, res, next) => {
 
   const myChatsMembers = myChats.flatMap(({ members }) => members);
 
-  const allOtherMembers = await User.find({
-    _id: { $nin: myChatsMembers },
-    name: { $regex: name, $options: 'i' }, // anish - can be searched by sh and i is case insensitive
-  });
+  const [allOtherMembers, myRequests] = await Promise.all([
+    User.find({
+      _id: { $nin: myChatsMembers },
+      name: { $regex: name, $options: 'i' }, // anish - can be searched by sh and i is case insensitive
+    }),
+    Request.find({ sender: req.userId }),
+  ]);
 
-  const users = allOtherMembers.map(({ _id, name, avatar }) => ({
-    _id,
-    name,
-    avatar: avatar.url,
-  }));
+  const receiverIds = myRequests.map((req) => req.receiver.toString());
+
+  const users = allOtherMembers.map(({ _id, name, avatar }) => {
+    const isReqExist = receiverIds.includes(_id.toString());
+
+    return {
+      _id,
+      name,
+      avatar: avatar.url,
+      isRequested: isReqExist,
+    };
+  });
 
   res.status(200).json({
     success: true,

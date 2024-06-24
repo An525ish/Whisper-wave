@@ -49,7 +49,7 @@ export const handleRequest = async (req, res, next) => {
 
     if (!request) return next(errorHandler(404, 'No request found'));
 
-    if (request.receiver.toString() === req.userId)
+    if (request.receiver._id.toString() !== req.userId)
       return next(
         errorHandler(401, 'You are not authorise to handle this request')
       );
@@ -62,7 +62,7 @@ export const handleRequest = async (req, res, next) => {
       });
     }
 
-    const members = [requestId, req.userId];
+    const members = [request.sender._id, req.userId];
 
     await Promise.all([
       Chat.create({
