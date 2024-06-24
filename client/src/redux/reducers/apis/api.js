@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: `${BASE_URL}/api` }),
-  tagTypes: ['chat', 'chatDetails'],
+  tagTypes: ['chat', 'chatDetails', 'users', 'messages'],
 
   endpoints: (builder) => ({
     myChats: builder.query({
@@ -21,6 +21,7 @@ const api = createApi({
         params: { populate, id },
       }),
       providesTags: ['chatDetails'],
+      invalidatesTags: ['messages'],
     }),
     myFriends: builder.query({
       query: ({ chatId }) => ({
@@ -37,15 +38,52 @@ const api = createApi({
       }),
       providesTags: ['messages'],
     }),
+    searchUser: builder.query({
+      query: ({ name }) => ({
+        url: `/user/search-user`,
+        credentials: 'include',
+        params: { name },
+      }),
+      providesTags: ['users'],
+    }),
+    sendFriendRequest: builder.mutation({
+      query: (receiverId) => ({
+        url: `/friend-request/send-request`,
+        method: 'POST',
+        credentials: 'include',
+        body: receiverId,
+      }),
+      invalidatesTags: ['users'],
+    }),
+    getMyNotifications: builder.query({
+      query: () => ({
+        url: `/friend-request/get-notifications`,
+        credentials: 'include',
+      }),
+      invalidatesTags: ['notifications'],
+      keepUnusedDataFor: 0,
+    }),
+    handleFriendRequest: builder.mutation({
+      query: (body) => ({
+        url: `/friend-request/handle-request`,
+        method: 'PUT',
+        credentials: 'include',
+        body: body,
+      }),
+      invalidatesTags: ['chats', 'users', 'notifications'],
+    }),
   }),
 });
 
 export const {
   useMyChatsQuery,
   useChatDetailsQuery,
-  useLazyMyFriendsQuery,
+  useLazySearchUserQuery,
   useMyFriendsQuery,
   useGetMessagesQuery,
+  useSendFriendRequestMutation,
+  useGetMyNotificationsQuery,
+  useHandleFriendRequestMutation,
 } = api;
 
 export default api;

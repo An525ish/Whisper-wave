@@ -100,11 +100,7 @@ export const getMyChats = async (req, res, next) => {
       totalPages: Math.ceil(totalChats / resultPerPage) || 0,
     });
   } catch (error) {
-    console.error('Error in getMyChats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'An error occurred while fetching chats',
-    });
+    next(error);
   }
 };
 
@@ -112,42 +108,54 @@ export const getChatDetails = async (req, res, next) => {
   const userId = req.userId;
 
   try {
-    if (req.query.populate === 'true') {
-      const chat = await Chat.findById(req.query.id)
+    const chatId = req.query.id;
+    const shouldPopulate = req.query.populate === 'true';
+
+    if (!chatId) {
+      return next(errorHandler(400, 'Chat ID is required'));
+    }
+
+    const chatQuery = Chat.findById(chatId);
+
+    if (shouldPopulate) {
+      chatQuery
         .populate('members', 'name avatar')
-        .populate('creator', 'name avatar')
-        .lean();
+        .populate('creator', 'name avatar');
+    }
 
-      if (!chat) return next(errorHandler(400, 'No chat found'));
+    const chat = await chatQuery.lean();
 
+    if (!chat) {
+      return next(errorHandler(400, 'No chat found'));
+    }
+
+    if (shouldPopulate) {
       const otherMembers = chat.members.filter(
         (member) => member._id.toString() !== userId.toString()
       );
 
-      chat.creator.avatar = chat.creator.avatar.url;
+      if (chat.creator?.avatar?.url) {
+        chat.creator.avatar = chat.creator.avatar.url;
+      }
 
-      chat.avatar = chat.groupChat ? null : [otherMembers[0]?.avatar?.url];
+      chat.name = chat.groupChat
+        ? chat.name
+        : otherMembers[0]?.name || 'Unknown';
 
-      chat.members = chat.members.map((member) => ({
-        _id: member._id,
-        name: member.name,
-        avatar: member.avatar.url,
+      chat.avatar = chat.groupChat
+        ? null
+        : [otherMembers[0]?.avatar?.url || ''];
+
+      chat.members = chat.members.map(({ avatar, ...rest }) => ({
+        ...rest,
+        avatar: avatar.url,
       }));
-
-      res.status(200).json({
-        success: true,
-        data: chat,
-      });
-    } else {
-      const chat = await Chat.findById(req.query.id);
-
-      if (!chat) return next(errorHandler(400, 'No chat found'));
-
-      res.status(200).json({
-        success: true,
-        data: chat,
-      });
     }
+
+    res.status(200).json({
+      success: true,
+      data: chat,
+    });
   } catch (error) {
     next(error);
   }
