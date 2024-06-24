@@ -11,7 +11,8 @@ export const getMessages = async (req, res, next) => {
   const skip = (page - 1) * resultPerPage;
 
   try {
-    const [messages, totalMessages] = await Promise.all([
+    const [chat, messages, totalMessages] = await Promise.all([
+      Chat.findById(chatId),
       Message.find({ chat: chatId })
         .sort({ createdAt: -1 })
         .limit(resultPerPage)
@@ -22,7 +23,7 @@ export const getMessages = async (req, res, next) => {
       Message.countDocuments({ chat: chatId }),
     ]);
 
-    if (!messages) return next(errorHandler(400, 'No chat found'));
+    if (!chat || !messages) return next(errorHandler(400, 'No chat found'));
 
     const customMessages = messages.map(({ sender, chat, ...rest }) => ({
       ...rest,
@@ -35,7 +36,7 @@ export const getMessages = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      groupChat: messages[0].chat.groupChat,
+      groupChat: chat.groupChat,
       data: customMessages,
       totalPages: Math.ceil(totalMessages / resultPerPage) || 0,
     });
