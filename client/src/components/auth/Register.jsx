@@ -22,10 +22,10 @@ const Register = ({ setIsLogin }) => {
     const onSubmit = async (data) => {
         try {
             const response = await postRequest('/auth/signUp', { avatar, ...data }, { 'Content-Type': 'multipart/form-data' });
-            dispatch(userExist(true))
             toast.success(response.message)
+            dispatch(userExist(true))
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Something went wrong')
+            toast.error(error?.message || 'Something went wrong')
         }
     };
 
