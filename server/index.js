@@ -17,6 +17,7 @@ import { Message } from './models/message.js';
 import { corsOption } from './constants/constant.js';
 import cors from 'cors';
 import { v2 as cloudinary } from 'cloudinary';
+import { socketAuth } from './middlewares/auth.js';
 
 // Load environment variables
 configDotenv({ path: '.env' });
@@ -29,7 +30,7 @@ cloudinary.config({
 
 const app = express();
 const server = createServer(app);
-const io = new Server(server);
+const io = new Server(server, { cors: corsOption });
 
 const PORT = process.env.PORT || 3000;
 
@@ -49,23 +50,30 @@ app.use(globalErrorHandler);
 
 const userSocketIds = new Map();
 
-const user = {
-  name: 'anish',
-  _id: 'fslfldsf',
-};
+io.use((socket, next) => {
+  cookieParser()(
+    socket.request,
+    socket.request.res || {},
+    async (err) => await socketAuth(err, socket, next)
+  );
+});
 
 // Socket.IO
 io.on('connection', (socket) => {
+  const user = socket.user;
   userSocketIds.set(user._id.toString(), socket.id);
   console.log(`User connected: ${socket.id}`);
+  console.log(userSocketIds);
 
   socket.on(NEW_MESSAGE, async ({ message, members, chatId }) => {
+    console.log(message, members, chatId);
     const realTimeMsg = {
       content: message,
       _id: uuid(),
       sender: {
-        _id: used._id,
+        _id: user._id,
         name: user.name,
+        avatar: user.avatar.url,
       },
       chat: chatId,
       createdAt: new Date().toISOString(),
@@ -78,6 +86,7 @@ io.on('connection', (socket) => {
     };
 
     const memberSocket = getSockets(userSocketIds, members);
+    console.log(memberSocket);
     io.to(memberSocket).emit(NEW_MESSAGE, {
       chatId,
       message: realTimeMsg,

@@ -3,26 +3,6 @@ import ChatListPanel from '@/shared/chatListPanel/ChatListPanel'
 import ProfileHeader from '@/shared/profilePanel/ProfileHeader'
 import ProfilePanel from '@/shared/profilePanel/ProfilePanel'
 
-const sampleProfile = {
-    _id: "1",
-    name: 'Anish',
-    avatar: [],
-    userName: 'An525ish',
-    bio: 'This is a Bio',
-    dob: '25/12/2002'
-}
-
-const sampleNotifications = [
-    {
-        _id: "1",
-        sender: {
-            name: 'Anish',
-            avatar: [],
-            messaage: 'This is a message'
-        }
-    }
-]
-
 const AppWrapper = ({ children }) => {
     return (
         <>
@@ -32,7 +12,7 @@ const AppWrapper = ({ children }) => {
                 <div className='flex-[1] rounded-lg hidden sm:block'><ChatListPanel /></div>
                 <div className='flex-[2]'>{children}</div>
                 <div className='flex-[1] hidden lg:block'>
-                    <ProfileHeader profile={sampleProfile} notifications={sampleNotifications} />
+                    <ProfileHeader />
                     <ProfilePanel />
                 </div>
             </main>

@@ -6,6 +6,7 @@ import { getRequest } from "./utils/api";
 import { useDispatch, useSelector } from "react-redux";
 import { userExist, userNotExist } from "./redux/reducers/auth";
 import { Toaster } from "react-hot-toast";
+import { SocketProvider } from "./hooks/socketContext";
 
 function App() {
   const { user, isAdmin, loader } = useSelector(state => state.auth)
@@ -69,7 +70,10 @@ function App() {
     },
     {
       path: "/",
-      element: <ProtectedRoutes user={user} />,
+      element:
+        <SocketProvider>
+          <ProtectedRoutes user={user} />
+        </SocketProvider>,
       children: [
         {
           path: "/",

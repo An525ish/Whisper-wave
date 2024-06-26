@@ -15,7 +15,7 @@ const api = createApi({
       providesTags: ['chat'],
     }),
     chatDetails: builder.query({
-      query: ({ populate, id }) => ({
+      query: ({ populate = false, id }) => ({
         url: '/chat/get-chat-details',
         credentials: 'include',
         params: { populate, id },
@@ -32,9 +32,10 @@ const api = createApi({
       providesTags: ['chatDetails'],
     }),
     getMessages: builder.query({
-      query: ({ chatId }) => ({
+      query: ({ chatId, page }) => ({
         url: `/message/get-messages/${chatId}`,
         credentials: 'include',
+        params: { page },
       }),
       providesTags: ['messages'],
     }),

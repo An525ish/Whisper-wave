@@ -10,8 +10,18 @@ export const generateToken = (id) => {
   return accessToken;
 };
 
-export const getSockets = (userSocketIds, users) =>
-  users.map((user) => userSocketIds.get(user._id.toString()));
+export const getSockets = (userSocketIds, members) => {
+  const memberSocketIds = [];
+
+  members.forEach((memberId) => {
+    const socketId = userSocketIds.get(memberId.toString());
+    if (socketId) {
+      memberSocketIds.push(socketId);
+    }
+  });
+
+  return memberSocketIds;
+};
 
 export const uploadToCloudinary = async (files = []) => {
   try {
