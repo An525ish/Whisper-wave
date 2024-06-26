@@ -1,21 +1,17 @@
 import AppWrapper from "@/layout/AppWrapper"
-import { sampleMessage, user } from "@/lib/samples"
 import ChatHeader from "@/shared/chatPanel/ChatHeader"
-import ChatInput from "@/shared/chatPanel/ChatInput"
 import ChatsViewPanel from "@/shared/chatPanel/ChatsViewPanel"
+import { useParams } from "react-router-dom"
 
 const Chat = () => {
+    const { chatId } = useParams()
     return (
         <AppWrapper>
             <div className="relative flex flex-col gap-6 h-full">
                 <div className="">
-                    <ChatHeader />
+                    <ChatHeader chatId={chatId} />
                 </div>
-                <ChatsViewPanel chats={sampleMessage} user={user} />
-                <ChatInput
-                    className={'text-body-700 placeholder:text-body-300'}
-                    placeholder={'Type Message here...'}
-                />
+                <ChatsViewPanel chatId={chatId} />
             </div>
         </AppWrapper>
     )

@@ -7,17 +7,15 @@ import ConfirmationModal from "@/components/ui/modal/confirmation-modal/Confirma
 import { useEffect, useRef, useState } from "react";
 import AddMemberDialog from "./groupChatPanel/AddMemberDialog";
 import MembersIcon from "@/components/icons/Members";
-import { useParams } from "react-router-dom";
 import { useChatDetailsQuery } from "@/redux/reducers/apis/api";
 
-const ChatHeader = () => {
+const ChatHeader = ({ chatId }) => {
     const [isDotsMenu, setIsDotsMenu] = useState(false);
     const [isConfirmLeave, setIsConfirmLeave] = useState(false);
     const [isMemberDialog, setIsMemberDialog] = useState(false);
     const menuRef = useRef(null);
     const buttonRef = useRef(null);
 
-    const { chatId } = useParams();
     const { data: chatDetails, isLoading } = useChatDetailsQuery({ id: chatId, populate: true });
 
     useEffect(() => {

@@ -7,7 +7,7 @@ export const getMessages = async (req, res, next) => {
   const { chatId } = req.params;
   const { page = 1 } = req.query;
 
-  const resultPerPage = 20;
+  const resultPerPage = 10;
   const skip = (page - 1) * resultPerPage;
 
   try {

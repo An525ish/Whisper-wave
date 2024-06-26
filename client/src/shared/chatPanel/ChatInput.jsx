@@ -3,7 +3,8 @@ import EmojiIcon from "@/components/icons/Emoji"
 import MicrophoneIcon from "@/components/icons/Microphone"
 import SendIcon from "@/components/icons/Send"
 
-const ChatInput = ({ className, ...props }) => {
+const ChatInput = ({ className, handleSubmit, ...props }) => {
+
     return (
         <div className="flex items-center">
             <div className="flex gap-1 items-center border border-border rounded-3xl px-2 w-[95%]">
@@ -20,9 +21,12 @@ const ChatInput = ({ className, ...props }) => {
 
             </div>
 
-            <div className="ml-4 w-10 h-10 rounded-full bg-primary grid place-items-center">
+            <button
+                onClick={handleSubmit}
+                className="ml-4 w-10 h-10 rounded-full bg-primary grid place-items-center"
+            >
                 <SendIcon className={'w-5 h-5 hover:fill-white cursor-pointer transition mr-0.5 mt-0.5'} />
-            </div>
+            </button>
         </div>
     )
 }
