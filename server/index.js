@@ -31,6 +31,7 @@ cloudinary.config({
 const app = express();
 const server = createServer(app);
 const io = new Server(server, { cors: corsOption });
+app.set('io', io);
 
 const PORT = process.env.PORT || 3000;
 
@@ -48,7 +49,7 @@ app.use('/api/friend-request', friendRequestRouter);
 // Global Error Handler
 app.use(globalErrorHandler);
 
-const userSocketIds = new Map();
+export const userSocketIds = new Map();
 
 io.use((socket, next) => {
   cookieParser()(
@@ -85,7 +86,7 @@ io.on('connection', (socket) => {
       sender: user._id,
     };
 
-    const memberSocket = getSockets(userSocketIds, members);
+    const memberSocket = getSockets(members);
     console.log(memberSocket);
     io.to(memberSocket).emit(NEW_MESSAGE, {
       chatId,

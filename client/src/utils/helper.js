@@ -1,3 +1,5 @@
+import toast from 'react-hot-toast';
+
 export const getFirstName = (fullName) => {
   if (!fullName) return '';
 
@@ -21,4 +23,40 @@ export const getFirstName = (fullName) => {
   }
 
   return nameParts[0];
+};
+
+export const validateFiles = (
+  files,
+  individualLimit = 0,
+  cumulativeLimit = 0
+) => {
+  const fileType = files[0].type.split('/')[0];
+
+  if (files.length > 5) {
+    toast.error(`You can only upload up to 5 ${fileType}`);
+    return false;
+  }
+
+  let totalSize = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    totalSize += file.size;
+
+    if (individualLimit > 0 && file.size > individualLimit) {
+      toast.error(
+        `${fileType} size cannot exceed ${individualLimit / 1024 / 1024} MB`
+      );
+      return false;
+    }
+  }
+
+  if (cumulativeLimit > 0 && totalSize > cumulativeLimit) {
+    toast.error(
+      `${fileType} file size cannot exceed ${cumulativeLimit / 1024 / 1024} MB`
+    );
+    return false;
+  }
+
+  return true;
 };

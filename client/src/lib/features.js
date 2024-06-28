@@ -26,6 +26,8 @@ export const fileFormat = (url = '') => {
     ogg: 'audio',
     doc: 'doc',
     docx: 'doc',
+    xls: 'xls',
+    xlsx: 'xls',
     pdf: 'pdf',
     txt: 'text',
     // Add more mappings as needed
@@ -86,5 +88,6 @@ export const fileData = [
 ];
 
 export const transformImage = (url = '', width = 100) => {
-  return url;
+  const newUrl = url.replace('upload/', `upload/dpr_auto/w_${width}/`);
+  return newUrl;
 };
