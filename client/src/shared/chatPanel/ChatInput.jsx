@@ -7,12 +7,23 @@ import SendIcon from "@/components/icons/Send";
 import FilePreview from "@/components/attachment-menu/FilePreview";
 import toast from "react-hot-toast";
 import { MAX_FILES } from "@/lib/constants";
+import EmojiMenu from "@/components/emoji-menu/EmojiMenu";
 
 
-const ChatInput = ({ className, attachments, setAttachments, handleSubmit, ...props }) => {
+const ChatInput = ({
+    className,
+    message,
+    setMessage,
+    attachments,
+    setAttachments,
+    handleSubmit,
+    ...props }) => {
+
     const [isAttachmentClicked, setIsAttachmentClicked] = useState(false);
-    // const [selectedFiles, setSelectedFiles] = useState([]);
+    const [isEmojiClicked, setIsEmojiClicked] = useState(false);
+
     const clipIconRef = useRef(null);
+    const emojiIconRef = useRef(null);
 
     const toggleAttachmentMenu = () => {
         setIsAttachmentClicked(prev => !prev);
@@ -56,10 +67,27 @@ const ChatInput = ({ className, attachments, setAttachments, handleSubmit, ...pr
                         clipIconRef={clipIconRef}
                     />
                 )}
+                {isEmojiClicked && <div className="absolute bottom-12">
+                    <EmojiMenu
+                        width={350}
+                        height={350}
+                        onClose={() => setIsEmojiClicked(false)}
+                        emojiIconRef={emojiIconRef}
+                        setMessage={setMessage}
+                    />
+                </div>}
                 <div className="flex gap-1 items-center border border-border rounded-3xl px-2 w-[95%]">
-                    <EmojiIcon className={'w-7 h-7 p-1 hover:fill-white cursor-pointer transition'} />
+                    <span ref={emojiIconRef}>
+                        <EmojiIcon
+                            className={'w-7 h-7 p-1 hover:fill-white cursor-pointer transition'}
+                            onClick={() => setIsEmojiClicked(prev => !prev)}
+                        />
+                    </span>
                     <input
                         type={'text'}
+                        onChange={(e) => setMessage(e.target.value)}
+                        value={message}
+
                         {...props}
                         className={`px-2 py-2 bg-transparent w-full outline-none ${className}`}
                     />
