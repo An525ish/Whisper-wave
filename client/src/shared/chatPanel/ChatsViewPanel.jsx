@@ -158,10 +158,10 @@ const ChatsViewPanel = ({ chatId }) => {
             </div>
 
             <ChatInput
-                value={message}
+                message={message}
+                setMessage={setMessage}
                 disabled={isLoading}
                 autoFocus={true} // won't work bcoz of isLoading
-                onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={handleEnterPress}
                 handleSubmit={handleSubmit}
                 attachments={attachments}
