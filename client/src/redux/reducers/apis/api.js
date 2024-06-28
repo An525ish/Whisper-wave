@@ -73,6 +73,14 @@ const api = createApi({
       }),
       invalidatesTags: ['chats', 'users', 'notifications'],
     }),
+    sendAttachments: builder.mutation({
+      query: (body) => ({
+        url: `/message/send-attachments`,
+        method: 'POST',
+        credentials: 'include',
+        body: body,
+      }),
+    }),
   }),
 });
 
@@ -85,6 +93,7 @@ export const {
   useSendFriendRequestMutation,
   useGetMyNotificationsQuery,
   useHandleFriendRequestMutation,
+  useSendAttachmentsMutation,
 } = api;
 
 export default api;

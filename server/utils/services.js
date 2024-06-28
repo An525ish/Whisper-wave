@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { v2 as cloudinary } from 'cloudinary';
 import { getBase64 } from './helper.js';
 import { v4 as uuid } from 'uuid';
+import { userSocketIds } from '../index.js';
 
 export const generateToken = (id) => {
   const accessToken = jwt.sign({ id }, process.env.ACCESS_TOKEN_SECRET, {
@@ -10,7 +11,7 @@ export const generateToken = (id) => {
   return accessToken;
 };
 
-export const getSockets = (userSocketIds, members) => {
+export const getSockets = (members) => {
   const memberSocketIds = [];
 
   members.forEach((memberId) => {
@@ -21,6 +22,12 @@ export const getSockets = (userSocketIds, members) => {
   });
 
   return memberSocketIds;
+};
+
+export const emitEvent = (req, event, members, data) => {
+  const io = req.app.get('io');
+  const memberSocketIds = getSockets(userSocketIds, members);
+  io.to(memberSocketIds).emit(event, data);
 };
 
 export const uploadToCloudinary = async (files = []) => {
@@ -44,7 +51,7 @@ export const uploadToCloudinary = async (files = []) => {
     const results = await Promise.all(uploadPromises);
 
     const formattedResults = results.map((result) => ({
-      public_id: result.public_id,
+      publicId: result.public_id,
       url: result.secure_url,
     }));
 
