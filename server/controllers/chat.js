@@ -96,7 +96,7 @@ export const getMyChats = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      chats: customizedChats,
+      data: customizedChats,
       totalPages: Math.ceil(totalChats / resultPerPage) || 0,
     });
   } catch (error) {
@@ -135,7 +135,7 @@ export const findChats = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      chats: customizedChats,
+      data: customizedChats,
     });
   } catch (error) {
     next(error);

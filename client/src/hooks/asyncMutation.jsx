@@ -8,11 +8,12 @@ const useAsyncMutation = (mutationHook) => {
     const execMutation = async (toastMessage, ...args) => {
         const toastId = isLoading && toastMessage && toast.loading(toastMessage || 'Updating data...')
         try {
-            const res = await mutate(...args).unwrap() // Use .unwrap() to handle the promise
+            const res = await mutate(...args)
+
             if (res.data) {
-                setData(res.data)
-                toastMessage && toast.success(res.message || 'Updated data successfully', { id: toastId })
-                return res.data // Return the data
+                setData(res?.data?.data)
+                toastMessage && toast.success(res?.data?.message || 'Updated data successfully', { id: toastId })
+                return res?.data?.data
             } else {
                 toast.error(res?.error?.data?.message || 'Something went wrong', { id: toastId })
                 return null

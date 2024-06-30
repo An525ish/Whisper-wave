@@ -22,7 +22,7 @@ const tabsData = Object.freeze({
 });
 
 const ChatTabView = ({ searchText }) => {
-    const { data, isLoading } = useMyChatsQuery();
+    const { data: chats, isLoading } = useMyChatsQuery();
     const { messageNotifications } = useSelector(state => state.chat)
 
     const handleDeleteChat = (e, _id, groupChat) => {
@@ -37,9 +37,9 @@ const ChatTabView = ({ searchText }) => {
         );
     };
 
-    const personalChats = filteredChats(data?.chats?.filter((chat) => !chat.groupChat));
-    const groupChats = filteredChats(data?.chats?.filter((chat) => chat.groupChat));
-    const allChats = filteredChats(data?.chats);
+    const personalChats = filteredChats(chats?.data?.filter((chat) => !chat.groupChat));
+    const groupChats = filteredChats(chats?.data?.filter((chat) => chat.groupChat));
+    const allChats = filteredChats(chats?.data);
 
     return (
         <>
