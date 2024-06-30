@@ -104,6 +104,44 @@ export const getMyChats = async (req, res, next) => {
   }
 };
 
+export const findChats = async (req, res, next) => {
+  const userId = req.userId;
+  const { userIds, notifications } = req.body;
+  if (!userIds || userIds.length === 0)
+    return next(errorHandler(400, 'No userId found'));
+
+  try {
+    const chats = await Chat.find({
+      _id: { $in: userIds },
+      members: userId,
+    }).populate('members', 'name avatar');
+
+    const notificationMap = new Map(
+      notifications.map((n) => [n.chatId, n.count])
+    );
+
+    const customizedChats = chats.map(({ _id, name, members, groupChat }) => {
+      const otherMembers = members.filter(
+        (member) => member._id.toString() !== userId.toString()
+      );
+      return {
+        _id,
+        groupChat,
+        name: groupChat ? name : otherMembers[0]?.name || 'Unknown',
+        avatar: groupChat ? null : [otherMembers[0]?.avatar?.url || ''],
+        notificationCount: notificationMap.get(_id.toString()) || 0,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      chats: customizedChats,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getChatDetails = async (req, res, next) => {
   const userId = req.userId;
 

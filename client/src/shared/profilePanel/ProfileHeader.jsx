@@ -15,6 +15,8 @@ const ProfileHeader = () => {
     const notificationRef = useRef(null);
     const iconRef = useRef(null);
 
+    const { totalNotificationCount } = useSelector(state => state.chat)
+
     const dispatch = useDispatch()
     const { user } = useSelector(state => state.auth)
     const { name, avatar } = user;
@@ -31,7 +33,9 @@ const ProfileHeader = () => {
         }
     };
 
-    const handleNotificationToggle = () => setIsNotification(prev => !prev);
+    const handleNotificationToggle = () => {
+        setIsNotification(prev => !prev)
+    };
 
     const handleClickOutside = (e) => {
         if (
@@ -62,7 +66,7 @@ const ProfileHeader = () => {
                     onClick={handleNotificationToggle}
                 >
                     <NotificationIcon className={`hover:stroke-body ${isNotification && 'stroke-body'}`} />
-                    {true && <div className="absolute -right-1 -top-1 w-3 h-3 rounded-full border-2 border-red-dark bg-red animate-pulse"></div>}
+                    {totalNotificationCount > 0 && <div className="absolute -right-1 -top-1 w-3 h-3 rounded-full border-2 border-red-dark bg-red animate-pulse"></div>}
                 </div>
 
                 <div className="flex relative items-center">

@@ -1,6 +1,8 @@
 import { Request } from '../models/request.js';
 import { Chat } from '../models/chat.js';
 import { errorHandler } from '../utils/errorHandler.js';
+import { NEW_REQUEST } from '../constants/socket-events.js';
+import { emitEvent } from '../utils/services.js';
 
 export const sendRequest = async (req, res, next) => {
   const { receiverId } = req.body;
@@ -23,6 +25,8 @@ export const sendRequest = async (req, res, next) => {
       sender: req.userId,
       receiver: receiverId,
     });
+
+    emitEvent(req, NEW_REQUEST, [receiverId]);
 
     res.status(200).json({
       success: true,
@@ -56,7 +60,7 @@ export const handleRequest = async (req, res, next) => {
 
     if (!accept) {
       await request.deleteOne();
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Request rejected successfullly',
       });

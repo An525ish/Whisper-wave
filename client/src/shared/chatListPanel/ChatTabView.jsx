@@ -1,6 +1,10 @@
 import ChatList from '@/shared/chatListPanel/ChatList';
 import TabView from '@/components/ui/swipable-tabs/TabView';
 import { useMyChatsQuery } from '@/redux/reducers/apis/api';
+import { useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { localStorageHandler } from '@/utils/helper';
+import { NEW_MESSAGE_ALERT } from '@/lib/socketConstants';
 
 const tabsData = Object.freeze({
     0: {
@@ -19,6 +23,7 @@ const tabsData = Object.freeze({
 
 const ChatTabView = ({ searchText }) => {
     const { data, isLoading } = useMyChatsQuery();
+    const { messageNotifications } = useSelector(state => state.chat)
 
     const handleDeleteChat = (e, _id, groupChat) => {
         e.preventDefault();
@@ -51,6 +56,7 @@ const ChatTabView = ({ searchText }) => {
                                         : allChats
                             }
                             handleDeleteChat={handleDeleteChat}
+                            newMessageAlert={messageNotifications}
                         />
                     ))
                 }

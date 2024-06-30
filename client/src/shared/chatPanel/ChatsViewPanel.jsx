@@ -1,17 +1,19 @@
+import useErrors from "@/hooks/error"
+import { useSocket } from "@/hooks/socketContext"
+import useSocketEvent from "@/hooks/socketEvent"
+import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "@/lib/socketConstants"
 import { useChatDetailsQuery, useGetMessagesQuery, useSendAttachmentsMutation } from "@/redux/reducers/apis/api"
+import { useCallback, useEffect, useRef, useState } from "react"
 import ChatBox from "./ChatBox"
 import ChatInput from "./ChatInput"
-import { useState, useEffect, useCallback, useRef } from "react"
-import { useSocket } from "@/hooks/socketContext"
-import useErrors from "@/hooks/error"
-import { NEW_MESSAGE } from "@/lib/socketConstants"
-import useSocketEvent from "@/hooks/socketEvent"
 // import { useInfiniteScrollTop } from "@/hooks/infiniteScroll"
 import useAsyncMutation from "@/hooks/asyncMutation"
-import { useSelector } from "react-redux"
+import { removeMessageNotification } from "@/redux/reducers/chat"
+import { useDispatch, useSelector } from "react-redux"
 
 const ChatsViewPanel = ({ chatId }) => {
     const socket = useSocket()
+    const dispatch = useDispatch()
     const containerRef = useRef()
     const [page, setPage] = useState(1)
 
@@ -34,7 +36,7 @@ const ChatsViewPanel = ({ chatId }) => {
 
     useErrors([{ error, isError }, { dbError, dbIsError }])
 
-    const [sendAttachments, { data: result }] = useAsyncMutation(useSendAttachmentsMutation);
+    const [sendAttachments] = useAsyncMutation(useSendAttachmentsMutation);
 
     // const { data: updatedDbMessages } = useInfiniteScrollTop(
     //     containerRef,
@@ -56,8 +58,7 @@ const ChatsViewPanel = ({ chatId }) => {
         e.key === 'Enter' && handleSubmit()
     }
 
-    const [isUploading, setIsUploading] = useState(false);
-    console.log(messages)
+    // console.log(messages)
 
     const handleSubmit = async () => {
         if (!message.trim() && (!attachments || attachments.length === 0)) return;
@@ -70,7 +71,6 @@ const ChatsViewPanel = ({ chatId }) => {
             });
             setMessage('');
         } else {
-            setIsUploading(true);
             const tempId = Date.now();
             const tempMessage = {
                 _id: tempId,
@@ -124,20 +124,36 @@ const ChatsViewPanel = ({ chatId }) => {
                 setMessages(prev => prev.map(msg =>
                     msg._id === tempId ? { ...msg, isUploading: false, error: true } : msg
                 ));
-            } finally {
-                setIsUploading(false);
             }
         }
     };
 
     const newMessageHandler = useCallback((res) => {
-        console.log("New message received:", res);
-        setMessages((prev) => [...prev, res.message])
-    }, []);
+        if (res.chatId === chatId) {
+            setMessages((prev) => [...prev, res.message])
+        }
+    }, [chatId]);
 
-    const events = { [NEW_MESSAGE]: newMessageHandler }
+    const newMessageAlertHandler = useCallback(() => { }, [])
+
+    const events = {
+        [NEW_MESSAGE]: newMessageHandler,
+        [NEW_MESSAGE_ALERT]: newMessageAlertHandler,
+    }
 
     useSocketEvent(socket, events)
+
+    useEffect(() => {
+        dispatch(removeMessageNotification({ chatId }))
+
+        return () => {
+            setMessage('')
+            setMessages([])
+            setAttachments([])
+            setPage(1)
+        }
+    }, [chatId, dispatch])
+
 
     return (
         <>

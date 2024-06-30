@@ -5,10 +5,7 @@ const ChatList = ({
     type,
     isLoading,
     onlineUsers = [],
-    newMessagesAlert = [{
-        chatId: 'chatId',
-        count: 4,
-    }],
+    newMessageAlert,
     handleDeleteChat,
 }) => {
     console.log('first')
@@ -20,7 +17,7 @@ const ChatList = ({
                 {chats.length !== 0 ? chats.map((data) => {
                     const { avatar, name, _id, groupChat, members } = data
 
-                    const newMessageAlert = newMessagesAlert.find(({ chatId }) => chatId === _id)
+                    const messageAlert = newMessageAlert.find(({ chatId }) => chatId === _id)
 
                     const isOnline = members?.some(() => onlineUsers.includes(_id))
 
@@ -31,7 +28,7 @@ const ChatList = ({
                             name={name}
                             groupChat={groupChat}
                             isOnline={isOnline}
-                            newMessageAlert={newMessageAlert}
+                            messageAlert={messageAlert}
                             id={_id}
                             handleDeleteChat={handleDeleteChat}
                         />

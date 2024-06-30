@@ -24,16 +24,16 @@ const ChatListItem = ({
     groupChat = false,
     isOnline,
     newMessage,
-    index = 0,
-    newMessageAlert,
-    handleDeleteChat
+    messageAlert
 }) => {
-    console.log(newMessageAlert)
 
     const { menuState, showContextMenu, hideContextMenu } = useContextMenu();
     const dialogRef = useRef()
 
     const { chatId } = useParams()
+
+    console.log(messageAlert)
+
 
     const handleContextMenu = (e, memberId, groupChat) => {
         e.preventDefault();
@@ -53,7 +53,17 @@ const ChatListItem = ({
                         <p className={`font-medium ${groupChat ? 'w-36' : 'w-52'} truncate`}>{name}</p>
                         {isOnline ? <div className="w-3 h-3 rounded-full bg-green animate-pulse"></div> : <p className="text-xs text-body-300">2 hours ago</p>}
                     </div>
-                    <p className={`text-sm text-body-700`}>{newMessageAlert ? `${newMessageAlert?.count} New Message` : `Last Message`}</p>
+                    <div className={`flex justify-between text-sm text-body-700`}>
+                        <p>{`Last Message`}</p>
+                        {(messageAlert && messageAlert.count > 0) &&
+                            <div className="bg-red-dark border border-red-light text-red font-normal text-sm rounded-full w-5 h-5 text-center grid place-items-center mt-1 mr-4">
+                                {messageAlert?.count > 9 ?
+                                    <span className="text-xs">9+</span> :
+                                    <span>{messageAlert?.count} </span>
+                                }
+                            </div>
+                        }
+                    </div>
                 </div>
 
                 <ContextMenu menuState={menuState} hideContextMenu={hideContextMenu} />
