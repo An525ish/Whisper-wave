@@ -4,15 +4,19 @@ import ThreeDotsIcon from "@/components/icons/ThreeDots";
 import VideoCallIcon from "@/components/icons/VideoCall";
 import AvatarCard from "@/components/ui/AvatarCard";
 import ConfirmationModal from "@/components/ui/modal/confirmation-modal/ConfirmationModal";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AddMemberDialog from "./groupChatPanel/AddMemberDialog";
 import MembersIcon from "@/components/icons/Members";
 import { useChatDetailsQuery } from "@/redux/reducers/apis/api";
+import { START_TYPING, STOP_TYPING } from "@/lib/socketConstants";
+import useSocketEvent from "@/hooks/socketEvent";
+import { useSocket } from "@/hooks/socketContext";
 
 const ChatHeader = ({ chatId }) => {
     const [isDotsMenu, setIsDotsMenu] = useState(false);
     const [isConfirmLeave, setIsConfirmLeave] = useState(false);
     const [isMemberDialog, setIsMemberDialog] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
     const menuRef = useRef(null);
     const buttonRef = useRef(null);
 
@@ -30,6 +34,26 @@ const ChatHeader = ({ chatId }) => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+
+    const socket = useSocket()
+
+    const startTypingListener = useCallback((res) => {
+        if (res.chatId !== chatId) return
+        setIsTyping(true)
+    }, [chatId])
+
+    const stopTypingListener = useCallback((res) => {
+        if (res.chatId !== chatId) return
+        setIsTyping(false)
+    }, [chatId])
+
+    const events = {
+        [START_TYPING]: startTypingListener,
+        [STOP_TYPING]: stopTypingListener
+    }
+
+    useSocketEvent(socket, events)
 
     if (isLoading) return <>Loading...</>;
 
@@ -61,7 +85,7 @@ const ChatHeader = ({ chatId }) => {
                             <AvatarCard avatars={[avatar]} />
                             <div>
                                 <p className="font-medium">{name}</p>
-                                <p className="text-sm text-body-700">Online</p>
+                                <p className="text-sm text-body-700">{isTyping ? 'Typing...' : 'Online'}</p>
                             </div>
                         </div>
 

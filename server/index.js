@@ -10,7 +10,12 @@ import { messageRouter } from './routes/message.js';
 import { friendRequestRouter } from './routes/request.js';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
-import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from './constants/socket-events.js';
+import {
+  NEW_MESSAGE,
+  NEW_MESSAGE_ALERT,
+  START_TYPING,
+  STOP_TYPING,
+} from './constants/socket-events.js';
 import { v4 as uuid } from 'uuid';
 import { getSockets } from './utils/services.js';
 import { Message } from './models/message.js';
@@ -67,7 +72,6 @@ io.on('connection', (socket) => {
   console.log(userSocketIds);
 
   socket.on(NEW_MESSAGE, async ({ message, members, chatId }) => {
-    console.log(message, members, chatId);
     const realTimeMsg = {
       content: message,
       _id: uuid(),
@@ -87,15 +91,12 @@ io.on('connection', (socket) => {
     };
 
     const memberSocketIds = getSockets(members);
-    console.log(memberSocketIds);
+
     io.to(memberSocketIds).emit(NEW_MESSAGE, {
       chatId,
       message: realTimeMsg,
     });
 
-    // const alertRecipients = memberSocketIds.filter(
-    //   (socketId) => socketId !== socket.id
-    // );
     socket.broadcast.to(memberSocketIds).emit(NEW_MESSAGE_ALERT, { chatId });
 
     try {
@@ -103,6 +104,20 @@ io.on('connection', (socket) => {
     } catch (error) {
       console.log(error);
     }
+  });
+
+  socket.on(START_TYPING, ({ members, chatId }) => {
+    console.log(members, chatId);
+    const memberSocketIds = getSockets(members);
+    console.log('start typing', memberSocketIds);
+    socket.broadcast.to(memberSocketIds).emit(START_TYPING, { chatId });
+  });
+
+  socket.on(STOP_TYPING, ({ members, chatId }) => {
+    console.log(members, chatId);
+    const memberSocketIds = getSockets(members);
+    console.log('stop typing', memberSocketIds);
+    socket.broadcast.to(memberSocketIds).emit(STOP_TYPING, { chatId });
   });
 
   socket.on('disconnect', () => {
