@@ -1,7 +1,7 @@
 import useErrors from "@/hooks/error"
 import { useSocket } from "@/hooks/socketContext"
 import useSocketEvent from "@/hooks/socketEvent"
-import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from "@/lib/socketConstants"
+import { NEW_MESSAGE, START_TYPING, STOP_TYPING } from "@/lib/socketConstants"
 import { useChatDetailsQuery, useGetMessagesQuery, useSendAttachmentsMutation } from "@/redux/reducers/apis/api"
 import { useCallback, useEffect, useRef, useState } from "react"
 import ChatBox from "./ChatBox"
@@ -15,6 +15,7 @@ const ChatsViewPanel = ({ chatId }) => {
     const socket = useSocket()
     const dispatch = useDispatch()
     const containerRef = useRef()
+    const timeoutRef = useRef()
     const [page, setPage] = useState(1)
 
     const { user } = useSelector(state => state.auth)
@@ -24,6 +25,7 @@ const ChatsViewPanel = ({ chatId }) => {
     const [message, setMessage] = useState('')
     const [messages, setMessages] = useState([])
     const [attachments, setAttachments] = useState([])
+    const [isTyping, setIsTyping] = useState(false)
 
     const { data: chatDetails, isLoading, error, isError } = useChatDetailsQuery(
         { id: chatId },
@@ -64,7 +66,7 @@ const ChatsViewPanel = ({ chatId }) => {
         if (!message.trim() && (!attachments || attachments.length === 0)) return;
 
         if (!attachments || attachments.length === 0) {
-            socket.emit('NEW_MESSAGE', {
+            socket.emit(NEW_MESSAGE, {
                 message,
                 chatId,
                 members: chatMembers,
@@ -128,17 +130,31 @@ const ChatsViewPanel = ({ chatId }) => {
         }
     };
 
-    const newMessageHandler = useCallback((res) => {
+    const newMessageListener = useCallback((res) => {
         if (res.chatId === chatId) {
             setMessages((prev) => [...prev, res.message])
         }
     }, [chatId]);
 
-    const newMessageAlertHandler = useCallback(() => { }, [])
+
+    const handleMessageChange = (e) => {
+        setMessage(e.target.value)
+
+        if (!isTyping) {
+            setIsTyping(true)
+            socket.emit(START_TYPING, { members: chatMembers, chatId })
+        }
+
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+
+        timeoutRef.current = setTimeout(() => {
+            setIsTyping(false)
+            socket.emit(STOP_TYPING, { members: chatMembers, chatId })
+        }, 1000);
+    }
 
     const events = {
-        [NEW_MESSAGE]: newMessageHandler,
-        [NEW_MESSAGE_ALERT]: newMessageAlertHandler,
+        [NEW_MESSAGE]: newMessageListener
     }
 
     useSocketEvent(socket, events)
@@ -172,7 +188,6 @@ const ChatsViewPanel = ({ chatId }) => {
                     )}
                 </div>
             </div>
-
             <ChatInput
                 message={message}
                 setMessage={setMessage}
@@ -180,6 +195,7 @@ const ChatsViewPanel = ({ chatId }) => {
                 autoFocus={true} // won't work bcoz of isLoading
                 onKeyDown={handleEnterPress}
                 handleSubmit={handleSubmit}
+                onChange={handleMessageChange}
                 attachments={attachments}
                 setAttachments={setAttachments}
                 className={'text-body-700 placeholder:text-body-300'}

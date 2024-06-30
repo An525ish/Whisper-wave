@@ -1,10 +1,7 @@
-import ChatList from '@/shared/chatListPanel/ChatList';
 import TabView from '@/components/ui/swipable-tabs/TabView';
 import { useMyChatsQuery } from '@/redux/reducers/apis/api';
+import ChatList from '@/shared/chatListPanel/ChatList';
 import { useSelector } from 'react-redux';
-import { useEffect } from 'react';
-import { localStorageHandler } from '@/utils/helper';
-import { NEW_MESSAGE_ALERT } from '@/lib/socketConstants';
 
 const tabsData = Object.freeze({
     0: {

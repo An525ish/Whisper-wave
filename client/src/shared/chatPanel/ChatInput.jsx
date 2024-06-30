@@ -1,13 +1,25 @@
-import { useState, useCallback, useRef } from "react";
 import AttachmentMenu from "@/components/attachment-menu/AttachmentMenu";
+import FilePreview from "@/components/attachment-menu/FilePreview";
+import EmojiMenu from "@/components/emoji-menu/EmojiMenu";
 import ClipIcon from "@/components/icons/Clip";
 import EmojiIcon from "@/components/icons/Emoji";
 import MicrophoneIcon from "@/components/icons/Microphone";
 import SendIcon from "@/components/icons/Send";
-import FilePreview from "@/components/attachment-menu/FilePreview";
-import toast from "react-hot-toast";
 import { MAX_FILES } from "@/lib/constants";
-import EmojiMenu from "@/components/emoji-menu/EmojiMenu";
+import { useCallback, useRef, useState } from "react";
+import toast from "react-hot-toast";
+
+const renderFilePreviews = (attachments, handleRemoveFile) => (
+    <div className="absolute bottom-10 p-1 bg-background-alt rounded-lg flex flex-wrap mb-2">
+        {attachments.map((file, index) => (
+            <FilePreview
+                key={index}
+                file={file}
+                onRemove={handleRemoveFile}
+            />
+        ))}
+    </div>
+);
 
 
 const ChatInput = ({
@@ -44,21 +56,10 @@ const ChatInput = ({
         setAttachments(prev => prev.filter(file => file !== fileToRemove));
     }, []);
 
-    const renderFilePreviews = () => (
-        <div className="absolute bottom-10 p-1 bg-background-alt rounded-lg flex flex-wrap mb-2">
-            {attachments.map((file, index) => (
-                <FilePreview
-                    key={index}
-                    file={file}
-                    onRemove={handleRemoveFile}
-                />
-            ))}
-        </div>
-    );
 
     return (
         <div className="relative">
-            {attachments.length > 0 && renderFilePreviews()}
+            {attachments.length > 0 && renderFilePreviews(attachments, handleRemoveFile)}
             <div className="relative flex items-center">
                 {isAttachmentClicked && (
                     <AttachmentMenu
@@ -85,7 +86,6 @@ const ChatInput = ({
                     </span>
                     <input
                         type={'text'}
-                        onChange={(e) => setMessage(e.target.value)}
                         value={message}
 
                         {...props}
