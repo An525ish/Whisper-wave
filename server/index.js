@@ -86,14 +86,17 @@ io.on('connection', (socket) => {
       sender: user._id,
     };
 
-    const memberSocket = getSockets(members);
-    console.log(memberSocket);
-    io.to(memberSocket).emit(NEW_MESSAGE, {
+    const memberSocketIds = getSockets(members);
+    console.log(memberSocketIds);
+    io.to(memberSocketIds).emit(NEW_MESSAGE, {
       chatId,
       message: realTimeMsg,
     });
 
-    io.to(memberSocket).emit(NEW_MESSAGE_ALERT, { chatId });
+    // const alertRecipients = memberSocketIds.filter(
+    //   (socketId) => socketId !== socket.id
+    // );
+    socket.broadcast.to(memberSocketIds).emit(NEW_MESSAGE_ALERT, { chatId });
 
     try {
       await Message.create(msgForDb);

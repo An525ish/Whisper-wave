@@ -60,3 +60,13 @@ export const validateFiles = (
 
   return true;
 };
+
+export const localStorageHandler = ({ key, value, get }) => {
+  if (get) {
+    return localStorage.getItem(key)
+      ? JSON.parse(localStorage.getItem(key))
+      : null;
+  } else {
+    return localStorage.setItem(key, JSON.stringify(value));
+  }
+};

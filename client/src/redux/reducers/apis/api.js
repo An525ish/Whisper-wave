@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: `${BASE_URL}/api` }),
-  tagTypes: ['chat', 'chatDetails', 'users', 'messages'],
+  tagTypes: ['chat', 'chatDetails', 'users', 'messages', 'tempUsers'],
 
   endpoints: (builder) => ({
     myChats: builder.query({
@@ -37,7 +37,7 @@ const api = createApi({
         credentials: 'include',
         params: { page },
       }),
-      providesTags: ['messages'],
+      keepUnusedDataFor: 0,
     }),
     searchUser: builder.query({
       query: ({ name }) => ({
@@ -81,6 +81,15 @@ const api = createApi({
         body: body,
       }),
     }),
+    findChats: builder.mutation({
+      query: (body) => ({
+        url: '/chat/find-users',
+        method: 'POST',
+        credentials: 'include',
+        body: body,
+      }),
+      providesTags: ['tempUsers'],
+    }),
   }),
 });
 
@@ -94,6 +103,7 @@ export const {
   useGetMyNotificationsQuery,
   useHandleFriendRequestMutation,
   useSendAttachmentsMutation,
+  useFindChatsMutation,
 } = api;
 
 export default api;

@@ -3,6 +3,7 @@ import {
   addMembers,
   createGroupChat,
   deleteGroup,
+  findChats,
   getChatDetails,
   getMyChats,
   leaveGroup,
@@ -19,6 +20,7 @@ chatRouter
   .get('/get-my-chats', getMyChats)
   .get('/get-chat-details', getChatDetails)
   .post('/create-group', createGroupChat)
+  .post('/find-users', findChats)
   .put('/update-group-details/:chatId', updateGroupDetails) // TODO - avatar, bio update
   .put('/add-members/:chatId', addMembers)
   .put('/remove-members/:chatId', removeMember)

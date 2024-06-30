@@ -1,27 +1,41 @@
 import AvatarCard from "@/components/ui/AvatarCard"
 import useErrors from "@/hooks/error"
 import { useHandleFriendRequestMutation } from "@/redux/reducers/apis/api"
+import dayjs from "dayjs"
+import { useEffect } from "react"
 import { useState } from "react"
 import toast from "react-hot-toast"
 import { Link } from "react-router-dom"
+import relativeTime from 'dayjs/plugin/relativeTime'
+
+dayjs.extend(relativeTime)
 
 export const NotificationItem = ({ notification }) => {
-    const { _id, sender, newMessageAlert } = notification
-    const { name, avatar } = sender
-    const handleDeleteNotification = (e, id) => {
-        console.log(id)
-    }
+    const { id, name, avatar, count, timestamp } = notification
+    const [timeAgo, setTimeAgo] = useState('')
+
+    useEffect(() => {
+        const updateTimeAgo = () => {
+            setTimeAgo(dayjs(timestamp).fromNow())
+        }
+
+        updateTimeAgo()
+        const timer = setInterval(updateTimeAgo, 60000) // Update every minute
+
+        return () => clearInterval(timer)
+    }, [timestamp])
+
     return (
-        <Link to={`/chat/${_id}`} onContextMenu={(e) => handleDeleteNotification(e, _id)}>
+        <Link to={`/chat/${id}`}>
             < div className={`flex gap-2 items-center p-4 gradient-border cursor-pointer rounded-lg hover:bg-gradient-line-fade-dark`}>
-                <AvatarCard avatars={avatar} />
+                <AvatarCard avatars={[avatar]} />
 
                 <div className="flex-[1]">
                     <div className="flex justify-between items-center">
                         <p className="font-medium">{name}</p>
-                        <p className="text-xs text-body-300">2 hours ago</p>
+                        <p className="text-xs text-body-300">{timeAgo}</p>
                     </div>
-                    {newMessageAlert && <p className={`text-sm text-body-700`}>{newMessageAlert.count} New Message</p>}
+                    {<p className={`text-sm text-body-700`}>{count} New Message</p>}
                 </div>
             </div>
         </Link >
@@ -29,7 +43,7 @@ export const NotificationItem = ({ notification }) => {
 }
 
 export const FriendRequestNotifyItem = ({ notification }) => {
-    const { _id, sender, createdAt, newMessageAlert } = notification;
+    const { _id, sender, createdAt } = notification;
     const { name, avatar } = sender;
 
     const [clickedButton, setClickedButton] = useState(null);

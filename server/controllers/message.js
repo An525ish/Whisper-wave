@@ -1,4 +1,4 @@
-import { NEW_MESSAGE } from '../constants/socket-events.js';
+import { NEW_MESSAGE, NEW_MESSAGE_ALERT } from '../constants/socket-events.js';
 import { Chat } from '../models/chat.js';
 import { Message } from '../models/message.js';
 import { User } from '../models/user.js';
@@ -27,14 +27,16 @@ export const getMessages = async (req, res, next) => {
 
     if (!chat || !messages) return next(errorHandler(400, 'No chat found'));
 
-    const customMessages = messages.map(({ sender, chat, ...rest }) => ({
-      ...rest,
-      chat: chat._id,
-      sender: {
-        ...sender,
-        avatar: sender.avatar.url,
-      },
-    }));
+    const customMessages = messages
+      .reverse()
+      .map(({ sender, chat, ...rest }) => ({
+        ...rest,
+        chat: chat._id,
+        sender: {
+          ...sender,
+          avatar: sender.avatar.url,
+        },
+      }));
 
     res.status(200).json({
       success: true,
@@ -94,6 +96,8 @@ export const sendAttachments = async (req, res, next) => {
       //   message: messageForRealTime,
       //   chatId,
       // });
+
+      emitEvent(req, NEW_MESSAGE_ALERT, chat.members, { chatId });
 
       // Send a success response to the client
       res.status(200).json({

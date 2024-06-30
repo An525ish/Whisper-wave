@@ -26,7 +26,7 @@ export const getSockets = (members) => {
 
 export const emitEvent = (req, event, members, data) => {
   const io = req.app.get('io');
-  const memberSocketIds = getSockets(userSocketIds, members);
+  const memberSocketIds = getSockets(members);
   io.to(memberSocketIds).emit(event, data);
 };
 

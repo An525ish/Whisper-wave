@@ -43,8 +43,8 @@ const ChatBox = ({ chatData, isGroupChat }) => {
             }
 
             {(attachments.length === 0 || content) &&
-                (<div className={`max-w-[70%] w-fit border-2 border-green-light pl-2 py-2 pr-4 rounded-b-xl
-         ${sameSender ? 'rounded-s-[2rem] self-end pl-4' : 'rounded-e-[2rem] self-start'} shadow-lg flex gap-3 items-center`}>
+                (<div className={`max-w-[70%] w-fit border-2 border-green-light py-2 pr-4 rounded-b-xl
+         ${sameSender ? 'rounded-s-[2rem] self-end pl-4' : 'rounded-e-[2rem] pl-3 self-start'} shadow-lg flex gap-3 items-center`}>
 
                     <div className={`${isGroupChat ? 'block' : 'hidden'}`}>
                         {isGroupChat && <div className='w-10 h-10 rounded-full overflow-hidden'>
@@ -55,9 +55,9 @@ const ChatBox = ({ chatData, isGroupChat }) => {
                     <div>
                         <p className="Capitalize text-green font-medium tracking-wider">{sender.name}</p>
 
-                        <div className='flex'>
-                            <p className="text-sm text-body-700 w-full">{content}</p>
-                            <p className='text-xs text-body-300 text-right self-end mt-4 w-24'>{currentTime}</p>
+                        <div className='grid grid-cols-[1fr,auto] gap-4'>
+                            <p className="text-sm text-body-700 break-words">{content}</p>
+                            <p className='text-xs text-body-300 mt-4 text-right self-end justify-self-end whitespace-nowrap'>{currentTime}</p>
                         </div>
                     </div>
 
