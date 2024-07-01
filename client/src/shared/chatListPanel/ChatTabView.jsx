@@ -45,6 +45,7 @@ const ChatTabView = ({ searchText }) => {
     const allChats = filteredChats(chats?.data);
 
     const refetchChatListener = useCallback(() => {
+        console.log('first')
         refetch()
     }, [refetch]
     )

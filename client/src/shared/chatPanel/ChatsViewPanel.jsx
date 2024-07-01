@@ -6,15 +6,17 @@ import { useChatDetailsQuery, useGetMessagesQuery, useSendAttachmentsMutation } 
 import { useCallback, useEffect, useRef, useState } from "react"
 import ChatBox from "./ChatBox"
 import ChatInput from "./ChatInput"
-// import { useInfiniteScrollTop } from "@/hooks/infiniteScroll"
+import { useInfiniteScrollTop } from "@/hooks/infiniteScroll"
 import useAsyncMutation from "@/hooks/asyncMutation"
 import { removeMessageNotification } from "@/redux/reducers/chat"
 import { useDispatch, useSelector } from "react-redux"
+
 
 const ChatsViewPanel = ({ chatId }) => {
     const socket = useSocket()
     const dispatch = useDispatch()
     const containerRef = useRef()
+    const lastMessageRef = useRef(null);
     const timeoutRef = useRef()
     const [page, setPage] = useState(1)
 
@@ -34,33 +36,34 @@ const ChatsViewPanel = ({ chatId }) => {
 
     const chatMembers = chatDetails?.data?.members
     const isGroupChat = dbMessages?.groupChat
-    // const totalPages = dbMessages?.totalPages
+    const totalPages = dbMessages?.totalPages
 
     useErrors([{ error, isError }, { dbError, dbIsError }])
 
     const [sendAttachments] = useAsyncMutation(useSendAttachmentsMutation);
 
-    // const { data: updatedDbMessages } = useInfiniteScrollTop(
-    //     containerRef,
-    //     totalPages,
-    //     page,
-    //     setPage,
-    //     dbMessages?.data
-    // )
+    const { data: oldMessages, setData: setOldMessages } = useInfiniteScrollTop(
+        containerRef,
+        totalPages,
+        page,
+        setPage,
+        dbMessages?.data
+    )
 
-    // console.log(updatedDbMessages)
-
-    useEffect(() => {
-        if (dbMessages?.data) {
-            setMessages(dbMessages.data);
-        }
-    }, [dbMessages]);
+    const scrollToBottom = useCallback(() => {
+        lastMessageRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, []);
 
     const handleEnterPress = (e) => {
         e.key === 'Enter' && handleSubmit()
     }
 
     // console.log(messages)
+
+    // Scroll when chat opens or messages change
+    useEffect(() => {
+        scrollToBottom();
+    }, [chatId, messages, scrollToBottom]);
 
     const handleSubmit = async () => {
         if (!message.trim() && (!attachments || attachments.length === 0)) return;
@@ -72,6 +75,7 @@ const ChatsViewPanel = ({ chatId }) => {
                 members: chatMembers,
             });
             setMessage('');
+            scrollToBottom();
         } else {
             const tempId = Date.now();
             const tempMessage = {
@@ -116,6 +120,7 @@ const ChatsViewPanel = ({ chatId }) => {
                     setMessages(prev => prev.map(msg =>
                         msg._id === tempId ? newMessageFromServer : msg
                     ));
+                    scrollToBottom();
                 } else {
                     setMessages(prev => prev.map(msg =>
                         msg._id === tempId ? { ...msg, isUploading: false } : msg
@@ -133,8 +138,9 @@ const ChatsViewPanel = ({ chatId }) => {
     const newMessageListener = useCallback((res) => {
         if (res.chatId === chatId) {
             setMessages((prev) => [...prev, res.message])
+            scrollToBottom();
         }
-    }, [chatId]);
+    }, [chatId, scrollToBottom]);
 
 
     const handleMessageChange = (e) => {
@@ -165,11 +171,13 @@ const ChatsViewPanel = ({ chatId }) => {
         return () => {
             setMessage('')
             setMessages([])
+            setOldMessages([])
             setAttachments([])
             setPage(1)
         }
-    }, [chatId, dispatch])
+    }, [chatId, dispatch, setOldMessages])
 
+    const allMessages = [...oldMessages, ...messages]
 
     return (
         <>
@@ -178,16 +186,22 @@ const ChatsViewPanel = ({ chatId }) => {
                     {msgLoading ? (
                         <div>Fetching messages...</div>
                     ) : (
-                        messages.map((message) => (
-                            <ChatBox
-                                key={message?._id}
-                                chatData={message}
-                                isGroupChat={isGroupChat}
-                            />
-                        ))
+                        allMessages.map((message, index) => {
+                            const sameSender = message.sender._id === user._id
+
+                            return (
+                                <div className={`${sameSender ? 'self-end' : 'self-start'} max-w-[70%] w-fit`} key={message?._id} ref={index === allMessages.length - 1 ? lastMessageRef : null}>
+                                    <ChatBox
+                                        chatData={message}
+                                        isGroupChat={isGroupChat}
+                                    />
+                                </div>
+                            )
+                        })
                     )}
                 </div>
             </div>
+
             <ChatInput
                 message={message}
                 setMessage={setMessage}
