@@ -4,7 +4,14 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 const api = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({ baseUrl: `${BASE_URL}/api` }),
-  tagTypes: ['chat', 'chatDetails', 'users', 'messages', 'tempUsers'],
+  tagTypes: [
+    'chat',
+    'chatDetails',
+    'myFriends',
+    'users',
+    'messages',
+    'tempUsers',
+  ],
 
   endpoints: (builder) => ({
     myChats: builder.query({
@@ -29,7 +36,7 @@ const api = createApi({
         credentials: 'include',
         params: { chatId },
       }),
-      providesTags: ['chatDetails'],
+      providesTags: ['myFriends'],
     }),
     getMessages: builder.query({
       query: ({ chatId, page }) => ({
@@ -90,6 +97,40 @@ const api = createApi({
       }),
       providesTags: ['tempUsers'],
     }),
+    createGroup: builder.mutation({
+      query: ({ name, members }) => ({
+        url: '/chat/create-group',
+        method: 'POST',
+        credentials: 'include',
+        body: { name, members },
+      }),
+    }),
+    addMember: builder.mutation({
+      query: ({ chatId, members }) => ({
+        url: `/chat/add-members/${chatId}`,
+        method: 'PUT',
+        credentials: 'include',
+        body: { members },
+      }),
+      invalidatesTags: ['chatDetails', 'myFriends'],
+    }),
+    removeMember: builder.mutation({
+      query: ({ chatId, memberToBeRemoved }) => ({
+        url: `/chat/remove-member/${chatId}`,
+        method: 'PUT',
+        credentials: 'include',
+        body: { memberToBeRemoved },
+      }),
+      invalidatesTags: ['chatDetails', 'myFriends'],
+    }),
+    leaveGroup: builder.mutation({
+      query: ({ chatId }) => ({
+        url: `/chat/leave-group/${chatId}`,
+        method: 'DELETE',
+        credentials: 'include',
+      }),
+      invalidatesTags: ['chatDetails', 'myFriends'],
+    }),
   }),
 });
 
@@ -104,6 +145,10 @@ export const {
   useHandleFriendRequestMutation,
   useSendAttachmentsMutation,
   useFindChatsMutation,
+  useCreateGroupMutation,
+  useAddMemberMutation,
+  useRemoveMemberMutation,
+  useLeaveGroupMutation,
 } = api;
 
 export default api;

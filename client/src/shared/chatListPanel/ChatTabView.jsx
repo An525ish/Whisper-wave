@@ -1,6 +1,10 @@
 import TabView from '@/components/ui/swipable-tabs/TabView';
+import { useSocket } from '@/hooks/socketContext';
+import useSocketEvent from '@/hooks/socketEvent';
+import { REFETCH_CHATS } from '@/lib/socketConstants';
 import { useMyChatsQuery } from '@/redux/reducers/apis/api';
 import ChatList from '@/shared/chatListPanel/ChatList';
+import { useCallback } from 'react';
 import { useSelector } from 'react-redux';
 
 const tabsData = Object.freeze({
@@ -19,8 +23,10 @@ const tabsData = Object.freeze({
 });
 
 const ChatTabView = ({ searchText }) => {
-    const { data: chats, isLoading } = useMyChatsQuery();
+    const { data: chats, isLoading, refetch } = useMyChatsQuery();
     const { messageNotifications } = useSelector(state => state.chat)
+
+    const socket = useSocket()
 
     const handleDeleteChat = (e, _id, groupChat) => {
         e.preventDefault();
@@ -37,6 +43,17 @@ const ChatTabView = ({ searchText }) => {
     const personalChats = filteredChats(chats?.data?.filter((chat) => !chat.groupChat));
     const groupChats = filteredChats(chats?.data?.filter((chat) => chat.groupChat));
     const allChats = filteredChats(chats?.data);
+
+    const refetchChatListener = useCallback(() => {
+        refetch()
+    }, [refetch]
+    )
+
+    const events = {
+        [REFETCH_CHATS]: refetchChatListener
+    }
+
+    useSocketEvent(socket, events)
 
     return (
         <>

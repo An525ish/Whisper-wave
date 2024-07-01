@@ -1,11 +1,6 @@
 import Modal from "../Modal"
 
-const ConfirmationModal = ({ onClose }) => {
-
-    const handleRequest = ({ accept }) => {
-        console.log(accept)
-        onClose()
-    }
+const ConfirmationModal = ({ onClose, handleConfirmationModal }) => {
 
     return (
         <Modal onClose={onClose}>
@@ -14,13 +9,13 @@ const ConfirmationModal = ({ onClose }) => {
                 <div className="flex gap-4 mt-6">
                     <button
                         className="border-2 border-green-light hover:scale-95 transition text-green rounded-2xl w-full py-1 px-4"
-                        onClick={() => handleRequest({ accept: true })}
+                        onClick={() => handleConfirmationModal({ accept: true })}
                     >
                         Yes
                     </button>
                     <button
                         className="border-2 border-red-light hover:scale-95 transition text-red  rounded-2xl w-full py-1 px-4"
-                        onClick={() => handleRequest({ accept: false })}
+                        onClick={() => handleConfirmationModal({ accept: false })}
                     >
                         No
                     </button>

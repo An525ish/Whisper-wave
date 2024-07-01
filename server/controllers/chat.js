@@ -1,6 +1,8 @@
+import { REFETCH_CHATS } from '../constants/socket-events.js';
 import { Chat } from '../models/chat.js';
 import { Message } from '../models/message.js';
 import { errorHandler } from '../utils/errorHandler.js';
+import { emitEvent } from '../utils/services.js';
 
 export const createGroupChat = async (req, res, next) => {
   const { name, members } = req.body;
@@ -8,7 +10,7 @@ export const createGroupChat = async (req, res, next) => {
 
   if (!name) return next(errorHandler(400, 'Group name is required'));
 
-  if (!members || members.length < 3)
+  if (!members || members.length < 2)
     return next(errorHandler(400, 'At least 3 member are required'));
 
   try {
@@ -19,10 +21,12 @@ export const createGroupChat = async (req, res, next) => {
       members: [...members, userId],
     });
 
+    emitEvent(req, REFETCH_CHATS, [...members, userId]);
+
     res.status(201).json({
       success: true,
       message: 'Group chat created successfully',
-      data: { chat },
+      data: chat,
     });
   } catch (error) {
     next(error);
@@ -184,9 +188,11 @@ export const getChatDetails = async (req, res, next) => {
         ? null
         : [otherMembers[0]?.avatar?.url || ''];
 
-      chat.members = chat.members.map(({ avatar, ...rest }) => ({
+      chat.members = chat.members.map(({ _id, avatar, ...rest }) => ({
         ...rest,
+        _id: _id,
         avatar: avatar.url,
+        isCreator: _id.toString() === chat.creator._id.toString(),
       }));
     }
 

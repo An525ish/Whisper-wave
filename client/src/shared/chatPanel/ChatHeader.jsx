@@ -7,10 +7,11 @@ import ConfirmationModal from "@/components/ui/modal/confirmation-modal/Confirma
 import { useCallback, useEffect, useRef, useState } from "react";
 import AddMemberDialog from "./groupChatPanel/AddMemberDialog";
 import MembersIcon from "@/components/icons/Members";
-import { useChatDetailsQuery } from "@/redux/reducers/apis/api";
+import { useChatDetailsQuery, useLeaveGroupMutation } from "@/redux/reducers/apis/api";
 import { START_TYPING, STOP_TYPING } from "@/lib/socketConstants";
 import useSocketEvent from "@/hooks/socketEvent";
 import { useSocket } from "@/hooks/socketContext";
+import useAsyncMutation from "@/hooks/asyncMutation";
 
 const ChatHeader = ({ chatId }) => {
     const [isDotsMenu, setIsDotsMenu] = useState(false);
@@ -21,6 +22,8 @@ const ChatHeader = ({ chatId }) => {
     const buttonRef = useRef(null);
 
     const { data: chatDetails, isLoading } = useChatDetailsQuery({ id: chatId, populate: true });
+
+    const [leaveGroup, { isLoading: isLeaveGroupLoading }] = useAsyncMutation(useLeaveGroupMutation)
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -64,10 +67,17 @@ const ChatHeader = ({ chatId }) => {
         setIsDotsMenu((prev) => !prev);
     };
 
-    const handleisConfirmLeave = () => {
+    const handleisConfirmLeave = async () => {
         setIsDotsMenu(false);
         setIsConfirmLeave(true);
     };
+
+    const handleConfirmationModal = async ({ accept }) => {
+        if (accept) {
+            await leaveGroup('Leaving Group', { chatId })
+        }
+        setIsConfirmLeave(false)
+    }
 
     const addMemberHandler = () => {
         setIsDotsMenu(false);
@@ -76,7 +86,10 @@ const ChatHeader = ({ chatId }) => {
 
     return (
         <>
-            {isConfirmLeave && <ConfirmationModal onClose={() => setIsConfirmLeave(false)} />}
+            {isConfirmLeave &&
+                <ConfirmationModal
+                    handleConfirmationModal={handleConfirmationModal}
+                />}
 
             <div className="absolute -top-2 w-[90%] left-1/2 -translate-x-1/2 shadow-2xl z-30">
                 <div className="py-2 px-6 rounded-xl border border-border backdrop-blur-lg backdrop-saturate-[110%] bg-[rgba(33,26,42,0.75)]">
@@ -114,6 +127,7 @@ const ChatHeader = ({ chatId }) => {
                                         <button
                                             className="hover:text-green text-body-300 group transition"
                                             onClick={handleisConfirmLeave}
+                                            disabled={isLeaveGroupLoading}
                                         >
                                             <LeaveGroupIcon className="w-4 h-4 transition group-hover:fill-green inline-block mr-2" /> Leave Group
                                         </button>
