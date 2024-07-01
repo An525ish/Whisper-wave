@@ -23,6 +23,6 @@ chatRouter
   .post('/find-users', findChats)
   .put('/update-group-details/:chatId', updateGroupDetails) // TODO - avatar, bio update
   .put('/add-members/:chatId', addMembers)
-  .put('/remove-members/:chatId', removeMember)
+  .put('/remove-member/:chatId', removeMember)
   .delete('/leave-group/:chatId', leaveGroup)
   .delete('/delete-group/:chatId', deleteGroup);

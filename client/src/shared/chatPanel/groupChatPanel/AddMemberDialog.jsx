@@ -6,8 +6,9 @@ import AddMemberIcon from "@/components/icons/AddMember";
 import AvatarCard from "@/components/ui/AvatarCard";
 import useContextMenu from '@/hooks/Context-menu';
 import ContextMenu from '@/components/context-menu/ContextMenu';
-import { useMyFriendsQuery } from '@/redux/reducers/apis/api';
+import { useAddMemberMutation, useMyFriendsQuery, useRemoveMemberMutation } from '@/redux/reducers/apis/api';
 import { useParams } from 'react-router-dom';
+import useAsyncMutation from '@/hooks/asyncMutation';
 
 const options = [
     {
@@ -38,15 +39,12 @@ const AddMemberDialog = ({ isMemberDialog, setIsMemberDialog, members }) => {
     const { data: NonGroupMembers } = useMyFriendsQuery({ chatId })
     const NonGroupMembersData = NonGroupMembers?.data || []
 
-    console.log(NonGroupMembers)
+    const [addMember, { isLoading }] = useAsyncMutation(useAddMemberMutation)
+    const [removeMember] = useAsyncMutation(useRemoveMemberMutation)
 
-    const onSubmit = async (data) => {
-        try {
-            console.log(data);
-            setIsMemberDialog(false);
-        } catch (error) {
-            console.error('Error registering user:', error);
-        }
+    const onSubmit = async () => {
+        await addMember('Adding member...', { chatId, members: selectedMembers })
+        setIsMemberDialog(false);
     };
 
     const addMemberHandler = () => {
@@ -56,8 +54,10 @@ const AddMemberDialog = ({ isMemberDialog, setIsMemberDialog, members }) => {
     const handleContextMenu = (e, memberId) => {
         e.preventDefault();
         const boundingRect = dialogRef.current.getBoundingClientRect();
-        showContextMenu({ x: e.clientX - boundingRect.left, y: e.clientY - boundingRect.top }, options, (option) => {
-            console.log(`Selected option: ${option} for member: ${memberId}`);
+        showContextMenu({ x: e.clientX - boundingRect.left, y: e.clientY - boundingRect.top }, options, async (option) => {
+            if (option.name === 'Remove Member') {
+                await removeMember('Removing Member', { chatId, memberToBeRemoved: memberId })
+            }
         });
     };
 
@@ -78,7 +78,13 @@ const AddMemberDialog = ({ isMemberDialog, setIsMemberDialog, members }) => {
                         <span onClick={() => setIsMemberDialog(false)} className="mr-4 inline-block rotate-180 hover:text-red transition cursor-pointer">↪</span>
                         {isAddMember ? 'Add Members' : `Members (${members?.length})`}
                     </p>
-                    {isAddMember && <button className="border border-green-light rounded-2xl px-4 py-0.5 text-green hover:scale-95 transition" onClick={onSubmit}>Add</button>}
+                    {isAddMember && <button
+                        className="border border-green-light rounded-2xl px-4 py-0.5 text-green hover:scale-95 transition"
+                        onClick={onSubmit}
+                        disabled={isLoading}
+                    >
+                        Add
+                    </button>}
                 </div>
 
                 <div className='py-2 my-4 flex justify-between items-center border full-border'>
@@ -120,7 +126,7 @@ const AddMemberDialog = ({ isMemberDialog, setIsMemberDialog, members }) => {
                         <div className="flex flex-col overflow-y-auto h-[50vh] scrollbar-hide">
                             {members.length === 0 ?
                                 <p>No Member to Show </p>
-                                : filteredMembers.map(({ _id, name, avatar }) =>
+                                : filteredMembers.map(({ _id, name, avatar, isCreator }) =>
                                     <div
                                         key={_id}
                                         className={`flex gap-2 items-center px-4 cursor-pointer rounded-lg group relative hover:bg-gradient-line-fade-light transition py-2`}
@@ -130,7 +136,9 @@ const AddMemberDialog = ({ isMemberDialog, setIsMemberDialog, members }) => {
                                         <div className="flex-[1] text-body-700">
                                             <div className="flex justify-between items-center">
                                                 <p className="font-medium capitalize">{name}</p>
-                                                <p className='text-body-300'>Admin</p>
+                                                <p className='text-body-300'>
+                                                    {isCreator ? 'Creator' : ''}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>

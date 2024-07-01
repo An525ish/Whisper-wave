@@ -1,21 +1,20 @@
-import DialogWrapper from "@/components/ui/DialogWrapper"
-import InputField from "@/components/ui/InputField";
-import { useForm } from "react-hook-form";
-import GroupChatItem from "./SuggestionListItem";
+import DialogWrapper from "@/components/ui/DialogWrapper";
+import useAsyncMutation from "@/hooks/asyncMutation";
+import { useCreateGroupMutation, useMyFriendsQuery } from "@/redux/reducers/apis/api";
 import Searchbar from "@/shared/Searchbar";
 import { useState } from "react";
-import { useMyFriendsQuery } from "@/redux/reducers/apis/api";
+import toast from "react-hot-toast";
+import GroupChatItem from "./SuggestionListItem";
+import { useNavigate } from "react-router-dom";
 
 const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
     const [searchText, setSearchText] = useState('');
+    const [groupname, setGroupName] = useState('');
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors }
-    } = useForm();
+    const navigate = useNavigate()
 
     const { data: friends, isLoading, error } = useMyFriendsQuery({})
+    const [createGroup, { isLoading: isCreateGroupLoading }] = useAsyncMutation(useCreateGroupMutation)
 
     const [selectedMembers, setSelectedMembers] = useState([])
 
@@ -23,15 +22,14 @@ const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
         setSelectedMembers(prev => prev.includes(id) ? prev.filter(el => el !== id) : [...prev, id])
     }
 
-    const onSubmit = async (data) => {
-        try {
-            console.log(data)
-            //   const response = await axios.post('https://your-api-endpoint.com/register', data);
-            //   console.log('Registration successful:', response.data);
-        } catch (error) {
-            console.error('Error registering user:', error);
-            // Handle error (e.g., show error message to the user)
-        }
+    console.log(selectedMembers)
+
+    const onSubmit = async () => {
+        if (!groupname) return toast.error('Please add a group name')
+        if (selectedMembers.length < 2) return toast.error('Select atleast 2 members')
+        const data = await createGroup('Creating your group...', { name: groupname, members: selectedMembers })
+        setIsCreateGroup(false)
+        navigate(`/chat/${data?._id}`)
     };
 
     if (error) return <div>Error: {error.message}</div>
@@ -45,18 +43,23 @@ const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
             <div className="p-4">
                 <div className="flex justify-between items-center">
                     <p className="font-medium text-xl"> <span onClick={() => setIsCreateGroup(false)} className="mr-4 inline-block rotate-180 cursor-pointer">↪</span>New Group</p>
-                    <button className="border border-green-light rounded-2xl px-4 py-0.5 text-green hover:scale-95 transition" onClick={handleSubmit(onSubmit)}>Create</button>
+                    <button
+                        className="border border-green-light rounded-2xl px-4 py-0.5 text-green hover:scale-95 transition"
+                        onClick={onSubmit}
+                        disabled={isCreateGroupLoading}
+                    >
+                        Create
+                    </button>
                 </div>
 
                 <div className="mt-3">
-                    <InputField
-                        className={'bg-transparent border-0 border-b full-border text-center text-lg'}
+                    <input
+                        className={'px-4 py-2 border-border rounded-3xl bg-primary w-full outline-none bg-transparent border-0 border-b full-border text-center text-lg'}
                         type="text"
-                        name='groupname'
                         autoFocus={true}
                         placeholder='Type your Group Name...'
-                        register={register}
-                        errors={errors}
+                        value={groupname}
+                        onChange={(e) => setGroupName(e.target.value)}
                     />
                 </div>
 
