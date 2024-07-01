@@ -53,6 +53,8 @@ export const updateGroupDetails = async (req, res, next) => {
         )
       );
 
+    emitEvent(req, REFETCH_CHATS, chat.members);
+
     res.status(201).json({
       success: true,
       message: 'Group name updated successfully',
@@ -238,6 +240,8 @@ export const addMembers = async (req, res, next) => {
     chat.members = Array.from(existingMembers);
     await chat.save();
 
+    emitEvent(req, REFETCH_CHATS, chat.members);
+
     res.status(200).json({
       success: true,
       message: 'Members added successfully',
@@ -277,6 +281,7 @@ export const removeMember = async (req, res, next) => {
     chat.members = updatedMembers;
 
     await chat.save();
+    emitEvent(req, REFETCH_CHATS, [...chat.members, memberToBeRemoved]);
 
     res
       .status(200)
@@ -306,6 +311,8 @@ export const leaveGroup = async (req, res, next) => {
     }
 
     await chat.save();
+
+    emitEvent(req, REFETCH_CHATS, chat.members);
 
     res.status(200).json({
       success: true,
@@ -346,6 +353,8 @@ export const deleteGroup = async (req, res, next) => {
       Message.deleteMany({ chat: chatId }),
       //  deleteFromCloudinary(publicIds)
     ]);
+
+    emitEvent(req, REFETCH_CHATS, chat.members);
 
     res.status(200).json({
       success: true,
