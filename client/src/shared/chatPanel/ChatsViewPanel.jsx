@@ -122,18 +122,16 @@ const ChatsViewPanel = ({ chatId }) => {
                     ));
                     scrollToBottom();
                 } else {
-                    setMessages(prev => prev.map(msg =>
-                        msg._id === tempId ? { ...msg, isUploading: false } : msg
-                    ));
+                    setMessages(prev => prev.filter(msg => msg._id !== tempId));
                 }
             } catch (error) {
                 console.error('Failed to send attachments', error);
-                setMessages(prev => prev.map(msg =>
-                    msg._id === tempId ? { ...msg, isUploading: false, error: true } : msg
-                ));
+                setMessages(prev => prev.filter(msg => msg._id !== tempId));
             }
         }
     };
+
+
 
     const newMessageListener = useCallback((res) => {
         if (res.chatId === chatId) {

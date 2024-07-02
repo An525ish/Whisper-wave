@@ -30,7 +30,9 @@ const compressFile = async (file) => {
     return {
       buffer: compressedImageBuffer,
       mimetype: 'image/jpeg',
-      originalname: `${path.parse(originalname).name}.jpg`,
+      originalname: originalname,
+      fileType: 'media',
+      compressedName: `${path.parse(originalname).name}.jpg`,
     };
   } else if (mimetype.startsWith('video/')) {
     // Compress video (same as before)
@@ -50,7 +52,9 @@ const compressFile = async (file) => {
           resolve({
             buffer: compressedBuffer,
             mimetype: 'video/mp4',
-            originalname: `${path.parse(originalname).name}.mp4`,
+            originalname: originalname,
+            fileType: 'media',
+            compressedName: `${path.parse(originalname).name}.mp4`,
           });
         })
         .on('error', (err) => {
@@ -62,7 +66,11 @@ const compressFile = async (file) => {
   }
 
   // Return original file for other types
-  return file;
+  return {
+    ...file,
+    originalname: originalname,
+    fileType: 'document',
+  };
 };
 
 export const avatarUpload = async (req, res, next) => {

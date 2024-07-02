@@ -12,7 +12,7 @@ export const NotificationList = () => {
     const [findChats, { isLoading }] = useAsyncMutation(useFindChatsMutation)
 
     const [msgNotificationsList, setMsgNotificationsList] = useState([])
-
+    console.log(msgNotificationsList)
     const dispatch = useDispatch()
 
     useEffect(() => {
@@ -57,7 +57,7 @@ export const NotificationList = () => {
                         notification={{
                             id: chat._id,
                             name: chat.name,
-                            avatar: chat.avatar[0],
+                            avatar: chat.avatar?.[0] || null,
                             count: chat.notificationCount,
                             timestamp: chat.timestamp || Date.now()
                         }}

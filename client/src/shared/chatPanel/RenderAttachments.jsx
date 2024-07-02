@@ -8,9 +8,9 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }) => {
     const isImage = type?.startsWith('image/');
     const isVideo = type?.startsWith('video/');
     const isAudio = type?.startsWith('audio/');
-    const fileExension = fileFormat(name)
+    const fileExtension = fileFormat(name)
 
-
+    console.log(name)
     const renderFilePreview = () => {
         if (isObjectUrl) {
             return (
@@ -59,7 +59,7 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }) => {
                     )}
                     {!isImage && !isVideo && !isAudio && (
                         <div className="relative">
-                            <RenderFile fileExension={fileExension} fileName={name} />
+                            <RenderFile fileExtension={fileExtension} fileName={name} />
                             {(isUploading) && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
                                     <CircularLoader />
@@ -90,12 +90,8 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }) => {
                     );
                 case 'audio':
                     return <audio src={url} preload="none" className="w-[250px] bg-transparent" controls></audio>;
-                case 'doc':
-                case 'pdf':
-                case 'text':
-                    return <RenderFile fileExtension={fileType} fileName={name} />;
                 default:
-                    return <RenderFile fileExtension={fileType} fileName={name} />;
+                    return <RenderFile fileExtension={fileExtension} fileName={name} />;
             }
         }
     };
@@ -108,13 +104,15 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }) => {
 };
 
 
-const RenderFile = ({ fileExension, fileName }) => {
-    const fileDetails = fileData.find((file => file.docType === fileExension))
+const RenderFile = ({ fileExtension, fileName }) => {
+    const fileDetails = fileData.find((file => file.docType === fileExtension))
 
     return (
-        <div className="relative w-[200] h-[100px] bg-gray-200 rounded">
-            <img src={fileDetails?.icon} alt={fileDetails?.docName || 'Unknown file'} className="w-full h-full object-contain" />
-            <p className='text-center w-24 truncate capitalize text-sm'>{fileName}</p>
+        <div className="relative w-[200px] h-[150px] grid place-items-center bg-background-alt/30 rounded">
+            <div>
+                <img src={fileDetails.icon} alt={fileName} className="w-full h-[100px] object-contain" />
+                <p className='text-center mt-1 w-32 truncate capitalize text-sm'>{fileName}</p>
+            </div>
         </div>
     )
 }

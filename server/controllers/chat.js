@@ -364,3 +364,38 @@ export const deleteGroup = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getMedia = async (req, res, next) => {
+  const { chatId } = req.params;
+  const userId = req.userId;
+
+  if (!chatId) return next(errorHandler(400, 'Chat Id is required'));
+
+  try {
+    const chat = await Chat.findById(chatId);
+    if (!chat) return next(errorHandler(400, 'No chat found'));
+
+    const isMember = chat.members.some(
+      (member) => member.toString() === userId.toString()
+    );
+
+    if (!isMember) {
+      return next(
+        errorHandler(401, 'You are not authenticated to access the resource')
+      );
+    }
+
+    const messages = await Message.find({
+      chat: chatId,
+      attachments: { $exists: true, $not: { $size: 0 } },
+    }).sort({ updatedAt: -1 });
+
+    const attachments = messages.flatMap((msg) => msg.attachments);
+    res.json({
+      success: true,
+      data: attachments,
+    });
+  } catch (error) {
+    next(errorHandler(500, 'Server error'));
+  }
+};

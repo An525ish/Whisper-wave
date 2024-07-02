@@ -5,6 +5,7 @@ import {
   deleteGroup,
   findChats,
   getChatDetails,
+  getMedia,
   getMyChats,
   leaveGroup,
   removeMember,
@@ -19,6 +20,7 @@ chatRouter.use(auth);
 chatRouter
   .get('/get-my-chats', getMyChats)
   .get('/get-chat-details', getChatDetails)
+  .get('/get-media/:chatId', getMedia)
   .post('/create-group', createGroupChat)
   .post('/find-users', findChats)
   .put('/update-group-details/:chatId', updateGroupDetails) // TODO - avatar, bio update

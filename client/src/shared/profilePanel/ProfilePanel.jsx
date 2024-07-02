@@ -1,7 +1,8 @@
 import Image from '@/components/ui/Image'
 import Carousel from '@/components/ui/carousel/Carousel'
-import { fileData } from '@/lib/features'
-import { useChatDetailsQuery } from '@/redux/reducers/apis/api'
+import useErrors from '@/hooks/error'
+import { fileData, fileFormat, transformImage } from '@/lib/features'
+import { useChatDetailsQuery, useGetMediaQuery } from '@/redux/reducers/apis/api'
 import { getFirstName } from '@/utils/helper'
 import { useSelector } from 'react-redux'
 import { useParams } from 'react-router-dom'
@@ -10,14 +11,18 @@ const ProfilePanel = () => {
     const { chatId } = useParams()
     const { user } = useSelector(state => state.auth)
 
-    const { data: profileDetails, isLoading, error } = useChatDetailsQuery({
+    const { data: profileDetails, isLoading, error, isError } = useChatDetailsQuery({
         id: chatId,
         populate: true
     }, { skip: !chatId })
 
+    const { data: media, isLoading: isMediaLoading, error: mediaError, isError: isMediaError } = useGetMediaQuery({ chatId }, { skip: !chatId })
+
+    useErrors([{ error, isError }, { mediaError, isMediaError }])
+
+
     if (chatId) {
-        if (isLoading) return <div>Loading...</div>
-        if (error) return <div>Error loading profile: {error.message}</div>
+        if (isLoading || isMediaLoading) return <div>Loading...</div>
         if (!profileDetails || !profileDetails.data) return <div>No profile data available</div>
     }
 
@@ -25,6 +30,14 @@ const ProfilePanel = () => {
     const { name, avatar, bio, creator, members, groupChat } = profileData
 
     const creatorName = creator ? getFirstName(creator.name) : 'Unknown'
+
+    const mediaData = media?.data || []
+    const mediaFiles = mediaData.filter((file) => file.fileType !== 'document')
+    const docFiles = mediaData.filter((file) => file.fileType === 'document')
+
+    console.log(media)
+
+
 
     return (
         <div className="relative bg-background-alt rounded-2xl mt-16 h-[78vh] py-2">
@@ -60,22 +73,76 @@ const ProfilePanel = () => {
 
                 <div className="mt-4 pl-2 pr-1">
                     <p className="px-2 text-body-700 capitalize border-0 border-b half-border pb-1">Photos & Multimedia</p>
-                    <div className="flex gap-4 flex-wrap my-4 overflow-y-auto scrollbar-custom h-[11rem]">
-                        {Array(9).fill(0).map((img, index) => <img key={index} src="https://www.gravatar.com/avatar/2c7d99fe281ecd3bcd65ab915bac6dd5?s=250" alt="" className="w-[30%] h-20 bg-primary rounded-lg object-cover cursor-pointer hover:opacity-50 transition-opacity" />)}
+                    <div className="flex gap-4 flex-wrap my-4 overflow-y-auto scrollbar-custom max-h-[11rem]">
+                        {
+                            mediaFiles.length === 0 ?
+                                <div className='grid place-items-center w-full'>
+                                    <div className='w-full'>
+                                        <img src="/images/no-media.svg"
+                                            alt="no-media"
+                                            className='w-20 mx-auto opacity-50'
+                                        />
+                                        <p className='text-center text-body-300 text-sm mt-4'>No Media Found</p>
+                                    </div>
+                                </div>
+                                : mediaFiles.splice(0, 8).map(({ _id, url, name }) => {
+                                    const transformedUrl = transformImage(url)
+
+                                    return (
+                                        <a
+                                            key={_id}
+                                            href={url}
+                                            target='_blank'
+                                        >
+                                            <Image
+                                                src={transformedUrl}
+                                                alt={name}
+                                                className="w-24 h-20 bg-primary rounded-lg object-cover cursor-pointer hover:opacity-50 transition-opacity"
+                                            />
+                                        </a>
+                                    )
+                                })}
                     </div>
-                    <p className="text-center py-0.5 bg-red-dark text-red border border-red-light rounded-xl w-fit px-4 text-xs mx-auto cursor-pointer">View More</p>
+                    <p className="text-center py-0.5 bg-red-dark text-red border border-red-light rounded-xl w-fit px-4 text-xs mx-auto cursor-pointer">View All</p>
                 </div>
 
                 <div className="px-4 mt-4">
                     <p className="px-2 text-body-700 capitalize border-0 border-b half-border pb-1">Attachments</p>
-                    <div className="flex flex-wrap my-4 gap-2 overflow-y-scroll scrollbar-custom h-[7rem]">
-                        {fileData.map((file) =>
-                            <div key={file.id} className="w-full h-8 rounded-lg">
-                                <p className="flex gap-4 items-center h-full w-[90%] cursor-pointer"><img src={file.icon} alt={file.docName} className="w-6" /><span className='capitalize text-sm'>{file.docName}</span></p>
-                            </div>
-                        )}
+                    <div className="flex flex-col gap-2 my-4 overflow-y-scroll scrollbar-custom max-h-[7rem]">
+                        {
+                            docFiles.length === 0 ?
+                                <div className='grid place-items-center w-full'>
+                                    <div className='w-full'>
+                                        <img src="/images/no-documents.svg"
+                                            alt="no-media"
+                                            className='w-20 mx-auto opacity-50'
+                                        />
+                                        <p className='text-center text-body-300 text-sm mt-4'>No Document Found</p>
+                                    </div>
+                                </div>
+                                :
+                                docFiles.map(({ _id, name, url }) => {
+                                    const fileExtension = fileFormat(name)
+
+                                    const file = fileData.find((file => file.docType === fileExtension))
+                                    return (
+                                        <a
+                                            key={_id}
+                                            href={url}
+                                            target='_blank'
+                                        >
+                                            <div className="w-full h-8 rounded-lg">
+                                                <p className="flex gap-4 items-center h-full w-[90%] cursor-pointer">
+                                                    <img src={file.icon} alt={name} className="w-6" />
+                                                    <span className='w-72 truncate capitalize text-sm'>{name}</span>
+                                                </p>
+                                            </div>
+                                        </a>
+                                    )
+                                })
+                        }
                     </div>
-                    <p className="text-center py-0.5 bg-red-dark text-red border border-red-light rounded-xl w-fit px-4 text-xs mx-auto cursor-pointer">View More</p>
+                    <p className="text-center py-0.5 bg-red-dark text-red border border-red-light rounded-xl w-fit px-4 text-xs mx-auto cursor-pointer">View All</p>
                 </div>
             </div>
         </div>

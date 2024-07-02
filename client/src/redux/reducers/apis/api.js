@@ -11,6 +11,7 @@ const api = createApi({
     'users',
     'messages',
     'tempUsers',
+    'media',
   ],
 
   endpoints: (builder) => ({
@@ -131,6 +132,13 @@ const api = createApi({
       }),
       invalidatesTags: ['chatDetails', 'myFriends'],
     }),
+    getMedia: builder.query({
+      query: ({ chatId }) => ({
+        url: `/chat/get-media/${chatId}`,
+        credentials: 'include',
+      }),
+      keepUnusedDataFor: 0,
+    }),
   }),
 });
 
@@ -149,6 +157,7 @@ export const {
   useAddMemberMutation,
   useRemoveMemberMutation,
   useLeaveGroupMutation,
+  useGetMediaQuery,
 } = api;
 
 export default api;
