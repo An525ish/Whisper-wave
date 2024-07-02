@@ -9,8 +9,41 @@ import { NEW_ATTACHMENT } from '@/lib/socketConstants'
 import { useChatDetailsQuery, useGetMediaQuery } from '@/redux/reducers/apis/api'
 import { getFirstName } from '@/utils/helper'
 import { useCallback, useState } from 'react'
+import toast from 'react-hot-toast'
 import { useSelector } from 'react-redux'
 import { useParams } from 'react-router-dom'
+
+const renderMediaThumbnail = (file) => {
+    const transformedUrl = transformImage(file.url)
+    const fileExtension = fileFormat(file.url)
+
+    switch (fileExtension) {
+        case 'image':
+            return (
+                <Image
+                    src={transformedUrl}
+                    alt={file.name}
+                    className="w-24 h-20 bg-primary rounded object-cover"
+                />
+            )
+        case 'video':
+            return (
+                <video
+                    src={transformedUrl}
+                    className='w-24 h-20 bg-primary object-cover rounded-lg'
+                />
+            )
+        case 'audio':
+            return (
+                <div className="w-24 h-20 bg-primary rounded flex items-center justify-center">
+                    <img src="/icons/music-icon.svg" alt="Audio" className="w-12 h-12" />
+                </div>
+            )
+        default:
+            return null
+    }
+}
+
 
 const ProfilePanel = () => {
     const { chatId } = useParams()
@@ -60,13 +93,36 @@ const ProfilePanel = () => {
     const mediaData = media?.data || []
     const mediaFiles = mediaData.filter((file) => file.fileType !== 'document')
     const docFiles = mediaData.filter((file) => file.fileType === 'document')
-    console.log(mediaFiles)
+
+    const handleFileAction = async (e, url, name) => {
+        e.preventDefault();
+        const fileType = fileFormat(url);
+
+        if (['pdf'].includes(fileType)) {
+            // Open in a new tab for supported formats
+            window.open(url, '_blank');
+        } else {
+            // Download for unsupported formats
+            try {
+                const file = await fetch(url)
+                const blob = await file.blob()
+                const blobUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = name;
+                link.click();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                toast.error('Download Failed')
+            }
+        }
+    };
 
     return (
         <>
             {viewerOpen && (
                 <ImageViewer
-                    media={mediaData}
+                    mediaFiles={mediaFiles}
                     initialIndex={initialImageIndex}
                     onClose={() => setViewerOpen(false)}
                 />
@@ -117,31 +173,16 @@ const ProfilePanel = () => {
                                             <p className='text-center text-body-300 text-sm mt-4'>No Media Found</p>
                                         </div>
                                     </div>
-                                    : mediaFiles.splice(0, 8).map(({ _id, url, name }, index) => {
-                                        const transformedUrl = transformImage(url)
-                                        const fileExtension = fileFormat(url)
-
-                                        return (
-                                            <div
-                                                key={_id}
-                                                onClick={() => openImageViewer(index)}
-                                                className='hover:opacity-50 transition-opacity cursor-pointer'
-                                            >
-                                                {fileExtension === 'image' ? (
-                                                    <Image
-                                                        src={transformedUrl}
-                                                        alt={name}
-                                                        className="w-24 h-20 bg-primary rounded object-cover"
-                                                    />
-                                                ) : (
-                                                    <video
-                                                        src={transformedUrl}
-                                                        className='w-24 h-20 bg-primary object-cover rounded-lg'
-                                                    />
-                                                )}
-                                            </div>
-                                        )
-                                    })}
+                                    : mediaFiles.slice(0, 8).map((file, index) => (
+                                        <div
+                                            key={file._id}
+                                            onClick={() => openImageViewer(index)}
+                                            className='hover:opacity-50 transition-opacity cursor-pointer'
+                                        >
+                                            {renderMediaThumbnail(file, index)}
+                                        </div>
+                                    ))
+                            }
                         </div>
                         <p
                             className="text-center py-0.5 bg-red-dark text-red border border-red-light rounded-xl w-fit px-4 text-xs mx-auto cursor-pointer"
@@ -171,10 +212,10 @@ const ProfilePanel = () => {
 
                                         const file = fileData.find((file => file.docType === fileExtension))
                                         return (
-                                            <a
+                                            <div
                                                 key={_id}
-                                                href={url}
-                                                target='_blank'
+                                                onClick={(e) => handleFileAction(e, url, name)}
+                                                className="cursor-pointer"
                                             >
                                                 <div className="w-full h-8 rounded-lg">
                                                     <p className="flex gap-4 items-center h-full w-[90%] cursor-pointer">
@@ -182,7 +223,7 @@ const ProfilePanel = () => {
                                                         <span className='w-72 truncate capitalize text-sm'>{name}</span>
                                                     </p>
                                                 </div>
-                                            </a>
+                                            </div>
                                         )
                                     })
                             }

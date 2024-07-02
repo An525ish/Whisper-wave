@@ -38,52 +38,44 @@ export const fileFormat = (url = '') => {
 
 export const fileData = [
   {
+    id: 1,
+    icon: defaultIcon,
+    docType: 'unknown',
+  },
+  {
     id: 2,
     icon: pdfIcon,
     docType: 'pdf',
-    docName: 'github notes.pdf',
   },
   {
     id: 3,
     icon: docIcon,
     docType: 'doc',
-    docName: 'react notes.doc',
   },
   {
     id: 4,
     icon: xlsIcon,
     docType: 'xls',
-    docName: 'node js notes.xls',
   },
   {
     id: 5,
     icon: txtIcon,
     docType: 'txt',
-    docName: 'express js notes.txt',
   },
   {
     id: 6,
     icon: pptIcon,
     docType: 'ppt',
-    docName: 'css notes notes.ppt',
   },
   {
     id: 7,
     icon: zipIcon,
     docType: 'zip',
-    docName: 'html notes.zip',
   },
   {
     id: 8,
     icon: csvIcon,
     docType: 'csv',
-    docName: 'mongo db notes.csv',
-  },
-  {
-    id: 1,
-    icon: defaultIcon,
-    docType: 'unknown',
-    docName: 'web dev notes.unknown',
   },
 ];
 

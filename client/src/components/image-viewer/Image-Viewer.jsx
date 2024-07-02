@@ -4,15 +4,11 @@ import { useDrag } from 'react-use-gesture';
 import ImageViewerIcon from './Image-Viewer-Icons';
 import { fileFormat, transformImage } from '@/lib/features';
 import toast from 'react-hot-toast';
-import { getRequest } from '@/utils/api';
-import axios from 'axios';
 
-const ImageViewer = ({ media = [], initialIndex, onClose }) => {
+
+const ImageViewer = ({ mediaFiles = [], initialIndex, onClose }) => {
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const [scale, setScale] = useState(1);
-
-    const mediaFiles = media.filter((file) => file.fileType !== 'document')
-
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -70,6 +66,51 @@ const ImageViewer = ({ media = [], initialIndex, onClose }) => {
     const currentMedia = mediaFiles?.[currentIndex];
     const fileExtension = fileFormat(currentMedia?.url)
     const isVideo = fileExtension === 'video';
+    const isAudio = fileExtension === 'audio';
+
+    const renderMedia = () => {
+        if (isVideo) {
+            return (
+                <video
+                    src={currentMedia.url}
+                    className="max-h-full max-w-full object-contain"
+                    controls
+                />
+            );
+        } else if (isAudio) {
+            return (
+                <div className="flex flex-col items-center justify-center w-full h-full">
+                    <div className="w-64 h-64 bg-gray-200 rounded-full flex items-center justify-center mb-4 overflow-hidden">
+                        {currentMedia.thumbnailUrl ? (
+                            <img
+                                src={currentMedia.thumbnailUrl}
+                                alt="Audio thumbnail"
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <ImageViewerIcon name="music" className="w-32 h-32 text-gray-400" />
+                        )}
+                    </div>
+                    <audio
+                        src={currentMedia.url}
+                        controls
+                        className="w-full max-w-md"
+                    />
+                    <p className="text-white mt-4">{currentMedia.name}</p>
+                </div>
+            );
+        } else {
+            return (
+                <animated.img
+                    src={currentMedia.url}
+                    alt={currentMedia.name}
+                    className="max-h-full max-w-full transition-all object-contain select-none"
+                    style={{ transform: `scale(${scale})` }}
+                    onDoubleClick={handleDoubleClick}
+                />
+            );
+        }
+    };
 
     return (
         <div className="fixed inset-0 bg-background z-50 flex flex-col">
@@ -95,7 +136,7 @@ const ImageViewer = ({ media = [], initialIndex, onClose }) => {
 
             {/* Main Media Area */}
             {
-                media?.length === 0 ?
+                mediaFiles?.length === 0 ?
                     <div className='grid place-items-center w-full h-full'>
                         <div className='w-full'>
                             <img src="/images/no-media.svg"
@@ -114,21 +155,7 @@ const ImageViewer = ({ media = [], initialIndex, onClose }) => {
                                 style={{ x, y, touchAction: 'none' }}
                                 className="w-full h-full flex items-center justify-center"
                             >
-                                {isVideo ? (
-                                    <video
-                                        src={currentMedia.url}
-                                        className="max-h-full max-w-full object-contain"
-                                        controls
-                                    ></video>
-                                ) : (
-                                    <animated.img
-                                        src={currentMedia.url}
-                                        alt={currentMedia.name}
-                                        className="max-h-full max-w-full transition-all object-contain select-none"
-                                        style={{ transform: `scale(${scale})` }}
-                                        onDoubleClick={handleDoubleClick}
-                                    />
-                                )}
+                                {renderMedia()}
                             </animated.div>
                             <button onClick={handleNext} className="absolute right-4 text-white text-4xl z-10">&gt;</button>
                         </div>
@@ -154,6 +181,18 @@ const ImageViewer = ({ media = [], initialIndex, onClose }) => {
                                                     src={transformedUrl}
                                                     className="w-full h-full object-cover"
                                                 />
+                                            ) : fileExtension === 'audio' ? (
+                                                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                                    {item.thumbnailUrl ? (
+                                                        <img
+                                                            src={item.thumbnailUrl}
+                                                            alt="Audio thumbnail"
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <ImageViewerIcon name="music" className="w-8 h-8 text-gray-400" />
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <img
                                                     src={transformedUrl}

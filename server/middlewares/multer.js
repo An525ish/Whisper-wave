@@ -20,11 +20,10 @@ const compressFile = async (file) => {
   const { buffer, mimetype, originalname } = file;
 
   if (mimetype.startsWith('image/')) {
-    // Compress image
     const image = await Jimp.read(buffer);
     const compressedImageBuffer = await image
-      .scaleToFit(1280, 720) // resize to fit within 1280x720
-      .quality(80) // set JPEG quality
+      .scaleToFit(1280, 720)
+      .quality(80)
       .getBufferAsync(Jimp.MIME_JPEG);
 
     return {
@@ -35,7 +34,6 @@ const compressFile = async (file) => {
       compressedName: `${path.parse(originalname).name}.jpg`,
     };
   } else if (mimetype.startsWith('video/')) {
-    // Compress video (same as before)
     const tempInputPath = `temp_input_${Date.now()}.mp4`;
     const tempOutputPath = `temp_output_${Date.now()}.mp4`;
 
@@ -55,6 +53,35 @@ const compressFile = async (file) => {
             originalname: originalname,
             fileType: 'media',
             compressedName: `${path.parse(originalname).name}.mp4`,
+          });
+        })
+        .on('error', (err) => {
+          fs.unlink(tempInputPath, () => {});
+          reject(err);
+        })
+        .run();
+    });
+  } else if (mimetype.startsWith('audio/')) {
+    const tempInputPath = `temp_input_${Date.now()}.${mimetype.split('/')[1]}`;
+    const tempOutputPath = `temp_output_${Date.now()}.mp3`;
+
+    await fs.promises.writeFile(tempInputPath, buffer);
+
+    return new Promise((resolve, reject) => {
+      ffmpeg(tempInputPath)
+        .audioCodec('libmp3lame')
+        .audioBitrate('128k')
+        .output(tempOutputPath)
+        .on('end', async () => {
+          const compressedBuffer = await fs.promises.readFile(tempOutputPath);
+          fs.unlink(tempInputPath, () => {});
+          fs.unlink(tempOutputPath, () => {});
+          resolve({
+            buffer: compressedBuffer,
+            mimetype: 'audio/mpeg',
+            originalname: originalname,
+            fileType: 'media',
+            compressedName: `${path.parse(originalname).name}.mp3`,
           });
         })
         .on('error', (err) => {

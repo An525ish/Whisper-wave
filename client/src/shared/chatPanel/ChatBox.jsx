@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import RenderAttachments from './RenderAttachments';
 import { useSelector } from 'react-redux';
 import Image from '@/components/ui/Image';
+import toast from 'react-hot-toast';
 
 const ChatBox = ({ chatData, isGroupChat }) => {
     const { content, sender, attachments = [], createdAt } = chatData
@@ -10,6 +11,31 @@ const ChatBox = ({ chatData, isGroupChat }) => {
     const { user } = useSelector(state => state.auth)
     const sameSender = sender._id === user._id
     const currentTime = dayjs(createdAt).format('hh:mm A');
+
+    const handleFileAction = async (e, attachment) => {
+        e.preventDefault();
+        const url = attachment.url || attachment.tempUrl;
+        const fileType = fileFormat(url);
+
+        if (['image', 'video', 'pdf'].includes(fileType)) {
+            // Open in a new tab for supported formats
+            window.open(url, '_blank');
+        } else {
+            // Download for unsupported formats
+            try {
+                const file = await fetch(url)
+                const blob = await file.blob()
+                const blobUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = attachment.name;
+                link.click();
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                toast.error('Download Failed')
+            }
+        }
+    };
 
     return (
         <>
@@ -21,10 +47,10 @@ const ChatBox = ({ chatData, isGroupChat }) => {
                         const isUploading = attachment.uploading
 
                         return (
-                            <a
+                            <div
                                 key={attachment.public_id || index}
-                                href={url}
-                                target='_blank'
+                                onClick={(e) => handleFileAction(e, attachment)}
+                                className="cursor-pointer"
                             >
                                 <div className='relative grid place-items-center rounded-lg'>
                                     <RenderAttachments
@@ -37,7 +63,7 @@ const ChatBox = ({ chatData, isGroupChat }) => {
                                     />
                                     <p className='absolute shadow-lg bottom-0 right-2 text-xs text-body-700 text-right self-end justify-self-end whitespace-nowrap'>{currentTime}</p>
                                 </div>
-                            </a>
+                            </div>
                         );
                     })}
                 </div>
