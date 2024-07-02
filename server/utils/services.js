@@ -27,7 +27,6 @@ export const getSockets = (members) => {
 export const emitEvent = (req, event, members, data) => {
   const io = req.app.get('io');
   const memberSocketIds = getSockets(members);
-  console.log(memberSocketIds);
   io.to(memberSocketIds).emit(event, data);
 };
 
@@ -40,10 +39,15 @@ export const uploadToCloudinary = async (files = []) => {
           {
             resource_type: 'auto',
             public_id: uuid(),
+            filename: file.originalname,
           },
           (error, result) => {
             if (error) return reject(error);
-            resolve(result);
+            resolve({
+              ...result,
+              type: file.fileType,
+              originalname: file.originalname,
+            });
           }
         );
       });
@@ -54,10 +58,13 @@ export const uploadToCloudinary = async (files = []) => {
     const formattedResults = results.map((result) => ({
       publicId: result.public_id,
       url: result.secure_url,
+      name: result.originalname,
+      fileType: result.type,
     }));
 
     return formattedResults;
   } catch (error) {
+    console.log(error);
     throw new Error('Failed to upload files to Cloudinary');
   }
 };

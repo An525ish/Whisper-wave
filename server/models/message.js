@@ -13,6 +13,14 @@ const msgSchema = Schema(
           type: String,
           require: true,
         },
+        name: {
+          type: String,
+          require: true,
+        },
+        fileType: {
+          type: String,
+          require: true,
+        },
       },
     ],
     sender: {

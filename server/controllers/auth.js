@@ -26,7 +26,7 @@ export const signUp = async (req, res, next) => {
       return next(errorHandler(400, 'Failed to upload avatar'));
 
     const avatar = {
-      publicId: uploadedAvatar[0].public_id,
+      publicId: uploadedAvatar[0].publicId,
       url: uploadedAvatar[0].url,
     };
 
