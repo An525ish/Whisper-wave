@@ -10,7 +10,7 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }) => {
     const isAudio = type?.startsWith('audio/');
     const fileExtension = fileFormat(name)
 
-    console.log(name)
+    // console.log(name)
     const renderFilePreview = () => {
         if (isObjectUrl) {
             return (
@@ -81,11 +81,6 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }) => {
                                 alt={name || "attachment"}
                                 className={`w-[200px] h-[150px] object-cover rounded-md transition-opacity duration-300`}
                             />
-                            {/* {(isUploading) && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
-                                    <CircularLoader />
-                                </div>
-                            )} */}
                         </div>
                     );
                 case 'audio':

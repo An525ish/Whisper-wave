@@ -17,13 +17,13 @@ const UPLOAD_TYPES = {
         title: 'Videos',
         accept: 'video/mp4, video/quicktime',
         Icon: VideosIcon,
-        limits: { individual: 50 * 1024 * 1024, cumulative: 50 * 1024 * 1024 }
+        limits: { individual: 50 * 1024 * 1024, cumulative: 250 * 1024 * 1024 }
     },
     AUDIOS: {
         title: 'Audios',
         accept: 'audio/mpeg, audio/wav, audio/ogg',
         Icon: AudiosIcon,
-        limits: { individual: 5 * 1024 * 1024, cumulative: 20 * 1024 * 1024 }
+        limits: { individual: 20 * 1024 * 1024, cumulative: 100 * 1024 * 1024 }
     },
     DOCUMENTS: {
         title: 'Documents',
