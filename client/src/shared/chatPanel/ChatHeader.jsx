@@ -89,6 +89,7 @@ const ChatHeader = ({ chatId }) => {
             {isConfirmLeave &&
                 <ConfirmationModal
                     handleConfirmationModal={handleConfirmationModal}
+                    onClose={() => setIsConfirmLeave(false)}
                 />}
 
             <div className="absolute -top-2 w-[90%] left-1/2 -translate-x-1/2 shadow-2xl z-30">

@@ -111,7 +111,7 @@ const RenderFile = ({ fileExtension, fileName }) => {
         <div className="relative w-[200px] h-[150px] grid place-items-center bg-background-alt/30 rounded">
             <div>
                 <img src={fileDetails.icon} alt={fileName} className="w-full h-[100px] object-contain" />
-                <p className='text-center mt-1 w-32 truncate capitalize text-sm'>{fileName}</p>
+                <p className='text-center my-1 w-32 truncate capitalize text-sm'>{fileName}</p>
             </div>
         </div>
     )

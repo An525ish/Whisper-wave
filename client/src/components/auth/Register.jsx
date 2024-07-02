@@ -23,7 +23,7 @@ const Register = ({ setIsLogin }) => {
         try {
             const response = await postRequest('/auth/signUp', { avatar, ...data }, { 'Content-Type': 'multipart/form-data' });
             toast.success(response.message)
-            dispatch(userExist(true))
+            dispatch(userExist(response.data))
         } catch (error) {
             toast.error(error?.message || 'Something went wrong')
         }

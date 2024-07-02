@@ -1,14 +1,20 @@
 import Image from '@/components/ui/Image'
 import Carousel from '@/components/ui/carousel/Carousel'
 import useErrors from '@/hooks/error'
+import { useSocket } from '@/hooks/socketContext'
+import useSocketEvent from '@/hooks/socketEvent'
 import { fileData, fileFormat, transformImage } from '@/lib/features'
+import { NEW_ATTACHMENT } from '@/lib/socketConstants'
 import { useChatDetailsQuery, useGetMediaQuery } from '@/redux/reducers/apis/api'
 import { getFirstName } from '@/utils/helper'
+import { useCallback } from 'react'
 import { useSelector } from 'react-redux'
 import { useParams } from 'react-router-dom'
 
 const ProfilePanel = () => {
     const { chatId } = useParams()
+    const socket = useSocket()
+
     const { user } = useSelector(state => state.auth)
 
     const { data: profileDetails, isLoading, error, isError } = useChatDetailsQuery({
@@ -16,10 +22,21 @@ const ProfilePanel = () => {
         populate: true
     }, { skip: !chatId })
 
-    const { data: media, isLoading: isMediaLoading, error: mediaError, isError: isMediaError } = useGetMediaQuery({ chatId }, { skip: !chatId })
+    const { data: media, isLoading: isMediaLoading, error: mediaError, isError: isMediaError, refetch } = useGetMediaQuery({ chatId }, { skip: !chatId })
 
     useErrors([{ error, isError }, { mediaError, isMediaError }])
 
+    const newAttachmentListener = useCallback(() => {
+        console.log('first')
+        refetch()
+    }, [refetch],
+    )
+
+    const events = {
+        [NEW_ATTACHMENT]: newAttachmentListener
+    }
+
+    useSocketEvent(socket, events)
 
     if (chatId) {
         if (isLoading || isMediaLoading) return <div>Loading...</div>
@@ -34,10 +51,6 @@ const ProfilePanel = () => {
     const mediaData = media?.data || []
     const mediaFiles = mediaData.filter((file) => file.fileType !== 'document')
     const docFiles = mediaData.filter((file) => file.fileType === 'document')
-
-    console.log(media)
-
-
 
     return (
         <div className="relative bg-background-alt rounded-2xl mt-16 h-[78vh] py-2">
@@ -87,6 +100,7 @@ const ProfilePanel = () => {
                                 </div>
                                 : mediaFiles.splice(0, 8).map(({ _id, url, name }) => {
                                     const transformedUrl = transformImage(url)
+                                    const fileExtension = fileFormat(url)
 
                                     return (
                                         <a
@@ -94,11 +108,23 @@ const ProfilePanel = () => {
                                             href={url}
                                             target='_blank'
                                         >
-                                            <Image
-                                                src={transformedUrl}
-                                                alt={name}
-                                                className="w-24 h-20 bg-primary rounded-lg object-cover cursor-pointer hover:opacity-50 transition-opacity"
-                                            />
+                                            {
+                                                fileExtension === 'image' ?
+                                                    <div className='hover:opacity-50 transition-opacity cursor-pointer'>
+                                                        <Image
+                                                            src={transformedUrl}
+                                                            alt={name}
+                                                            className="w-24 h-20 bg-primary rounded"
+                                                        />
+                                                    </div>
+                                                    :
+                                                    <div className='cursor-pointer hover:opacity-50 transition-opacity'>
+                                                        <video
+                                                            src={transformedUrl}
+                                                            className='w-24 h-20 bg-primary object-cover rounded-lg'
+                                                        />
+                                                    </div>
+                                            }
                                         </a>
                                     )
                                 })}
