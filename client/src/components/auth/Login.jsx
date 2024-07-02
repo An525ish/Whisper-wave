@@ -18,7 +18,8 @@ const Login = ({ setIsLogin, setIsForget }) => {
     const onSubmit = async (data) => {
         try {
             const response = await postRequest('/auth/signIn', data);
-            dispatch(userExist(true))
+            console.log(response)
+            dispatch(userExist(response.data))
             toast.success(response.message)
         } catch (error) {
             toast.error(error?.message || 'Something went wrong')

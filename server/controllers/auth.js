@@ -46,6 +46,7 @@ export const signUp = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: 'Registered Successfullly',
+      data: user,
     });
   } catch (error) {
     next(error);
@@ -69,9 +70,17 @@ export const signIn = async (req, res, next) => {
 
     res.status(200).cookie('accessToken', token, cookieOption);
 
+    const { password: userPassword, ...userWithoutPassword } = user.toObject();
+
+    const modifiedUser = {
+      ...userWithoutPassword,
+      avatar: user.avatar.url,
+    };
+
     res.status(200).json({
       success: true,
       message: `Welcome back, ${user.name}`,
+      data: modifiedUser,
     });
   } catch (error) {
     next(error);

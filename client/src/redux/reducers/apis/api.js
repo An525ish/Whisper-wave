@@ -88,6 +88,7 @@ const api = createApi({
         credentials: 'include',
         body: body,
       }),
+      invalidatesTags: 'media',
     }),
     findChats: builder.mutation({
       query: (body) => ({
@@ -137,7 +138,7 @@ const api = createApi({
         url: `/chat/get-media/${chatId}`,
         credentials: 'include',
       }),
-      keepUnusedDataFor: 0,
+      providesTags: ['media'],
     }),
   }),
 });

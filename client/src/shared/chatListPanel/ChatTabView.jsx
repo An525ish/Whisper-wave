@@ -4,7 +4,7 @@ import useSocketEvent from '@/hooks/socketEvent';
 import { REFETCH_CHATS } from '@/lib/socketConstants';
 import { useMyChatsQuery } from '@/redux/reducers/apis/api';
 import ChatList from '@/shared/chatListPanel/ChatList';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 const tabsData = Object.freeze({
@@ -23,6 +23,7 @@ const tabsData = Object.freeze({
 });
 
 const ChatTabView = ({ searchText }) => {
+
     const { data: chats, isLoading, refetch } = useMyChatsQuery();
     const { messageNotifications } = useSelector(state => state.chat)
 
@@ -49,6 +50,11 @@ const ChatTabView = ({ searchText }) => {
         refetch()
     }, [refetch]
     )
+
+    useEffect(() => {
+        refetch()
+    }, [])
+
 
     const events = {
         [REFETCH_CHATS]: refetchChatListener
