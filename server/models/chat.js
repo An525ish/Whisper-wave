@@ -22,6 +22,16 @@ const chatSchema = Schema(
         required: true,
       },
     ],
+    lastMessage: {
+      _id: { type: Types.ObjectId, ref: 'Message' },
+      content: { type: String },
+      sender: { type: Types.ObjectId, ref: 'User' },
+      type: {
+        type: String,
+        enum: ['text', 'image', 'video', 'audio', 'document', 'location'],
+      },
+      createdAt: { type: Date },
+    },
   },
   {
     timestamps: true,

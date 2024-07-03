@@ -13,6 +13,7 @@ import { createServer } from 'http';
 import {
   NEW_MESSAGE,
   NEW_MESSAGE_ALERT,
+  REFETCH_CHATS,
   START_TYPING,
   STOP_TYPING,
 } from './constants/socket-events.js';
@@ -23,6 +24,7 @@ import { corsOption } from './constants/constant.js';
 import cors from 'cors';
 import { v2 as cloudinary } from 'cloudinary';
 import { socketAuth } from './middlewares/auth.js';
+import { Chat } from './models/chat.js';
 
 // Load environment variables
 configDotenv({ path: '.env' });
@@ -98,25 +100,33 @@ io.on('connection', (socket) => {
     });
 
     socket.broadcast.to(memberSocketIds).emit(NEW_MESSAGE_ALERT, { chatId });
+    io.to(memberSocketIds).emit(REFETCH_CHATS, { chatId });
 
     try {
-      await Message.create(msgForDb);
+      const newMessage = await Message.create(msgForDb);
+
+      // Update the chat's lastMessage
+      await Chat.findByIdAndUpdate(chatId, {
+        lastMessage: {
+          _id: newMessage._id,
+          content: message,
+          sender: user._id,
+          type: 'text',
+          createdAt: newMessage.createdAt,
+        },
+      });
     } catch (error) {
       console.log(error);
     }
   });
 
   socket.on(START_TYPING, ({ members, chatId }) => {
-    console.log(members, chatId);
     const memberSocketIds = getSockets(members);
-    console.log('start typing', memberSocketIds);
     socket.broadcast.to(memberSocketIds).emit(START_TYPING, { chatId });
   });
 
   socket.on(STOP_TYPING, ({ members, chatId }) => {
-    console.log(members, chatId);
     const memberSocketIds = getSockets(members);
-    console.log('stop typing', memberSocketIds);
     socket.broadcast.to(memberSocketIds).emit(STOP_TYPING, { chatId });
   });
 

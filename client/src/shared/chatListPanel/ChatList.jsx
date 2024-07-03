@@ -1,5 +1,6 @@
 import AvatarSkeleton from "@/components/skeletons/AvatarSkeleton";
 import ChatListItem from "./ChatListItem";
+import { useSelector } from "react-redux";
 
 const ChatList = ({
     chats = [],
@@ -9,6 +10,8 @@ const ChatList = ({
     newMessageAlert,
     handleDeleteChat,
 }) => {
+    const { user } = useSelector(state => state.auth)
+
     return (
         <div className="flex flex-col gap-2 p-2 h-[78vh] overflow-y-auto scrollbar-hide">
             {isLoading ? (
@@ -17,7 +20,7 @@ const ChatList = ({
                 <>
                     {chats.length !== 0 ? (
                         chats.map((data) => {
-                            const { avatar, name, _id, groupChat, members } = data;
+                            const { avatar, name, _id, groupChat, members, lastMessage } = data;
                             const messageAlert = newMessageAlert.find(({ chatId }) => chatId === _id);
                             const isOnline = members?.some(() => onlineUsers.includes(_id));
 
@@ -30,7 +33,9 @@ const ChatList = ({
                                     isOnline={isOnline}
                                     messageAlert={messageAlert}
                                     id={_id}
+                                    lastMessage={lastMessage}
                                     handleDeleteChat={handleDeleteChat}
+                                    currentUserId={user._id}
                                 />
                             );
                         })

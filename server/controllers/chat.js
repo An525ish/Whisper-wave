@@ -74,6 +74,13 @@ export const getMyChats = async (req, res, next) => {
     const [chats, totalChats] = await Promise.all([
       Chat.find({ members: userId })
         .populate('members', 'name username email avatar')
+        .populate({
+          path: 'lastMessage',
+          populate: {
+            path: 'sender',
+            select: 'name',
+          },
+        })
         .sort({ updatedAt: -1 })
         .skip((page - 1) * resultPerPage)
         .limit(resultPerPage)
@@ -81,24 +88,27 @@ export const getMyChats = async (req, res, next) => {
       Chat.countDocuments({ members: userId }),
     ]);
 
-    const customizedChats = chats.map(({ _id, name, members, groupChat }) => {
-      const otherMembers = members.filter(
-        (member) => member._id.toString() !== userId.toString()
-      );
+    const customizedChats = chats.map(
+      ({ _id, name, members, groupChat, lastMessage }) => {
+        const otherMembers = members.filter(
+          (member) => member._id.toString() !== userId.toString()
+        );
 
-      return {
-        _id,
-        groupChat,
-        name: groupChat ? name : otherMembers[0]?.name || 'Unknown',
-        avatar: groupChat
-          ? members
-              .slice(0, 3)
-              .map((member) => member.avatar?.url)
-              .filter(Boolean)
-          : [otherMembers[0]?.avatar?.url].filter(Boolean),
-        members: otherMembers.map((member) => member._id),
-      };
-    });
+        return {
+          _id,
+          groupChat,
+          name: groupChat ? name : otherMembers[0]?.name || 'Unknown',
+          avatar: groupChat
+            ? members
+                .slice(0, 3)
+                .map((member) => member.avatar?.url)
+                .filter(Boolean)
+            : [otherMembers[0]?.avatar?.url].filter(Boolean),
+          members: otherMembers.map((member) => member._id),
+          lastMessage,
+        };
+      }
+    );
 
     res.status(200).json({
       success: true,

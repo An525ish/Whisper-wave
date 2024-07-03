@@ -45,7 +45,7 @@ const api = createApi({
         credentials: 'include',
         params: { page },
       }),
-      keepUnusedDataFor: 0,
+      providesTags: ['messages'],
     }),
     searchUser: builder.query({
       query: ({ name }) => ({
