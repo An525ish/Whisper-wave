@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { userExist, userNotExist } from "./redux/reducers/auth";
 import { Toaster } from "react-hot-toast";
 import { SocketProvider } from "./hooks/socketContext";
+import AppLoader from "./components/loader/AppLoader";
 
 function App() {
   const { user, isAdmin, loader } = useSelector(state => state.auth)
@@ -128,7 +129,7 @@ function App() {
 
   return (
     loader ? (
-      <>Loading...</>
+      <AppLoader />
     ) : (
       <>
         <RouterProvider router={router} />

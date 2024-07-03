@@ -92,6 +92,34 @@ module.exports = {
         glowGreen: '0 0 10px rgba(0, 255, 0, 0.8)',
         glowOrange: '0 0 10px rgba(255, 165, 0, 0.8)',
       },
+      animation: {
+        spinning82341: 'spinning82341 1.7s linear infinite',
+        hue: 'hue 1s ease-in-out infinite',
+        loading: 'loading 9s linear infinite',
+      },
+      keyframes: {
+        spinning82341: {
+          to: {
+            transform: 'rotate(360deg)',
+          },
+        },
+        hue: {
+          '0%': {
+            filter: 'hue-rotate(0deg)',
+          },
+          '100%': {
+            filter: 'hue-rotate(360deg)',
+          },
+        },
+        loading: {
+          '0%,100%': {
+            filter: 'hue-rotate(0deg)',
+          },
+          '50%': {
+            filter: 'hue-rotate(360deg)',
+          },
+        },
+      },
       backgroundImage: {
         'gradient-background':
           'linear-gradient(90deg, #211a2a 0%, var(--color-background-gradient-start) 30%, var(--color-background-gradient-end) 70%, #211a2a 100%)',
