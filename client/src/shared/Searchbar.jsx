@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import searchIcon from '../assets/search.svg';
 
-export default function Searchbar({ searchText, setSearchText, autoFocus = false, placeholder = 'Search...', width = 'w-44' }) {
+export default function Searchbar({ searchText, setSearchText, autoFocus = false, placeholder = 'Search...', width = 'w-40' }) {
     const [isSearchBarFocused, setIsSearchBarFocused] = useState(false);
     const inputRef = useRef(null);
 
