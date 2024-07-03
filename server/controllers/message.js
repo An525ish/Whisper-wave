@@ -2,6 +2,7 @@ import {
   NEW_ATTACHMENT,
   NEW_MESSAGE,
   NEW_MESSAGE_ALERT,
+  REFETCH_CHATS,
 } from '../constants/socket-events.js';
 import { Chat } from '../models/chat.js';
 import { Message } from '../models/message.js';
@@ -69,20 +70,16 @@ export const sendAttachments = async (req, res, next) => {
     if (files.length === 0)
       return next(errorHandler(400, 'Send at least one file'));
 
-    // Create the message in the database immediately
     const messageForDb = {
       content,
-      attachments: [], // We'll update this later
+      attachments: [],
       sender: userId,
       chat: chatId,
     };
     const message = await Message.create(messageForDb);
 
-    // Start the upload process
     try {
       const attachments = await uploadToCloudinary(files);
-
-      // Update the message with the attachment info
       message.attachments = attachments;
       await message.save();
 
@@ -95,16 +92,41 @@ export const sendAttachments = async (req, res, next) => {
         },
       };
 
-      // Emit the updated message to all chat members
-      // emitEvent(req, NEW_MESSAGE, chat.members, {
-      //   message: messageForRealTime,
-      //   chatId,
-      // });
+      // Determine the type of the first attachment
+      const lastAttachment = attachments?.[attachments.length - 1];
+      const lastAttachmentType = lastAttachment?.fileType.split('/')[0];
+      let lastMessageType = 'text';
+      let lastMessageContent = content || '';
+
+      switch (lastAttachmentType) {
+        case 'media':
+          lastMessageType = 'media';
+          lastMessageContent = lastAttachment.name;
+          break;
+        case 'document':
+          lastMessageType = 'document';
+          lastMessageContent = lastAttachment.name;
+          break;
+        default:
+          lastMessageType = 'document';
+          lastMessageContent = lastAttachment.name;
+      }
+
+      // Update the chat's lastMessage
+      await Chat.findByIdAndUpdate(chatId, {
+        lastMessage: {
+          _id: message._id,
+          content: lastMessageContent,
+          sender: userId,
+          type: lastMessageType,
+          createdAt: message.createdAt,
+        },
+      });
 
       emitEvent(req, NEW_MESSAGE_ALERT, chat.members, { chatId });
       emitEvent(req, NEW_ATTACHMENT, chat.members, { chatId });
+      emitEvent(req, REFETCH_CHATS, chat.members, { chatId });
 
-      // Send a success response to the client
       res.status(200).json({
         status: true,
         message: 'Message sent successfully with attachments',
@@ -112,7 +134,6 @@ export const sendAttachments = async (req, res, next) => {
       });
     } catch (uploadError) {
       if (content) {
-        // Update the message to indicate the upload failure
         message.status = 'failed';
         await message.save();
       } else {

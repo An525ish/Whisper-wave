@@ -3,6 +3,11 @@ import AvatarCard from "@/components/ui/AvatarCard"
 import useContextMenu from "@/hooks/Context-menu"
 import { useRef } from "react"
 import { Link, useParams } from "react-router-dom"
+import dayjs from 'dayjs'
+import relativeTime from 'dayjs/plugin/relativeTime'
+import { getFirstName } from "@/utils/helper"
+
+dayjs.extend(relativeTime)
 
 const options = [
     {
@@ -22,18 +27,15 @@ const ChatListItem = ({
     name,
     id,
     groupChat = false,
-    isOnline,
-    newMessage,
-    messageAlert
+    // isOnline,
+    // handleDeleteChat,
+    lastMessage,
+    messageAlert,
+    currentUserId
 }) => {
-
     const { menuState, showContextMenu, hideContextMenu } = useContextMenu();
     const dialogRef = useRef()
-
     const { chatId } = useParams()
-
-    console.log(messageAlert)
-
 
     const handleContextMenu = (e, memberId, groupChat) => {
         e.preventDefault();
@@ -43,26 +45,51 @@ const ChatListItem = ({
         });
     };
 
+    const renderLastMessagePreview = () => {
+        if (!lastMessage) return 'No messages yet';
+        const senderName = getFirstName(lastMessage.sender.name)
+
+        let senderPrefix = '';
+        if (groupChat) {
+            senderPrefix = lastMessage.sender._id === currentUserId ? 'You: ' : `${senderName}: `;
+        }
+
+        return `${senderPrefix}${lastMessage.content}`;
+    };
+
+    const formatTime = (time) => {
+        if (!time) return '';
+        const messageDate = dayjs(time);
+        const now = dayjs();
+
+        if (messageDate.isSame(now, 'day')) {
+            return messageDate.format('hh:mm A');
+        } else if (messageDate.isSame(now.subtract(1, 'day'), 'day')) {
+            return 'Yesterday';
+        } else if (messageDate.isSame(now, 'week')) {
+            return messageDate.format('ddd');
+        } else {
+            return messageDate.format('DD/MM/YYYY');
+        }
+    };
+
     return (
         <Link to={`/chat/${id}`} onContextMenu={(e) => handleContextMenu(e, id, groupChat)}>
             <div ref={dialogRef} className={`flex gap-2 items-center p-4 gradient-border cursor-pointer rounded-lg hover:bg-gradient-background ${(chatId === id) && 'bg-gradient-background'}`}>
                 <AvatarCard avatars={avatar} />
 
-                <div className="flex-[1]">
+                <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center">
-                        <p className={`font-medium ${groupChat ? 'w-36' : 'w-52'} truncate`}>{name}</p>
-                        {isOnline ? <div className="w-3 h-3 rounded-full bg-green animate-pulse"></div> : <p className="text-xs text-body-300">2 hours ago</p>}
+                        <p className="font-medium truncate flex-1">{name}</p>
+                        <p className="text-xs text-body-300 whitespace-nowrap ml-2">{formatTime(lastMessage?.createdAt)}</p>
                     </div>
-                    <div className={`flex justify-between text-sm text-body-700`}>
-                        <p>{`Last Message`}</p>
-                        {(messageAlert && messageAlert.count > 0) &&
-                            <div className="bg-red-dark border border-red-light text-red font-normal text-sm rounded-full w-5 h-5 text-center grid place-items-center mt-1 mr-4">
-                                {messageAlert?.count > 9 ?
-                                    <span className="text-xs">9+</span> :
-                                    <span>{messageAlert?.count} </span>
-                                }
+                    <div className="flex justify-between items-center mt-1">
+                        <p className="text-sm text-body-700 truncate flex-1">{renderLastMessagePreview()}</p>
+                        {(messageAlert && messageAlert.count > 0) && (
+                            <div className="bg-red-dark border border-red-light text-red font-normal text-xs rounded-full w-5 h-5 flex items-center justify-center ml-2">
+                                {messageAlert.count > 99 ? '99+' : messageAlert.count}
                             </div>
-                        }
+                        )}
                     </div>
                 </div>
 
