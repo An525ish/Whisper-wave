@@ -9,7 +9,7 @@ const ChatListPanel = () => {
     const [isClicked, setIsClicked] = useState(false)
 
     return (
-        <div className='relative w-[25rem]'>
+        <div className='relative lg:w-[20rem] xl:w-[25rem]'>
             <ChatHeader searchText={searchText} setSearchText={setSearchText} />
 
             {isClicked &&
