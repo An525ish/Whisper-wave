@@ -1,0 +1,1 @@
+import{j as e}from"./main-Dgb4rnFp.js";const s=()=>e.jsxDEV("div",{children:"PageNotFound"},void 0,!1,{fileName:"D:/Essentials/Doc/Projects/MERN/Whisper wave/client/src/pages/PageNotFound.jsx",lineNumber:4,columnNumber:9},void 0);export{s as default};
