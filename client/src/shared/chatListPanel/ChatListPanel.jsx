@@ -9,11 +9,11 @@ const ChatListPanel = () => {
     const [isClicked, setIsClicked] = useState(false)
 
     return (
-        <div className='relative lg:w-[20rem] xl:w-[25rem]'>
+        <div className='relative w-[25rem]'>
             <ChatHeader searchText={searchText} setSearchText={setSearchText} />
 
             {isClicked &&
-                <div className='mt-6'>
+                <div className='mt-3'>
                     <AddFriendsDialog isOpen={isClicked} setIsClicked={setIsClicked} />
                 </div>
             }

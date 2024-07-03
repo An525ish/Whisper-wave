@@ -9,6 +9,7 @@ import ContextMenu from '@/components/context-menu/ContextMenu';
 import { useAddMemberMutation, useMyFriendsQuery, useRemoveMemberMutation } from '@/redux/reducers/apis/api';
 import { useParams } from 'react-router-dom';
 import useAsyncMutation from '@/hooks/asyncMutation';
+import AvatarSkeleton from '@/components/skeletons/AvatarSkeleton';
 
 const options = [
     {
@@ -36,7 +37,7 @@ const AddMemberDialog = ({ isMemberDialog, setIsMemberDialog, members }) => {
 
     const { chatId } = useParams()
 
-    const { data: NonGroupMembers } = useMyFriendsQuery({ chatId })
+    const { data: NonGroupMembers, isLoading: isAvailableMembersLoading } = useMyFriendsQuery({ chatId })
     const NonGroupMembersData = NonGroupMembers?.data || []
 
     const [addMember, { isLoading }] = useAsyncMutation(useAddMemberMutation)
@@ -108,25 +109,42 @@ const AddMemberDialog = ({ isMemberDialog, setIsMemberDialog, members }) => {
                     <div>
                         <p className="text-body-300 font-medium my-4">Suggested</p>
                         <div className="flex flex-col gap-4 overflow-y-auto h-[58vh] scrollbar-hide">
-                            {NonGroupMembersData.length === 0 ?
-                                <p className='text-2xl text-center'>No Members to show</p>
-                                : filteredNonGroupMembers.map((member) =>
+                            {isAvailableMembersLoading ? (
+                                Array(5).fill(0).map((_, i) => (
+                                    <AvatarSkeleton key={i} className={'px-4 h-20 bg-transparent'} />
+                                ))
+                            ) : NonGroupMembersData.length === 0 ? (
+                                <div className="grid place-items-center h-full">
+                                    <div className="mb-12 text-center">
+                                        <img src="/images/no-member.svg" alt="no member" className="w-60 opacity-50" />
+                                        <p className="text-xl mt-6 font-semibold text-body-300">No Member To Show</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                filteredNonGroupMembers.map((member) => (
                                     <SuggestionListItem
                                         key={member._id}
                                         data={member}
                                         isSelected={selectedMembers.includes(member._id)}
                                         handleSelectMember={handleSelectMember}
                                     />
-                                )}
+                                ))
+                            )}
                         </div>
                     </div>
                 ) : (
                     <div>
                         <p className="text-body-300 font-medium my-6 px-2">Existing Members</p>
                         <div className="flex flex-col overflow-y-auto h-[50vh] scrollbar-hide">
-                            {members.length === 0 ?
-                                <p>No Member to Show </p>
-                                : filteredMembers.map(({ _id, name, avatar, isCreator }) =>
+                            {members.length === 0 ? (
+                                <div className="grid place-items-center h-full">
+                                    <div className="mb-12 text-center">
+                                        <img src="/images/no-member.svg" alt="no member" className="w-60 opacity-50" />
+                                        <p className="text-xl mt-6 font-semibold text-body-300">No Member To Show</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                filteredMembers.map(({ _id, name, avatar, isCreator }) => (
                                     <div
                                         key={_id}
                                         className={`flex gap-2 items-center px-4 cursor-pointer rounded-lg group relative hover:bg-gradient-line-fade-light transition py-2`}
@@ -142,11 +160,13 @@ const AddMemberDialog = ({ isMemberDialog, setIsMemberDialog, members }) => {
                                             </div>
                                         </div>
                                     </div>
-                                )}
+                                ))
+                            )}
                             <ContextMenu menuState={menuState} hideContextMenu={hideContextMenu} />
                         </div>
                     </div>
                 )}
+
             </div>
         </DialogWrapper>
     );
