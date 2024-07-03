@@ -25,9 +25,14 @@ import cors from 'cors';
 import { v2 as cloudinary } from 'cloudinary';
 import { socketAuth } from './middlewares/auth.js';
 import { Chat } from './models/chat.js';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 // Load environment variables
 configDotenv({ path: '.env' });
+
+const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
+const __dirname = path.dirname(__filename); // get the name of the directory
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -52,6 +57,11 @@ app.use('/api/user', userRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/message', messageRouter);
 app.use('/api/friend-request', friendRequestRouter);
+
+app.use(express.static(path.join(__dirname, '..', 'client/dist')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'client/dist/index.html'));
+});
 
 // Global Error Handler
 app.use(globalErrorHandler);

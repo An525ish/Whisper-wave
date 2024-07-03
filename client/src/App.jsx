@@ -17,11 +17,6 @@ function App() {
     return children ? children : <Outlet />
   }
 
-  const lazyLoad = (path) => async () => {
-    const module = await import(/* @vite-ignore */path);
-    return { Component: module.default };
-  };
-
   let router = createBrowserRouter([
     {
       path: "/admin",
@@ -29,7 +24,10 @@ function App() {
       children: [
         {
           path: "",
-          lazy: lazyLoad("./pages/admin/AdminAuth"),
+          lazy: async () => {
+            const module = await import("@/pages/admin/AdminAuth");
+            return { Component: module.default };
+          },
         },
       ]
     },
@@ -42,19 +40,31 @@ function App() {
       children: [
         {
           path: "dashboard",
-          lazy: lazyLoad("./pages/admin/Dashboard"),
+          lazy: async () => {
+            const module = await import("@/pages/admin/Dashboard");
+            return { Component: module.default };
+          },
         },
         {
           path: "users",
-          lazy: lazyLoad("./pages/admin/Users"),
+          lazy: async () => {
+            const module = await import("@/pages/admin/Users");
+            return { Component: module.default };
+          },
         },
         {
           path: "messages",
-          lazy: lazyLoad("./pages/admin/Messages"),
+          lazy: async () => {
+            const module = await import("@/pages/admin/Messages");
+            return { Component: module.default };
+          },
         },
         {
           path: "groups",
-          lazy: lazyLoad("./pages/admin/Groups"),
+          lazy: async () => {
+            const module = await import("@/pages/admin/Groups");
+            return { Component: module.default };
+          },
         },
       ]
     },
@@ -64,7 +74,10 @@ function App() {
       children: [
         {
           path: "",
-          lazy: lazyLoad("./pages/Auth"),
+          lazy: async () => {
+            const module = await import("@/pages/Auth");
+            return { Component: module.default };
+          },
         }
       ]
     },
@@ -77,17 +90,26 @@ function App() {
       children: [
         {
           path: "/",
-          lazy: lazyLoad("./pages/Home"),
+          lazy: async () => {
+            const module = await import("@/pages/Home");
+            return { Component: module.default };
+          },
         },
         {
           path: "chat/:chatId",
-          lazy: lazyLoad("./pages/Chat"),
+          lazy: async () => {
+            const module = await import("@/pages/Chat");
+            return { Component: module.default };
+          },
         },
       ]
     },
     {
       path: '*',
-      lazy: lazyLoad("./pages/PageNotFound"),
+      lazy: async () => {
+        const module = await import("@/pages/PageNotFound");
+        return { Component: module.default };
+      },
     }
   ]);
 
@@ -104,7 +126,6 @@ function App() {
     fetchUser()
   }, [dispatch])
 
-  // return <div onContextMenu={e => e.preventDefault()}><RouterProvider router={router} /></div>
   return (
     loader ? (
       <>Loading...</>
@@ -115,7 +136,6 @@ function App() {
       </>
     )
   );
-
 }
-export default App
 
+export default App

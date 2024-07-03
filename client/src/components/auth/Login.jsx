@@ -13,12 +13,16 @@ const Login = ({ setIsLogin, setIsForget }) => {
         register,
         handleSubmit,
         formState: { errors }
-    } = useForm({ mode: 'onChange' });
+    } = useForm({
+        mode: 'onChange', defaultValues: {
+            username: 'Cleveland6',
+            password: 'password123'
+        }
+    });
 
     const onSubmit = async (data) => {
         try {
             const response = await postRequest('/auth/signIn', data);
-            console.log(response)
             dispatch(userExist(response.data))
             toast.success(response.message)
         } catch (error) {
