@@ -10,6 +10,7 @@ import { useInfiniteScrollTop } from "@/hooks/infiniteScroll"
 import useAsyncMutation from "@/hooks/asyncMutation"
 import { removeMessageNotification } from "@/redux/reducers/chat"
 import { useDispatch, useSelector } from "react-redux"
+import SkeletonBox from "@/components/skeletons/SkeletonBox"
 
 
 const ChatsViewPanel = ({ chatId }) => {
@@ -182,7 +183,14 @@ const ChatsViewPanel = ({ chatId }) => {
             <div className="bg-glass-background bg-center -mt-4">
                 <div ref={containerRef} className='h-[85vh] p-2 pt-20 flex flex-col gap-4 overflow-y-auto scrollbar-hide backdrop-blur-lg backdrop-saturate-[100%] bg-[rgba(33,26,42,0.75)]'>
                     {msgLoading ? (
-                        <div>Fetching messages...</div>
+                        <div className="flex flex-col gap-2">
+                            <SkeletonBox className={'w-40 rounded-e-[2rem] border-2 border-green-light rounded-b-xl'} />
+                            <SkeletonBox className={'w-52 self-end border-2 border-green-light rounded-b-xl rounded-s-[2rem]'} />
+                            <SkeletonBox className={'w-60 rounded-e-[2rem] border-2 border-green-light rounded-b-xl'} />
+                            <SkeletonBox className={'w-60 self-end border-2 border-green-light rounded-b-xl rounded-s-[2rem]'} />
+                            <SkeletonBox className={'w-40 rounded-e-[2rem] border-2 border-green-light rounded-b-xl'} />
+                            <SkeletonBox className={'w-52 self-end border-2 border-green-light rounded-b-xl rounded-s-[2rem]'} />
+                        </div>
                     ) : (
                         allMessages.map((message, index) => {
                             const sameSender = message.sender._id === user._id

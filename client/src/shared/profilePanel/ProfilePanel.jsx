@@ -1,4 +1,5 @@
 import ImageViewer from '@/components/image-viewer/Image-Viewer'
+import SkeletonBox from '@/components/skeletons/SkeletonBox'
 import Image from '@/components/ui/Image'
 import Carousel from '@/components/ui/carousel/Carousel'
 import useErrors from '@/hooks/error'
@@ -81,7 +82,7 @@ const ProfilePanel = () => {
     useSocketEvent(socket, events)
 
     if (chatId) {
-        if (isLoading || isMediaLoading) return <div>Loading...</div>
+        if (isLoading) return <></>
         if (!profileDetails || !profileDetails.data) return <div>No profile data available</div>
     }
 
@@ -163,25 +164,32 @@ const ProfilePanel = () => {
                         <p className="px-2 text-body-700 capitalize border-0 border-b half-border pb-1">Photos & Multimedia</p>
                         <div className="flex gap-4 flex-wrap my-4 overflow-y-auto scrollbar-custom max-h-[11rem]">
                             {
-                                mediaFiles.length === 0 ?
-                                    <div className='grid place-items-center w-full'>
-                                        <div className='w-full'>
-                                            <img src="/images/no-media.svg"
-                                                alt="no-media"
-                                                className='w-20 mx-auto opacity-50'
-                                            />
-                                            <p className='text-center text-body-300 text-sm mt-4'>No Media Found</p>
-                                        </div>
+                                isMediaLoading ?
+                                    <div className='flex flex-wrap justify-center gap-2'>
+                                        {Array(6).fill(0).map((i) => <SkeletonBox key={i} className={'w-24 h-20 bg-primary'} />)}
                                     </div>
-                                    : mediaFiles.slice(0, 8).map((file, index) => (
-                                        <div
-                                            key={file._id}
-                                            onClick={() => openImageViewer(index)}
-                                            className='hover:opacity-50 transition-opacity cursor-pointer'
-                                        >
-                                            {renderMediaThumbnail(file, index)}
-                                        </div>
-                                    ))
+                                    :
+                                    <>
+                                        {mediaFiles.length === 0 ?
+                                            <div className='grid place-items-center w-full'>
+                                                <div className='w-full'>
+                                                    <img src="/images/no-media.svg"
+                                                        alt="no-media"
+                                                        className='w-20 mx-auto opacity-50'
+                                                    />
+                                                    <p className='text-center text-body-300 text-sm mt-4'>No Media Found</p>
+                                                </div>
+                                            </div>
+                                            : mediaFiles.slice(0, 8).map((file, index) => (
+                                                <div
+                                                    key={file._id}
+                                                    onClick={() => openImageViewer(index)}
+                                                    className='hover:opacity-50 transition-opacity cursor-pointer'
+                                                >
+                                                    {renderMediaThumbnail(file, index)}
+                                                </div>
+                                            ))}
+                                    </>
                             }
                         </div>
                         <p
@@ -196,36 +204,48 @@ const ProfilePanel = () => {
                         <p className="px-2 text-body-700 capitalize border-0 border-b half-border pb-1">Attachments</p>
                         <div className="flex flex-col gap-2 my-4 overflow-y-scroll scrollbar-custom max-h-[7rem]">
                             {
-                                docFiles.length === 0 ?
-                                    <div className='grid place-items-center w-full'>
-                                        <div className='w-full'>
-                                            <img src="/images/no-documents.svg"
-                                                alt="no-media"
-                                                className='w-20 mx-auto opacity-50'
-                                            />
-                                            <p className='text-center text-body-300 text-sm mt-4'>No Document Found</p>
-                                        </div>
+                                isMediaLoading ?
+                                    <div className='flex flex-col items-center gap-2'>
+                                        {Array(3).fill(0).map((i) =>
+                                            <div key={i} className='flex gap-4 items-center'>
+                                                <SkeletonBox className={'w-3 h-8 bg-primary'} />
+                                                <SkeletonBox className={'w-52 h-3 bg-primary'} />
+                                            </div>
+                                        )}
                                     </div>
                                     :
-                                    docFiles.map(({ _id, name, url }) => {
-                                        const fileExtension = fileFormat(name)
-
-                                        const file = fileData.find((file => file.docType === fileExtension))
-                                        return (
-                                            <div
-                                                key={_id}
-                                                onClick={(e) => handleFileAction(e, url, name)}
-                                                className="cursor-pointer"
-                                            >
-                                                <div className="w-full h-8 rounded-lg">
-                                                    <p className="flex gap-4 items-center h-full w-[90%] cursor-pointer">
-                                                        <img src={file.icon} alt={name} className="w-6" />
-                                                        <span className='w-72 truncate capitalize text-sm'>{name}</span>
-                                                    </p>
+                                    <>
+                                        {docFiles.length === 0 ?
+                                            <div className='grid place-items-center w-full'>
+                                                <div className='w-full'>
+                                                    <img src="/images/no-documents.svg"
+                                                        alt="no-media"
+                                                        className='w-20 mx-auto opacity-50'
+                                                    />
+                                                    <p className='text-center text-body-300 text-sm mt-4'>No Document Found</p>
                                                 </div>
                                             </div>
-                                        )
-                                    })
+                                            :
+                                            docFiles.map(({ _id, name, url }) => {
+                                                const fileExtension = fileFormat(name)
+
+                                                const file = fileData.find((file => file.docType === fileExtension))
+                                                return (
+                                                    <div
+                                                        key={_id}
+                                                        onClick={(e) => handleFileAction(e, url, name)}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <div className="w-full h-8 rounded-lg">
+                                                            <p className="flex gap-4 items-center h-full w-[90%] cursor-pointer">
+                                                                <img src={file.icon} alt={name} className="w-6" />
+                                                                <span className='w-72 truncate capitalize text-sm'>{name}</span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                    </>
                             }
                         </div>
                         <p

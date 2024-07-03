@@ -6,6 +6,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import GroupChatItem from "./SuggestionListItem";
 import { useNavigate } from "react-router-dom";
+import AvatarSkeleton from "@/components/skeletons/AvatarSkeleton";
 
 const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
     const [searchText, setSearchText] = useState('');
@@ -21,8 +22,6 @@ const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
     const handleSelectMember = (id) => {
         setSelectedMembers(prev => prev.includes(id) ? prev.filter(el => el !== id) : [...prev, id])
     }
-
-    console.log(selectedMembers)
 
     const onSubmit = async () => {
         if (!groupname) return toast.error('Please add a group name')
@@ -71,17 +70,31 @@ const GroupChatDialog = ({ isCreateGroup, setIsCreateGroup }) => {
                 <div>
                     <p className="text-body-300 font-medium my-4">Suggested</p>
 
-                    {isLoading ? <p>Fetching Your Friends...</p> :
-                        <div className="flex flex-col gap-4 overflow-y-auto h-[58vh] scrollbar-hide">
-                            {filteredMembers.map((friend) =>
-                                <GroupChatItem
-                                    key={friend._id}
-                                    data={friend}
-                                    isSelected={selectedMembers.includes(friend._id)}
-                                    handleSelectMember={handleSelectMember}
-                                />
-                            )}
-                        </div>}
+                    <div className="flex flex-col gap-4 overflow-y-auto h-[58vh] scrollbar-hide">
+                        {isLoading ? (
+                            Array(5).fill(0).map((_, i) =>
+                                <AvatarSkeleton key={i} className={'px-4 py-2 h-20 bg-transparent'} />)
+                        ) : (
+                            filteredMembers.length === 0 ? (
+                                <div className="grid place-items-center h-full">
+                                    <div className="mb-12 text-center">
+                                        <img src="/images/no-member.svg" alt="no member" className="w-60 opacity-50" />
+                                        <p className="text-xl mt-6 font-semibold text-body-300">No Member found</p>
+                                    </div>
+                                </div>
+                            ) : (
+                                filteredMembers.map((friend) => (
+                                    <GroupChatItem
+                                        key={friend._id}
+                                        data={friend}
+                                        isSelected={selectedMembers.includes(friend._id)}
+                                        handleSelectMember={handleSelectMember}
+                                    />
+                                ))
+                            )
+                        )}
+                    </div>
+
                 </div>
 
             </div>
