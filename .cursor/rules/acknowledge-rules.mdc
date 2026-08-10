@@ -1,0 +1,16 @@
+---
+description: Always read and acknowledge project Cursor rules before answering
+alwaysApply: true
+---
+
+# Acknowledge Rules First
+
+Before answering any user request (question, plan, or implementation):
+
+1. Read all relevant files under `.cursor/rules/`.
+2. Start the reply with a short line like: **Gone through rule files:** `rule-a.mdc`, `rule-b.mdc`.
+3. Then follow those rules for the rest of the response and any code changes.
+
+If no rule files exist yet, say so once, then proceed.
+
+Do not skip this acknowledgment. Do not invent rules that are not in `.cursor/rules/` or `docs/`.
