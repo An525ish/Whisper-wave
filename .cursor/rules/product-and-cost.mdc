@@ -1,0 +1,24 @@
+---
+description: Product/tech docs and $0 constraint for Whisper Wave
+alwaysApply: true
+---
+
+# Product & Cost Guardrails
+
+Canonical docs (read when changing product/backend direction):
+
+- `docs/PRODUCT.md` — product vision
+- `docs/TECH.md` — stack, cost, folder conventions
+- `docs/USER_JOURNEY.md` — backend journey steps
+
+## Cost
+
+Stay **$0** until real users or Spark Pass revenue: no Redis/Stripe/Sentry/paid moderation in Phase 1. Redis free tier only when Phase 2 matching starts.
+
+## Stack baseline
+
+Node 20+, Express 5, Mongoose 9, Socket.IO, Zod, TypeScript. Phase 2 must follow the same majors — no parallel older stack.
+
+## Auth note
+
+Connected layer currently uses a single access JWT cookie. Prefer access+refresh when hardening auth. Do not add unused `REFRESH_TOKEN_*` env keys.

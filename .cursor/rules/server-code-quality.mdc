@@ -1,0 +1,49 @@
+---
+description: TypeScript and code quality for Whisper Wave server
+globs: server/**/*.ts
+alwaysApply: false
+---
+
+# Code Quality
+
+## TypeScript
+
+- `strict` on. No `any` unless unavoidable at a boundary; prefer `unknown` + narrow.
+- Prefer named types in `types/` over repeated inline object types.
+- Async errors: throw `AppError` in services; controllers use `catchAsync`.
+
+## Controllers
+
+```ts
+// ✅ thin
+export const signIn = catchAsync(async (req, res) => {
+  const result = await authService.signIn(req.body);
+  res.cookie('accessToken', result.token, cookieOptions).json(result.response);
+});
+
+// ❌ fat — DB/hash/upload inside controller
+```
+
+## Services
+
+- Export functions or a small module object; keep pure of Express.
+- Validate invariants (membership, ownership) in services.
+- Return data/DTOs; let controllers map HTTP status.
+
+## Robustness
+
+- Never empty `catch {}`. Log with `logger`, then throw or rethrow.
+- Validate input with Zod at the route boundary.
+- No dual responses; one `res` path per handler.
+- Auth checks before mutations.
+
+## Scalability habits (cheap now)
+
+- Presence/realtime helpers isolated (`services/presence.ts`) so Redis can replace later.
+- No new paid infra without docs/`TECH.md` approval.
+- Keep request handlers fast; heavy media work stays isolated for future workers.
+
+## Dependencies
+
+- Latest majors already chosen (Express 5, Mongoose 9, etc.). Don’t reintroduce `dotenv`.
+- Load env via Node `--env-file` in npm scripts.

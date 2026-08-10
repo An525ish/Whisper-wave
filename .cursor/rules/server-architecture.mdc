@@ -1,0 +1,65 @@
+---
+description: Server layering — routes, controllers, services, models, types
+globs: server/**/*.ts
+alwaysApply: false
+---
+
+# Server Architecture (SoC)
+
+## Layers (one job each)
+
+| Layer | Folder | Allowed to do | Must NOT do |
+|---|---|---|---|
+| Routes | `routes/` | Wire path → middleware → controller | Business logic, DB |
+| Controllers | `controllers/` | Parse req, call service, set status/cookies/json | DB queries, hashing, Cloudinary, matching rules |
+| Services | `services/` | Business rules, orchestration, DB via models | `req`/`res`, Express types |
+| Models | `models/` | Mongoose schemas + model export only | Business rules, HTTP |
+| Types | `types/` | All shared TS types/interfaces | Runtime logic |
+| Validators | `validators/` | Zod schemas only | Side effects |
+| Middlewares | `middlewares/` | Cross-cutting HTTP (auth, upload, errors) | Domain business rules |
+| Utils | `utils/` | Pure helpers (logger, AppError, tokens) | Feature orchestration |
+| Config | `config/` | Env, DB, CORS, Cloudinary setup | Features |
+| Socket | `socket/` | Connection lifecycle; call services | Fat business logic inline |
+
+## Naming
+
+Folder already states the role: `services/auth.ts`, not `auth.service.ts`.
+Same for controllers, models, routes, validators, middlewares.
+
+## Barrel `index.ts` files
+
+Use selectively — **not** in every folder:
+
+| Folder | `index.ts`? | Role |
+|---|---|---|
+| `routes/` | **Required** | `registerRoutes(app)` — **only** place that mounts feature routers |
+| `types/` | **Required** | Re-export shared domain types |
+| `services/` | Optional barrel | If present, prefer `from '../services/index.js'` |
+| `middlewares/` | Optional barrel | If present, prefer `from '../middlewares/index.js'` |
+| `controllers/`, `models/`, `validators/`, `config/`, `utils/`, `constants/` | **No** by default | Import the specific file |
+
+When a barrel exists for middlewares/services, **use it** — don’t keep deep imports like `middlewares/auth.js` in routes.
+### Routes registration
+
+- File name: `routes/index.ts` — **not** `route.ts` / `routes.ts` (folder already means routes).
+- Export `registerRoutes(app: Express): void`.
+- New feature? Add `routes/foo.ts` **and** one line in `registerRoutes`. Do not mount routers in `app.ts`.
+
+```ts
+// ✅ app.ts
+registerRoutes(app);
+
+// ❌ app.ts
+app.use('/api/auth', authRouter);
+app.use('/api/chat', chatRouter);
+```
+
+### Nesting
+
+Prefer domain nesting when a feature grows past ~1–2 files, e.g. `services/match/` in Phase 2. Do not nest for a single tiny file.
+
+## Types
+
+- Define domain/API types only under `server/src/types/`.
+- Models import interfaces from `types/`; they do not export domain types.
+- Controllers/services import types from `types/` (or `types/index.js`), never redefine shared inline shapes.

@@ -1,0 +1,60 @@
+import { Router } from 'express';
+import {
+  addMembers,
+  createGroupChat,
+  deleteGroup,
+  findChats,
+  getChatDetails,
+  getMedia,
+  getMyChats,
+  leaveGroup,
+  removeMember,
+  updateGroupDetails,
+} from '../controllers/chat.js';
+import { auth, validate } from '../middlewares/index.js';
+import {
+  addMembersSchema,
+  chatIdParamSchema,
+  createGroupSchema,
+  findChatsSchema,
+  removeMemberSchema,
+  updateGroupSchema,
+} from '../validators/chat.js';
+
+export const chatRouter = Router();
+
+chatRouter.use(auth);
+
+chatRouter.get('/get-my-chats', getMyChats);
+chatRouter.get('/get-chat-details', getChatDetails);
+chatRouter.get('/get-media/:chatId', validate(chatIdParamSchema, 'params'), getMedia);
+chatRouter.post('/create-group', validate(createGroupSchema), createGroupChat);
+chatRouter.post('/find-users', validate(findChatsSchema), findChats);
+chatRouter.put(
+  '/update-group-details/:chatId',
+  validate(chatIdParamSchema, 'params'),
+  validate(updateGroupSchema),
+  updateGroupDetails
+);
+chatRouter.put(
+  '/add-members/:chatId',
+  validate(chatIdParamSchema, 'params'),
+  validate(addMembersSchema),
+  addMembers
+);
+chatRouter.put(
+  '/remove-member/:chatId',
+  validate(chatIdParamSchema, 'params'),
+  validate(removeMemberSchema),
+  removeMember
+);
+chatRouter.delete(
+  '/leave-group/:chatId',
+  validate(chatIdParamSchema, 'params'),
+  leaveGroup
+);
+chatRouter.delete(
+  '/delete-group/:chatId',
+  validate(chatIdParamSchema, 'params'),
+  deleteGroup
+);
