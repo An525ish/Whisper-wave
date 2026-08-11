@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 import { NEW_REQUEST } from '../constants/socket-events.js';
-import { Chat } from '../models/chat.js';
-import { Request } from '../models/request.js';
+import * as chatRepo from '../repositories/chat.js';
+import * as requestRepo from '../repositories/request.js';
 import type {
   FriendSummary,
   NotificationItem,
@@ -17,18 +17,13 @@ export const sendRequest = async (
     throw new AppError(400, 'Request can not be send to own self');
   }
 
-  const requestExist = await Request.findOne({
-    $or: [
-      { sender: userId, receiver: receiverId },
-      { sender: receiverId, receiver: userId },
-    ],
-  });
+  const requestExist = await requestRepo.findBetweenUsers(userId, receiverId);
 
   if (requestExist) {
     throw new AppError(400, 'Request already sent');
   }
 
-  await Request.create({ sender: userId, receiver: receiverId });
+  await requestRepo.create(userId, receiverId);
 
   return {
     notifications: [{ event: NEW_REQUEST, members: [receiverId] }],
@@ -40,12 +35,7 @@ export const handleRequest = async (
   requestId: string,
   accept: boolean
 ): Promise<{ message: string; data?: { senderId: Types.ObjectId } }> => {
-  const request = await Request.findById(requestId)
-    .populate<{
-      sender: { _id: Types.ObjectId; name: string };
-      receiver: { _id: Types.ObjectId; name: string };
-    }>('sender', 'name')
-    .populate('receiver', 'name');
+  const request = await requestRepo.findByIdWithParties(requestId);
 
   if (!request) throw new AppError(404, 'No request found');
 
@@ -54,7 +44,7 @@ export const handleRequest = async (
   }
 
   if (!accept) {
-    await request.deleteOne();
+    await requestRepo.deleteById(requestId);
     return { message: 'Request rejected successfullly' };
   }
 
@@ -62,12 +52,12 @@ export const handleRequest = async (
   const receiverId = request.receiver._id;
 
   await Promise.all([
-    Chat.create({
+    chatRepo.create({
       name: `${request.sender.name}-${request.receiver.name}`,
       creator: receiverId,
       members: [senderId, new Types.ObjectId(userId)],
     }),
-    request.deleteOne(),
+    requestRepo.deleteById(requestId),
   ]);
 
   return {
@@ -79,9 +69,7 @@ export const handleRequest = async (
 export const getNotifications = async (
   userId: string
 ): Promise<NotificationItem[]> => {
-  const requests = await Request.find({ receiver: userId }).populate<{
-    sender: { _id: unknown; name: string; avatar: { url: string } };
-  }>('sender', 'name avatar');
+  const requests = await requestRepo.findByReceiverWithSender(userId);
 
   return requests.map(({ _id, sender }) => ({
     _id,
@@ -97,16 +85,7 @@ export const getMyFriends = async (
   userId: string,
   chatId?: string
 ): Promise<FriendSummary[]> => {
-  const chats = await Chat.find({
-    groupChat: false,
-    members: userId,
-  }).populate<{
-    members: Array<{
-      _id: { toString(): string };
-      name: string;
-      avatar?: { url?: string };
-    }>;
-  }>('members', 'name avatar');
+  const chats = await chatRepo.findDirectChatsPopulated(userId);
 
   const friends = chats.flatMap(({ members }) => {
     const otherMembers = members.filter(
@@ -122,11 +101,13 @@ export const getMyFriends = async (
 
   if (!chatId) return friends;
 
-  const chat = await Chat.findById(chatId);
+  const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
 
   return friends.filter(
     (friend) =>
-      !chat.members.some((member) => member.toString() === friend._id.toString())
+      !chat.members.some(
+        (member) => member.toString() === friend._id.toString()
+      )
   );
 };

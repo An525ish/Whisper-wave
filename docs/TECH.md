@@ -36,20 +36,22 @@ We only spend money later if:
 | **Socket.IO 4** | Free | Real-time chat without inventing our own protocol. |
 | **Cloudinary** | Free tier | Avatars + attachments. |
 | **JWT + cookies** | Free | Login without a paid auth product. |
-| **Vite + React client** | Free | Not touching frontend yet. |
+| **Vite + React client** | Free | SPA on latest majors (React 19, Vite 8, RR7, Tailwind 4, TanStack Query, Zustand). |
 | **TypeScript 7 / Zod 4 / Multer 2 / Jimp 1** | Free | Phase 1 baseline — Phase 2 follows the same majors. |
 
 We are **not** removing MongoDB. We are **not** rewriting the backend in another language.
 
 ### Dependency policy
 
-Phase 1 is on **latest majors**. Phase 2 must not invent an older parallel stack.
+Phase 1 is on **latest majors** (server and client). Phase 2 must not invent an older parallel stack.
 
 - Prefer current majors: Express 5, Mongoose 9, Multer 2, Jimp 1, uuid 14, Zod 4.
+- Client: React 19, Vite 8, React Router 7, Tailwind 4, TanStack Query 5, Zustand 5, TypeScript 7.
+- Client ESLint: until `typescript-eslint` supports TS ≥7.1, keep the Microsoft side-by-side install — `typescript` → `@typescript/typescript6` (for eslint), `typescript-7` → `typescript@7` (for `tsc` / typecheck / build). No `legacy-peer-deps`.
 - **No `dotenv`** — Node 20+ `--env-file` / `--env-file-if-exists` loads `.env` (see npm scripts).
 - When adding Redis / Stripe later, install the current major at that time.
 - After big upgrades: `npm run typecheck` + `npm run build` + hit `/health`.
-- Require **Node >= 20** (`engines` in `server/package.json`).
+- Require **Node >= 20** (`engines` in `server/package.json` and `client/package.json`).
 
 ### Notable upgrade adaptations already in the code
 
@@ -94,25 +96,15 @@ If free Redis is not enough later, *then* we pay. Not now.
 
 ---
 
-## What we will do in Phase 1 (now) — backend only
+## What we will do in Phase 1 (now)
 
-Goal: make the **existing connected-chat server** clean, typed, and safe — without new product features and without new paid services.
+Goal: make the **existing connected-chat** stack clean, typed, and safe — without new product features and without new paid services.
 
-| We will do | Why (simple) | Cost |
-|---|---|---|
-| Move server to **TypeScript** | Catch bugs before users hit them (wrong `chatId`, missing sender, etc.) | Free |
-| Split `index.js` into `app` / `server` / `socket` / `config` | One 162-line file mixing everything is hard to change. Phase 2 will be painful if we don’t. | Free |
-| Fix real bugs (double signup response, auth-after-update, etc.) | Current register/update/leave-group paths can fail or be insecure | Free |
-| **Zod** for env + request validation | Crash at startup if `.env` is wrong. Reject garbage input instead of trusting `req.body` | Free (open source) |
-| **Helmet + rate limit + smaller JSON body** | Basic protection from bots / brute-force login. No paid WAF. | Free |
-| **Pino** logs instead of `console.log` | Structured logs we can read later. Not Datadog/Sentry (those cost money). | Free |
-| Mongo **indexes** | Chat lists and message history stay fast as data grows. Indexes are free. | Free |
-| Auth middleware: verify JWT only, no DB hit every request | Faster + cheaper on Atlas free tier (fewer reads) | Free |
-| Isolate presence in `utils/socket.ts` (`Map`) | Same API later when we plug Redis. We don’t pay for Redis yet. | Free |
-| Health route + graceful shutdown | Needed when we eventually deploy. Costs nothing now. | Free |
-| Keep FFmpeg/Jimp **in-process** | Moving to a worker queue needs Redis + extra process. Skip until uploads actually hurt. | Free |
+Server: TypeScript, services layer, Zod, Helmet, rate limits, indexes, admin API (`adminToken`).
 
-**Phase 1 does not include:** anonymous matching, Redis, Stripe, moderation APIs, push notifications, new frontend.
+Client: latest majors, TanStack Query + Zustand, modular folders, real admin UI wiring, no intentional visual redesign.
+
+**Phase 1 client status:** complete (latest majors, TQ + Zustand, admin API wired, virtualized lists, Zod validators, shared Searchbar/SuggestionListItem, **full `.tsx`/`.ts` conversion**).
 
 ---
 
@@ -216,6 +208,7 @@ Folder already says the role — do **not** double-suffix files:
 - `middlewares/auth.ts` (not `auth.middleware.ts`)
 - `controllers/chat.ts` (not `chat.controller.ts`)
 - `services/chat.ts` (business logic — not in controllers)
+- `repositories/user.ts` (DB access only — services/middlewares call these, not models)
 - `models/user.ts` (schemas only; types live in `types/`)
 - `types/user.ts` (all shared TS types)
 - `validators/auth.ts` / `routes/auth.ts`
@@ -223,18 +216,37 @@ Folder already says the role — do **not** double-suffix files:
 ### Layering
 
 ```
-routes → middlewares → controllers (HTTP only) → services (business) → models
+routes → middlewares → controllers (HTTP only) → services (business) → repositories → models
                                                       ↑
                                                    types/
 ```
 
-Controllers parse `req`/`res`, call services, set cookies/status. Services never import Express. Types are never defined inside controllers/services when shared — put them in `types/`.
+Controllers parse `req`/`res`, call services, set cookies/status. Services never import Express or `models/`. Repositories own all Mongoose queries. Types are never defined inside controllers/services when shared — put them in `types/`.
 
 **Route registration:** only in `routes/index.ts` via `registerRoutes(app)`. `app.ts` must not mount feature routers itself.
 
-**Barrels:** required for `routes/index.ts` + `types/index.ts`; optional for `services/` + `middlewares/`; skip for controllers/models/validators/config/utils by default.
+**Barrels:** required for `routes/index.ts` + `types/index.ts`; optional for `services/` + `middlewares/`; skip for controllers/models/repositories/validators/config/utils by default.
 
-Cursor rules enforcing this live in `.cursor/rules/` (`acknowledge-rules`, `server-architecture`, `server-code-quality`, `product-and-cost`).
+### Client layout (Phase 1)
+
+```
+client/src/
+  app/          providers, router, queryClient
+  api/          fetch client + resource functions (no React)
+  stores/       Zustand (auth, admin, notifications)
+  features/     domain hooks (api, admin)
+  socket/       Socket.IO provider
+  types/        shared TS types
+  pages/        route screens
+  components/   presentational UI
+  layout/       AppWrapper / AdminWrapper
+```
+
+- Server state → TanStack Query. Client/UI state → Zustand. No Redux/axios.
+- Admin auth: httpOnly `adminToken` cookie; `ADMIN_SECRET` never in `VITE_*`.
+- Cursor rules: `client-architecture.mdc`, `client-code-quality.mdc`.
+
+Cursor rules enforcing this live in `.cursor/rules/` (`acknowledge-rules`, `server-architecture`, `server-code-quality`, `client-architecture`, `client-code-quality`, `product-and-cost`).
 
 When we start Phase 2, add a short “Phase 2 backend” section here (Redis keys, `/anon` events) instead of inventing a new stack.
 
@@ -249,3 +261,6 @@ When we start Phase 2, add a short “Phase 2 backend” section here (Redis key
 | Aug 2026 | Mongo for permanent data, Redis later for ephemeral match | Product + cost + speed |
 | Aug 2026 | No Redis / Stripe / paid moderation in Phase 1 | $0 now; add when the feature exists |
 | Aug 2026 | In-memory presence `Map` in Phase 1, swap file later | Same code shape, zero extra infra |
+| Aug 2026 | Client: TanStack Query + Zustand (drop Redux/axios) | Lighter server-state model; matches latest majors |
+| Aug 2026 | Client latest majors (React 19, Vite 8, RR7, Tailwind 4) | Same dependency policy as server |
+| Aug 2026 | Admin `adminToken` cookie + `ADMIN_SECRET` | Real admin auth without leaking secret to Vite |

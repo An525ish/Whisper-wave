@@ -1,0 +1,40 @@
+---
+description: Client layering — app, features, api, stores, types
+globs: client/**/*.{ts,tsx,js,jsx}
+alwaysApply: false
+---
+
+# Client Architecture (SoC)
+
+## Layers (one job each)
+
+| Layer | Folder | Allowed to do | Must NOT do |
+|---|---|---|---|
+| App shell | `app/` | Providers, router, root composition | Domain fetch/business rules |
+| Pages | `pages/` | Compose features/layout for a route | Own network/socket orchestration |
+| Features | `features/*` | Domain hooks + feature UI wiring | Generic design-system widgets |
+| Components | `components/` | Presentational UI | Call APIs or Zustand for server data |
+| API | `api/` | `fetch` helpers + resource functions | Touch React / Zustand |
+| Stores | `stores/` | Client/UI session state (auth flags, badges) | Call the network |
+| Socket | `socket/` | Connect/lifecycle; thin emit/listen | Fat domain logic |
+| Types | `types/` | Shared TS types only | Runtime logic |
+| Validators | `validators/` | Zod schemas only | Side effects |
+| Utils / lib | `utils/`, `lib/` | Pure helpers / constants | Feature orchestration |
+
+## Naming
+
+Folder already states the role: `stores/auth.ts`, not `auth.store.ts`.
+
+## Barrels
+
+| Folder | `index.ts`? |
+|---|---|
+| `types/` | **Required** — re-export shared domain types |
+| `stores/`, `hooks/` | Optional; if present, prefer the barrel |
+| `api/`, `components/`, `pages/`, `features/` | No by default |
+
+## State
+
+- Server state → TanStack Query (`api/` + feature hooks).
+- Client/UI state → Zustand (`stores/`).
+- Do not reintroduce Redux or a second HTTP client (axios).

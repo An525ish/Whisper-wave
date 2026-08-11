@@ -1,17 +1,60 @@
 import { Types } from 'mongoose';
 import { REFETCH_CHATS } from '../constants/socket-events.js';
-import { Chat } from '../models/chat.js';
-import { Message } from '../models/message.js';
+import * as chatRepo from '../repositories/chat.js';
+import * as messageRepo from '../repositories/message.js';
 import type {
   ChatListItem,
   ChatNotificationInput,
+  ChatSharedContent,
+  ChatSharedLink,
   FindChatItem,
   PopulatedMember,
   RealtimeNotify,
 } from '../types/chat.js';
 import { AppError } from '../utils/AppError.js';
 
-const assertCreator = (userId: string, creatorId: { toString(): string }): void => {
+const URL_IN_TEXT =
+  /https?:\/\/[^\s<>"'`{}|\\^[\]]+/gi;
+
+const extractUniqueLinks = (
+  messages: Array<{ _id: Types.ObjectId; content?: string; createdAt: Date }>
+): ChatSharedLink[] => {
+  const seen = new Set<string>();
+  const links: ChatSharedLink[] = [];
+
+  for (const message of messages) {
+    if (!message.content) continue;
+    const matches = message.content.match(URL_IN_TEXT);
+    if (!matches) continue;
+
+    for (const raw of matches) {
+      const url = raw.replace(/[),.;!?]+$/g, '');
+      if (seen.has(url)) continue;
+      seen.add(url);
+
+      let host = url;
+      try {
+        host = new URL(url).hostname.replace(/^www\./, '');
+      } catch {
+        /* keep raw */
+      }
+
+      links.push({
+        url,
+        host,
+        messageId: message._id.toString(),
+        createdAt: message.createdAt,
+      });
+    }
+  }
+
+  return links;
+};
+
+const assertCreator = (
+  userId: string,
+  creatorId: { toString(): string }
+): void => {
   if (userId !== creatorId.toString()) {
     throw new AppError(
       401,
@@ -26,7 +69,7 @@ export const createGroupChat = async (
   members: string[]
 ): Promise<{ chat: unknown; notifications: RealtimeNotify[] }> => {
   const allMembers = [...members, userId];
-  const chat = await Chat.create({
+  const chat = await chatRepo.create({
     name,
     groupChat: true,
     creator: userId,
@@ -44,15 +87,16 @@ export const updateGroupDetails = async (
   chatId: string,
   name: string
 ): Promise<{ notifications: RealtimeNotify[] }> => {
-  const chat = await Chat.findById(chatId);
+  const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
 
   assertCreator(userId, chat.creator);
-  chat.name = name;
-  await chat.save();
+  const updated = await chatRepo.updateById(chatId, { name });
 
   return {
-    notifications: [{ event: REFETCH_CHATS, members: chat.members }],
+    notifications: [
+      { event: REFETCH_CHATS, members: updated?.members ?? chat.members },
+    ],
   };
 };
 
@@ -63,17 +107,12 @@ export const getMyChats = async (
   const resultPerPage = 20;
 
   const [chats, totalChats] = await Promise.all([
-    Chat.find({ members: userId })
-      .populate('members', 'name username email avatar')
-      .populate({
-        path: 'lastMessage',
-        populate: { path: 'sender', select: 'name' },
-      })
-      .sort({ updatedAt: -1 })
-      .skip((page - 1) * resultPerPage)
-      .limit(resultPerPage)
-      .lean(),
-    Chat.countDocuments({ members: userId }),
+    chatRepo.findMyChatsPage(
+      userId,
+      (page - 1) * resultPerPage,
+      resultPerPage
+    ),
+    chatRepo.countForMember(userId),
   ]);
 
   const data = chats.map(({ _id, name, members, groupChat, lastMessage }) => {
@@ -108,10 +147,7 @@ export const findChats = async (
   userIds: string[],
   notifications: ChatNotificationInput[]
 ): Promise<FindChatItem[]> => {
-  const chats = await Chat.find({
-    _id: { $in: userIds },
-    members: userId,
-  }).populate('members', 'name avatar');
+  const chats = await chatRepo.findByIdsForMemberPopulated(userId, userIds);
 
   const notificationMap = new Map(
     notifications.map((n) => [n.chatId, n.count])
@@ -141,12 +177,15 @@ export const getChatDetails = async (
   let chat: Record<string, unknown> | null = null;
 
   if (shouldPopulate) {
-    chat = (await Chat.findById(chatId)
-      .populate('members', 'name avatar')
-      .populate('creator', 'name avatar')
-      .lean()) as Record<string, unknown> | null;
+    chat = (await chatRepo.findByIdPopulated(chatId)) as Record<
+      string,
+      unknown
+    > | null;
   } else {
-    chat = (await Chat.findById(chatId).lean()) as Record<string, unknown> | null;
+    chat = (await chatRepo.findByIdLean(chatId)) as Record<
+      string,
+      unknown
+    > | null;
   }
 
   if (!chat) throw new AppError(400, 'No chat found');
@@ -188,21 +227,23 @@ export const addMembers = async (
   chatId: string,
   members: string[]
 ): Promise<{ chat: unknown; notifications: RealtimeNotify[] }> => {
-  const chat = await Chat.findById(chatId);
+  const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
   assertCreator(userId, chat.creator);
 
   const existingMembers = new Set(chat.members.map((m) => m.toString()));
   for (const member of members) existingMembers.add(member.toString());
 
-  chat.members = Array.from(existingMembers).map(
+  const nextMembers = Array.from(existingMembers).map(
     (id) => new Types.ObjectId(id)
-  ) as typeof chat.members;
-  await chat.save();
+  );
+  const updated = await chatRepo.updateById(chatId, { members: nextMembers });
 
   return {
-    chat,
-    notifications: [{ event: REFETCH_CHATS, members: chat.members }],
+    chat: updated,
+    notifications: [
+      { event: REFETCH_CHATS, members: updated?.members ?? nextMembers },
+    ],
   };
 };
 
@@ -211,20 +252,20 @@ export const removeMember = async (
   chatId: string,
   memberToBeRemoved: string
 ): Promise<{ notifications: RealtimeNotify[] }> => {
-  const chat = await Chat.findById(chatId);
+  const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
   assertCreator(userId, chat.creator);
 
-  chat.members = chat.members.filter(
+  const nextMembers = chat.members.filter(
     (member) => member.toString() !== memberToBeRemoved.toString()
-  ) as typeof chat.members;
-  await chat.save();
+  );
+  await chatRepo.updateById(chatId, { members: nextMembers });
 
   return {
     notifications: [
       {
         event: REFETCH_CHATS,
-        members: [...chat.members, memberToBeRemoved],
+        members: [...nextMembers, memberToBeRemoved],
       },
     ],
   };
@@ -234,7 +275,7 @@ export const leaveGroup = async (
   userId: string,
   chatId: string
 ): Promise<{ message: string; notifications: RealtimeNotify[] }> => {
-  const chat = await Chat.findById(chatId);
+  const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(400, 'No chat found');
 
   const remainingMembers = chat.members.filter(
@@ -243,22 +284,28 @@ export const leaveGroup = async (
   const message = `You left ${chat.name}`;
 
   if (remainingMembers.length === 0) {
-    await Promise.all([chat.deleteOne(), Message.deleteMany({ chat: chatId })]);
+    await Promise.all([
+      chatRepo.deleteById(chatId),
+      messageRepo.deleteByChatId(chatId),
+    ]);
     return { message, notifications: [] };
   }
 
   const wasCreator = userId === chat.creator.toString();
-  chat.members = remainingMembers as typeof chat.members;
+  const patch: {
+    members: typeof remainingMembers;
+    creator?: (typeof remainingMembers)[number];
+  } = { members: remainingMembers };
 
   if (wasCreator) {
     const randomIndex = Math.floor(Math.random() * remainingMembers.length);
-    chat.creator = remainingMembers[randomIndex];
+    patch.creator = remainingMembers[randomIndex];
   }
 
-  await chat.save();
+  await chatRepo.updateById(chatId, patch);
   return {
     message,
-    notifications: [{ event: REFETCH_CHATS, members: chat.members }],
+    notifications: [{ event: REFETCH_CHATS, members: remainingMembers }],
   };
 };
 
@@ -266,14 +313,17 @@ export const deleteGroup = async (
   userId: string,
   chatId: string
 ): Promise<{ message: string; notifications: RealtimeNotify[] }> => {
-  const chat = await Chat.findById(chatId);
+  const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
   assertCreator(userId, chat.creator);
 
   const members = [...chat.members];
   const name = chat.name;
 
-  await Promise.all([chat.deleteOne(), Message.deleteMany({ chat: chatId })]);
+  await Promise.all([
+    chatRepo.deleteById(chatId),
+    messageRepo.deleteByChatId(chatId),
+  ]);
 
   return {
     message: `${name} deleted successfully`,
@@ -281,8 +331,11 @@ export const deleteGroup = async (
   };
 };
 
-export const getMedia = async (userId: string, chatId: string) => {
-  const chat = await Chat.findById(chatId);
+export const getMedia = async (
+  userId: string,
+  chatId: string
+): Promise<ChatSharedContent> => {
+  const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(400, 'No chat found');
 
   const isMember = chat.members.some(
@@ -292,10 +345,13 @@ export const getMedia = async (userId: string, chatId: string) => {
     throw new AppError(401, 'You are not authenticated to access the resource');
   }
 
-  const messages = await Message.find({
-    chat: chatId,
-    attachments: { $exists: true, $not: { $size: 0 } },
-  }).sort({ updatedAt: -1 });
+  const [messages, textMessages] = await Promise.all([
+    messageRepo.findAttachmentsByChat(chatId),
+    messageRepo.findTextContentsByChat(chatId),
+  ]);
 
-  return messages.flatMap((msg) => msg.attachments);
+  const attachments = messages.flatMap((msg) => msg.attachments);
+  const links = extractUniqueLinks(textMessages);
+
+  return { attachments, links };
 };

@@ -1,4 +1,24 @@
-export type { UserAvatar, IUserFields, LeanUser, PublicUser, UpdateProfileInput, SearchUserResult } from './user.js';
+export type {
+  UserAvatar,
+  IUserFields,
+  LeanUser,
+  PublicUser,
+  UpdateProfileInput,
+  SearchUserResult,
+  CreateUserInput,
+  UserAuthRecord,
+  UserSearchRecord,
+  UserNameAvatar,
+  UpdateUserPatch,
+  AuthResult,
+  DayCount,
+} from './user.js';
+export type {
+  AdminTokenPayload,
+  AdminStats,
+  AdminUserListItem,
+  AdminLoginResult,
+} from './admin.js';
 export type {
   LastMessageType,
   ChatLastMessage,
@@ -8,6 +28,15 @@ export type {
   FindChatItem,
   ChatNotificationInput,
   RealtimeNotify,
+  CreateChatInput,
+  ChatLean,
+  ChatMembersOnly,
+  DirectChatMembers,
+  FriendChatPopulated,
+  ChatWithMembersPopulated,
+  UpdateChatPatch,
+  ChatSharedLink,
+  ChatSharedContent,
 } from './chat.js';
 export type {
   MessageAttachment,
@@ -15,9 +44,15 @@ export type {
   UploadableFile,
   CloudinaryUploadResult,
   MessageListItem,
+  CreateMessageInput,
+  MessageRecord,
+  UpdateMessagePatch,
 } from './message.js';
 export type {
   IRequestFields,
   FriendSummary,
   NotificationItem,
+  RequestLean,
+  RequestWithParties,
+  RequestWithSender,
 } from './friend-request.js';

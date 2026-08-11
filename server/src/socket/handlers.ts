@@ -7,10 +7,9 @@ import {
   START_TYPING,
   STOP_TYPING,
 } from '../constants/socket-events.js';
-import { Chat } from '../models/chat.js';
-import { Message } from '../models/message.js';
 import {
   getMemberSockets,
+  messageService,
   removeUserSocket,
   setUserSocket,
 } from '../services/index.js';
@@ -48,19 +47,14 @@ export const registerSocketHandlers = (io: Server): void => {
           return;
         }
 
-        const chat = await Chat.findById(chatId).select('members');
-        if (!chat) return;
-
-        const isMember = chat.members.some(
-          (member) => member.toString() === userId
-        );
+        const isMember = await messageService.assertChatMember(userId, chatId);
         if (!isMember) return;
 
         const realTimeMsg = {
           content: message,
           _id: uuid(),
           sender: {
-            _id: user._id,
+            _id: userId,
             name: user.name,
             avatar: user.avatar.url,
           },
@@ -80,20 +74,10 @@ export const registerSocketHandlers = (io: Server): void => {
           .emit(NEW_MESSAGE_ALERT, { chatId });
         io.to(memberSocketIds).emit(REFETCH_CHATS, { chatId });
 
-        const newMessage = await Message.create({
+        await messageService.persistTextMessage({
+          userId,
+          chatId,
           content: message,
-          chat: chatId,
-          sender: user._id,
-        });
-
-        await Chat.findByIdAndUpdate(chatId, {
-          lastMessage: {
-            _id: newMessage._id,
-            content: message,
-            sender: user._id,
-            type: 'text',
-            createdAt: newMessage.createdAt,
-          },
         });
       } catch (error) {
         logger.error({ err: error }, 'NEW_MESSAGE handler failed');

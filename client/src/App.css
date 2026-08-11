@@ -6,9 +6,9 @@ img {
   -ms-user-select: none;
 }
 
+/* Horizontal accent lines used by list rows / section titles */
 .gradient-border {
   position: relative;
-  padding: 10px; /* Add padding to create space for the content */
 }
 
 .gradient-border::before,
@@ -17,7 +17,7 @@ img {
   position: absolute;
   left: 0;
   right: 0;
-  height: 1.5px; /* Adjust the border thickness as needed */
+  height: 1.5px;
   background: linear-gradient(
     90deg,
     rgba(235, 236, 236, 0) 9.64%,
@@ -32,42 +32,6 @@ img {
 
 .gradient-border::after {
   bottom: 0;
-}
-
-.border-gradient {
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  background-image: linear-gradient(
-    180deg,
-    rgba(235, 236, 236, 0) 8.85%,
-    rgba(235, 236, 236, 0.3) 48.96%,
-    rgba(235, 236, 236, 0) 90.63%
-  );
-}
-
-.gradient-border-b::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0; /* Set bottom position to 0 */
-  height: 1.5px; /* Adjust the border thickness as needed */
-  background: linear-gradient(
-    90deg,
-    rgba(235, 236, 236, 0) 9.64%,
-    rgba(235, 236, 236, 0.3) 53.3%,
-    rgba(235, 236, 236, 0) 98.67%
-  );
-}
-
-.half-border {
-  border-image: linear-gradient(
-      to right,
-      transparent 0%,
-      #6a6573 20%,
-      transparent 60%
-    )
-    100% 1;
 }
 
 .full-border {

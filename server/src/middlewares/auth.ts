@@ -2,10 +2,9 @@ import type { IncomingMessage } from 'http';
 import type { NextFunction, Request, Response } from 'express';
 import type { Socket } from 'socket.io';
 import cookieParser from 'cookie-parser';
+import * as userRepo from '../repositories/user.js';
 import { AppError } from '../utils/AppError.js';
 import { verifyToken } from '../utils/token.js';
-import { User } from '../models/user.js';
-import type { LeanUser } from '../types/user.js';
 
 /** JWT-only auth — no DB hit on every HTTP request. */
 export const auth = (req: Request, _res: Response, next: NextFunction): void => {
@@ -44,7 +43,7 @@ export const socketAuth = async (
     }
 
     const { id } = verifyToken(accessToken);
-    const user = await User.findById(id).lean<LeanUser>();
+    const user = await userRepo.findByIdLean(id);
 
     if (!user) {
       next(new AppError(401, 'No user found'));

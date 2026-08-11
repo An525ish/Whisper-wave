@@ -1,23 +1,131 @@
-.slick-dots.slick-thumb {
+/* Gradient rings for circular avatars */
+.avatar-ring {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: 9999px;
+}
+
+/* Members — cool silver */
+.avatar-ring--silver {
+  background: linear-gradient(
+    145deg,
+    #efefef 0%,
+    #bdbdbd 30%,
+    #8c8c8c 55%,
+    #d9d9d9 78%,
+    #9a9a9a 100%
+  );
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Creator — brand green */
+.avatar-ring--green {
+  background: linear-gradient(
+    145deg,
+    #c9f5de 0%,
+    #01c36d 34%,
+    #0f5c42 62%,
+    #1b3c37 82%,
+    #7ed9b0 100%
+  );
+  box-shadow: 0 0 0 1px rgba(1, 195, 109, 0.32);
+}
+
+.avatar-ring > * {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: #231d2c;
+}
+
+.member-carousel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+.member-carousel .slick-slider {
+  width: 100%;
+}
+
+.member-carousel .slick-list {
+  width: 100%;
+}
+
+.member-carousel .slick-track {
+  display: flex !important;
+}
+
+.member-carousel .slick-slide > div {
+  width: 100%;
+}
+
+.member-carousel-dots {
   display: flex;
   flex-direction: row;
   justify-content: center;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 0.65rem;
+  min-height: 10px;
 }
 
-.slick-dots.slick-thumb li {
-  width: 1rem;
-  height: 6px;
-  margin: 0 3px;
-  border-radius: 2rem;
-  transition: all 0.5s ease-in-out;
-  will-change: width;
-  background-color: #1b3c37;
+.member-carousel-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  cursor: pointer;
+  background: rgba(235, 236, 236, 0.28);
+  transition:
+    width 0.2s ease,
+    background 0.2s ease,
+    opacity 0.2s ease;
 }
 
-.slick-dots.slick-thumb li button::before {
-  opacity: 0;
+.member-carousel-dot.is-active {
+  width: 1.15rem;
+  background: linear-gradient(145deg, #01c36d, #16754b);
 }
-.slick-dots.slick-thumb li.slick-active {
-  background-color: #01c36d;
-  width: 2rem;
+
+.member-carousel-dot:hover {
+  background: rgba(235, 236, 236, 0.45);
+}
+
+.member-carousel-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  margin-top: 0.65rem;
+}
+
+.member-carousel-progress-track {
+  width: 70%;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(235, 236, 236, 0.12);
+  overflow: hidden;
+}
+
+.member-carousel-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #16754b, #01c36d);
+  transition: width 0.25s ease;
+}
+
+.member-carousel-progress-label {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
 }

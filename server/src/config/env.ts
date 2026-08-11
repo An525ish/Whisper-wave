@@ -9,6 +9,16 @@ const envSchema = z.object({
   ACCESS_TOKEN_SECRET: z
     .string()
     .min(32, 'ACCESS_TOKEN_SECRET must be at least 32 characters'),
+  ADMIN_SECRET: z
+    .string()
+    .default('')
+    .refine((value) => value === '' || value.length >= 16, {
+      message: 'ADMIN_SECRET must be at least 16 characters when set',
+    }),
+  ADMIN_TOKEN_SECRET: z
+    .string()
+    .min(32, 'ADMIN_TOKEN_SECRET must be at least 32 characters')
+    .optional(),
   CLIENT_URL: z.string().optional().default(''),
   CLOUDINARY_CLOUD_NAME: z.string().min(1),
   CLOUDINARY_API_KEY: z.string().min(1),
@@ -25,3 +35,6 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 export const isProd = env.NODE_ENV === 'production';
+/** JWT secret for admin cookies; falls back to ACCESS_TOKEN_SECRET. */
+export const adminTokenSecret =
+  env.ADMIN_TOKEN_SECRET ?? env.ACCESS_TOKEN_SECRET;
