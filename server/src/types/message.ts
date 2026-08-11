@@ -41,3 +41,28 @@ export type MessageListItem = {
   };
   [key: string]: unknown;
 };
+
+export type CreateMessageInput = {
+  content?: string;
+  attachments?: MessageAttachment[];
+  sender: string | Types.ObjectId;
+  chat: string | Types.ObjectId;
+  status?: 'sent' | 'failed';
+};
+
+export type MessageRecord = {
+  _id: Types.ObjectId;
+  content?: string;
+  attachments: MessageAttachment[];
+  sender: Types.ObjectId;
+  chat: Types.ObjectId;
+  status: 'sent' | 'failed';
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type UpdateMessagePatch = Partial<{
+  content: string;
+  attachments: MessageAttachment[];
+  status: 'sent' | 'failed';
+}>;

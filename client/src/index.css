@@ -1,8 +1,148 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,300;1,9..40,400;1,9..40,700&family=DM+Serif+Display:ital@0;1&display=swap');
+@import 'tailwindcss';
+
+/* Design tokens — Tailwind v4 CSS-first (@theme → utilities). */
+
+@theme {
+  --color-primary: rgb(42 33 54);
+  --color-background: rgb(33 26 42);
+  --color-background-alt: rgb(35 29 44);
+  --color-body: rgb(235 236 236);
+  --color-body-300: #ebecec80;
+  --color-body-700: #ebececcc;
+  --color-border: rgb(53 47 61);
+
+  --color-white: #ebecec;
+  --color-white-pure: #ffffff;
+
+  --color-black: #211a2a;
+  --color-black-light: #2a2136;
+  --color-black-dark: #1a1520;
+  --color-black-pure: rgb(0 0 0);
+  --color-black-transparent: rgba(0, 0, 0, 0.5);
+
+  --color-grey: #ebecec4d;
+  --color-grey-dark: #646464;
+  --color-grey-light: rgba(245, 245, 245, 0.5);
+
+  --color-green: #01c36d;
+  --color-green-gradFrom: #03aa69;
+  --color-green-gradTo: #005e37;
+  --color-green-light: #01c36d33;
+  --color-green-dark: #1b3c37;
+
+  --color-red: #ff5863;
+  --color-red-light: #ff586333;
+  --color-red-dark: #4d2635;
+
+  --color-yellow: #ecc347;
+  --color-yellow-light: #ecc34733;
+
+  --color-gold: #d4aa5a;
+  --color-gold-400: #d4aa5a66;
+
+  --color-orange: #ff9933;
+  --color-orange-light: #ff993333;
+
+  --color-blue: #5698ff;
+  --color-blue-light: #5698ff63;
+
+  --font-sans: 'DM Sans', sans-serif;
+  --font-display: 'DM Serif Display', serif;
+
+  --shadow-glowBlue: 0 0 10px rgba(0, 0, 255, 0.8);
+  --shadow-glowGreen: 0 0 10px rgba(0, 255, 0, 0.8);
+  --shadow-glowOrange: 0 0 10px rgba(255, 165, 0, 0.8);
+
+  --animate-spinning82341: spinning82341 1.7s linear infinite;
+  --animate-hue: hue 1s ease-in-out infinite;
+  --animate-loading: loading 9s linear infinite;
+
+  --background-image-gradient-background: linear-gradient(
+    90deg,
+    #211a2a 0%,
+    #393046 30%,
+    #2d2537 70%,
+    #211a2a 100%
+  );
+  --background-image-gradient-green: linear-gradient(
+    180deg,
+    #01c36d 0%,
+    #01c16c 0.01%,
+    #019c57 100%
+  );
+  --background-image-gradient-linear-green: linear-gradient(
+    180deg,
+    #03aa69 0%,
+    #005e37 100%
+  );
+  --background-image-gradient-idea-blue: linear-gradient(
+    180deg,
+    #09c6f920 0%,
+    #045de920 100%
+  );
+  --background-image-gradient-dark-black: linear-gradient(
+    180deg,
+    #393046 0%,
+    #2d2537 100%
+  );
+  --background-image-gradient-line-fade-dark: linear-gradient(
+    90deg,
+    rgba(235, 236, 236, 0) 8.85%,
+    rgba(235, 236, 236, 0.3) 48.96%,
+    rgba(235, 236, 236, 0) 90.63%
+  );
+  --background-image-gradient-line-fade-light: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 8.85%,
+    rgba(0, 0, 0, 0.3) 48.96%,
+    rgba(235, 236, 236, 0) 90.63%
+  );
+  --background-image-gradient-action-button-green: linear-gradient(
+    180deg,
+    #1fa56a 0%,
+    #16754b 100%
+  );
+  --background-image-gradient-action-button-red: linear-gradient(
+    180deg,
+    #cb525b 0%,
+    #7a242a 100%
+  );
+  --background-image-glass-background: radial-gradient(
+      at 47% 33%,
+      hsl(161.45, 84%, 48%) 0,
+      transparent 59%
+    ),
+    radial-gradient(at 82% 65%, hsl(264, 21%, 14%) 0, transparent 55%);
+}
+
+@keyframes spinning82341 {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hue {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes loading {
+  0%,
+  100% {
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    filter: hue-rotate(360deg);
+  }
+}
 
 :root {
-  color: rgb(235, 236, 236);
-  font-family: 'DM Sans', sans-serif !important;
+  color: var(--color-body);
+  font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -10,23 +150,90 @@
   scroll-behavior: smooth;
 }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @layer base {
   body {
-    --color-primary: 42, 33, 54;
-    --color-background: 33, 26, 42;
-    --color-background-alt: 35, 29, 44;
-
-    --color-text: 235, 236, 236;
-    --color-text-300: #ebecec80;
-    --color-text-700: #ebececcc;
-
-    --color-background-gradient-start: #393046;
-    --color-background-gradient-end: #2d2537;
-
-    --color-border: 53, 47, 61;
+    background-color: var(--color-background);
+    color: var(--color-body);
   }
+
+  button,
+  [type='button'],
+  [type='submit'],
+  [type='reset'],
+  [role='button'] {
+    cursor: pointer;
+    transition:
+      opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      filter 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  button:hover:not(:disabled):not([aria-disabled='true']),
+  [type='button']:hover:not(:disabled):not([aria-disabled='true']),
+  [type='submit']:hover:not(:disabled):not([aria-disabled='true']),
+  [type='reset']:hover:not(:disabled):not([aria-disabled='true']),
+  [role='button']:hover:not([aria-disabled='true']) {
+    filter: brightness(1.1);
+  }
+
+  button:active:not(:disabled):not([aria-disabled='true']),
+  [type='button']:active:not(:disabled):not([aria-disabled='true']),
+  [type='submit']:active:not(:disabled):not([aria-disabled='true']),
+  [type='reset']:active:not(:disabled):not([aria-disabled='true']),
+  [role='button']:active:not([aria-disabled='true']) {
+    filter: brightness(0.95);
+  }
+
+  button:disabled,
+  button[disabled],
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+    opacity: 0.55;
+    filter: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    button,
+    [type='button'],
+    [type='submit'],
+    [type='reset'],
+    [role='button'] {
+      transition: none;
+    }
+
+    button:hover:not(:disabled):not([aria-disabled='true']),
+    button:active:not(:disabled):not([aria-disabled='true']),
+    [type='button']:hover:not(:disabled):not([aria-disabled='true']),
+    [type='button']:active:not(:disabled):not([aria-disabled='true']),
+    [type='submit']:hover:not(:disabled):not([aria-disabled='true']),
+    [type='submit']:active:not(:disabled):not([aria-disabled='true']),
+    [type='reset']:hover:not(:disabled):not([aria-disabled='true']),
+    [type='reset']:active:not(:disabled):not([aria-disabled='true']),
+    [role='button']:hover:not([aria-disabled='true']),
+    [role='button']:active:not([aria-disabled='true']) {
+      filter: none;
+    }
+  }
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Chat bubble shapes — keep skeletons + live bubbles aligned */
+@utility bubble-in {
+  border-radius: 1.35rem;
+  border-bottom-left-radius: 0.35rem;
+}
+
+@utility bubble-out {
+  border-radius: 1.35rem;
+  border-bottom-right-radius: 0.35rem;
 }

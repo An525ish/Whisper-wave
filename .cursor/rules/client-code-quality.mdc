@@ -1,0 +1,44 @@
+---
+description: TypeScript and quality habits for Whisper Wave client
+globs: client/**/*.{ts,tsx,js,jsx}
+alwaysApply: false
+---
+
+# Client Code Quality
+
+## TypeScript
+
+- All app code is `.ts` / `.tsx` (`allowJs` off). Shared shapes live in `types/`.
+- Prefer named Props types on components; avoid `any` unless at a hard boundary (`unknown` + narrow).
+
+## Data fetching
+
+```ts
+// ✅ api/ is pure
+export async function getProfile() {
+  return api.get<ProfileResponse>('/user/get-profile');
+}
+
+// ❌ fetch inside a presentational component
+```
+
+- Mutations invalidate precise query keys.
+- Socket handlers update Query cache or Zustand — not both for the same fact.
+
+## Security
+
+- Never put secrets in `VITE_*` env vars.
+- Cookies only (`credentials: 'include'`); no access tokens in `localStorage`.
+- Do not `console.log` full API error bodies in production paths.
+- No `dangerouslySetInnerHTML` for user content.
+
+## Performance
+
+- Virtualize long chat/message lists.
+- Subscribe to narrow Zustand slices.
+- Keep admin/chart code in lazy routes / manual chunks.
+
+## Dependencies
+
+- Latest majors (React 19, Vite 8, RR7, Tailwind 4, TQ, Zustand, Zod 4).
+- Do not add paid analytics/Sentry without TECH.md approval.

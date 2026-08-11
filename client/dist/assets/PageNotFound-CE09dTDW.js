@@ -1,0 +1,1 @@
+import{a as e}from"./query-CcXiMT-S.js";var t=e(),n=()=>(0,t.jsx)(`div`,{children:`PageNotFound`});export{n as default};

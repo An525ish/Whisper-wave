@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { env } from '../config/env.js';
+import { adminTokenSecret, env } from '../config/env.js';
+import type { AdminTokenPayload } from '../types/admin.js';
 import { AppError } from './AppError.js';
 
 export type TokenPayload = {
@@ -21,5 +22,24 @@ export const verifyToken = (token: string): TokenPayload => {
     return payload;
   } catch {
     throw new AppError(401, 'Invalid or expired token');
+  }
+};
+
+export const generateAdminToken = (): string => {
+  return jwt.sign({ role: 'admin' } satisfies AdminTokenPayload, adminTokenSecret, {
+    expiresIn: '8h',
+  } as jwt.SignOptions);
+};
+
+export const verifyAdminToken = (token: string): AdminTokenPayload => {
+  try {
+    const payload = jwt.verify(token, adminTokenSecret) as AdminTokenPayload;
+    if (payload?.role !== 'admin') {
+      throw new AppError(401, 'Invalid admin token');
+    }
+    return payload;
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(401, 'Invalid or expired admin token');
   }
 };

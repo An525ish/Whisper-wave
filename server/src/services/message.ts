@@ -3,9 +3,9 @@ import {
   NEW_MESSAGE_ALERT,
   REFETCH_CHATS,
 } from '../constants/socket-events.js';
-import { Chat } from '../models/chat.js';
-import { Message } from '../models/message.js';
-import { User } from '../models/user.js';
+import * as chatRepo from '../repositories/chat.js';
+import * as messageRepo from '../repositories/message.js';
+import * as userRepo from '../repositories/user.js';
 import type {
   LastMessageType,
   MessageListItem,
@@ -28,15 +28,9 @@ export const getMessages = async (
   const skip = (page - 1) * resultPerPage;
 
   const [chat, messages, totalMessages] = await Promise.all([
-    Chat.findById(chatId),
-    Message.find({ chat: chatId })
-      .sort({ createdAt: -1 })
-      .limit(resultPerPage)
-      .skip(skip)
-      .lean()
-      .populate('sender', 'name avatar')
-      .populate('chat', 'groupChat'),
-    Message.countDocuments({ chat: chatId }),
+    chatRepo.findByIdLean(chatId),
+    messageRepo.findByChatPage(chatId, skip, resultPerPage),
+    messageRepo.countByChat(chatId),
   ]);
 
   if (!chat) throw new AppError(400, 'No chat found');
@@ -50,21 +44,26 @@ export const getMessages = async (
 
   type PopulatedSender = {
     _id: unknown;
-    name: string;
-    avatar: { url: string };
+    name?: string;
+    avatar?: string | { url?: string };
   };
   type PopulatedChat = { _id: { toString(): string }; groupChat?: boolean };
 
   const data = [...messages].reverse().map((message) => {
     const sender = message.sender as unknown as PopulatedSender;
     const populatedChat = message.chat as unknown as PopulatedChat;
+    const avatar =
+      typeof sender.avatar === 'string'
+        ? sender.avatar
+        : sender.avatar?.url;
 
     return {
       ...message,
       chat: populatedChat._id,
       sender: {
-        ...sender,
-        avatar: sender.avatar.url,
+        _id: String(sender._id),
+        name: sender.name || 'Unknown',
+        avatar,
       },
     };
   });
@@ -87,8 +86,8 @@ export const sendAttachments = async (
   }
 
   const [user, chat] = await Promise.all([
-    User.findById(userId, 'name avatar'),
-    Chat.findById(chatId),
+    userRepo.findByIdNameAvatar(userId),
+    chatRepo.findByIdLean(chatId),
   ]);
 
   if (!user || !chat) throw new AppError(400, 'No chat found');
@@ -100,7 +99,7 @@ export const sendAttachments = async (
     throw new AppError(401, 'You are not authenticated to access the resource');
   }
 
-  const message = await Message.create({
+  const message = await messageRepo.create({
     content,
     attachments: [],
     sender: userId,
@@ -109,8 +108,7 @@ export const sendAttachments = async (
 
   try {
     const attachments = await uploadToCloudinary(files);
-    message.attachments = attachments;
-    await message.save();
+    const saved = await messageRepo.updateById(message._id, { attachments });
 
     const lastAttachment = attachments.at(-1);
     const lastAttachmentType = lastAttachment?.fileType.split('/')[0];
@@ -122,19 +120,17 @@ export const sendAttachments = async (
       lastMessageContent = lastAttachment?.name || '';
     }
 
-    await Chat.findByIdAndUpdate(chatId, {
-      lastMessage: {
-        _id: message._id,
-        content: lastMessageContent,
-        sender: userId,
-        type: lastMessageType,
-        createdAt: message.createdAt,
-      },
+    await chatRepo.updateLastMessage(chatId, {
+      _id: message._id,
+      content: lastMessageContent,
+      sender: user._id,
+      type: lastMessageType,
+      createdAt: message.createdAt,
     });
 
     return {
       data: {
-        ...message.toObject(),
+        ...(saved ?? message),
         sender: {
           _id: userId,
           name: user.name,
@@ -149,11 +145,50 @@ export const sendAttachments = async (
     };
   } catch {
     if (content) {
-      message.status = 'failed';
-      await message.save();
+      await messageRepo.updateById(message._id, { status: 'failed' });
     } else {
-      await message.deleteOne();
+      await messageRepo.deleteById(message._id);
     }
     throw new AppError(500, 'Failed to upload attachments');
   }
+};
+
+/** Persist a realtime text message after membership is validated. */
+export const persistTextMessage = async (input: {
+  userId: string;
+  chatId: string;
+  content: string;
+}): Promise<{ ok: true } | { ok: false }> => {
+  const chat = await chatRepo.findByIdMembers(input.chatId);
+  if (!chat) return { ok: false };
+
+  const isMember = chat.members.some(
+    (member) => member.toString() === input.userId
+  );
+  if (!isMember) return { ok: false };
+
+  const newMessage = await messageRepo.create({
+    content: input.content,
+    chat: input.chatId,
+    sender: input.userId,
+  });
+
+  await chatRepo.updateLastMessage(input.chatId, {
+    _id: newMessage._id,
+    content: input.content,
+    sender: newMessage.sender,
+    type: 'text',
+    createdAt: newMessage.createdAt,
+  });
+
+  return { ok: true };
+};
+
+export const assertChatMember = async (
+  userId: string,
+  chatId: string
+): Promise<boolean> => {
+  const chat = await chatRepo.findByIdMembers(chatId);
+  if (!chat) return false;
+  return chat.members.some((member) => member.toString() === userId);
 };

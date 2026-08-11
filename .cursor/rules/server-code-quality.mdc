@@ -28,6 +28,7 @@ export const signIn = catchAsync(async (req, res) => {
 
 - Export functions or a small module object; keep pure of Express.
 - Validate invariants (membership, ownership) in services.
+- Persist only through `repositories/` — never import `models/` from services.
 - Return data/DTOs; let controllers map HTTP status.
 
 ## Robustness

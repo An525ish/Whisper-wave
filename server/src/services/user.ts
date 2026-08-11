@@ -1,23 +1,19 @@
 import { compare, hash } from 'bcrypt';
-import { Chat } from '../models/chat.js';
-import { Request } from '../models/request.js';
-import { User } from '../models/user.js';
+import * as chatRepo from '../repositories/chat.js';
+import * as requestRepo from '../repositories/request.js';
+import * as userRepo from '../repositories/user.js';
 import type {
   PublicUser,
   SearchUserResult,
   UpdateProfileInput,
-  UserAvatar,
+  UpdateUserPatch,
 } from '../types/index.js';
 import { AppError } from '../utils/AppError.js';
 
-export const getProfile = async (userId: string): Promise<PublicUser & Record<string, unknown>> => {
-  const user = await User.findById(userId).lean<{
-    _id: unknown;
-    name: string;
-    username: string;
-    avatar: { url: string };
-    bio?: string;
-  }>();
+export const getProfile = async (
+  userId: string
+): Promise<PublicUser & Record<string, unknown>> => {
+  const user = await userRepo.findByIdLean(userId);
 
   if (!user) {
     throw new AppError(404, 'No user found in the database');
@@ -34,31 +30,35 @@ export const updateProfile = async (
   userId: string,
   input: UpdateProfileInput
 ): Promise<void> => {
-  const user = await User.findById(userId).select('+password');
+  const user = await userRepo.findByIdWithPassword(userId);
   if (!user) {
     throw new AppError(404, 'User not found in the database');
   }
+
+  const patch: UpdateUserPatch = {};
 
   if (input.oldPassword && input.newPassword) {
     const isMatch = await compare(input.oldPassword, user.password);
     if (!isMatch) {
       throw new AppError(400, 'Old password is incorrect');
     }
-    user.password = await hash(input.newPassword, 10);
+    patch.password = await hash(input.newPassword, 10);
   }
 
-  if (input.name) user.name = input.name;
-  if (input.username) user.username = input.username;
-  if (input.bio !== undefined) user.bio = input.bio;
-  if (input.avatar) user.avatar = input.avatar as UserAvatar;
+  if (input.name) patch.name = input.name;
+  if (input.username) patch.username = input.username;
+  if (input.bio !== undefined) patch.bio = input.bio;
+  if (input.avatar) patch.avatar = input.avatar;
   void input.email;
 
-  await user.save();
+  if (Object.keys(patch).length > 0) {
+    await userRepo.updateById(userId, patch);
+  }
 };
 
 export const deleteProfile = async (userId: string): Promise<void> => {
-  const user = await User.findByIdAndDelete(userId);
-  if (!user) {
+  const deleted = await userRepo.deleteById(userId);
+  if (!deleted) {
     throw new AppError(404, 'User not found');
   }
 };
@@ -67,15 +67,12 @@ export const searchUsers = async (
   userId: string,
   name: string
 ): Promise<SearchUserResult[]> => {
-  const myChats = await Chat.find({ groupChat: false, members: userId });
+  const myChats = await chatRepo.findDirectChatsForMember(userId);
   const myChatsMembers = myChats.flatMap(({ members }) => members);
 
   const [allOtherMembers, myRequests] = await Promise.all([
-    User.find({
-      _id: { $nin: [...myChatsMembers, userId] },
-      name: { $regex: name, $options: 'i' },
-    }),
-    Request.find({ sender: userId }),
+    userRepo.findExcludingIdsByName([...myChatsMembers, userId], name),
+    requestRepo.findBySender(userId),
   ]);
 
   const receiverIds = myRequests.map((request) => request.receiver.toString());

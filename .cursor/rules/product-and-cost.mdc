@@ -17,8 +17,10 @@ Stay **$0** until real users or Spark Pass revenue: no Redis/Stripe/Sentry/paid 
 
 ## Stack baseline
 
-Node 20+, Express 5, Mongoose 9, Socket.IO, Zod, TypeScript. Phase 2 must follow the same majors — no parallel older stack.
+**Server:** Node 20+, Express 5, Mongoose 9, Socket.IO 4.8+, Zod 4, TypeScript 7.
+
+**Client:** React 19, Vite 8, React Router 7, Tailwind 4, TanStack Query 5, Zustand 5, Zod 4, TypeScript 7. Phase 2 must follow the same majors — no parallel older stack.
 
 ## Auth note
 
-Connected layer currently uses a single access JWT cookie. Prefer access+refresh when hardening auth. Do not add unused `REFRESH_TOKEN_*` env keys.
+Connected layer currently uses a single access JWT cookie. Prefer access+refresh when hardening auth. Do not add unused `REFRESH_TOKEN_*` env keys. Admin uses a separate httpOnly `adminToken` cookie (never put `ADMIN_SECRET` in `VITE_*`).

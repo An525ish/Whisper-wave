@@ -50,3 +50,51 @@ export type SearchUserResult = {
   avatar: string;
   isRequested: boolean;
 };
+
+export type CreateUserInput = {
+  name: string;
+  username: string;
+  password: string;
+  avatar: UserAvatar;
+  bio?: string;
+};
+
+export type UserAuthRecord = {
+  _id: Types.ObjectId;
+  name: string;
+  username: string;
+  password: string;
+  avatar: UserAvatar;
+  bio?: string;
+};
+
+export type UserSearchRecord = {
+  _id: Types.ObjectId;
+  name: string;
+  avatar: UserAvatar;
+};
+
+export type UserNameAvatar = {
+  _id: Types.ObjectId;
+  name: string;
+  avatar: UserAvatar;
+};
+
+export type UpdateUserPatch = Partial<{
+  name: string;
+  username: string;
+  password: string;
+  bio: string;
+  avatar: UserAvatar;
+}>;
+
+export type AuthResult = {
+  token: string;
+  message: string;
+  user: PublicUser & Record<string, unknown>;
+};
+
+export type DayCount = {
+  _id: string;
+  count: number;
+};
