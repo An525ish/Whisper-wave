@@ -1,0 +1,1 @@
+import{o as e}from"./query-B_v6jLiU.js";var t=e(),n=()=>(0,t.jsx)(`div`,{children:`PageNotFound`});export{n as default};
