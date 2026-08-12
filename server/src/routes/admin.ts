@@ -15,7 +15,8 @@ export const adminRouter = Router();
 
 adminRouter.post('/login', authLimiter, validate(adminLoginSchema), login);
 adminRouter.post('/logout', logout);
-adminRouter.get('/me', requireAdmin, me);
+// Soft session probe — returns { isAdmin } without 401 when no admin cookie.
+adminRouter.get('/me', me);
 adminRouter.get('/stats', requireAdmin, getStats);
 adminRouter.get('/users', requireAdmin, listUsers);
 adminRouter.get('/messages', requireAdmin, listMessages);

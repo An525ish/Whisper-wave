@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { corsOptions } from './config/cors.js';
 import { isProd } from './config/env.js';
+import { helmetOptions } from './config/helmet.js';
 import { globalErrorHandler } from './middlewares/index.js';
 import { registerRoutes } from './routes/index.js';
 import { logger } from './utils/logger.js';
@@ -21,7 +22,7 @@ export const createApp = () => {
 
   app.set('trust proxy', 1);
 
-  app.use(helmet());
+  app.use(helmet(helmetOptions));
   app.use(compression());
   app.use(cors(corsOptions));
   app.use(express.json({ limit: '10kb' }));

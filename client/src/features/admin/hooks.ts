@@ -12,7 +12,8 @@ export function useAdminMeQuery() {
     queryFn: async () => {
       try {
         const res = await adminApi.adminMe();
-        setAdmin(Boolean(res.isAdmin));
+        if (res.isAdmin) setAdmin(true);
+        else clear();
         return res;
       } catch {
         clear();
