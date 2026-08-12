@@ -29,13 +29,16 @@ import ChatInput from './ChatInput';
 import useAsyncMutation from '@/hooks/asyncMutation';
 import { useNotificationsStore } from '@/stores/notifications';
 import { useAuthStore } from '@/stores/auth';
-import SkeletonBox from '@/components/skeletons/SkeletonBox';
+import { ChatMessagesSkeleton } from '@/components/skeletons/ChatMessageSkeleton';
 import toast from 'react-hot-toast';
 import type { Avatar } from '@/types';
-import { formatChatDayLabel } from '@/utils/helper';
+import { formatChatDayLabel, normalizeMemberIds } from '@/utils/helper';
 
 type ChatsViewPanelProps = {
   chatId?: string;
+  focusMessageId?: string | null;
+  highlightQuery?: string;
+  searchOpen?: boolean;
 };
 
 type ChatMessage = ChatBoxData & {
@@ -50,9 +53,11 @@ type MessagesPage = {
   totalPages?: number;
 };
 
+type ChatMember = string | { _id?: string };
+
 type ChatDetailsResponse = {
   data?: {
-    members?: string[];
+    members?: ChatMember[];
   };
 };
 
@@ -77,7 +82,14 @@ type TimelineItem =
   | { kind: 'day'; key: string; label: string }
   | { kind: 'message'; key: string; message: ChatMessage };
 
-const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
+const NEAR_BOTTOM_PX = 120;
+
+const ChatsViewPanel = ({
+  chatId,
+  focusMessageId = null,
+  highlightQuery = '',
+  searchOpen = false,
+}: ChatsViewPanelProps) => {
   const socket = useSocket();
   const removeMessageNotification = useNotificationsStore(
     (s) => s.removeMessageNotification,
@@ -87,6 +99,7 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didInitialScrollRef = useRef(false);
   const timelineRef = useRef<TimelineItem[]>([]);
+  const isNearBottomRef = useRef(true);
   const markReadMutation = useMarkChatReadMutation();
 
   const {
@@ -104,6 +117,7 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
   const { data: chatDetails, isLoading, error, isError } = useChatDetailsQuery(
     { id: chatId },
@@ -117,8 +131,13 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
 
   const isGroupChat = (messagesData?.pages?.[0] as MessagesPage | undefined)
     ?.groupChat;
-  const chatMembers = (chatDetails as ChatDetailsResponse | undefined)?.data
-    ?.members;
+  const memberIds = useMemo(
+    () =>
+      normalizeMemberIds(
+        (chatDetails as ChatDetailsResponse | undefined)?.data?.members,
+      ),
+    [chatDetails],
+  );
 
   const allMessages = useMemo(
     () => [...historyMessages, ...liveMessages],
@@ -171,19 +190,89 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
   const virtualizerRef = useRef(virtualizer);
   virtualizerRef.current = virtualizer;
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((smooth = false) => {
     const count = timelineRef.current.length;
     if (count === 0) return;
+    isNearBottomRef.current = true;
+    setShowScrollToBottom(false);
     requestAnimationFrame(() => {
-      virtualizerRef.current.scrollToIndex(count - 1, { align: 'end' });
+      virtualizerRef.current.scrollToIndex(count - 1, {
+        align: 'end',
+        behavior: smooth ? 'smooth' : 'auto',
+      });
     });
   }, []);
+
+  const updateNearBottom = useCallback(() => {
+    const root = containerRef.current;
+    if (!root) return;
+    const distance =
+      root.scrollHeight - root.scrollTop - root.clientHeight;
+    const near = distance <= NEAR_BOTTOM_PX;
+    isNearBottomRef.current = near;
+    setShowScrollToBottom(!near && timelineRef.current.length > 0);
+  }, []);
+
+  const [highlightedMessageId, setHighlightedMessageId] = useState<
+    string | null
+  >(null);
+  const focusRequestRef = useRef<string | null>(null);
+  const loadingForFocusRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusMessageId) {
+      focusRequestRef.current = null;
+      return;
+    }
+    focusRequestRef.current = focusMessageId;
+  }, [focusMessageId]);
+
+  useEffect(() => {
+    const targetId = focusRequestRef.current;
+    if (!targetId) return;
+
+    const index = timelineItems.findIndex(
+      (item) => item.kind === 'message' && item.message._id === targetId,
+    );
+
+    if (index >= 0) {
+      loadingForFocusRef.current = false;
+      requestAnimationFrame(() => {
+        virtualizerRef.current.scrollToIndex(index, {
+          align: 'center',
+          behavior: 'smooth',
+        });
+      });
+      setHighlightedMessageId(targetId);
+      const clearHighlight = setTimeout(() => {
+        setHighlightedMessageId((prev) => (prev === targetId ? null : prev));
+      }, 1750);
+      return () => clearTimeout(clearHighlight);
+    }
+
+    if (!hasNextPage || isFetchingNextPage || loadingForFocusRef.current) {
+      return;
+    }
+
+    loadingForFocusRef.current = true;
+    void fetchNextPage().finally(() => {
+      loadingForFocusRef.current = false;
+    });
+  }, [
+    focusMessageId,
+    timelineItems,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  ]);
 
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
 
     const onScroll = () => {
+      updateNearBottom();
+
       if (root.scrollTop > 80) return;
       if (!hasNextPage || isFetchingNextPage) return;
 
@@ -195,13 +284,20 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
           const el = containerRef.current;
           if (!el) return;
           el.scrollTop = prevTop + (el.scrollHeight - prevHeight);
+          updateNearBottom();
         });
       });
     };
 
     root.addEventListener('scroll', onScroll, { passive: true });
     return () => root.removeEventListener('scroll', onScroll);
-  }, [chatId, fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [
+    chatId,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    updateNearBottom,
+  ]);
 
   useEffect(() => {
     didInitialScrollRef.current = false;
@@ -209,6 +305,8 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
     setMessage('');
     setAttachments([]);
     setPeerLastReadAt(null);
+    setShowScrollToBottom(false);
+    isNearBottomRef.current = true;
     if (chatId) {
       removeMessageNotification({ chatId });
       markReadMutation.mutate({ chatId });
@@ -224,8 +322,13 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
 
   useEffect(() => {
     if (liveMessages.length === 0) return;
+    if (searchOpen || focusMessageId) return;
+    if (!isNearBottomRef.current) {
+      setShowScrollToBottom(true);
+      return;
+    }
     scrollToBottom();
-  }, [liveMessages.length, scrollToBottom]);
+  }, [liveMessages.length, scrollToBottom, searchOpen, focusMessageId]);
 
   useEffect(() => {
     if (isGroupChat || !user?._id) return;
@@ -246,20 +349,51 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
     }
   }, [historyMessages, isGroupChat, user?._id]);
 
-  const handleEnterPress = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') void handleSubmit();
+  const handleEnterPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      void handleSubmit();
+    }
   };
 
   const handleSubmit = async () => {
     if (!message.trim() && (!attachments || attachments.length === 0)) return;
 
+    if (isTyping) {
+      setIsTyping(false);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      socket.emit(STOP_TYPING, { members: memberIds, chatId });
+    }
+
     if (!attachments || attachments.length === 0) {
-      socket.emit(NEW_MESSAGE, {
-        message,
-        chatId,
-        members: chatMembers,
-      });
+      const trimmed = message.trim();
+      if (!trimmed) return;
+
+      if (!chatId || memberIds.length === 0) {
+        toast.error('Unable to send message right now');
+        return;
+      }
+
+      const pendingId = `pending-${Date.now()}`;
+      const pendingMessage: ChatMessage = {
+        _id: pendingId,
+        content: trimmed,
+        sender: {
+          _id: user?._id ?? '',
+          name: user?.name ?? '',
+          avatar: user?.avatar as Avatar | undefined,
+        },
+        createdAt: new Date().toISOString(),
+      };
+
+      setLiveMessages((prev) => [...prev, pendingMessage]);
       setMessage('');
+
+      socket.emit(NEW_MESSAGE, {
+        message: trimmed,
+        chatId,
+        members: memberIds,
+      });
       scrollToBottom();
       return;
     }
@@ -329,7 +463,24 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
   const newMessageListener = useCallback(
     (res: NewMessagePayload) => {
       if (res.chatId !== chatId) return;
-      setLiveMessages((prev) => [...prev, res.message]);
+      setLiveMessages((prev) => {
+        if (prev.some((msg) => msg._id === res.message._id)) return prev;
+
+        const pendingIdx = prev.findIndex(
+          (msg) =>
+            msg._id.startsWith('pending-') &&
+            msg.content === res.message.content &&
+            String(msg.sender._id) === String(res.message.sender._id),
+        );
+
+        if (pendingIdx >= 0) {
+          const next = [...prev];
+          next[pendingIdx] = res.message;
+          return next;
+        }
+
+        return [...prev, res.message];
+      });
       markCurrentChatRead();
     },
     [chatId, markCurrentChatRead],
@@ -362,26 +513,34 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
     [chatId, user?._id],
   );
 
-  const handleMessageChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleMessageChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
 
     if (!isTyping) {
       setIsTyping(true);
-      socket.emit(START_TYPING, { members: chatMembers, chatId });
+      socket.emit(START_TYPING, { members: memberIds, chatId });
     }
 
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      socket.emit(STOP_TYPING, { members: chatMembers, chatId });
+      socket.emit(STOP_TYPING, { members: memberIds, chatId });
     }, 1000);
   };
 
-  useSocketEvent(socket, {
-    [NEW_MESSAGE]: newMessageListener,
-    [CHAT_READ]: chatReadListener,
-  } as Parameters<typeof useSocketEvent>[1]);
+  const socketEvents = useMemo(
+    () => ({
+      [NEW_MESSAGE]: newMessageListener,
+      [CHAT_READ]: chatReadListener,
+    }),
+    [newMessageListener, chatReadListener],
+  );
+
+  useSocketEvent(
+    socket,
+    socketEvents as Parameters<typeof useSocketEvent>[1],
+  );
 
   const isMessageRead = (msg: ChatMessage) => {
     if (isGroupChat) return false;
@@ -395,18 +554,13 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="bg-glass-background min-h-0 flex-1 overflow-hidden md:rounded-xl">
+      <div className="bg-glass-background relative min-h-0 flex-1 overflow-hidden md:rounded-xl">
         <div
           ref={containerRef}
-          className="relative h-full min-h-0 overflow-y-auto bg-[rgba(33,26,42,0.75)] px-2 py-3 pt-4 backdrop-blur-lg backdrop-saturate-[100%] scrollbar-hide md:rounded-xl md:p-2 md:pt-28"
+          className="relative h-full min-h-0 overflow-y-auto bg-[rgba(33,26,42,0.75)] px-2 py-3 pt-4 backdrop-blur-lg backdrop-saturate-100 scrollbar-hide md:rounded-xl md:p-2 md:pt-28"
         >
           {msgLoading ? (
-            <div className="flex flex-col gap-2">
-              <SkeletonBox className="bubble-in h-12 w-40 border border-border bg-primary/90" />
-              <SkeletonBox className="bubble-out h-12 w-52 self-end border border-green/35 bg-green-dark/55" />
-              <SkeletonBox className="bubble-in h-12 w-60 border border-border bg-primary/90" />
-              <SkeletonBox className="bubble-out h-12 w-60 self-end border border-green/35 bg-green-dark/55" />
-            </div>
+            <ChatMessagesSkeleton />
           ) : (
             <>
               {isFetchingNextPage ? (
@@ -451,6 +605,7 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
                   const msg = entry.message;
                   const sameSender =
                     String(msg.sender._id) === String(user?._id ?? '');
+                  const isSearchHighlight = msg._id === highlightedMessageId;
 
                   return (
                     <div
@@ -462,12 +617,20 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
                       }`}
                       style={{ transform: `translateY(${item.start}px)` }}
                     >
-                      <div className="w-fit max-w-[min(88%,20rem)] md:max-w-[70%]">
+                      <div
+                        className={`w-fit max-w-[min(88%,20rem)] rounded-2xl md:max-w-[70%]`}
+                      >
                         <ChatBox
                           chatData={msg}
                           isGroupChat={isGroupChat}
                           showReadReceipt={!isGroupChat && sameSender}
                           isRead={isMessageRead(msg)}
+                          searchHighlight={isSearchHighlight}
+                          highlightQuery={
+                            isSearchHighlight && highlightQuery
+                              ? highlightQuery
+                              : undefined
+                          }
                         />
                       </div>
                     </div>
@@ -477,6 +640,37 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
             </>
           )}
         </div>
+
+        {showScrollToBottom ? (
+          <button
+            type="button"
+            onClick={() => scrollToBottom(true)}
+            className="absolute bottom-3 right-3 z-20 grid h-10 w-10 place-items-center rounded-full border border-border/80 bg-primary/95 text-body shadow-[0_6px_20px_rgba(0,0,0,0.35)] transition hover:border-green/40 hover:bg-background-alt hover:text-green md:bottom-4 md:right-4"
+            aria-label="Scroll to latest messages"
+          >
+            <svg
+              className="h-4 w-4"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M2.5 3.5 8 7.5 13.5 3.5"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M2.5 9 8 13 13.5 9"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        ) : null}
       </div>
 
       <div className="shrink-0 border-t border-border/40 bg-background/95 px-2 py-2 backdrop-blur-md md:border-0 md:bg-transparent md:px-0 md:pb-0 md:pt-3">

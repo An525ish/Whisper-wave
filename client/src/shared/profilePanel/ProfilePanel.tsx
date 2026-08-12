@@ -2,11 +2,15 @@ import ImageViewer from '@/components/image-viewer/Image-Viewer'
 import SkeletonBox from '@/components/skeletons/SkeletonBox'
 import EmptyState from '@/components/ui/EmptyState'
 import Image from '@/components/ui/Image'
+import {
+    RetryableMediaImage,
+    RetryableMediaVideo,
+} from '@/components/media/RetryableMedia'
 import Carousel, { AvatarRing } from '@/components/ui/carousel/Carousel'
 import useErrors from '@/hooks/error'
 import { useSocket } from '@/socket/SocketProvider'
 import useSocketEvent from '@/hooks/socketEvent'
-import { fileData, fileFormat, transformImage } from '@/lib/features'
+import { fileData, fileFormat, getMediaDisplayName, getMediaKindFromFile } from '@/lib/features'
 import { NEW_ATTACHMENT, NEW_MESSAGE } from '@/lib/socketConstants'
 import { useChatDetailsQuery, useGetMediaQuery } from '@/features/api/hooks'
 import { getFirstName } from '@/utils/helper'
@@ -14,6 +18,12 @@ import { useCallback, useState, type MouseEvent } from 'react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '@/stores/auth'
 import { useParams } from 'react-router-dom'
+import SharedContentSheet, {
+    type SharedContentTab,
+} from '@/shared/profilePanel/SharedContentSheet'
+import ImagesIcon from '@/components/icons/Images'
+import FilesIcon from '@/components/icons/FilesIcon'
+import LinkIcon from '@/components/icons/Link'
 
 type MediaFile = {
     _id?: string;
@@ -70,23 +80,27 @@ const normalizeSharedContent = (
 };
 
 const renderMediaThumbnail = (file: MediaFile) => {
-    const transformedUrl = transformImage(file.url)
-    const fileExtension = fileFormat(file.url)
+    const kind = getMediaKindFromFile(file)
 
-    switch (fileExtension) {
+    switch (kind) {
         case 'image':
             return (
-                <Image
-                    src={transformedUrl}
-                    alt={file.name}
+                <RetryableMediaImage
+                    url={file.url ?? ''}
+                    alt={getMediaDisplayName({ name: file.name, url: file.url, publicId: file.publicId, fileType: file.fileType })}
                     className="w-full aspect-[5/4] bg-primary rounded-lg object-cover"
+                    fallbackIconClassName="h-10 w-10"
                 />
             )
         case 'video':
             return (
-                <video
-                    src={transformedUrl}
+                <RetryableMediaVideo
+                    url={file.url ?? ''}
                     className="w-full aspect-[5/4] bg-primary object-cover rounded-lg"
+                    fallbackIconClassName="h-10 w-10"
+                    muted
+                    playsInline
+                    preload="metadata"
                 />
             )
         case 'audio':
@@ -95,8 +109,6 @@ const renderMediaThumbnail = (file: MediaFile) => {
                     <img src="/icons/music-icon.svg" alt="Audio" className="w-10 h-10 opacity-80" />
                 </div>
             )
-        default:
-            return null
     }
 }
 
@@ -131,6 +143,11 @@ const ShowAllButton = ({ onClick }: ShowAllButtonProps) => (
     </button>
 );
 
+const sectionIconClass =
+    'h-4 w-4 shrink-0 fill-body-300 stroke-body-300';
+
+const sectionLinkIconClass = 'h-4 w-4 shrink-0 stroke-body-300';
+
 const ProfilePanel = () => {
     const { chatId } = useParams()
     const socket = useSocket()
@@ -139,10 +156,13 @@ const ProfilePanel = () => {
 
     const [viewerOpen, setViewerOpen] = useState(false);
     const [initialImageIndex, setInitialImageIndex] = useState(0);
+    const [sharedSheetOpen, setSharedSheetOpen] = useState(false);
+    const [sharedSheetTab, setSharedSheetTab] =
+        useState<SharedContentTab>('photos');
 
-    const openImageViewer = (index: number) => {
-        setInitialImageIndex(index);
-        setViewerOpen(true);
+    const openSharedSheet = (tab: SharedContentTab) => {
+        setSharedSheetTab(tab);
+        setSharedSheetOpen(true);
     };
 
 
@@ -190,6 +210,29 @@ const ProfilePanel = () => {
     const mediaFiles = mediaData.filter((file) => file.fileType !== 'document')
     const docFiles = mediaData.filter((file) => file.fileType === 'document')
 
+    const viewerMediaFiles = mediaFiles
+        .filter((f): f is MediaFile & { url: string } => Boolean(f.url))
+        .map((f) => ({
+            _id: f._id ?? f.publicId ?? f.url,
+            url: f.url,
+            name: f.name,
+            publicId: f.publicId,
+            fileType: f.fileType,
+        }));
+
+    const openImageViewerForFile = (file: MediaFile) => {
+        const index = viewerMediaFiles.findIndex(
+            (item) =>
+                item.url === file.url ||
+                (file._id && item._id === file._id) ||
+                (file.publicId && item._id === file.publicId),
+        );
+        if (index >= 0) {
+            setInitialImageIndex(index);
+            setViewerOpen(true);
+        }
+    };
+
     const handleFileAction = async (e: MouseEvent, url: string | undefined, fileName: string | undefined) => {
         e.preventDefault();
         if (!url) return;
@@ -224,19 +267,25 @@ const ProfilePanel = () => {
 
     return (
         <>
-            {viewerOpen && (
+            {sharedSheetOpen ? (
+                <SharedContentSheet
+                    mediaFiles={mediaFiles}
+                    docFiles={docFiles}
+                    links={sharedLinks}
+                    initialTab={sharedSheetTab}
+                    onClose={() => setSharedSheetOpen(false)}
+                    onOpenPhoto={openImageViewerForFile}
+                    onOpenDocument={handleFileAction}
+                />
+            ) : null}
+
+            {viewerOpen ? (
                 <ImageViewer
-                    mediaFiles={mediaFiles
-                        .filter((f): f is MediaFile & { url: string } => Boolean(f.url))
-                        .map((f) => ({
-                            _id: f._id ?? f.publicId ?? f.url,
-                            url: f.url,
-                            name: f.name,
-                        }))}
+                    mediaFiles={viewerMediaFiles}
                     initialIndex={initialImageIndex}
                     onClose={() => setViewerOpen(false)}
                 />
-            )}
+            ) : null}
 
             <div className="relative bg-background-alt rounded-2xl mt-14 flex-1 min-h-0 py-2 flex flex-col">
                 <div className="w-24 h-24 rounded-full bg-primary absolute -top-14 left-1/2 -translate-x-1/2 overflow-hidden z-10 border-8 border-background">
@@ -293,10 +342,11 @@ const ProfilePanel = () => {
                     <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pt-4 mt-2 border-t border-border/80 pb-4">
                         <section className="rounded-2xl bg-primary/35 px-3 py-3.5">
                             <div className="flex items-center justify-between gap-2 px-0.5 mb-3">
-                                <p className="text-sm text-body-700 tracking-wide">
+                                <p className="flex items-center gap-2 text-sm text-body-700 tracking-wide">
+                                    <ImagesIcon className={sectionIconClass} />
                                     Photos & Multimedia
                                 </p>
-                                <ShowAllButton onClick={() => openImageViewer(0)} />
+                                <ShowAllButton onClick={() => openSharedSheet('photos')} />
                             </div>
 
                             <div className="grid grid-cols-3 gap-1.5">
@@ -324,7 +374,7 @@ const ProfilePanel = () => {
                                             <button
                                                 type="button"
                                                 key={file._id ?? file.publicId ?? file.url ?? index}
-                                                onClick={() => openImageViewer(index)}
+                                                onClick={() => openImageViewerForFile(file)}
                                                 className="overflow-hidden rounded-lg ring-1 ring-border/50 hover:ring-green/40 hover:opacity-90 transition duration-200 p-0"
                                             >
                                                 {renderMediaThumbnail(file)}
@@ -335,10 +385,11 @@ const ProfilePanel = () => {
 
                         <section className="mt-3 rounded-2xl bg-primary/35 px-3 py-3.5">
                             <div className="flex items-center justify-between gap-2 px-0.5 mb-3">
-                                <p className="text-sm text-body-700 tracking-wide">
+                                <p className="flex items-center gap-2 text-sm text-body-700 tracking-wide">
+                                    <FilesIcon className={sectionIconClass} />
                                     Attachments
                                 </p>
-                                <ShowAllButton onClick={() => openImageViewer(0)} />
+                                <ShowAllButton onClick={() => openSharedSheet('attachments')} />
                             </div>
 
                             <div className="flex flex-col gap-1.5">
@@ -391,14 +442,15 @@ const ProfilePanel = () => {
 
                         <section className="mt-3 rounded-2xl bg-primary/35 px-3 py-3.5">
                             <div className="flex items-center justify-between gap-2 px-0.5 mb-3">
-                                <p className="text-sm text-body-700 tracking-wide">
+                                <p className="flex items-center gap-2 text-sm text-body-700 tracking-wide">
+                                    <LinkIcon className={sectionLinkIconClass} />
                                     Links
                                 </p>
-                                {sharedLinks.length > 3 && (
-                                    <span className="text-[11px] text-body-300">
-                                        {sharedLinks.length} total
-                                    </span>
-                                )}
+                                {sharedLinks.length > 0 ? (
+                                    <ShowAllButton
+                                        onClick={() => openSharedSheet('links')}
+                                    />
+                                ) : null}
                             </div>
 
                             <div className="flex flex-col gap-1.5">
@@ -414,12 +466,11 @@ const ProfilePanel = () => {
                                     : sharedLinks.length === 0
                                       ? (
                                             <EmptyState
-                                              icon={
-                                                <span className="grid h-10 w-10 place-items-center rounded-full bg-background-alt text-xs tracking-wide text-body-300">
-                                                  URL
-                                                </span>
-                                              }
-                                              titleClassName="mt-2 text-center text-xs text-body-300"
+                                              className="py-4"
+                                              imageSrc="/images/no-link.svg"
+                                              imageAlt="no links"
+                                              imageClassName="w-20 opacity-45"
+                                              titleClassName="text-center text-body-300 text-xs mt-2"
                                               title="No links yet"
                                             />
                                         )
@@ -431,8 +482,8 @@ const ProfilePanel = () => {
                                                 rel="noopener noreferrer"
                                                 className="flex w-full items-start gap-3 rounded-xl bg-background-alt/70 px-3 py-2.5 text-left ring-1 ring-border/40 hover:ring-green/35 hover:bg-background-alt transition duration-200"
                                             >
-                                                <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-green-dark/60 text-xs font-semibold text-green">
-                                                    {link.host.slice(0, 1).toUpperCase()}
+                                                <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-green-dark/60 ring-1 ring-green/25">
+                                                    <LinkIcon className="h-4 w-4 stroke-green" />
                                                 </span>
                                                 <span className="min-w-0 flex-1">
                                                     <span className="block truncate text-sm text-body">

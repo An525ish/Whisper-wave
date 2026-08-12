@@ -27,6 +27,8 @@ export const getMemberSockets = (
 
 export const getPresenceSize = (): number => userSocketIds.size;
 
+export const getOnlineUserIds = (): string[] => [...userSocketIds.keys()];
+
 export const emitToMembers = (
   io: Server | undefined,
   event: string,

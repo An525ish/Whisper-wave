@@ -4,6 +4,8 @@ import AvatarSkeleton from '@/components/skeletons/AvatarSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import ChatListItem from './ChatListItem';
 import { useAuthStore } from '@/stores/auth';
+import { usePresenceStore } from '@/stores/presence';
+import { normalizeMemberIds } from '@/utils/helper';
 import type { MessageNotification } from '@/types';
 
 type ChatLastMessage = {
@@ -20,7 +22,7 @@ type ChatListEntry = {
   name?: string;
   avatar?: string | string[];
   groupChat?: boolean;
-  members?: string[];
+  members?: Array<string | { _id?: string }>;
   lastMessage?: ChatLastMessage | null;
 };
 
@@ -28,7 +30,6 @@ type ChatListProps = {
   chats?: ChatListEntry[];
   type: string;
   isLoading?: boolean;
-  onlineUsers?: string[];
   newMessageAlert: MessageNotification[];
   handleDeleteChat: (
     e: MouseEvent,
@@ -41,12 +42,14 @@ const ChatList = ({
   chats = [],
   type,
   isLoading,
-  onlineUsers = [],
   newMessageAlert,
   handleDeleteChat,
 }: ChatListProps) => {
   const user = useAuthStore((s) => s.user);
+  const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
+  const typingChatIds = usePresenceStore((s) => s.typingChatIds);
   const parentRef = useRef<HTMLDivElement | null>(null);
+  const selfId = user?._id ? String(user._id) : '';
 
   const virtualizer = useVirtualizer({
     count: chats.length,
@@ -79,9 +82,13 @@ const ChatList = ({
             const messageAlert = newMessageAlert.find(
               ({ chatId }) => chatId === _id,
             );
-            const isOnline = members?.some(() =>
-              onlineUsers.includes(_id),
+            const peerIds = normalizeMemberIds(members).filter(
+              (id) => id !== selfId,
             );
+            const isOnline =
+              !groupChat &&
+              peerIds.some((id) => onlineUserIds.includes(id));
+            const isTyping = Boolean(typingChatIds[_id]);
 
             return (
               <div
@@ -98,6 +105,7 @@ const ChatList = ({
                   name={name ?? ''}
                   groupChat={groupChat}
                   isOnline={isOnline}
+                  isTyping={isTyping}
                   messageAlert={messageAlert}
                   id={_id}
                   lastMessage={lastMessage}

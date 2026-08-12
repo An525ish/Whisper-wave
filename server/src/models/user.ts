@@ -18,6 +18,7 @@ const userSchema = new Schema<IUser>(
     password: { type: String, required: true, select: false },
     avatar: { type: avatarSchema, required: true },
     bio: { type: String },
+    lastSeen: { type: Date },
   },
   { timestamps: true }
 );

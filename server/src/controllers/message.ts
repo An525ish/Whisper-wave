@@ -24,6 +24,99 @@ export const getMessages: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+export const searchMessages: RequestHandler = catchAsync(async (req, res) => {
+  const chatId = param(req.params.chatId);
+  const q = typeof req.query.q === 'string' ? req.query.q : '';
+  const scopeRaw = typeof req.query.scope === 'string' ? req.query.scope : 'all';
+  const fromRaw = typeof req.query.from === 'string' ? req.query.from : 'anyone';
+  const dateFrom =
+    typeof req.query.dateFrom === 'string' ? req.query.dateFrom : undefined;
+  const dateTo =
+    typeof req.query.dateTo === 'string' ? req.query.dateTo : undefined;
+  const senderId =
+    typeof req.query.senderId === 'string' ? req.query.senderId : undefined;
+
+  const scope =
+    scopeRaw === 'text' || scopeRaw === 'media' || scopeRaw === 'links'
+      ? scopeRaw
+      : 'all';
+  const from =
+    fromRaw === 'me' || fromRaw === 'others' ? fromRaw : 'anyone';
+
+  const result = await messageService.searchMessages(req.userId!, chatId, q, {
+    scope,
+    from,
+    senderId,
+    dateFrom,
+    dateTo,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: result.data,
+    total: result.total,
+  });
+});
+
+export const jumpToDate: RequestHandler = catchAsync(async (req, res) => {
+  const chatId = param(req.params.chatId);
+  const dateFrom =
+    typeof req.query.dateFrom === 'string' ? req.query.dateFrom : '';
+  const dateTo =
+    typeof req.query.dateTo === 'string' ? req.query.dateTo : undefined;
+
+  if (!dateFrom) {
+    res.status(400).json({ success: false, message: 'dateFrom is required' });
+    return;
+  }
+
+  const data = await messageService.jumpToDate(
+    req.userId!,
+    chatId,
+    dateFrom,
+    dateTo
+  );
+
+  res.status(200).json({
+    success: true,
+    data,
+  });
+});
+
+export const listActiveDates: RequestHandler = catchAsync(async (req, res) => {
+  const chatId = param(req.params.chatId);
+  const dateFrom =
+    typeof req.query.dateFrom === 'string' ? req.query.dateFrom : '';
+  const dateTo =
+    typeof req.query.dateTo === 'string' ? req.query.dateTo : '';
+  const timeZone =
+    typeof req.query.tz === 'string' && req.query.tz
+      ? req.query.tz
+      : 'UTC';
+
+  if (!dateFrom || !dateTo) {
+    res.status(400).json({
+      success: false,
+      message: 'dateFrom and dateTo are required',
+    });
+    return;
+  }
+
+  const result = await messageService.listActiveDates(
+    req.userId!,
+    chatId,
+    dateFrom,
+    dateTo,
+    timeZone
+  );
+
+  res.status(200).json({
+    success: true,
+    dates: result.dates,
+    minYear: result.minYear,
+  });
+});
+
 export const sendAttachments: RequestHandler = catchAsync(async (req, res) => {
   const { chatId, content } = req.body as { chatId: string; content?: string };
   const files = (req.files as UploadableFile[] | undefined) ?? [];

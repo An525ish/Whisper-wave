@@ -12,6 +12,7 @@ export type IUserFields = {
   password: string;
   avatar: UserAvatar;
   bio?: string;
+  lastSeen?: Date;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -22,6 +23,7 @@ export type LeanUser = {
   username: string;
   avatar: UserAvatar;
   bio?: string;
+  lastSeen?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -86,6 +88,7 @@ export type UpdateUserPatch = Partial<{
   password: string;
   bio: string;
   avatar: UserAvatar;
+  lastSeen: Date;
 }>;
 
 export type AuthResult = {

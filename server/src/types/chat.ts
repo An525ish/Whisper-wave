@@ -32,6 +32,7 @@ export type PopulatedMember = {
   _id: { toString(): string };
   name: string;
   avatar?: { url?: string };
+  lastSeen?: Date | string;
 };
 
 export type ChatListItem = {

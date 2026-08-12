@@ -291,10 +291,13 @@ export const getChatDetails = async (
     chat.avatar = chat.groupChat
       ? null
       : [otherMembers[0]?.avatar?.url || ''];
-    chat.members = typedMembers.map(({ _id, avatar, ...rest }) => ({
+    chat.members = typedMembers.map(({ _id, avatar, lastSeen, ...rest }) => ({
       ...rest,
       _id,
       avatar: avatar?.url,
+      lastSeen: lastSeen
+        ? new Date(lastSeen).toISOString()
+        : undefined,
       isCreator: _id.toString() === creator._id.toString(),
     }));
   }

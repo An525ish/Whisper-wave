@@ -1,13 +1,22 @@
-import { useState, Children, type ReactNode } from 'react';
+import { useEffect, useState, Children, type ReactNode } from 'react';
 import Tabs, { type TabItem } from './Tab';
 
 type TabViewProps = {
   tabsData: Record<string, TabItem> | TabItem[];
   children: ReactNode | ((activeTabIndex: number) => ReactNode);
+  initialTabIndex?: number;
 };
 
-const TabView = ({ tabsData, children }: TabViewProps) => {
-  const [activeTabIndex, setActiveTabIndex] = useState(0);
+const TabView = ({
+  tabsData,
+  children,
+  initialTabIndex = 0,
+}: TabViewProps) => {
+  const [activeTabIndex, setActiveTabIndex] = useState(initialTabIndex);
+
+  useEffect(() => {
+    setActiveTabIndex(initialTabIndex);
+  }, [initialTabIndex]);
 
   const handleTabChange = (index: number) => {
     setActiveTabIndex(index);

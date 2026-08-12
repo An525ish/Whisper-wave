@@ -5,7 +5,15 @@ import ClipIcon from "@/components/icons/Clip";
 import EmojiIcon from "@/components/icons/Emoji";
 import SendIcon from "@/components/icons/Send";
 import { MAX_FILES } from "@/lib/constants";
-import { useCallback, useRef, useState, type Dispatch, type InputHTMLAttributes, type SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+  type TextareaHTMLAttributes,
+} from "react";
 import toast from "react-hot-toast";
 
 type ChatInputProps = {
@@ -15,7 +23,9 @@ type ChatInputProps = {
     attachments: File[];
     setAttachments: Dispatch<SetStateAction<File[]>>;
     handleSubmit: () => void | Promise<void>;
-} & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'className'>;
+} & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'className'>;
+
+const MAX_TEXTAREA_HEIGHT = 128;
 
 const renderFilePreviews = (
     attachments: File[],
@@ -47,6 +57,14 @@ const ChatInput = ({
 
     const clipIconRef = useRef<HTMLSpanElement | null>(null);
     const emojiIconRef = useRef<HTMLSpanElement | null>(null);
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+    useEffect(() => {
+        const node = textareaRef.current;
+        if (!node) return;
+        node.style.height = 'auto';
+        node.style.height = `${Math.max(40, Math.min(node.scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
+    }, [message]);
 
     const toggleAttachmentMenu = () => {
         setIsAttachmentClicked(prev => !prev);
@@ -68,11 +86,12 @@ const ChatInput = ({
     }, [setAttachments]);
 
     const canSend = Boolean(message.trim()) || attachments.length > 0;
+    const isMultiline = message.includes('\n');
 
     return (
         <div className="relative w-full">
             {attachments.length > 0 && renderFilePreviews(attachments, handleRemoveFile)}
-            <div className="relative flex w-full items-end gap-2">
+            <div className="relative flex w-full items-center gap-2">
                 {isAttachmentClicked && (
                     <AttachmentMenu
                         onClose={() => setIsAttachmentClicked(false)}
@@ -91,7 +110,7 @@ const ChatInput = ({
                         />
                     </div>
                 )}
-                <div className="flex min-w-0 flex-1 items-center gap-0.5 rounded-[1.5rem] border border-border bg-primary/40 px-1.5 py-0.5 md:gap-1 md:bg-transparent md:px-2">
+                <div className="flex min-h-10 min-w-0 flex-1 items-center gap-0.5 rounded-[1.5rem] border border-border bg-primary/40 px-1.5 py-0.5 md:gap-1 md:bg-transparent md:px-2">
                     <span ref={emojiIconRef} className="shrink-0">
                         <button
                             type="button"
@@ -102,13 +121,18 @@ const ChatInput = ({
                             <EmojiIcon className="h-5 w-5 hover:fill-body" />
                         </button>
                     </span>
-                    <input
-                        type={'text'}
+                    <textarea
+                        ref={textareaRef}
+                        rows={1}
                         value={message}
                         enterKeyHint="send"
                         autoComplete="off"
                         {...props}
-                        className={`w-full min-w-0 bg-transparent px-1 py-2.5 text-[16px] leading-snug outline-none md:px-2 md:py-2 md:text-sm ${className}`}
+                        className={`max-h-32 w-full min-h-10 min-w-0 resize-none overflow-y-auto bg-transparent px-1 outline-none md:px-2 text-[16px] md:text-sm ${
+                            isMultiline
+                                ? 'py-2 leading-snug'
+                                : 'py-0 leading-10'
+                        } ${className ?? ''}`}
                     />
                     <span ref={clipIconRef} className="shrink-0">
                         <button
@@ -125,7 +149,7 @@ const ChatInput = ({
                     type="button"
                     onClick={handleSubmit}
                     disabled={!canSend}
-                    className="mb-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-green text-white shadow-md transition enabled:active:scale-95 disabled:opacity-40 md:h-10 md:w-10"
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-green text-white shadow-md transition enabled:active:scale-95 disabled:opacity-40 md:h-10 md:w-10"
                     aria-label="Send message"
                 >
                     <SendIcon className="mt-0.5 mr-0.5 h-5 w-5 fill-white" />

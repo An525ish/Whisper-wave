@@ -56,6 +56,7 @@
   --animate-spinning82341: spinning82341 1.7s linear infinite;
   --animate-hue: hue 1s ease-in-out infinite;
   --animate-loading: loading 9s linear infinite;
+  --animate-media-icon-shimmer: media-icon-shimmer 1.6s ease-in-out infinite;
 
   --background-image-gradient-background: linear-gradient(
     90deg,
@@ -140,6 +141,35 @@
   }
 }
 
+@keyframes media-icon-shimmer {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+@keyframes media-shimmer-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes search-focus-blink {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 :root {
   color: var(--color-body);
   font-family: var(--font-sans);
@@ -216,6 +246,12 @@
     [role='button']:active:not([aria-disabled='true']) {
       filter: none;
     }
+
+    .media-placeholder-shimmer::after,
+    .animate-media-icon-shimmer,
+    .search-focus-blink::after {
+      animation: none;
+    }
   }
 }
 
@@ -224,6 +260,25 @@
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+@utility media-placeholder-shimmer {
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 35%,
+      rgba(1, 195, 109, 0.16) 50%,
+      transparent 65%
+    );
+    animation: media-shimmer-slide 1.75s ease-in-out infinite;
+    pointer-events: none;
   }
 }
 
@@ -236,4 +291,27 @@
 @utility bubble-out {
   border-radius: 1.35rem;
   border-bottom-right-radius: 0.35rem;
+}
+
+/* Search jump: blink the bubble background (overlay, doesn't fight Tailwind bg-*) */
+@utility search-focus-blink {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+
+  & > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background: rgba(1, 195, 109, 0.45);
+    pointer-events: none;
+    animation: search-focus-blink 0.55s ease-in-out 3;
+  }
 }

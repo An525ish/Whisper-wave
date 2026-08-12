@@ -57,9 +57,76 @@ const extensionMap: Record<string, FileFormatKind> = {
 };
 
 export const fileFormat = (url = ''): FileFormatKind => {
-  const fileExtension = url.split('.').pop() ?? '';
+  const clean = url.split('?')[0]?.split('#')[0] ?? '';
+  const segment = clean.split('/').pop() ?? '';
+  const fileExtension = segment.includes('.')
+    ? (segment.split('.').pop() ?? '')
+    : segment;
 
   return extensionMap[fileExtension.toLowerCase()] ?? 'unknown';
+};
+
+export const getMediaKindFromFile = (file?: {
+  url?: string;
+  name?: string;
+  fileType?: string;
+}): 'image' | 'video' | 'audio' => {
+  if (!file?.url) return 'image';
+
+  const url = file.url.toLowerCase();
+  if (url.includes('/video/upload/')) return 'video';
+
+  const fromName = fileFormat(file.name);
+  if (fromName === 'video' || fromName === 'audio' || fromName === 'image') {
+    return fromName;
+  }
+
+  const fromUrl = fileFormat(file.url);
+  if (fromUrl === 'video' || fromUrl === 'audio') return fromUrl;
+
+  return 'image';
+};
+
+const extractNameFromUrl = (url?: string): string | undefined => {
+  if (!url) return undefined;
+
+  try {
+    const clean = url.split('?')[0]?.split('#')[0] ?? '';
+    const segment = decodeURIComponent(clean.split('/').pop() ?? '').trim();
+    if (!segment) return undefined;
+
+    const withoutVersion = segment.replace(/^v\d+$/i, '');
+    if (!withoutVersion) return undefined;
+
+    return withoutVersion;
+  } catch {
+    return undefined;
+  }
+};
+
+/** Best-effort label: stored name → URL segment → public id → kind fallback. */
+export const getMediaDisplayName = (file?: {
+  name?: string;
+  url?: string;
+  publicId?: string;
+  fileType?: string;
+}): string => {
+  const trimmedName = file?.name?.trim();
+  if (trimmedName) return trimmedName;
+
+  const fromUrl = extractNameFromUrl(file?.url);
+  if (fromUrl) return fromUrl;
+
+  const publicId = file?.publicId?.trim();
+  if (publicId) {
+    const segment = publicId.split('/').pop();
+    if (segment) return segment;
+  }
+
+  const kind = getMediaKindFromFile(file);
+  if (kind === 'video') return 'Video';
+  if (kind === 'audio') return 'Audio';
+  return 'Photo';
 };
 
 export const fileData: FileDataItem[] = [
@@ -106,6 +173,6 @@ export const fileData: FileDataItem[] = [
 ];
 
 export const transformImage = (url = '', width = 100): string => {
-  const newUrl = url.replace('upload/', `upload/dpr_auto/w_${width}/`);
-  return newUrl;
+  if (!url || !url.includes('/upload/')) return url;
+  return url.replace('/upload/', `/upload/dpr_auto/w_${width}/`);
 };

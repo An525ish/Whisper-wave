@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
-import { useSpring, animated } from '@react-spring/web';
-import { useDrag } from '@use-gesture/react';
+import { useState, useEffect, useCallback } from 'react';
 import ImageViewerIcon from './Image-Viewer-Icons';
-import { fileFormat, transformImage } from '@/lib/features';
+import {
+  RetryableMediaImage,
+  RetryableMediaVideo,
+} from '@/components/media/RetryableMedia';
+import { getMediaKindFromFile, getMediaDisplayName } from '@/lib/features';
 import toast from 'react-hot-toast';
 
 export type MediaFile = {
   _id: string;
   url: string;
   name?: string;
+  publicId?: string;
   thumbnailUrl?: string;
+  fileType?: string;
 };
 
 type ImageViewerProps = {
@@ -18,6 +22,40 @@ type ImageViewerProps = {
   onClose: () => void;
 };
 
+type MediaKind = 'image' | 'video' | 'audio';
+
+const galleryFallbackIconClass = 'h-36 w-36 sm:h-44 sm:w-44';
+const galleryThumbFallbackIconClass = 'h-9 w-9';
+
+const mediaTypeLabel = (kind: MediaKind) => {
+  if (kind === 'video') return 'Video';
+  if (kind === 'audio') return 'Audio';
+  return 'Photo';
+};
+
+const CloseIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 20 20" fill="none" aria-hidden>
+    <path
+      d="M5 5l10 10M15 5L5 15"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+const ChevronIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 20 20" fill="none" aria-hidden>
+    <path
+      d="M12.5 4.5L7 10l5.5 5.5"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const ImageViewer = ({
   mediaFiles = [],
   initialIndex,
@@ -25,39 +63,68 @@ const ImageViewer = ({
 }: ImageViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [scale, setScale] = useState(1);
+  const [entered, setEntered] = useState(false);
+
+  const currentMedia = mediaFiles[currentIndex];
+  const mediaKind = getMediaKindFromFile(currentMedia) as MediaKind;
+  const displayName = getMediaDisplayName(currentMedia);
+  const isVideo = mediaKind === 'video';
+  const isAudio = mediaKind === 'audio';
+  const hasMultiple = mediaFiles.length > 1;
+
+  const resetZoom = useCallback(() => {
+    setScale(1);
+  }, []);
 
   useEffect(() => {
+    setCurrentIndex(initialIndex);
+    resetZoom();
+  }, [initialIndex, resetZoom]);
+
+  useEffect(() => {
+    resetZoom();
+  }, [currentIndex, resetZoom]);
+
+  const handlePrev = useCallback(() => {
+    setCurrentIndex((prev) =>
+      prev > 0 ? prev - 1 : mediaFiles.length - 1,
+    );
+  }, [mediaFiles.length]);
+
+  const handleNext = useCallback(() => {
+    setCurrentIndex((prev) =>
+      prev < mediaFiles.length - 1 ? prev + 1 : 0,
+    );
+  }, [mediaFiles.length]);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setEntered(true));
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') handlePrev();
       if (e.key === 'ArrowRight') handleNext();
       if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex]);
 
-  const handlePrev = () => {
-    setCurrentIndex((prevIndex) =>
-      prevIndex > 0 ? prevIndex - 1 : mediaFiles.length - 1,
-    );
-    setScale(1);
-  };
-
-  const handleNext = () => {
-    setCurrentIndex((prevIndex) =>
-      prevIndex < mediaFiles.length - 1 ? prevIndex + 1 : 0,
-    );
-    setScale(1);
-  };
+    return () => {
+      cancelAnimationFrame(frame);
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handlePrev, handleNext, onClose]);
 
   const handleDownload = async () => {
+    if (!currentMedia?.url) return;
     try {
       const file = await fetch(currentMedia.url);
       const blob = await file.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = currentMedia.name || 'download';
+      link.download = displayName || 'download';
       link.click();
       window.URL.revokeObjectURL(url);
     } catch {
@@ -65,184 +132,249 @@ const ImageViewer = ({
     }
   };
 
-  const [{ x, y }, set] = useSpring(() => ({ x: 0, y: 0 }));
-
-  const bind = useDrag(
-    ({ down, movement: [mx, my], pinching, delta: [, dy] }) => {
-      if (pinching) {
-        setScale(Math.max(1, Math.min(scale + dy * 0.01, 3)));
-      } else {
-        set({ x: down ? mx : 0, y: down ? my : 0, immediate: down });
-      }
-    },
-    {
-      rubberband: true,
-      bounds: { left: -100, right: 100, top: -100, bottom: 100 },
-      preventDefault: true,
-    },
-  );
-
   const handleDoubleClick = () => {
-    setScale(scale === 1 ? 2 : 1);
+    setScale((prev) => (prev === 1 ? 2 : 1));
   };
 
-  const currentMedia = mediaFiles?.[currentIndex];
-  const fileExtension = fileFormat(currentMedia?.url);
-  const isVideo = fileExtension === 'video';
-  const isAudio = fileExtension === 'audio';
-
   const renderMedia = () => {
-    if (!currentMedia) return null;
+    if (!currentMedia?.url) return null;
 
     if (isVideo) {
       return (
-        <video
-          src={currentMedia.url}
-          className="max-h-full max-w-full object-contain"
+        <RetryableMediaVideo
+          key={currentMedia.url}
+          url={currentMedia.url}
+          wrapperClassName="flex min-h-[min(64vh,640px)] w-full max-w-full items-center justify-center rounded-xl"
+          className="max-h-[min(72vh,720px)] max-w-full rounded-xl object-contain shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+          fallbackIconClassName={galleryFallbackIconClass}
           controls
-        />
-      );
-    } else if (isAudio) {
-      return (
-        <div className="flex flex-col items-center justify-center w-full h-full">
-          <div className="w-64 h-64 bg-primary rounded-full flex items-center justify-center mb-4 overflow-hidden">
-            {currentMedia.thumbnailUrl ? (
-              <img
-                src={currentMedia.thumbnailUrl}
-                alt="Audio thumbnail"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <ImageViewerIcon name="music" className="w-32 h-32 text-body-300" />
-            )}
-          </div>
-          <audio src={currentMedia.url} controls className="w-full max-w-md" />
-          <p className="text-white mt-4">{currentMedia.name}</p>
-        </div>
-      );
-    } else {
-      return (
-        <animated.img
-          src={currentMedia.url}
-          alt={currentMedia.name}
-          className="max-h-full max-w-full transition-all object-contain select-none"
-          style={{ transform: `scale(${scale})` }}
-          onDoubleClick={handleDoubleClick}
+          playsInline
+          autoPlay
+          muted={false}
         />
       );
     }
+
+    if (isAudio) {
+      return (
+        <div className="flex w-full max-w-sm flex-col items-center rounded-2xl bg-primary/50 px-8 py-10 ring-1 ring-white/10">
+          <div className="mb-6 flex h-40 w-40 items-center justify-center overflow-hidden rounded-full bg-background-alt shadow-[0_0_48px_rgba(1,195,109,0.15)] ring-1 ring-green/20">
+            {currentMedia.thumbnailUrl ? (
+              <img
+                src={currentMedia.thumbnailUrl}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <ImageViewerIcon
+                name="music"
+                className="h-20 w-20 fill-body-300"
+              />
+            )}
+          </div>
+          <audio src={currentMedia.url} controls className="w-full" autoPlay />
+          <p className="mt-5 truncate text-center text-sm font-medium text-white">
+            {displayName}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <RetryableMediaImage
+        key={currentMedia.url}
+        url={currentMedia.url}
+        transformWidth={1400}
+        alt={displayName}
+        wrapperClassName="flex min-h-[min(64vh,640px)] w-full max-w-full items-center justify-center rounded-xl"
+        className="max-h-[min(72vh,720px)] max-w-full select-none rounded-xl object-contain shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+        fallbackIconClassName={galleryFallbackIconClass}
+        style={{ transform: `scale(${scale})` }}
+        onDoubleClick={handleDoubleClick}
+        draggable={false}
+      />
+    );
   };
 
   return (
-    <div className="fixed inset-0 bg-background z-50 flex flex-col">
-      {/* Header */}
-      <div className="text-white py-4 px-8 flex items-center justify-between">
-        <div className="flex gap-4 items-center">
-          <button onClick={onClose} className="text-3xl font-bold">
-            ←
-          </button>
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Media gallery"
+    >
+      <button
+        type="button"
+        aria-label="Close gallery"
+        className={`absolute inset-0 bg-black/70 backdrop-blur-md transition-opacity duration-300 motion-reduce:transition-none ${
+          entered ? 'opacity-100' : 'opacity-0'
+        }`}
+        onClick={onClose}
+      />
 
-          {mediaFiles.length !== 0 && currentMedia && (
-            <p className="w-80 truncate">{currentMedia.name || 'Unkown file'}</p>
-          )}
-        </div>
+      <div
+        className={`relative flex h-[min(96dvh,calc(100dvh-0.75rem))] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-border/60 bg-background/95 shadow-[0_32px_100px_rgba(0,0,0,0.65)] backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+          entered ? 'scale-100 opacity-100' : 'scale-[0.96] opacity-0'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="pointer-events-none absolute inset-x-12 top-0 h-32 bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.12),transparent_72%)]"
+          aria-hidden
+        />
 
-        {mediaFiles.length !== 0 && currentMedia && (
-          <div className="flex items-center space-x-4">
-            <span>
-              {currentIndex + 1} / {mediaFiles.length}
-            </span>
-            <ImageViewerIcon
-              name="download"
-              className="fill-white cursor-pointer"
-              onClick={handleDownload}
-            />
+        <header className="relative flex shrink-0 items-center gap-3 px-5 py-4 sm:px-6">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-green/15 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-green ring-1 ring-green/25">
+                {mediaTypeLabel(mediaKind)}
+              </span>
+              {hasMultiple ? (
+                <span className="rounded-full bg-background-alt/80 px-2.5 py-0.5 text-[11px] tabular-nums text-body-300 ring-1 ring-border/50">
+                  {currentIndex + 1} / {mediaFiles.length}
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-1.5 truncate text-base font-semibold text-white sm:text-lg">
+              {displayName}
+            </p>
           </div>
-        )}
-      </div>
 
-      {/* Main Media Area */}
-      {mediaFiles?.length === 0 ? (
-        <div className="grid place-items-center w-full h-full">
-          <div className="w-full">
-            <img
-              src="/images/no-media.svg"
-              alt="no-media"
-              className="w-80 mx-auto opacity-50"
-            />
-            <p className="text-center text-xl text-body-300 mt-8">No Media Found</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="flex-grow flex items-center justify-center relative overflow-hidden">
-            <button onClick={handlePrev} className="absolute left-4 text-white text-4xl z-10">
-              &lt;
-            </button>
-            <animated.div
-              {...bind()}
-              style={{ x, y, touchAction: 'none' }}
-              className="w-full h-full flex items-center justify-center"
+          <div className="flex shrink-0 items-center gap-1.5">
+            {currentMedia ? (
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="grid h-10 w-10 place-items-center rounded-full border border-border/70 bg-background-alt/50 text-body-300 transition hover:border-green/40 hover:bg-primary/80 hover:text-green"
+                aria-label="Download"
+              >
+                <ImageViewerIcon name="download" className="h-5 w-5 fill-current" />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-10 w-10 place-items-center rounded-full border border-border/70 bg-background-alt/50 text-body-300 transition hover:border-red/40 hover:bg-red-dark/40 hover:text-red"
+              aria-label="Close"
             >
-              {renderMedia()}
-            </animated.div>
-            <button onClick={handleNext} className="absolute right-4 text-white text-4xl z-10">
-              &gt;
+              <CloseIcon className="h-4 w-4" />
             </button>
           </div>
+        </header>
 
-          {/* Thumbnail Strip */}
-          <div className="bg-background-alt p-2 flex justify-center">
-            <div className="flex min-w-full gap-2 overflow-x-auto scrollbar-hide">
-              {mediaFiles.map((item, index) => {
-                const transformedUrl = transformImage(item.url);
-                const thumbExtension = fileFormat(item.url);
-
-                return (
-                  <div
-                    key={item._id}
-                    className={`h-16 flex-shrink-0 basis-28 rounded-sm overflow-hidden mx-auto cursor-pointer ${
-                      index === currentIndex ? 'border-2 border-green' : ''
-                    }`}
-                    onClick={() => {
-                      setCurrentIndex(index);
-                      setScale(1);
-                    }}
-                  >
-                    {thumbExtension === 'video' ? (
-                      <video
-                        src={transformedUrl}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : thumbExtension === 'audio' ? (
-                      <div className="w-full h-full bg-primary flex items-center justify-center">
-                        {item.thumbnailUrl ? (
-                          <img
-                            src={item.thumbnailUrl}
-                            alt="Audio thumbnail"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <ImageViewerIcon
-                            name="music"
-                            className="w-8 h-8 text-body-300"
-                          />
-                        )}
-                      </div>
-                    ) : (
-                      <img
-                        src={transformedUrl}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
-                );
-              })}
+        {mediaFiles.length === 0 ? (
+          <div className="grid flex-1 place-items-center px-6">
+            <div className="text-center">
+              <img
+                src="/images/no-media.svg"
+                alt=""
+                className="mx-auto w-36 opacity-45"
+              />
+              <p className="mt-4 text-sm text-body-300">No media found</p>
             </div>
           </div>
-        </>
-      )}
+        ) : (
+          <>
+            <div className="relative mx-4 flex min-h-0 flex-1 items-stretch overflow-hidden rounded-2xl bg-black/40 ring-1 ring-inset ring-white/[0.06] sm:mx-6">
+              <div
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(1,195,109,0.06),transparent_68%)]"
+                aria-hidden
+              />
+
+              {hasMultiple ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrev}
+                    className="absolute left-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border/60 bg-background/75 text-white shadow-lg backdrop-blur-sm transition hover:border-green/40 hover:bg-background sm:left-4"
+                    aria-label="Previous"
+                  >
+                    <ChevronIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="absolute right-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border/60 bg-background/75 text-white shadow-lg backdrop-blur-sm transition hover:border-green/40 hover:bg-background sm:right-4"
+                    aria-label="Next"
+                  >
+                    <ChevronIcon className="h-5 w-5 rotate-180" />
+                  </button>
+                </>
+              ) : null}
+
+              <div className="relative flex h-full min-h-[70vh] w-full items-center justify-center px-14 py-8 sm:px-16">
+                {renderMedia()}
+              </div>
+            </div>
+
+            {hasMultiple ? (
+              <footer className="shrink-0 border-t border-border/50 bg-background-alt/30 px-5 py-4 sm:px-6">
+                <p className="mb-2.5 text-[11px] font-medium uppercase tracking-wider text-body-300">
+                  All media
+                </p>
+                <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                  {mediaFiles.map((item, index) => {
+                    const thumbKind = getMediaKindFromFile(item);
+                    const active = index === currentIndex;
+
+                    return (
+                      <button
+                        type="button"
+                        key={item._id}
+                        onClick={() => setCurrentIndex(index)}
+                        className={`relative h-[4.25rem] w-[4.75rem] shrink-0 snap-start overflow-hidden rounded-xl transition duration-200 ${
+                          active
+                            ? 'ring-2 ring-green shadow-[0_0_20px_rgba(1,195,109,0.28)]'
+                            : 'opacity-45 ring-1 ring-border/50 hover:opacity-75'
+                        }`}
+                        aria-label={`View item ${index + 1}`}
+                        aria-current={active}
+                      >
+                        {thumbKind === 'video' ? (
+                          <RetryableMediaVideo
+                            url={item.url}
+                            className="h-full w-full object-cover"
+                            fallbackIconClassName={galleryThumbFallbackIconClass}
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                        ) : thumbKind === 'audio' ? (
+                          <div className="flex h-full w-full items-center justify-center bg-primary">
+                            {item.thumbnailUrl ? (
+                              <img
+                                src={item.thumbnailUrl}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <ImageViewerIcon
+                                name="music"
+                                className="h-6 w-6 fill-body-300"
+                              />
+                            )}
+                          </div>
+                        ) : (
+                          <RetryableMediaImage
+                            url={item.url}
+                            transformWidth={280}
+                            alt={item.name ?? ''}
+                            className="h-full w-full object-cover"
+                            fallbackIconClassName={galleryThumbFallbackIconClass}
+                          />
+                        )}
+                        {active ? (
+                          <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-green" />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </footer>
+            ) : null}
+          </>
+        )}
+      </div>
     </div>
   );
 };
