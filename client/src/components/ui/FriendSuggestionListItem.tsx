@@ -26,20 +26,18 @@ const FriendSuggestionListItem = ({
   };
 
   return (
-    <div className="flex gap-2 items-center px-4 rounded-lg group">
+    <div className="flex items-center gap-2 rounded-lg px-2 py-2.5 transition hover:bg-background/50">
       <AvatarCard avatars={[avatar]} />
-      <div className="flex-[1]">
-        <div className="flex justify-between items-center">
-          <p className="font-medium capitalize text-body-700">{name}</p>
-          <Button
-            variant={isSent ? 'primary' : 'outlineGreen'}
-            className="px-4 py-0.5"
-            onClick={() => handleClick(_id)}
-            disabled={isSent}
-          >
-            {isSent ? 'Sent' : 'Add'}
-          </Button>
-        </div>
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+        <p className="truncate font-medium capitalize text-body">{name}</p>
+        <Button
+          variant={isSent ? 'primary' : 'outlineGreen'}
+          className="shrink-0 px-3 py-1.5 text-sm"
+          onClick={() => handleClick(_id)}
+          disabled={isSent}
+        >
+          {isSent ? 'Sent' : 'Add'}
+        </Button>
       </div>
     </div>
   );

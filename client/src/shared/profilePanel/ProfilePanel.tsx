@@ -243,12 +243,12 @@ const ProfilePanel = () => {
                     <Image src={avatarSrc} className={'w-full'} alt={name} />
                 </div>
 
-                <p className="text-center text-xl w-52 truncate mx-auto capitalize font-medium mt-10 shrink-0">{name}</p>
+                <p className="mx-auto mt-10 w-full max-w-52 shrink-0 truncate px-2 text-center text-xl font-medium capitalize">{name}</p>
 
                 <div className="flex flex-col flex-1 min-h-0 mt-2">
                     <div className="shrink-0">
                         {chatId && groupChat ? (
-                            <section className="mx-3 mt-1 grid grid-cols-[6.5rem_1px_1fr] items-center gap-x-4 rounded-2xl bg-primary/40 px-3.5 py-3.5 ring-1 ring-border/50">
+                            <section className="mx-3 mt-1 flex flex-col gap-3 rounded-2xl bg-primary/40 px-3.5 py-3.5 ring-1 ring-border/50 sm:grid sm:grid-cols-[6.5rem_1px_1fr] sm:items-center sm:gap-x-4">
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="relative">
                                         <AvatarRing tone="green" className="h-[4.75rem] w-[4.75rem]">
@@ -268,7 +268,7 @@ const ProfilePanel = () => {
                                 </div>
 
                                 <div
-                                    className="h-full min-h-20 self-stretch bg-gradient-to-b from-transparent via-border to-transparent"
+                                    className="h-px w-full self-stretch bg-gradient-to-r from-transparent via-border to-transparent sm:h-full sm:min-h-20 sm:w-auto sm:bg-gradient-to-b"
                                     aria-hidden
                                 />
 

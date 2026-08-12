@@ -8,7 +8,7 @@ type ModalProps = {
 const Modal = ({ children, onClose }: ModalProps) => {
   return (
     <div
-      className="fixed inset-0 z-50 shadow-white backdrop-blur flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 shadow-white backdrop-blur"
       onClick={onClose}
     >
       <div

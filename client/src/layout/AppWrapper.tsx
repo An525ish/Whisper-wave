@@ -20,6 +20,7 @@ type NewMessageAlertPayload = {
 const AppWrapper = ({ children }: AppWrapperProps) => {
   const socket = useSocket();
   const { chatId } = useParams();
+  const isChatOpen = Boolean(chatId);
 
   const addMessageNotification = useNotificationsStore(
     (s) => s.addMessageNotification,
@@ -51,17 +52,30 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
     <>
       <Title />
 
-      <main className="flex gap-4 h-dvh min-h-0 p-4 overflow-hidden">
-        <div className="flex-1 min-h-0 min-w-0 rounded-lg hidden sm:block">
+      <main className="flex h-dvh min-h-0 gap-0 overflow-hidden p-0 pb-[env(safe-area-inset-bottom)] md:gap-2 md:px-3 md:pb-2 md:pt-1.5 lg:gap-3 lg:px-4 lg:pb-3 lg:pt-2">
+        {/* Phone/tablet portrait: one pane. md+: list + chat. lg+: + profile. */}
+        <aside
+          className={`min-h-0 min-w-0 flex-1 bg-background md:rounded-xl md:bg-transparent ${
+            isChatOpen ? 'hidden md:block' : 'block'
+          }`}
+        >
           <ChatListPanel />
-        </div>
+        </aside>
 
-        <div className="flex-[2] min-h-0 min-w-0 flex flex-col">{children}</div>
+        <section
+          className={`min-h-0 min-w-0 flex-col ${
+            isChatOpen
+              ? 'flex flex-1 md:flex-[2]'
+              : 'hidden md:flex md:flex-[2]'
+          }`}
+        >
+          {children}
+        </section>
 
-        <div className="relative flex-1 min-h-0 min-w-0 hidden lg:flex lg:flex-col">
+        <aside className="relative hidden min-h-0 min-w-0 flex-1 lg:flex lg:flex-col">
           <ProfileHeader />
           <ProfilePanel />
-        </div>
+        </aside>
       </main>
     </>
   );

@@ -10,8 +10,8 @@ export default function Auth() {
 
     return (
         <div className="h-dvh">
-            <div className='flex items-center h-full text-center justify-center py-10'>
-                <div className='flex-[1] grid place-items-center h-full'>
+        <div className="flex h-full items-center justify-center px-4 py-6 text-center sm:py-10">
+                <div className="grid h-full min-h-0 flex-1 place-items-center">
                     {
                         isForget ?
                             <ForgotPassword setIsForget={setIsForget} /> :
@@ -23,8 +23,8 @@ export default function Auth() {
                             />
                     }
                 </div>
-                <div className='hidden md:block h-full w-[1px] bg-border rotate-180'></div>
-                <div className='md:flex-[1] lg:flex-[2] md:block hidden font-bold text-[4rem] lg:text-[5rem]'>
+                <div className="mx-2 hidden h-full w-px rotate-180 bg-border md:block"></div>
+                <div className="hidden font-bold md:block md:flex-1 md:text-[3.25rem] lg:flex-[2] lg:text-[5rem]">
                     {isLogin ? 'Welcome Back' : 'New Here ?'}
                 </div>
             </div>

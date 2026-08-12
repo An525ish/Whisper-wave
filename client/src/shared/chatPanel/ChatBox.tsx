@@ -33,9 +33,16 @@ export type ChatBoxData = {
 type ChatBoxProps = {
     chatData: ChatBoxData;
     isGroupChat?: boolean;
+    showReadReceipt?: boolean;
+    isRead?: boolean;
 };
 
-const ChatBox = ({ chatData, isGroupChat }: ChatBoxProps) => {
+const ChatBox = ({
+    chatData,
+    isGroupChat,
+    showReadReceipt = false,
+    isRead = false,
+}: ChatBoxProps) => {
     const { content, sender, attachments = [], createdAt } = chatData
 
     const user = useAuthStore((s) => s.user);
@@ -44,6 +51,34 @@ const ChatBox = ({ chatData, isGroupChat }: ChatBoxProps) => {
     const displayName = sameSender
         ? (user?.name || sender.name || 'You')
         : (sender.name || 'Unknown');
+
+    const receiptMark = showReadReceipt ? (isRead ? '✓✓' : '✓') : null;
+
+    const renderTimestamp = (className: string) => (
+        <time dateTime={createdAt} className={className}>
+            <span>{currentTime}</span>
+            {receiptMark ? (
+                <span
+                    className={`ml-1.5 tracking-tight ${
+                        isRead ? 'text-green' : 'opacity-80'
+                    }`}
+                    aria-label={isRead ? 'Read' : 'Sent'}
+                >
+                    {receiptMark}
+                </span>
+            ) : null}
+        </time>
+    );
+
+    const timeReserve = (
+        <span
+            aria-hidden
+            className="inline-block whitespace-nowrap text-[11px] leading-[15px] ml-4 opacity-0 select-none pointer-events-none align-bottom"
+        >
+            {currentTime}
+            {receiptMark ? <span className="ml-1.5">{receiptMark}</span> : null}
+        </span>
+    );
 
     const handleFileAction = async (e: MouseEvent, attachment: ChatAttachment) => {
         e.preventDefault();
@@ -98,12 +133,9 @@ const ChatBox = ({ chatData, isGroupChat }: ChatBoxProps) => {
                                         size={attachment.size}
                                         isUploading={isUploading}
                                     />
-                                    <time
-                                        dateTime={createdAt}
-                                        className="pointer-events-none absolute bottom-1.5 right-1.5 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide text-white-pure tabular-nums shadow-sm backdrop-blur-[1px]"
-                                    >
-                                        {currentTime}
-                                    </time>
+                                    {renderTimestamp(
+                                        `pointer-events-none absolute bottom-1.5 right-1.5 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide tabular-nums text-white-pure shadow-sm backdrop-blur-[1px]`,
+                                    )}
                                 </div>
                             </div>
                         );
@@ -149,21 +181,13 @@ const ChatBox = ({ chatData, isGroupChat }: ChatBoxProps) => {
                         */}
                         <p className="m-0 text-sm text-body break-words whitespace-pre-wrap leading-snug">
                             {content}
-                            <span
-                                aria-hidden
-                                className="inline-block whitespace-nowrap text-[11px] leading-[15px] ml-4 opacity-0 select-none pointer-events-none align-bottom"
-                            >
-                                {currentTime}
-                            </span>
+                            {timeReserve}
                         </p>
-                        <time
-                            dateTime={createdAt}
-                            className={`absolute bottom-0 right-0 translate-y-[3px] text-[11px] leading-[15px] whitespace-nowrap pointer-events-none select-none ${
+                        {renderTimestamp(
+                            `absolute bottom-0 right-0 translate-y-[3px] text-[11px] leading-[15px] whitespace-nowrap pointer-events-none select-none ${
                                 sameSender ? 'text-body-700' : 'text-body-300'
-                            }`}
-                        >
-                            {currentTime}
-                        </time>
+                            }`,
+                        )}
                     </div>
                 </div>
             )}

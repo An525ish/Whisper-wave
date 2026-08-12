@@ -40,6 +40,11 @@ export const getMyNotifications = () =>
 export const getMedia = (chatId: string) =>
   api.get(`/chat/get-media/${chatId}`);
 
+export const markChatRead = (
+  chatId: string,
+  body?: { lastReadMessageId?: string },
+) => api.put(`/chat/${chatId}/read`, body ?? {});
+
 export const sendFriendRequest = (receiverId: unknown) =>
   api.post('/friend-request/send-request', receiverId);
 

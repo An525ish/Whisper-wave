@@ -259,3 +259,22 @@ export function useLeaveGroupMutation() {
     },
   });
 }
+
+export function useMarkChatReadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      chatId,
+      lastReadMessageId,
+    }: {
+      chatId: string;
+      lastReadMessageId?: string;
+    }) => chatApi.markChatRead(chatId, { lastReadMessageId }),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.messages(vars.chatId),
+      });
+    },
+  });
+}

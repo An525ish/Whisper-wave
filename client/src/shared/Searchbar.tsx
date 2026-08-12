@@ -16,12 +16,15 @@ type SearchbarProps = {
   width?: string;
   className?: string;
   expandable?: boolean;
+  /** box = filled field; line = icon + underline (dialogs) */
+  variant?: 'box' | 'line';
 };
 
 /**
  * Unified search input.
  * - `expandable` (default true): icon → expand (chat header / dialogs)
- * - `expandable={false}`: always-open field (admin tables)
+ * - `expandable={false}`: always-open field
+ * - `variant="line"`: border-bottom style with leading search icon
  */
 export default function Searchbar({
   searchText,
@@ -31,11 +34,13 @@ export default function Searchbar({
   width = 'w-40',
   className = '',
   expandable = true,
+  variant = 'box',
 }: SearchbarProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isSearchBarFocused, setIsSearchBarFocused] = useState(
     !expandable || Boolean(autoFocus),
   );
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSearchText(e.target.value);
@@ -52,13 +57,17 @@ export default function Searchbar({
     }
   }, [expandable, isSearchBarFocused]);
 
-  if (!expandable) {
+  if (!expandable && variant === 'line') {
     return (
-      <div className={`relative ${className}`}>
+      <div
+        className={`relative flex w-full items-center gap-3 border-b pb-2 transition-colors ${
+          isFocused ? 'border-green/70' : 'border-border'
+        } ${className}`}
+      >
         <img
           src={searchIcon}
-          alt="Search Icon"
-          className="absolute left-2 top-[7px] h-6"
+          alt=""
+          className="h-5 w-5 shrink-0 opacity-60"
         />
         <input
           type="text"
@@ -66,8 +75,50 @@ export default function Searchbar({
           onChange={handleSearchChange}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="h-10 w-full rounded-3xl border border-border bg-transparent py-1 pl-10 pr-2 text-sm outline-none focus:border-body"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          className="w-full min-w-0 bg-transparent py-2 text-[15px] outline-none placeholder:text-body-300"
         />
+        {searchText ? (
+          <button
+            type="button"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm text-body-300 transition hover:bg-primary hover:text-body"
+            onClick={() => setSearchText('')}
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (!expandable) {
+    return (
+      <div className={`relative w-full ${className}`}>
+        <img
+          src={searchIcon}
+          alt=""
+          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 opacity-70"
+        />
+        <input
+          type="text"
+          value={searchText}
+          onChange={handleSearchChange}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          className="h-11 w-full rounded-xl border border-border bg-primary py-2 pl-10 pr-9 text-[15px] outline-none transition placeholder:text-body-300 focus:border-body/40"
+        />
+        {searchText ? (
+          <button
+            type="button"
+            className="absolute right-2.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-sm text-body-300 hover:bg-background/60 hover:text-body"
+            onClick={() => setSearchText('')}
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        ) : null}
       </div>
     );
   }

@@ -25,7 +25,7 @@ const Dropdown = ({ options, name }: DropdownProps) => {
       <div>
         <button
           type="button"
-          className="inline-flex justify-center w-full rounded-2xl border border-border shadow-sm pr-2 pl-6 py-1 bg-primary text-sm font-medium text-body-700 hover:text-body focus:outline-none capitalize"
+          className="inline-flex w-full max-w-[7.5rem] items-center justify-center truncate rounded-2xl border border-border bg-primary py-1 pl-6 pr-2 text-sm font-medium capitalize text-body-700 shadow-sm hover:text-body focus:outline-none"
           id="menu-button"
           aria-expanded="true"
           aria-haspopup="true"

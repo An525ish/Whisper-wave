@@ -2,6 +2,7 @@ import LeaveGroupIcon from '@/components/icons/LeaveGroup';
 import PhoneCallIcon from '@/components/icons/PhoneCall';
 import ThreeDotsIcon from '@/components/icons/ThreeDots';
 import VideoCallIcon from '@/components/icons/VideoCall';
+import ChevronLeft from '@/components/icons/ChevronLeft';
 import AvatarCard from '@/components/ui/AvatarCard';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -12,6 +13,7 @@ import useSocketEvent from '@/hooks/socketEvent';
 import { useSocket } from '@/socket/SocketProvider';
 import useAsyncMutation from '@/hooks/asyncMutation';
 import AvatarSkeleton from '@/components/skeletons/AvatarSkeleton';
+import { Link } from 'react-router-dom';
 
 type ChatHeaderProps = {
   chatId?: string;
@@ -31,6 +33,13 @@ type ChatDetailsData = {
 type ChatDetailsResponse = {
   data?: ChatDetailsData;
 };
+
+/** Phone: sticky into safe area. md+: longer glass pill over the padded thread. */
+const headerShellClass =
+  'relative z-30 w-full pt-[env(safe-area-inset-top)] md:absolute md:left-2 md:right-2 md:top-0 md:w-auto md:pt-0 md:shadow-2xl';
+
+const headerInnerClass =
+  'border-b border-border/70 bg-background/90 px-2 py-2.5 backdrop-blur-xl md:rounded-xl md:border md:border-border md:bg-[rgba(33,26,42,0.55)] md:py-1.5 md:pl-2 md:pr-4 md:backdrop-blur-md lg:pl-2.5 lg:pr-5';
 
 const ChatHeader = ({ chatId, onOpenMembers }: ChatHeaderProps) => {
   const [isDotsMenu, setIsDotsMenu] = useState(false);
@@ -118,8 +127,8 @@ const ChatHeader = ({ chatId, onOpenMembers }: ChatHeaderProps) => {
 
   if (isLoading) {
     return (
-      <div className="absolute -top-2 left-1/2 z-30 w-[90%] -translate-x-1/2 shadow-2xl">
-        <AvatarSkeleton className={'h-16 border border-border px-4 py-1'} />
+      <div className={headerShellClass}>
+        <AvatarSkeleton className="h-14 border-b border-border px-3 py-1 md:h-16 md:rounded-xl md:border" />
       </div>
     );
   }
@@ -133,36 +142,52 @@ const ChatHeader = ({ chatId, onOpenMembers }: ChatHeaderProps) => {
         />
       ) : null}
 
-      <div className="absolute -top-2 left-1/2 z-30 w-[90%] -translate-x-1/2 shadow-2xl">
-        <div className="rounded-xl border border-border bg-[rgba(33,26,42,0.75)] px-6 py-2 backdrop-blur-lg backdrop-saturate-[110%]">
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-2">
+      <header className={headerShellClass}>
+        <div className={headerInnerClass}>
+          <div className="relative flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-1.5">
+              <Link
+                to="/"
+                replace
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border/70 bg-primary/50 text-body transition active:scale-95 active:bg-primary md:hidden"
+                aria-label="Back to chats"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
               <AvatarCard avatars={avatarList} />
-              <div>
-                <p className="font-medium">{name}</p>
-                <p className="text-sm text-body-700">
+              <div className="min-w-0 pr-2">
+                <p className="truncate text-[15px] font-semibold leading-tight md:text-base md:font-medium">
+                  {name}
+                </p>
+                <p className="truncate text-xs text-body-700 md:text-sm">
                   {isTyping ? 'Typing...' : 'Online'}
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex shrink-0 items-center gap-2 md:gap-3">
               <button
+                type="button"
                 disabled
-                className="grid h-10 w-10 place-items-center rounded-full border border-border group hover:border-green-light"
+                className="hidden h-10 w-10 place-items-center rounded-full border border-border group hover:border-green-light md:grid"
+                aria-label="Voice call (coming soon)"
               >
                 <PhoneCallIcon className="h-5 w-5 transition group-hover:fill-green" />
               </button>
               <button
+                type="button"
                 disabled
-                className="grid h-10 w-10 place-items-center rounded-full border border-border group hover:border-green-light"
+                className="hidden h-10 w-10 place-items-center rounded-full border border-border group hover:border-green-light lg:grid"
+                aria-label="Video call (coming soon)"
               >
                 <VideoCallIcon className="h-5 w-5 transition group-hover:fill-green" />
               </button>
               <button
+                type="button"
                 ref={buttonRef}
                 onClick={handleToggle}
-                className="grid h-10 w-10 place-items-center rounded-full border border-border group hover:border-green-light"
+                className="grid h-11 w-11 place-items-center rounded-full border border-border/80 group hover:border-green-light md:h-10 md:w-10"
+                aria-label="Chat options"
               >
                 <ThreeDotsIcon className="h-4 w-4 transition group-hover:fill-green" />
               </button>
@@ -171,36 +196,38 @@ const ChatHeader = ({ chatId, onOpenMembers }: ChatHeaderProps) => {
             {isDotsMenu ? (
               <div
                 ref={menuRef}
-                className="absolute right-9 top-16 flex flex-col items-start gap-2 rounded-lg border border-border bg-background-alt p-4"
+                className="absolute right-0 top-12 z-40 flex min-w-44 flex-col items-stretch gap-1 rounded-xl border border-border bg-background-alt p-2 shadow-xl md:right-2 md:top-14"
               >
                 {groupChat ? (
                   <>
                     <button
                       type="button"
-                      className="group text-body-300 transition hover:text-green"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-300 transition hover:bg-primary hover:text-green"
                       onClick={addMemberHandler}
                     >
-                      <MembersIcon className="mr-1 inline-block h-5 w-5 transition group-hover:fill-green" />{' '}
+                      <MembersIcon className="h-5 w-5" />
                       Members
                     </button>
                     <button
                       type="button"
-                      className="group text-body-300 transition hover:text-green"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-left text-body-300 transition hover:bg-primary hover:text-green"
                       onClick={handleisConfirmLeave}
                       disabled={isLeaveGroupLoading}
                     >
-                      <LeaveGroupIcon className="mr-2 inline-block h-4 w-4 transition group-hover:fill-green" />{' '}
+                      <LeaveGroupIcon className="h-4 w-4" />
                       Leave Group
                     </button>
                   </>
                 ) : (
-                  <>No Options</>
+                  <span className="px-3 py-2 text-sm text-body-300">
+                    No options yet
+                  </span>
                 )}
               </div>
             ) : null}
           </div>
         </div>
-      </div>
+      </header>
     </>
   );
 };

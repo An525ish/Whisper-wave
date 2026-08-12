@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 import { NEW_REQUEST } from '../constants/socket-events.js';
 import * as chatRepo from '../repositories/chat.js';
+import * as chatReadRepo from '../repositories/chatRead.js';
 import * as requestRepo from '../repositories/request.js';
 import type {
   FriendSummary,
@@ -50,15 +51,18 @@ export const handleRequest = async (
 
   const senderId = request.sender._id;
   const receiverId = request.receiver._id;
+  const members = [senderId, new Types.ObjectId(userId)];
 
-  await Promise.all([
+  const [chat] = await Promise.all([
     chatRepo.create({
       name: `${request.sender.name}-${request.receiver.name}`,
       creator: receiverId,
-      members: [senderId, new Types.ObjectId(userId)],
+      members,
     }),
     requestRepo.deleteById(requestId),
   ]);
+
+  await chatReadRepo.initForMembers(chat._id, members);
 
   return {
     message: 'Request accepted',

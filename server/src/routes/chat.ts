@@ -8,6 +8,7 @@ import {
   getMedia,
   getMyChats,
   leaveGroup,
+  markChatRead,
   removeMember,
   updateGroupDetails,
 } from '../controllers/chat.js';
@@ -17,6 +18,7 @@ import {
   chatIdParamSchema,
   createGroupSchema,
   findChatsSchema,
+  markChatReadSchema,
   removeMemberSchema,
   updateGroupSchema,
 } from '../validators/chat.js';
@@ -30,6 +32,12 @@ chatRouter.get('/get-chat-details', getChatDetails);
 chatRouter.get('/get-media/:chatId', validate(chatIdParamSchema, 'params'), getMedia);
 chatRouter.post('/create-group', validate(createGroupSchema), createGroupChat);
 chatRouter.post('/find-users', validate(findChatsSchema), findChats);
+chatRouter.put(
+  '/:chatId/read',
+  validate(chatIdParamSchema, 'params'),
+  validate(markChatReadSchema),
+  markChatRead
+);
 chatRouter.put(
   '/update-group-details/:chatId',
   validate(chatIdParamSchema, 'params'),

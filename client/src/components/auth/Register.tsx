@@ -58,7 +58,7 @@ const Register = ({ setIsLogin }: RegisterProps) => {
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col gap-4 items-center w-4/5 lg:w-3/5 mx-auto my-8"
+        className="mx-auto my-6 flex w-full max-w-sm flex-col items-center gap-4 px-2 sm:my-8 sm:w-4/5 lg:w-3/5"
       >
         <InputField
           type="text"

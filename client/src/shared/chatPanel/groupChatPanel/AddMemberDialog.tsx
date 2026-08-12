@@ -165,10 +165,10 @@ const AddMemberDialog = ({
           ) : null}
         </div>
 
-        <div className="my-4 flex shrink-0 items-center justify-between border py-2 full-border">
-          <span className="text-body-700">Search For Members :</span>
+        <div className="full-border my-4 flex shrink-0 flex-col gap-2 border py-2 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm text-body-700 sm:text-base">Search For Members :</span>
           <Searchbar
-            width="w-[20rem]"
+            width="w-[min(100%,20rem)]"
             searchText={searchText}
             setSearchText={setSearchText}
           />

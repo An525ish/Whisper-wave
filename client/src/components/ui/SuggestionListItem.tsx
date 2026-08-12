@@ -19,26 +19,27 @@ const SuggestionListItem = ({
 }: SuggestionListItemProps) => {
   const { avatar, name, _id } = data;
   return (
-    <div
-      className="flex gap-2 items-center px-4 cursor-pointer rounded-lg group"
+    <button
+      type="button"
+      className="flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-left transition hover:bg-background/50"
       onClick={() => handleSelectMember(_id)}
     >
       <AvatarCard avatars={[avatar]} />
 
-      <div className="flex-[1]">
-        <div className="flex justify-between items-center">
-          <p className="font-medium capitalize text-body-700">{name}</p>
-          <button
-            type="button"
-            className={`w-6 h-6 rounded-full border-2 border-border group-hover:border-green ${
-              isSelected ? 'text-green border-green ' : 'text-transparent'
-            }`}
-          >
-            ✔
-          </button>
-        </div>
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+        <p className="truncate font-medium capitalize text-body">{name}</p>
+        <span
+          className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 text-xs ${
+            isSelected
+              ? 'border-green bg-green text-white'
+              : 'border-border text-transparent'
+          }`}
+          aria-hidden
+        >
+          ✓
+        </span>
       </div>
-    </div>
+    </button>
   );
 };
 

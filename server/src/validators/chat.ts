@@ -36,3 +36,7 @@ export const findChatsSchema = z.object({
 export const chatIdParamSchema = z.object({
   chatId: objectId,
 });
+
+export const markChatReadSchema = z.object({
+  lastReadMessageId: objectId.optional(),
+});

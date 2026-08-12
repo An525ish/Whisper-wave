@@ -6,6 +6,7 @@ export const NEW_ATTACHMENT = 'NEW_ATTACHMENT' as const;
 export const NEW_REQUEST = 'NEW_REQUEST' as const;
 export const START_TYPING = 'START_TYPING' as const;
 export const STOP_TYPING = 'STOP_TYPING' as const;
+export const CHAT_READ = 'CHAT_READ' as const;
 
 export type SocketEventName =
   | typeof NEW_MESSAGE
@@ -15,4 +16,5 @@ export type SocketEventName =
   | typeof NEW_ATTACHMENT
   | typeof NEW_REQUEST
   | typeof START_TYPING
-  | typeof STOP_TYPING;
+  | typeof STOP_TYPING
+  | typeof CHAT_READ;

@@ -236,12 +236,13 @@ If B never comes back: pending expires. A keeps their account. They just don’t
 
 | User does | Backend |
 |---|---|
-| Load chat list | `GET /api/chat/get-my-chats` — Mongo `Chat` where `members` includes `userId`. JWT auth, no extra User fetch. |
-| Open a chat | `GET /api/chat/get-chat-details`, `GET /api/message/get-messages/:chatId` — paged, indexed `{ chat, createdAt }`. |
-| Send text | Authenticated Socket.IO `/` → `NEW_MESSAGE`. Save **Message** in Mongo. Update `chat.lastMessage`. Emit to member sockets (in-memory map in Phase 1). |
-| Send files | `POST /api/message/send-attachments` — compress → Cloudinary → Message + lastMessage. |
+| Load chat list | `GET /api/chat/get-my-chats` — Mongo `Chat` where `members` includes `userId`. Each item includes `unreadCount` from `ChatRead` cursor + Message counts. JWT auth. |
+| Open a chat | `GET /api/chat/get-chat-details`, `GET /api/message/get-messages/:chatId` — paged. Client calls `PUT /api/chat/:chatId/read` to upsert `ChatRead`, `$addToSet` `Message.readBy`, emit `CHAT_READ` to peers (DM receipts). |
+| Send text | Authenticated Socket.IO `/` → `NEW_MESSAGE`. Save **Message** in Mongo. Update `chat.lastMessage`. Emit `NEW_MESSAGE` + `NEW_MESSAGE_ALERT` (receivers only) + `REFETCH_CHATS`. |
+| Send files | `POST /api/message/send-attachments` — compress → Cloudinary → Message + lastMessage. Alert excludes sender. |
 | Typing | `START_TYPING` / `STOP_TYPING` — relay only. |
-| Friend request / groups / profile | Existing REST routes, still Mongo. |
+| Read / unread | Per-user `ChatRead` (`chat`+`user` unique). Unread = messages from others with `createdAt > lastReadAt` (no cursor → count all from others). DM receipts via `readBy` + `CHAT_READ`. |
+| Friend request / groups / profile | Existing REST routes, still Mongo. New chats init `ChatRead` for members at create time. |
 
 Disconnect here does **not** delete the person. That’s the difference from anonymous.
 

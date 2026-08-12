@@ -1,56 +1,70 @@
 import type { Dispatch, SetStateAction } from 'react';
 import Searchbar from '../Searchbar';
-import CreateGroupIcon from '@/components/icons/CreateGroup';
 import { useNotificationsStore } from '@/stores/notifications';
+import AccountBar from '@/shared/profilePanel/AccountBar';
+import { formatUnreadCount } from '@/utils/unread';
 
 type ChatListHeaderProps = {
   searchText: string;
   setSearchText: Dispatch<SetStateAction<string>>;
-  onCreateGroup: () => void;
 };
 
-const ChatHeader = ({
+const ChatListHeader = ({
   searchText,
   setSearchText,
-  onCreateGroup,
 }: ChatListHeaderProps) => {
-  const messageNotifications = useNotificationsStore(
-    (s) => s.messageNotifications,
-  );
+  const unreadCount = useNotificationsStore((s) => s.messageNotificationCount);
 
   return (
-    <div className="flex w-full items-center justify-between p-2">
-      <p className="flex items-center gap-2 text-2xl font-semibold text-white">
-        <img src="/logo-4.png" alt="icon" className="w-12" />
-        Messages
-        {messageNotifications.length > 0 ? (
-          <span
-            className={`grid h-6 place-items-center rounded-full border border-red-light bg-red-dark px-1 py-0.5 text-center text-xs font-normal text-red ${
-              messageNotifications.length < 9 ? 'w-6' : 'w-fit'
-            }`}
-          >
-            {messageNotifications.length > 99
-              ? '99+'
-              : messageNotifications.length}
-          </span>
-        ) : null}
-      </p>
-
-      <div className="flex items-center gap-4">
-        <div className="cursor-pointer">
-          <Searchbar searchText={searchText} setSearchText={setSearchText} />
+    <div className="relative flex w-full flex-col gap-3 border-b border-border/50 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:border-0 md:p-2 md:pt-1">
+      {/* Row 1 — title + unread + account */}
+      <div className="flex w-full items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <img
+            src="/logo-4.png"
+            alt=""
+            className="h-9 w-9 shrink-0 object-contain md:h-12 md:w-12"
+          />
+          <p className="flex min-w-0 items-center gap-2 text-xl font-semibold leading-none text-white md:text-2xl">
+            <span className="truncate">Messages</span>
+            {unreadCount > 0 ? (
+              <span
+                className={`grid h-5 shrink-0 place-items-center rounded-full border border-blue-light bg-blue/20 px-1.5 text-[11px] font-medium tabular-nums text-blue ${
+                  unreadCount < 10 ? 'min-w-5' : 'w-fit'
+                }`}
+                aria-label={`${unreadCount} unread messages`}
+              >
+                {formatUnreadCount(unreadCount)}
+              </span>
+            ) : null}
+          </p>
         </div>
-        <button
-          type="button"
-          className="z-20 cursor-pointer"
-          onClick={onCreateGroup}
-          aria-label="Create group"
-        >
-          <CreateGroupIcon className={'w-6 fill-white'} />
-        </button>
+
+        <div className="lg:hidden">
+          <AccountBar variant="account" />
+        </div>
+      </div>
+
+      {/* Row 2 — search + notifications */}
+      <div className="flex w-full items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <Searchbar
+            searchText={searchText}
+            setSearchText={setSearchText}
+            expandable={false}
+            placeholder="Search chats…"
+            className="w-full"
+          />
+        </div>
+        <div className="shrink-0 lg:hidden">
+          <AccountBar
+            variant="notification"
+            overlayClassName="fixed inset-0 z-50"
+          />
+        </div>
       </div>
     </div>
   );
 };
 
-export default ChatHeader;
+export default ChatListHeader;

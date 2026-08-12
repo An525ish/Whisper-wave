@@ -41,6 +41,39 @@ export type ChatListItem = {
   avatar: Array<string | undefined>;
   members: Array<{ toString(): string }>;
   lastMessage: unknown;
+  unreadCount: number;
+};
+
+export type IChatReadFields = {
+  _id: Types.ObjectId;
+  chat: Types.ObjectId;
+  user: Types.ObjectId;
+  lastReadAt: Date;
+  lastReadMessageId?: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ChatReadRecord = {
+  _id: Types.ObjectId;
+  chat: Types.ObjectId;
+  user: Types.ObjectId;
+  lastReadAt: Date;
+  lastReadMessageId?: Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+export type UpsertChatReadInput = {
+  chat: string | Types.ObjectId;
+  user: string | Types.ObjectId;
+  lastReadAt: Date;
+  lastReadMessageId?: string | Types.ObjectId;
+};
+
+export type ChatUnreadCount = {
+  chatId: string;
+  count: number;
 };
 
 export type FindChatItem = {
@@ -60,6 +93,13 @@ export type RealtimeNotify = {
   event: string;
   members: Array<string | { toString(): string }>;
   data?: unknown;
+};
+
+export type MarkChatReadResult = {
+  chatId: string;
+  lastReadAt: Date;
+  lastReadMessageId?: string;
+  notifications: RealtimeNotify[];
 };
 
 export type ChatSharedLink = {

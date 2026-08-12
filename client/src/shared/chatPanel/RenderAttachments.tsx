@@ -16,6 +16,9 @@ type RenderFileProps = {
     fileName?: string;
 };
 
+const mediaFrameClass =
+  'h-auto w-full max-w-[min(100%,12.5rem)] aspect-[4/3] object-cover rounded-md';
+
 const RenderAttachments = ({ fileType, url, name, type, isUploading }: RenderAttachmentsProps) => {
     const isObjectUrl = url.startsWith('blob:') || url.startsWith('data:');
 
@@ -24,48 +27,47 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }: RenderAtt
     const isAudio = type?.startsWith('audio/');
     const fileExtension = fileFormat(name)
 
-    // console.log(name)
     const renderFilePreview = () => {
         if (isObjectUrl) {
             return (
                 <>
                     {isImage && (
-                        <div className="relative">
+                        <div className="relative w-full max-w-[min(100%,12.5rem)]">
                             <Image
                                 src={url}
                                 alt={name}
-                                className={`w-[200px] h-[150px] object-cover rounded transition-opacity duration-300`}
+                                className={`${mediaFrameClass} transition-opacity duration-300`}
                             />
                             {(isUploading) && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50">
                                     <CircularLoader />
                                 </div>
                             )}
                         </div>
                     )}
                     {isVideo && (
-                        <div className="relative">
+                        <div className="relative w-full max-w-[min(100%,12.5rem)]">
                             <video
                                 src={url}
-                                className="w-[200px] h-[150px] object-cover rounded-md"
+                                className={mediaFrameClass}
                                 controls
                             />
                             {(isUploading) && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50">
                                     <CircularLoader />
                                 </div>
                             )}
                         </div>
                     )}
                     {isAudio && (
-                        <div className="relative">
+                        <div className="relative w-full max-w-[min(100%,15.625rem)]">
                             <audio
                                 src={url}
                                 controls
-                                className="w-[250px]"
+                                className="w-full max-w-full"
                             />
                             {(isUploading) && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50">
                                     <CircularLoader />
                                 </div>
                             )}
@@ -75,7 +77,7 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }: RenderAtt
                         <div className="relative">
                             <RenderFile fileExtension={fileExtension} fileName={name} />
                             {(isUploading) && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
+                                <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/50">
                                     <CircularLoader />
                                 </div>
                             )}
@@ -86,19 +88,33 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }: RenderAtt
         } else {
             switch (fileType) {
                 case 'video':
-                    return <video src={url} preload="none" className="w-[250px] h-[150px] rounded-md" controls></video>;
+                    return (
+                        <video
+                            src={url}
+                            preload="none"
+                            className={`${mediaFrameClass} max-w-[min(100%,15.625rem)]`}
+                            controls
+                        />
+                    );
                 case 'image':
                     return (
-                        <div className="relative">
+                        <div className="relative w-full max-w-[min(100%,12.5rem)]">
                             <img
                                 src={transformImage(url, 200)}
                                 alt={name || "attachment"}
-                                className={`w-[200px] h-[150px] object-cover rounded-md transition-opacity duration-300`}
+                                className={`${mediaFrameClass} transition-opacity duration-300`}
                             />
                         </div>
                     );
                 case 'audio':
-                    return <audio src={url} preload="none" className="w-[250px] bg-transparent" controls></audio>;
+                    return (
+                        <audio
+                            src={url}
+                            preload="none"
+                            className="w-full max-w-[min(100%,15.625rem)] bg-transparent"
+                            controls
+                        />
+                    );
                 default:
                     return <RenderFile fileExtension={fileExtension} fileName={name} />;
             }
@@ -106,7 +122,7 @@ const RenderAttachments = ({ fileType, url, name, type, isUploading }: RenderAtt
     };
 
     return (
-        <div className="attachment-container">
+        <div className="attachment-container max-w-full">
             {renderFilePreview()}
         </div>
     );
@@ -117,10 +133,10 @@ const RenderFile = ({ fileExtension, fileName }: RenderFileProps) => {
     const fileDetails = fileData.find((file => file.docType === fileExtension))
 
     return (
-        <div className="relative w-[200px] h-[150px] grid place-items-center bg-background-alt/30 rounded">
-            <div>
-                <img src={fileDetails?.icon} alt={fileName} className="w-full h-[100px] object-contain" />
-                <p className='text-center my-1 w-32 truncate capitalize text-sm'>{fileName}</p>
+        <div className="relative grid aspect-[4/3] w-full max-w-[min(100%,12.5rem)] place-items-center rounded bg-background-alt/30">
+            <div className="px-2">
+                <img src={fileDetails?.icon} alt={fileName} className="mx-auto h-20 w-auto max-w-full object-contain sm:h-[100px]" />
+                <p className='my-1 w-full max-w-32 truncate text-center text-sm capitalize'>{fileName}</p>
             </div>
         </div>
     )
