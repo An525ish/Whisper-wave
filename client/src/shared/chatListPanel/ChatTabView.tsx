@@ -66,17 +66,17 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
         );
     };
 
-    const sortUnreadFirst = (chatList: ChatRow[] | undefined) => {
+    /** WhatsApp-style: most recent lastMessage first; unread is badge-only. */
+    const sortByRecent = (chatList: ChatRow[] | undefined) => {
         if (!chatList) return chatList;
-        const unreadIds = new Set(
-            messageNotifications
-                .filter((n) => n.count > 0)
-                .map((n) => n.chatId),
-        );
         return [...chatList].sort((a, b) => {
-            const aUnread = unreadIds.has(a._id) || (a.unreadCount ?? 0) > 0 ? 1 : 0;
-            const bUnread = unreadIds.has(b._id) || (b.unreadCount ?? 0) > 0 ? 1 : 0;
-            return bUnread - aUnread;
+            const aTime = a.lastMessage?.createdAt
+                ? Date.parse(a.lastMessage.createdAt)
+                : 0;
+            const bTime = b.lastMessage?.createdAt
+                ? Date.parse(b.lastMessage.createdAt)
+                : 0;
+            return bTime - aTime;
         });
     };
 
@@ -92,13 +92,13 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
         );
     }, [chatsData, syncMessageNotificationsFromServer]);
 
-    const personalChats = sortUnreadFirst(
+    const personalChats = sortByRecent(
         filteredChats(chatsData?.filter((chat) => !chat.groupChat)),
     );
-    const groupChats = sortUnreadFirst(
+    const groupChats = sortByRecent(
         filteredChats(chatsData?.filter((chat) => chat.groupChat)),
     );
-    const allChats = sortUnreadFirst(filteredChats(chatsData));
+    const allChats = sortByRecent(filteredChats(chatsData));
 
     const refetchChatListener = useCallback(() => {
         refetch()

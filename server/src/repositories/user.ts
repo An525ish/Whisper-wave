@@ -33,6 +33,14 @@ export const findByIdNameAvatar = async (
 ): Promise<UserNameAvatar | null> =>
   User.findById(id, 'name avatar').lean<UserNameAvatar>();
 
+export const updateLastSeen = async (
+  id: string,
+  lastSeen: Date = new Date()
+): Promise<Date> => {
+  await User.findByIdAndUpdate(id, { $set: { lastSeen } });
+  return lastSeen;
+};
+
 export const create = async (
   input: CreateUserInput
 ): Promise<UserAuthRecord> => {

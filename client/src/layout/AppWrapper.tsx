@@ -1,12 +1,22 @@
 import { useSocket } from '@/socket/SocketProvider';
 import useSocketEvent from '@/hooks/socketEvent';
-import { NEW_MESSAGE_ALERT, NEW_REQUEST } from '@/lib/socketConstants';
+import {
+  NEW_MESSAGE,
+  NEW_MESSAGE_ALERT,
+  NEW_REQUEST,
+  ONLINE_USERS,
+  START_TYPING,
+  STOP_TYPING,
+  USER_OFFLINE,
+  USER_ONLINE,
+} from '@/lib/socketConstants';
 import { useNotificationsStore } from '@/stores/notifications';
+import { usePresenceStore } from '@/stores/presence';
 import Title from '@/shared/Title';
 import ChatListPanel from '@/shared/chatListPanel/ChatListPanel';
 import ProfileHeader from '@/shared/profilePanel/ProfileHeader';
 import ProfilePanel from '@/shared/profilePanel/ProfilePanel';
-import { useCallback, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 
 type AppWrapperProps = {
@@ -17,10 +27,32 @@ type NewMessageAlertPayload = {
   chatId: string;
 };
 
+type OnlineUsersPayload = {
+  userIds: string[];
+};
+
+type UserPresencePayload = {
+  userId: string;
+  lastSeen?: string;
+};
+
+type TypingPayload = {
+  chatId: string;
+};
+
+type NewMessagePayload = {
+  chatId: string;
+};
+
+const TYPING_STALE_MS = 3500;
+
 const AppWrapper = ({ children }: AppWrapperProps) => {
   const socket = useSocket();
   const { chatId } = useParams();
   const isChatOpen = Boolean(chatId);
+  const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
 
   const addMessageNotification = useNotificationsStore(
     (s) => s.addMessageNotification,
@@ -28,6 +60,42 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
   const addRequestNotification = useNotificationsStore(
     (s) => s.addRequestNotification,
   );
+  const setOnlineUsers = usePresenceStore((s) => s.setOnlineUsers);
+  const setUserOnline = usePresenceStore((s) => s.setUserOnline);
+  const setUserOffline = usePresenceStore((s) => s.setUserOffline);
+  const setChatTyping = usePresenceStore((s) => s.setChatTyping);
+
+  const clearTypingTimer = useCallback((id: string) => {
+    const existing = typingTimeoutsRef.current.get(id);
+    if (existing) {
+      clearTimeout(existing);
+      typingTimeoutsRef.current.delete(id);
+    }
+  }, []);
+
+  const markTyping = useCallback(
+    (id: string, isTyping: boolean) => {
+      clearTypingTimer(id);
+      setChatTyping(id, isTyping);
+      if (!isTyping) return;
+
+      const timeout = setTimeout(() => {
+        setChatTyping(id, false);
+        typingTimeoutsRef.current.delete(id);
+      }, TYPING_STALE_MS);
+      typingTimeoutsRef.current.set(id, timeout);
+    },
+    [clearTypingTimer, setChatTyping],
+  );
+
+  useEffect(() => {
+    return () => {
+      for (const timeout of typingTimeoutsRef.current.values()) {
+        clearTimeout(timeout);
+      }
+      typingTimeoutsRef.current.clear();
+    };
+  }, []);
 
   const newMessageAlertHandler = useCallback(
     (res: NewMessageAlertPayload) => {
@@ -41,10 +109,73 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
     addRequestNotification();
   }, [addRequestNotification]);
 
-  const events = {
-    [NEW_MESSAGE_ALERT]: newMessageAlertHandler,
-    [NEW_REQUEST]: newRequestHandler,
-  };
+  const onlineUsersHandler = useCallback(
+    (res: OnlineUsersPayload) => {
+      setOnlineUsers(res.userIds ?? []);
+    },
+    [setOnlineUsers],
+  );
+
+  const userOnlineHandler = useCallback(
+    (res: UserPresencePayload) => {
+      if (res.userId) setUserOnline(res.userId);
+    },
+    [setUserOnline],
+  );
+
+  const userOfflineHandler = useCallback(
+    (res: UserPresencePayload) => {
+      if (res.userId) setUserOffline(res.userId, res.lastSeen);
+    },
+    [setUserOffline],
+  );
+
+  const startTypingHandler = useCallback(
+    (res: TypingPayload) => {
+      if (!res.chatId) return;
+      markTyping(res.chatId, true);
+    },
+    [markTyping],
+  );
+
+  const stopTypingHandler = useCallback(
+    (res: TypingPayload) => {
+      if (!res.chatId) return;
+      markTyping(res.chatId, false);
+    },
+    [markTyping],
+  );
+
+  const newMessageHandler = useCallback(
+    (res: NewMessagePayload) => {
+      if (!res.chatId) return;
+      markTyping(res.chatId, false);
+    },
+    [markTyping],
+  );
+
+  const events = useMemo(
+    () => ({
+      [NEW_MESSAGE_ALERT]: newMessageAlertHandler,
+      [NEW_REQUEST]: newRequestHandler,
+      [ONLINE_USERS]: onlineUsersHandler,
+      [USER_ONLINE]: userOnlineHandler,
+      [USER_OFFLINE]: userOfflineHandler,
+      [START_TYPING]: startTypingHandler,
+      [STOP_TYPING]: stopTypingHandler,
+      [NEW_MESSAGE]: newMessageHandler,
+    }),
+    [
+      newMessageAlertHandler,
+      newRequestHandler,
+      onlineUsersHandler,
+      userOnlineHandler,
+      userOfflineHandler,
+      startTypingHandler,
+      stopTypingHandler,
+      newMessageHandler,
+    ],
+  );
 
   useSocketEvent(socket, events as Parameters<typeof useSocketEvent>[1]);
 

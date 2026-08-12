@@ -3,12 +3,17 @@ import { v4 as uuid } from 'uuid';
 import {
   NEW_MESSAGE,
   NEW_MESSAGE_ALERT,
+  ONLINE_USERS,
   REFETCH_CHATS,
   START_TYPING,
   STOP_TYPING,
+  USER_OFFLINE,
+  USER_ONLINE,
 } from '../constants/socket-events.js';
+import * as userRepo from '../repositories/user.js';
 import {
   getMemberSockets,
+  getOnlineUserIds,
   messageService,
   removeUserSocket,
   setUserSocket,
@@ -38,6 +43,9 @@ export const registerSocketHandlers = (io: Server): void => {
     const userId = user._id.toString();
     setUserSocket(userId, socket.id);
     logger.debug({ userId, socketId: socket.id }, 'User connected');
+
+    socket.emit(ONLINE_USERS, { userIds: getOnlineUserIds() });
+    socket.broadcast.emit(USER_ONLINE, { userId });
 
     socket.on(NEW_MESSAGE, async (payload: NewMessagePayload) => {
       try {
@@ -85,17 +93,31 @@ export const registerSocketHandlers = (io: Server): void => {
     });
 
     socket.on(START_TYPING, ({ members, chatId }: TypingPayload) => {
+      if (!chatId || !Array.isArray(members)) return;
       const memberSocketIds = getMemberSockets(members);
       socket.broadcast.to(memberSocketIds).emit(START_TYPING, { chatId });
     });
 
     socket.on(STOP_TYPING, ({ members, chatId }: TypingPayload) => {
+      if (!chatId || !Array.isArray(members)) return;
       const memberSocketIds = getMemberSockets(members);
       socket.broadcast.to(memberSocketIds).emit(STOP_TYPING, { chatId });
     });
 
     socket.on('disconnect', () => {
       removeUserSocket(userId);
+      void (async () => {
+        try {
+          const lastSeen = await userRepo.updateLastSeen(userId);
+          socket.broadcast.emit(USER_OFFLINE, {
+            userId,
+            lastSeen: lastSeen.toISOString(),
+          });
+        } catch (error) {
+          socket.broadcast.emit(USER_OFFLINE, { userId });
+          logger.error({ err: error, userId }, 'Failed to persist lastSeen');
+        }
+      })();
       logger.debug({ userId, socketId: socket.id }, 'User disconnected');
     });
   });

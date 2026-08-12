@@ -26,6 +26,7 @@ type ChatListItemProps = {
   id: string;
   groupChat?: boolean;
   isOnline?: boolean;
+  isTyping?: boolean;
   handleDeleteChat?: (
     e: MouseEvent,
     memberId: string,
@@ -54,6 +55,8 @@ const ChatListItem = ({
   name,
   id,
   groupChat = false,
+  isOnline = false,
+  isTyping = false,
   lastMessage,
   messageAlert,
   currentUserId,
@@ -79,6 +82,7 @@ const ChatListItem = ({
   };
 
   const renderLastMessagePreview = () => {
+    if (isTyping) return 'typing…';
     if (!lastMessage) return 'No messages yet';
     const senderName = getFirstName(lastMessage.sender?.name ?? '');
 
@@ -128,7 +132,15 @@ const ChatListItem = ({
                 : ''
           }`}
         >
-          <AvatarCard avatars={avatar} />
+          <div className="relative">
+            <AvatarCard avatars={avatar} />
+            {!groupChat && isOnline ? (
+              <span
+                className="absolute bottom-0.5 right-1.5 h-3 w-3 rounded-full border-2 border-background bg-green md:bottom-1 md:right-2"
+                aria-hidden
+              />
+            ) : null}
+          </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
@@ -152,7 +164,11 @@ const ChatListItem = ({
             <div className="mt-0.5 flex items-center justify-between gap-2 md:mt-1">
               <p
                 className={`min-w-0 flex-1 truncate text-[13px] md:text-sm ${
-                  hasUnread ? 'font-medium text-body' : 'text-body-700'
+                  isTyping
+                    ? 'font-medium text-green'
+                    : hasUnread
+                      ? 'font-medium text-body'
+                      : 'text-body-700'
                 }`}
               >
                 {renderLastMessagePreview()}

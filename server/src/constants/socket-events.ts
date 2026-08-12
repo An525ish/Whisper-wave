@@ -7,3 +7,6 @@ export const NEW_REQUEST = 'NEW_REQUEST';
 export const START_TYPING = 'START_TYPING';
 export const STOP_TYPING = 'STOP_TYPING';
 export const CHAT_READ = 'CHAT_READ';
+export const ONLINE_USERS = 'ONLINE_USERS';
+export const USER_ONLINE = 'USER_ONLINE';
+export const USER_OFFLINE = 'USER_OFFLINE';

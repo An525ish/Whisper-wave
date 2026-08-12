@@ -100,3 +100,44 @@ export const formatChatDayLabel = (iso?: string | null): string => {
 /** Mongo ObjectId string — rejects empty / "undefined" route params */
 export const isValidChatId = (id?: string | null): boolean =>
   Boolean(id && /^[a-f\d]{24}$/i.test(id));
+
+type ChatMemberRef =
+  | string
+  | { _id?: string | { toString(): string } };
+
+/** Socket fan-out expects member id strings, not populated user objects. */
+export const normalizeMemberIds = (
+  members?: ChatMemberRef[] | null,
+): string[] => {
+  if (!members?.length) return [];
+
+  return members
+    .map((member) => {
+      if (typeof member === 'string') return member;
+      const id = member._id;
+      if (typeof id === 'string') return id;
+      return id?.toString() ?? null;
+    })
+    .filter((id): id is string => Boolean(id));
+};
+
+/** WhatsApp-style last seen label. */
+export const formatLastSeen = (iso?: string | null): string | null => {
+  if (!iso) return null;
+
+  const date = dayjs(iso);
+  if (!date.isValid()) return null;
+
+  const time = date.format('h:mm A');
+  const today = dayjs().startOf('day');
+  const day = date.startOf('day');
+
+  if (day.isSame(today)) return `last seen today at ${time}`;
+  if (day.isSame(today.subtract(1, 'day'))) {
+    return `last seen yesterday at ${time}`;
+  }
+  if (day.year() === today.year()) {
+    return `last seen ${date.format('D MMM')} at ${time}`;
+  }
+  return `last seen ${date.format('D MMM, YYYY')} at ${time}`;
+};

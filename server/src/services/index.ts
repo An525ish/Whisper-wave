@@ -8,6 +8,7 @@ export {
   emitToMembers,
   flushNotifications,
   getMemberSockets,
+  getOnlineUserIds,
   getPresenceSize,
   removeUserSocket,
   setUserSocket,

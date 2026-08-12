@@ -68,7 +68,7 @@ export const findByIdsForMemberPopulated = async (
 
 export const findByIdPopulated = async (id: string) =>
   Chat.findById(id)
-    .populate('members', 'name avatar')
+    .populate('members', 'name avatar lastSeen')
     .populate('creator', 'name avatar')
     .lean();
 

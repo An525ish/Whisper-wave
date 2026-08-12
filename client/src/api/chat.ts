@@ -10,6 +10,31 @@ export const queryKeys = {
   searchUsers: (name: string) => ['searchUsers', name] as const,
   notifications: ['friendNotifications'] as const,
   media: (chatId: string) => ['media', chatId] as const,
+  messageSearch: (
+    chatId: string,
+    q: string,
+    scope: string,
+    from: string,
+    dateFrom = '',
+    dateTo = '',
+    senderId = '',
+  ) =>
+    [
+      'messageSearch',
+      chatId,
+      q,
+      scope,
+      from,
+      dateFrom,
+      dateTo,
+      senderId,
+    ] as const,
+  activeMessageDates: (
+    chatId: string,
+    dateFrom: string,
+    dateTo: string,
+    tz: string,
+  ) => ['activeMessageDates', chatId, dateFrom, dateTo, tz] as const,
   adminMe: ['adminMe'] as const,
   adminStats: ['adminStats'] as const,
   adminUsers: ['adminUsers'] as const,
@@ -30,6 +55,46 @@ export const getMyFriends = (params?: { chatId?: string }) =>
 
 export const getMessages = (chatId: string, page: number) =>
   api.get(`/message/get-messages/${chatId}`, { page });
+
+export const searchMessages = (params: {
+  chatId: string;
+  q?: string;
+  scope?: 'all' | 'text' | 'media' | 'links';
+  from?: 'anyone' | 'me' | 'others';
+  dateFrom?: string;
+  dateTo?: string;
+  senderId?: string;
+}) =>
+  api.get(`/message/search/${params.chatId}`, {
+    q: params.q ?? '',
+    scope: params.scope ?? 'all',
+    from: params.from ?? 'anyone',
+    dateFrom: params.dateFrom,
+    dateTo: params.dateTo,
+    senderId: params.senderId,
+  });
+
+export const jumpToDate = (params: {
+  chatId: string;
+  dateFrom: string;
+  dateTo?: string;
+}) =>
+  api.get(`/message/jump-date/${params.chatId}`, {
+    dateFrom: params.dateFrom,
+    dateTo: params.dateTo,
+  });
+
+export const listActiveDates = (params: {
+  chatId: string;
+  dateFrom: string;
+  dateTo: string;
+  tz?: string;
+}) =>
+  api.get(`/message/active-dates/${params.chatId}`, {
+    dateFrom: params.dateFrom,
+    dateTo: params.dateTo,
+    tz: params.tz,
+  });
 
 export const searchUser = (name: string) =>
   api.get('/user/search-user', { name });

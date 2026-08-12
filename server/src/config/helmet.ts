@@ -13,6 +13,7 @@ export const helmetOptions: HelmetOptions = {
         'https://res.cloudinary.com',
         'https://img.logoipsum.com',
         'https://raw.githubusercontent.com',
+        'https://www.google.com',
       ],
       'media-src': ["'self'", 'blob:', 'https://res.cloudinary.com'],
     },

@@ -7,6 +7,9 @@ export const NEW_REQUEST = 'NEW_REQUEST' as const;
 export const START_TYPING = 'START_TYPING' as const;
 export const STOP_TYPING = 'STOP_TYPING' as const;
 export const CHAT_READ = 'CHAT_READ' as const;
+export const ONLINE_USERS = 'ONLINE_USERS' as const;
+export const USER_ONLINE = 'USER_ONLINE' as const;
+export const USER_OFFLINE = 'USER_OFFLINE' as const;
 
 export type SocketEventName =
   | typeof NEW_MESSAGE
@@ -17,4 +20,7 @@ export type SocketEventName =
   | typeof NEW_REQUEST
   | typeof START_TYPING
   | typeof STOP_TYPING
-  | typeof CHAT_READ;
+  | typeof CHAT_READ
+  | typeof ONLINE_USERS
+  | typeof USER_ONLINE
+  | typeof USER_OFFLINE;

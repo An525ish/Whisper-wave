@@ -120,6 +120,109 @@ export function useInfiniteMessagesQuery(chatId?: string) {
   });
 }
 
+export function useSearchMessagesQuery(
+  params: {
+    chatId?: string;
+    q?: string;
+    scope?: 'all' | 'text' | 'media' | 'links';
+    from?: 'anyone' | 'me' | 'others';
+    dateFrom?: string;
+    dateTo?: string;
+    senderId?: string;
+  },
+  options?: { enabled?: boolean },
+) {
+  const chatId = params.chatId ?? '';
+  const q = (params.q ?? '').trim();
+  const scope = params.scope ?? 'all';
+  const from = params.from ?? 'anyone';
+  const dateFrom = params.dateFrom ?? '';
+  const dateTo = params.dateTo ?? '';
+  const senderId = params.senderId ?? '';
+  const hasDate = Boolean(dateFrom);
+  const hasBrowseScope = scope === 'media' || scope === 'links';
+  const canSearch = q.length >= 1 || hasDate || hasBrowseScope;
+
+  return useQuery({
+    queryKey: queryKeys.messageSearch(
+      chatId,
+      q,
+      scope,
+      from,
+      dateFrom,
+      dateTo,
+      senderId,
+    ),
+    queryFn: () =>
+      chatApi.searchMessages({
+        chatId,
+        q,
+        scope,
+        from,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        senderId: senderId || undefined,
+      }),
+    enabled:
+      isValidChatId(chatId) && canSearch && (options?.enabled ?? true),
+    staleTime: 20_000,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+}
+
+export function useJumpToDateMutation() {
+  return useMutation({
+    mutationFn: (params: {
+      chatId: string;
+      dateFrom: string;
+      dateTo?: string;
+    }) => chatApi.jumpToDate(params),
+  });
+}
+
+export function useActiveMessageDatesQuery(
+  params: {
+    chatId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    tz?: string;
+  },
+  options?: { enabled?: boolean },
+) {
+  const chatId = params.chatId ?? '';
+  const dateFrom = params.dateFrom ?? '';
+  const dateTo = params.dateTo ?? '';
+  const tz =
+    params.tz ||
+    (typeof Intl !== 'undefined'
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : 'UTC');
+
+  return useQuery({
+    queryKey: queryKeys.activeMessageDates(chatId, dateFrom, dateTo, tz),
+    queryFn: async () => {
+      const res = (await chatApi.listActiveDates({
+        chatId,
+        dateFrom,
+        dateTo,
+        tz,
+      })) as { dates?: string[]; minYear?: number | null };
+      return {
+        dates: res.dates ?? [],
+        minYear: res.minYear ?? null,
+      };
+    },
+    enabled:
+      isValidChatId(chatId) &&
+      Boolean(dateFrom && dateTo) &&
+      (options?.enabled ?? true),
+    staleTime: 60_000,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+}
+
 export function useSearchUsersQuery(name: string) {
   const trimmed = name.trim();
 
