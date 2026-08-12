@@ -10,6 +10,10 @@ type NotificationsState = {
   requestNotifications: RequestNotification[];
   resetMessageNotification: () => void;
   resetRequestNotification: () => void;
+  /** Replace message unread badges from server chat list (source of truth). */
+  syncMessageNotificationsFromServer: (
+    items: Array<{ chatId: string; count: number }>,
+  ) => void;
   addMessageNotification: (payload: {
     chatId: string;
     name?: string;
@@ -38,6 +42,7 @@ export const useNotificationsStore = create<NotificationsState>()(
             0,
           ),
           messageNotificationCount: 0,
+          messageNotifications: [],
         });
       },
 
@@ -49,6 +54,27 @@ export const useNotificationsStore = create<NotificationsState>()(
             0,
           ),
           requestNotificationCount: 0,
+        });
+      },
+
+      syncMessageNotificationsFromServer: (items) => {
+        const { requestNotificationCount } = get();
+        const messageNotifications = items
+          .filter((item) => item.count > 0)
+          .map((item) => ({
+            chatId: item.chatId,
+            count: item.count,
+          }));
+        const messageNotificationCount = messageNotifications.reduce(
+          (sum, n) => sum + n.count,
+          0,
+        );
+
+        set({
+          messageNotifications,
+          messageNotificationCount,
+          totalNotificationCount:
+            messageNotificationCount + requestNotificationCount,
         });
       },
 

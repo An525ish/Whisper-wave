@@ -6,6 +6,7 @@ import { Link, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { getFirstName } from '@/utils/helper';
+import { formatUnreadCount } from '@/utils/unread';
 import type { MessageNotification } from '@/types';
 
 dayjs.extend(relativeTime);
@@ -59,6 +60,9 @@ const ChatListItem = ({
 }: ChatListItemProps) => {
   const { menuState, showContextMenu, hideContextMenu } = useContextMenu();
   const { chatId } = useParams();
+  const unreadCount = messageAlert?.count ?? 0;
+  const hasUnread = unreadCount > 0;
+  const isActive = chatId === id;
 
   const handleContextMenu = (
     e: MouseEvent,
@@ -116,26 +120,46 @@ const ChatListItem = ({
         onContextMenu={(e) => handleContextMenu(e, id, groupChat)}
       >
         <div
-          className={`flex cursor-pointer items-center gap-2 rounded-lg p-4 gradient-border hover:bg-gradient-background ${
-            chatId === id ? 'bg-gradient-background' : ''
+          className={`flex cursor-pointer items-center gap-1 rounded-xl px-3 py-3.5 transition active:scale-[0.99] md:gap-2 md:rounded-lg md:p-4 gradient-border hover:bg-gradient-background ${
+            isActive
+              ? 'bg-gradient-background'
+              : hasUnread
+                ? 'bg-primary/35'
+                : ''
           }`}
         >
           <AvatarCard avatars={avatar} />
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between">
-              <p className="flex-1 truncate font-medium">{name}</p>
-              <p className="ml-2 whitespace-nowrap text-xs text-body-300">
+            <div className="flex items-center justify-between gap-2">
+              <p
+                className={`min-w-0 flex-1 truncate text-[15px] md:text-base ${
+                  hasUnread
+                    ? 'font-semibold text-white'
+                    : 'font-medium text-body'
+                }`}
+              >
+                {name}
+              </p>
+              <p
+                className={`shrink-0 whitespace-nowrap text-[11px] md:text-xs ${
+                  hasUnread ? 'font-medium text-green' : 'text-body-300'
+                }`}
+              >
                 {formatTime(lastMessage?.createdAt)}
               </p>
             </div>
-            <div className="mt-1 flex items-center justify-between">
-              <p className="flex-1 truncate text-sm text-body-700">
+            <div className="mt-0.5 flex items-center justify-between gap-2 md:mt-1">
+              <p
+                className={`min-w-0 flex-1 truncate text-[13px] md:text-sm ${
+                  hasUnread ? 'font-medium text-body' : 'text-body-700'
+                }`}
+              >
                 {renderLastMessagePreview()}
               </p>
-              {messageAlert && messageAlert.count > 0 ? (
-                <div className="ml-2 flex h-5 w-5 items-center justify-center rounded-full border border-red-light bg-red-dark text-xs font-normal text-red">
-                  {messageAlert.count > 99 ? '99+' : messageAlert.count}
+              {hasUnread ? (
+                <div className="ml-1 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-blue-light bg-blue/20 px-1 text-[11px] font-medium tabular-nums text-blue">
+                  {formatUnreadCount(unreadCount)}
                 </div>
               ) : null}
             </div>

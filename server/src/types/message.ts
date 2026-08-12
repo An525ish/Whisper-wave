@@ -14,6 +14,8 @@ export type IMessageFields = {
   sender: Types.ObjectId;
   chat: Types.ObjectId;
   status: 'sent' | 'failed';
+  /** Users who have read this message (connected receipts). */
+  readBy: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -57,6 +59,7 @@ export type MessageRecord = {
   sender: Types.ObjectId;
   chat: Types.ObjectId;
   status: 'sent' | 'failed';
+  readBy: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -65,4 +68,5 @@ export type UpdateMessagePatch = Partial<{
   content: string;
   attachments: MessageAttachment[];
   status: 'sent' | 'failed';
+  readBy: Types.ObjectId[];
 }>;

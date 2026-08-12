@@ -2,13 +2,17 @@ import { useState } from 'react';
 import ChatHeader from './ChatListHeader';
 import ChatTabView from './ChatTabView';
 import AddMemberIcon from '@/components/icons/AddMember';
-import AddFriendsDialog from './addFriendsPanel/AddFriendsDialog';
-import GroupChatDialog from './createGroupPanel/CreateGroupDialog';
+import NewConnectDialog, { type NewConnectTab } from './NewConnectDialog';
 
 const ChatListPanel = () => {
   const [searchText, setSearchText] = useState('');
-  const [isClicked, setIsClicked] = useState(false);
-  const [isCreateGroup, setIsCreateGroup] = useState(false);
+  const [isNewOpen, setIsNewOpen] = useState(false);
+  const [newTab, setNewTab] = useState<NewConnectTab>('friends');
+
+  const openNew = (tab: NewConnectTab) => {
+    setNewTab(tab);
+    setIsNewOpen(true);
+  };
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col">
@@ -16,36 +20,32 @@ const ChatListPanel = () => {
         <ChatHeader
           searchText={searchText}
           setSearchText={setSearchText}
-          onCreateGroup={() => setIsCreateGroup(true)}
         />
       </div>
 
-      {isClicked ? (
-        <div className="relative mt-3 min-h-0 flex-1">
-          <AddFriendsDialog isOpen={isClicked} setIsClicked={setIsClicked} />
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <ChatTabView searchText={searchText} />
-        </div>
-      )}
+      <div className="flex min-h-0 flex-1 flex-col">
+        <ChatTabView searchText={searchText} />
+      </div>
 
-      {!isClicked && !isCreateGroup ? (
+      {!isNewOpen ? (
         <button
           type="button"
-          className="group absolute bottom-7 right-6 rounded-full border border-border bg-gradient-background p-3 transition hover:border-green-light"
-          onClick={() => setIsClicked((prev) => !prev)}
-          aria-label="Add friends"
+          className="group absolute bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] right-4 z-20 grid h-14 w-14 place-items-center rounded-full border border-green-light/40 bg-gradient-green shadow-lg shadow-green/20 transition active:scale-95 md:bottom-7 md:right-6 md:h-auto md:w-auto md:border-border md:bg-gradient-background md:p-3 md:shadow-none"
+          onClick={() => openNew('friends')}
+          aria-label="Add friends or create group"
         >
-          <AddMemberIcon className="h-8 w-8 fill-green transition group-hover:fill-green" />
+          <AddMemberIcon className="h-7 w-7 fill-white transition md:h-8 md:w-8 md:fill-green" />
         </button>
       ) : null}
 
-      {isCreateGroup ? (
-        <GroupChatDialog
-          isCreateGroup={isCreateGroup}
-          setIsCreateGroup={setIsCreateGroup}
-        />
+      {isNewOpen ? (
+        <div className="absolute inset-0 z-30">
+          <NewConnectDialog
+            isOpen={isNewOpen}
+            initialTab={newTab}
+            onClose={() => setIsNewOpen(false)}
+          />
+        </div>
       ) : null}
     </div>
   );

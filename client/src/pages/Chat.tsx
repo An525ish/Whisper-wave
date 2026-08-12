@@ -11,17 +11,21 @@ const Chat = () => {
 
   return (
     <AppWrapper>
-      <div className="relative flex h-full min-h-0 flex-col gap-3">
-        <div className="relative z-10 shrink-0">
-          <ChatHeader
-            chatId={chatId}
-            onOpenMembers={() => setIsMemberDialog(true)}
-          />
+      <div className="relative flex h-full min-h-0 flex-col bg-background md:bg-transparent md:pt-1">
+        {/* Floating bar overlays the thread; sits in the chat top padding */}
+        <div className="relative z-30 shrink-0 md:pointer-events-none md:absolute md:inset-x-0 md:top-1 md:z-20">
+          <div className="md:pointer-events-auto">
+            <ChatHeader
+              chatId={chatId}
+              onOpenMembers={() => setIsMemberDialog(true)}
+            />
+          </div>
         </div>
+
         <ChatsViewPanel chatId={chatId} />
 
         {isMemberDialog ? (
-          <div className="absolute inset-x-0 bottom-0 top-[4.5rem] z-40">
+          <div className="absolute inset-0 z-40 md:inset-x-0 md:bottom-0 md:top-20">
             <AddMemberDialog
               isMemberDialog={isMemberDialog}
               setIsMemberDialog={setIsMemberDialog}

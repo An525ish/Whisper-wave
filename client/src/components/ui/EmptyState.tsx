@@ -15,16 +15,20 @@ const EmptyState = ({
   imageAlt = '',
   title,
   className = '',
-  imageClassName = 'w-20 mx-auto opacity-50',
-  titleClassName = 'text-center text-body-300 text-sm mt-3 font-medium',
+  imageClassName = 'w-20 opacity-50',
+  titleClassName = 'mt-3 text-center text-sm font-medium text-body-300',
   icon,
 }: EmptyStateProps) => (
-  <div className={`grid place-items-center w-full py-6 ${className}`.trim()}>
-    {icon}
-    {imageSrc ? (
-      <img src={imageSrc} alt={imageAlt} className={imageClassName} />
-    ) : null}
-    <p className={titleClassName}>{title}</p>
+  <div
+    className={`flex w-full flex-col items-center justify-center py-6 ${className}`.trim()}
+  >
+    <div className="flex max-w-xs flex-col items-center">
+      {icon}
+      {imageSrc ? (
+        <img src={imageSrc} alt={imageAlt} className={imageClassName} />
+      ) : null}
+      <p className={titleClassName}>{title}</p>
+    </div>
   </div>
 );
 

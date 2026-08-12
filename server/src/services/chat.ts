@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
-import { REFETCH_CHATS } from '../constants/socket-events.js';
+import { CHAT_READ, REFETCH_CHATS } from '../constants/socket-events.js';
 import * as chatRepo from '../repositories/chat.js';
+import * as chatReadRepo from '../repositories/chatRead.js';
 import * as messageRepo from '../repositories/message.js';
 import type {
   ChatListItem,
@@ -8,6 +9,7 @@ import type {
   ChatSharedContent,
   ChatSharedLink,
   FindChatItem,
+  MarkChatReadResult,
   PopulatedMember,
   RealtimeNotify,
 } from '../types/chat.js';
@@ -76,6 +78,8 @@ export const createGroupChat = async (
     members: allMembers,
   });
 
+  await chatReadRepo.initForMembers(chat._id, allMembers);
+
   return {
     chat,
     notifications: [{ event: REFETCH_CHATS, members: allMembers }],
@@ -115,11 +119,23 @@ export const getMyChats = async (
     chatRepo.countForMember(userId),
   ]);
 
+  const chatIds = chats.map((c) => c._id);
+  const reads = await chatReadRepo.findByUserAndChats(userId, chatIds);
+  const lastReadByChat = new Map(
+    reads.map((r) => [r.chat.toString(), r.lastReadAt])
+  );
+  const unreadByChat = await messageRepo.countUnreadByChats(
+    userId,
+    chatIds,
+    lastReadByChat
+  );
+
   const data = chats.map(({ _id, name, members, groupChat, lastMessage }) => {
     const typedMembers = members as unknown as PopulatedMember[];
     const otherMembers = typedMembers.filter(
       (member) => member._id.toString() !== userId.toString()
     );
+    const chatId = _id.toString();
 
     return {
       _id,
@@ -133,6 +149,7 @@ export const getMyChats = async (
         : [otherMembers[0]?.avatar?.url].filter(Boolean),
       members: otherMembers.map((member) => member._id),
       lastMessage,
+      unreadCount: unreadByChat.get(chatId) ?? 0,
     };
   });
 
@@ -145,12 +162,18 @@ export const getMyChats = async (
 export const findChats = async (
   userId: string,
   userIds: string[],
-  notifications: ChatNotificationInput[]
+  _notifications: ChatNotificationInput[]
 ): Promise<FindChatItem[]> => {
   const chats = await chatRepo.findByIdsForMemberPopulated(userId, userIds);
-
-  const notificationMap = new Map(
-    notifications.map((n) => [n.chatId, n.count])
+  const chatIds = chats.map((c) => c._id);
+  const reads = await chatReadRepo.findByUserAndChats(userId, chatIds);
+  const lastReadByChat = new Map(
+    reads.map((r) => [r.chat.toString(), r.lastReadAt])
+  );
+  const unreadByChat = await messageRepo.countUnreadByChats(
+    userId,
+    chatIds,
+    lastReadByChat
   );
 
   return chats.map(({ _id, name, members, groupChat }) => {
@@ -158,15 +181,72 @@ export const findChats = async (
     const otherMembers = typedMembers.filter(
       (member) => member._id.toString() !== userId.toString()
     );
+    const chatId = _id.toString();
 
     return {
       _id,
       groupChat,
       name: groupChat ? name : otherMembers[0]?.name || 'Unknown',
       avatar: groupChat ? null : [otherMembers[0]?.avatar?.url || ''],
-      notificationCount: notificationMap.get(_id.toString()) || 0,
+      notificationCount: unreadByChat.get(chatId) ?? 0,
     };
   });
+};
+
+export const markChatRead = async (
+  userId: string,
+  chatId: string,
+  lastReadMessageId?: string
+): Promise<MarkChatReadResult> => {
+  const chat = await chatRepo.findByIdLean(chatId);
+  if (!chat) throw new AppError(404, 'Chat not found');
+
+  const isMember = chat.members.some(
+    (member) => member.toString() === userId.toString()
+  );
+  if (!isMember) {
+    throw new AppError(401, 'You are not authenticated to access the resource');
+  }
+
+  const latest =
+    (lastReadMessageId
+      ? null
+      : await messageRepo.findLatestInChat(chatId)) ?? null;
+
+  const lastReadAt = new Date();
+  const resolvedMessageId =
+    lastReadMessageId ?? latest?._id?.toString() ?? undefined;
+
+  await chatReadRepo.upsert({
+    chat: chatId,
+    user: userId,
+    lastReadAt,
+    lastReadMessageId: resolvedMessageId,
+  });
+
+  await messageRepo.markReadByUser(chatId, userId, lastReadAt);
+
+  const otherMembers = chat.members.filter(
+    (member) => member.toString() !== userId.toString()
+  );
+
+  return {
+    chatId,
+    lastReadAt,
+    lastReadMessageId: resolvedMessageId,
+    notifications: [
+      {
+        event: CHAT_READ,
+        members: otherMembers,
+        data: {
+          chatId,
+          userId,
+          lastReadAt: lastReadAt.toISOString(),
+          lastReadMessageId: resolvedMessageId,
+        },
+      },
+    ],
+  };
 };
 
 export const getChatDetails = async (
@@ -239,6 +319,11 @@ export const addMembers = async (
   );
   const updated = await chatRepo.updateById(chatId, { members: nextMembers });
 
+  const newlyAdded = members.filter((id) => !chat.members.some((m) => m.toString() === id));
+  if (newlyAdded.length > 0) {
+    await chatReadRepo.initForMembers(chatId, newlyAdded);
+  }
+
   return {
     chat: updated,
     notifications: [
@@ -287,6 +372,7 @@ export const leaveGroup = async (
     await Promise.all([
       chatRepo.deleteById(chatId),
       messageRepo.deleteByChatId(chatId),
+      chatReadRepo.deleteByChatId(chatId),
     ]);
     return { message, notifications: [] };
   }
@@ -323,6 +409,7 @@ export const deleteGroup = async (
   await Promise.all([
     chatRepo.deleteById(chatId),
     messageRepo.deleteByChatId(chatId),
+    chatReadRepo.deleteByChatId(chatId),
   ]);
 
   return {

@@ -6,3 +6,4 @@ export const NEW_ATTACHMENT = 'NEW_ATTACHMENT';
 export const NEW_REQUEST = 'NEW_REQUEST';
 export const START_TYPING = 'START_TYPING';
 export const STOP_TYPING = 'STOP_TYPING';
+export const CHAT_READ = 'CHAT_READ';

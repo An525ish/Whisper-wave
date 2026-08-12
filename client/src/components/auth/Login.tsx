@@ -46,12 +46,12 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
       <img
         src={avatar}
         alt=""
-        className="h-[10rem] w-[10rem] mx-auto border-4 rounded-full p-4 shadow-lg"
+        className="mx-auto h-24 w-24 rounded-full border-4 p-3 shadow-lg sm:h-[10rem] sm:w-[10rem] sm:p-4"
       />
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col gap-4 items-center w-4/5 lg:w-3/5 mx-auto my-8"
+        className="mx-auto my-6 flex w-full max-w-sm flex-col items-center gap-4 px-2 sm:my-8 sm:w-4/5 lg:w-3/5"
       >
         <InputField
           type="text"

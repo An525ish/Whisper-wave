@@ -24,9 +24,13 @@ const messageSchema = new Schema<IMessage>(
       enum: ['sent', 'failed'],
       default: 'sent',
     },
+    readBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
 );
+
+messageSchema.index({ chat: 1, createdAt: -1 });
+messageSchema.index({ chat: 1, sender: 1, createdAt: -1 });
 
 export const Message =
   (mongoose.models.Message as mongoose.Model<IMessage> | undefined) ||

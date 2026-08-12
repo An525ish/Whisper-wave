@@ -111,6 +111,24 @@ export const deleteGroup: RequestHandler = catchAsync(async (req, res) => {
   res.status(200).json({ success: true, message: result.message });
 });
 
+export const markChatRead: RequestHandler = catchAsync(async (req, res) => {
+  const body = req.body as { lastReadMessageId?: string };
+  const result = await chatService.markChatRead(
+    req.userId!,
+    param(req.params.chatId),
+    body.lastReadMessageId
+  );
+  flushNotifications(getIo(req), result.notifications);
+  res.status(200).json({
+    success: true,
+    data: {
+      chatId: result.chatId,
+      lastReadAt: result.lastReadAt,
+      lastReadMessageId: result.lastReadMessageId,
+    },
+  });
+});
+
 export const getMedia: RequestHandler = catchAsync(async (req, res) => {
   const data = await chatService.getMedia(req.userId!, param(req.params.chatId));
   res.json({ success: true, data });

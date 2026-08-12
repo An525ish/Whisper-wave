@@ -9,6 +9,7 @@ import toast from "react-hot-toast"
 import { Link } from "react-router-dom"
 import relativeTime from 'dayjs/plugin/relativeTime'
 import type { ApiSuccess, Avatar } from "@/types"
+import { formatUnreadCount } from "@/utils/unread"
 
 dayjs.extend(relativeTime)
 
@@ -53,19 +54,21 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
     }, [timestamp])
 
     return (
-        <Link to={`/chat/${id}`}>
-            < div className={`flex gap-2 items-center p-4 gradient-border cursor-pointer rounded-lg hover:bg-gradient-line-fade-dark`}>
+        <Link to={`/chat/${id}`} className="block">
+            <div className="flex cursor-pointer items-center gap-2 rounded-lg p-4 gradient-border hover:bg-gradient-line-fade-dark">
                 <AvatarCard avatars={[avatar]} />
 
-                <div className="flex-[1]">
-                    <div className="flex justify-between items-center">
-                        <p className="font-medium">{name}</p>
-                        <p className="text-xs text-body-300">{timeAgo}</p>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                        <p className="truncate font-medium">{name}</p>
+                        <p className="shrink-0 text-xs text-body-300">{timeAgo}</p>
                     </div>
-                    {<p className={`text-sm text-body-700`}>{count} New Message</p>}
+                    <p className="text-sm text-body-700">
+                        {formatUnreadCount(count ?? 0)} New Message{(count ?? 0) === 1 ? '' : 's'}
+                    </p>
                 </div>
             </div>
-        </Link >
+        </Link>
     )
 }
 

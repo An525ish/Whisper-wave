@@ -13,6 +13,7 @@ type ChatRow = {
     avatar?: string | string[];
     groupChat?: boolean;
     members?: string[];
+    unreadCount?: number;
     lastMessage?: {
         content?: string;
         createdAt?: string;
@@ -47,6 +48,9 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
 
     const { data: chats, isLoading, refetch } = useMyChatsQuery();
     const messageNotifications = useNotificationsStore((s) => s.messageNotifications);
+    const syncMessageNotificationsFromServer = useNotificationsStore(
+        (s) => s.syncMessageNotificationsFromServer,
+    );
 
     const socket = useSocket()
 
@@ -62,10 +66,39 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
         );
     };
 
+    const sortUnreadFirst = (chatList: ChatRow[] | undefined) => {
+        if (!chatList) return chatList;
+        const unreadIds = new Set(
+            messageNotifications
+                .filter((n) => n.count > 0)
+                .map((n) => n.chatId),
+        );
+        return [...chatList].sort((a, b) => {
+            const aUnread = unreadIds.has(a._id) || (a.unreadCount ?? 0) > 0 ? 1 : 0;
+            const bUnread = unreadIds.has(b._id) || (b.unreadCount ?? 0) > 0 ? 1 : 0;
+            return bUnread - aUnread;
+        });
+    };
+
     const chatsData = (chats as ChatsResponse | undefined)?.data;
-    const personalChats = filteredChats(chatsData?.filter((chat) => !chat.groupChat));
-    const groupChats = filteredChats(chatsData?.filter((chat) => chat.groupChat));
-    const allChats = filteredChats(chatsData);
+
+    useEffect(() => {
+        if (!chatsData) return;
+        syncMessageNotificationsFromServer(
+            chatsData.map((chat) => ({
+                chatId: chat._id,
+                count: chat.unreadCount ?? 0,
+            })),
+        );
+    }, [chatsData, syncMessageNotificationsFromServer]);
+
+    const personalChats = sortUnreadFirst(
+        filteredChats(chatsData?.filter((chat) => !chat.groupChat)),
+    );
+    const groupChats = sortUnreadFirst(
+        filteredChats(chatsData?.filter((chat) => chat.groupChat)),
+    );
+    const allChats = sortUnreadFirst(filteredChats(chatsData));
 
     const refetchChatListener = useCallback(() => {
         refetch()

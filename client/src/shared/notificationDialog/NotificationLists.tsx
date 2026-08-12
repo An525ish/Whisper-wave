@@ -39,9 +39,6 @@ export const NotificationList = () => {
   const messageNotifications = useNotificationsStore(
     (s) => s.messageNotifications,
   );
-  const resetMessageNotification = useNotificationsStore(
-    (s) => s.resetMessageNotification,
-  );
   const userIds = useMemo(
     () => messageNotifications.map((el) => el.chatId),
     [messageNotifications],
@@ -51,10 +48,6 @@ export const NotificationList = () => {
   const [msgNotificationsList, setMsgNotificationsList] = useState<
     FoundChatNotification[]
   >([]);
-
-  useEffect(() => {
-    resetMessageNotification();
-  }, [resetMessageNotification]);
 
   useEffect(() => {
     const handleFindChats = async () => {

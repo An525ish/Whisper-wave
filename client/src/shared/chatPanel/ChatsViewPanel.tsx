@@ -1,10 +1,16 @@
 import useErrors from '@/hooks/error';
 import { useSocket } from '@/socket/SocketProvider';
 import useSocketEvent from '@/hooks/socketEvent';
-import { NEW_MESSAGE, START_TYPING, STOP_TYPING } from '@/lib/socketConstants';
+import {
+  CHAT_READ,
+  NEW_MESSAGE,
+  START_TYPING,
+  STOP_TYPING,
+} from '@/lib/socketConstants';
 import {
   useChatDetailsQuery,
   useInfiniteMessagesQuery,
+  useMarkChatReadMutation,
   useSendAttachmentsMutation,
 } from '@/features/api/hooks';
 import {
@@ -35,6 +41,7 @@ type ChatsViewPanelProps = {
 type ChatMessage = ChatBoxData & {
   _id: string;
   isUploading?: boolean;
+  readBy?: string[];
 };
 
 type MessagesPage = {
@@ -52,6 +59,13 @@ type ChatDetailsResponse = {
 type NewMessagePayload = {
   chatId: string;
   message: ChatMessage;
+};
+
+type ChatReadPayload = {
+  chatId: string;
+  userId: string;
+  lastReadAt: string;
+  lastReadMessageId?: string;
 };
 
 type SendAttachmentsResult = {
@@ -73,6 +87,7 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didInitialScrollRef = useRef(false);
   const timelineRef = useRef<TimelineItem[]>([]);
+  const markReadMutation = useMarkChatReadMutation();
 
   const {
     data: messagesData,
@@ -88,6 +103,7 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
 
   const { data: chatDetails, isLoading, error, isError } = useChatDetailsQuery(
     { id: chatId },
@@ -96,10 +112,7 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
 
   const historyMessages = useMemo(() => {
     const pages = (messagesData?.pages ?? []) as MessagesPage[];
-    // pages[0] = newest batch; reverse so the list is oldest → newest
-    return [...pages]
-      .reverse()
-      .flatMap((page) => page.data ?? []);
+    return [...pages].reverse().flatMap((page) => page.data ?? []);
   }, [messagesData?.pages]);
 
   const isGroupChat = (messagesData?.pages?.[0] as MessagesPage | undefined)
@@ -141,6 +154,12 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
 
   const [sendAttachments] = useAsyncMutation(useSendAttachmentsMutation);
 
+  const markCurrentChatRead = useCallback(() => {
+    if (!chatId) return;
+    removeMessageNotification({ chatId });
+    markReadMutation.mutate({ chatId });
+  }, [chatId, markReadMutation, removeMessageNotification]);
+
   const virtualizer = useVirtualizer({
     count: timelineItems.length,
     getScrollElement: () => containerRef.current,
@@ -160,7 +179,6 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
     });
   }, []);
 
-  // Load older messages when near the top; keep viewport anchored
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
@@ -190,8 +208,13 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
     setLiveMessages([]);
     setMessage('');
     setAttachments([]);
-    removeMessageNotification({ chatId: chatId ?? '' });
-  }, [chatId, removeMessageNotification]);
+    setPeerLastReadAt(null);
+    if (chatId) {
+      removeMessageNotification({ chatId });
+      markReadMutation.mutate({ chatId });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mark-read only on chat switch
+  }, [chatId]);
 
   useEffect(() => {
     if (didInitialScrollRef.current || historyMessages.length === 0) return;
@@ -203,6 +226,25 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
     if (liveMessages.length === 0) return;
     scrollToBottom();
   }, [liveMessages.length, scrollToBottom]);
+
+  useEffect(() => {
+    if (isGroupChat || !user?._id) return;
+    let latest: string | null = null;
+    for (const msg of historyMessages) {
+      if (String(msg.sender._id) !== String(user._id)) continue;
+      const readers = (msg.readBy ?? []).map(String);
+      if (readers.some((id) => id !== String(user._id))) {
+        if (!latest || dayjs(msg.createdAt).isAfter(dayjs(latest))) {
+          latest = msg.createdAt ?? null;
+        }
+      }
+    }
+    if (latest) {
+      setPeerLastReadAt((prev) =>
+        !prev || dayjs(latest).isAfter(dayjs(prev)) ? latest : prev,
+      );
+    }
+  }, [historyMessages, isGroupChat, user?._id]);
 
   const handleEnterPress = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') void handleSubmit();
@@ -288,8 +330,36 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
     (res: NewMessagePayload) => {
       if (res.chatId !== chatId) return;
       setLiveMessages((prev) => [...prev, res.message]);
+      markCurrentChatRead();
     },
-    [chatId],
+    [chatId, markCurrentChatRead],
+  );
+
+  const chatReadListener = useCallback(
+    (res: ChatReadPayload) => {
+      if (res.chatId !== chatId) return;
+      if (String(res.userId) === String(user?._id ?? '')) return;
+      setPeerLastReadAt((prev) =>
+        !prev || dayjs(res.lastReadAt).isAfter(dayjs(prev))
+          ? res.lastReadAt
+          : prev,
+      );
+      setLiveMessages((prev) =>
+        prev.map((msg) => {
+          if (String(msg.sender._id) !== String(user?._id ?? '')) return msg;
+          if (
+            msg.createdAt &&
+            dayjs(msg.createdAt).isAfter(dayjs(res.lastReadAt))
+          ) {
+            return msg;
+          }
+          const readBy = new Set((msg.readBy ?? []).map(String));
+          readBy.add(res.userId);
+          return { ...msg, readBy: Array.from(readBy) };
+        }),
+      );
+    },
+    [chatId, user?._id],
   );
 
   const handleMessageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -310,14 +380,25 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
 
   useSocketEvent(socket, {
     [NEW_MESSAGE]: newMessageListener,
+    [CHAT_READ]: chatReadListener,
   } as Parameters<typeof useSocketEvent>[1]);
 
+  const isMessageRead = (msg: ChatMessage) => {
+    if (isGroupChat) return false;
+    if (String(msg.sender._id) !== String(user?._id ?? '')) return false;
+    if (peerLastReadAt && msg.createdAt) {
+      return !dayjs(msg.createdAt).isAfter(dayjs(peerLastReadAt));
+    }
+    const readers = (msg.readBy ?? []).map(String);
+    return readers.some((id) => id !== String(user?._id ?? ''));
+  };
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="bg-glass-background min-h-0 flex-1 overflow-hidden rounded-xl bg-center">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="bg-glass-background min-h-0 flex-1 overflow-hidden md:rounded-xl">
         <div
           ref={containerRef}
-          className="relative h-full min-h-0 overflow-y-auto bg-[rgba(33,26,42,0.75)] p-2 pt-4 backdrop-blur-lg backdrop-saturate-[100%] scrollbar-hide"
+          className="relative h-full min-h-0 overflow-y-auto bg-[rgba(33,26,42,0.75)] px-2 py-3 pt-4 backdrop-blur-lg backdrop-saturate-[100%] scrollbar-hide md:rounded-xl md:p-2 md:pt-28"
         >
           {msgLoading ? (
             <div className="flex flex-col gap-2">
@@ -381,8 +462,13 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
                       }`}
                       style={{ transform: `translateY(${item.start}px)` }}
                     >
-                      <div className="w-fit max-w-[70%]">
-                        <ChatBox chatData={msg} isGroupChat={isGroupChat} />
+                      <div className="w-fit max-w-[min(88%,20rem)] md:max-w-[70%]">
+                        <ChatBox
+                          chatData={msg}
+                          isGroupChat={isGroupChat}
+                          showReadReceipt={!isGroupChat && sameSender}
+                          isRead={isMessageRead(msg)}
+                        />
                       </div>
                     </div>
                   );
@@ -393,7 +479,7 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
         </div>
       </div>
 
-      <div className="shrink-0">
+      <div className="shrink-0 border-t border-border/40 bg-background/95 px-2 py-2 backdrop-blur-md md:border-0 md:bg-transparent md:px-0 md:pb-0 md:pt-3">
         <ChatInput
           message={message}
           setMessage={setMessage}
@@ -405,7 +491,7 @@ const ChatsViewPanel = ({ chatId }: ChatsViewPanelProps) => {
           attachments={attachments}
           setAttachments={setAttachments}
           className={'text-body-700 placeholder:text-body-300'}
-          placeholder={'Type Message here...'}
+          placeholder={'Message…'}
         />
       </div>
     </div>

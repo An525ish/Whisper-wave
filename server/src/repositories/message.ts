@@ -1,4 +1,4 @@
-import type { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { Message } from '../models/message.js';
 import type {
   CreateMessageInput,
@@ -74,6 +74,64 @@ export const findTextContentsByChat = async (chatId: string) =>
     .lean<Array<{ _id: Types.ObjectId; content?: string; createdAt: Date }>>();
 
 export const countAll = async (): Promise<number> => Message.countDocuments();
+
+/** Unread = messages from others after lastReadAt; missing cursor counts all from others. */
+export const countUnreadByChats = async (
+  userId: string,
+  chatIds: Array<string | Types.ObjectId>,
+  lastReadByChat: Map<string, Date>
+): Promise<Map<string, number>> => {
+  const counts = new Map<string, number>();
+  if (chatIds.length === 0) return counts;
+
+  const userOid = new Types.ObjectId(userId);
+  const chatOids = chatIds.map((id) =>
+    typeof id === 'string' ? new Types.ObjectId(id) : id
+  );
+
+  await Promise.all(
+    chatOids.map(async (chatOid) => {
+      const chatKey = chatOid.toString();
+      const lastReadAt = lastReadByChat.get(chatKey);
+      const filter: Record<string, unknown> = {
+        chat: chatOid,
+        sender: { $ne: userOid },
+      };
+      if (lastReadAt) {
+        filter.createdAt = { $gt: lastReadAt };
+      }
+
+      const count = await Message.countDocuments(filter);
+      counts.set(chatKey, count);
+    })
+  );
+
+  return counts;
+};
+
+export const findLatestInChat = async (
+  chatId: string
+): Promise<MessageRecord | null> =>
+  Message.findOne({ chat: chatId })
+    .sort({ createdAt: -1 })
+    .lean<MessageRecord>();
+
+/** Mark others' messages as read up to lastReadAt. */
+export const markReadByUser = async (
+  chatId: string,
+  userId: string,
+  lastReadAt: Date
+): Promise<void> => {
+  await Message.updateMany(
+    {
+      chat: chatId,
+      sender: { $ne: userId },
+      createdAt: { $lte: lastReadAt },
+      readBy: { $ne: userId },
+    },
+    { $addToSet: { readBy: userId } }
+  );
+};
 
 export const listForAdmin = async () =>
   Message.find()

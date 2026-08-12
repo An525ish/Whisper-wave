@@ -16,9 +16,9 @@ const ConfirmationModal = ({
 }: ConfirmationModalProps) => {
   return (
     <Modal onClose={onClose}>
-      <div className="w-[25rem] border border-border bg-background-alt/80 rounded-2xl p-8">
-        <p className="text-xl text-center">Are you sure you want to leave ?</p>
-        <div className="flex gap-4 mt-6">
+      <div className="w-[min(100%,25rem)] rounded-2xl border border-border bg-background-alt/80 p-6 sm:p-8">
+        <p className="text-center text-lg sm:text-xl">Are you sure you want to leave ?</p>
+        <div className="mt-6 flex gap-4">
           <Button
             variant="outlineGreen"
             className="w-full"

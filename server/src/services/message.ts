@@ -138,7 +138,11 @@ export const sendAttachments = async (
         },
       },
       notifications: [
-        { event: NEW_MESSAGE_ALERT, members: chat.members, data: { chatId } },
+        {
+          event: NEW_MESSAGE_ALERT,
+          members: chat.members.filter((m) => m.toString() !== userId),
+          data: { chatId },
+        },
         { event: NEW_ATTACHMENT, members: chat.members, data: { chatId } },
         { event: REFETCH_CHATS, members: chat.members, data: { chatId } },
       ],
