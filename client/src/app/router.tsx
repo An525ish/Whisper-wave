@@ -9,6 +9,8 @@ import { useAuthStore } from '@/stores/auth';
 import { useAdminStore } from '@/stores/admin';
 import type { ReactNode } from 'react';
 import AdminWrapper from '@/layout/AdminWrapper';
+import AppLoader from '@/components/loader/AppLoader';
+import { useAdminMeQuery } from '@/features/admin/hooks';
 
 function ProtectedRoutes({
   allow,
@@ -37,6 +39,13 @@ function GuestOnly() {
   return <ProtectedRoutes allow={!user} redirect="/" />;
 }
 
+/** Probe admin cookie only under /admin — not on every app boot. */
+function AdminBootstrap() {
+  const { isLoading } = useAdminMeQuery();
+  if (isLoading) return <AppLoader />;
+  return <Outlet />;
+}
+
 function AdminGuestOnly() {
   const isAdmin = useAdminStore((s) => s.isAdmin);
   return (
@@ -57,48 +66,52 @@ export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
     {
       path: '/admin',
-      element: <AdminGuestOnly />,
+      element: <AdminBootstrap />,
       children: [
         {
-          path: '',
-          lazy: async () => {
-            const module = await import('@/pages/admin/AdminAuth');
-            return { Component: module.default };
-          },
-        },
-      ],
-    },
-    {
-      path: '/admin',
-      element: <AdminAuthed />,
-      children: [
-        {
-          path: 'dashboard',
-          lazy: async () => {
-            const module = await import('@/pages/admin/Dashboard');
-            return { Component: module.default };
-          },
+          element: <AdminGuestOnly />,
+          children: [
+            {
+              path: '',
+              lazy: async () => {
+                const module = await import('@/pages/admin/AdminAuth');
+                return { Component: module.default };
+              },
+            },
+          ],
         },
         {
-          path: 'users',
-          lazy: async () => {
-            const module = await import('@/pages/admin/Users');
-            return { Component: module.default };
-          },
-        },
-        {
-          path: 'messages',
-          lazy: async () => {
-            const module = await import('@/pages/admin/Messages');
-            return { Component: module.default };
-          },
-        },
-        {
-          path: 'groups',
-          lazy: async () => {
-            const module = await import('@/pages/admin/Groups');
-            return { Component: module.default };
-          },
+          element: <AdminAuthed />,
+          children: [
+            {
+              path: 'dashboard',
+              lazy: async () => {
+                const module = await import('@/pages/admin/Dashboard');
+                return { Component: module.default };
+              },
+            },
+            {
+              path: 'users',
+              lazy: async () => {
+                const module = await import('@/pages/admin/Users');
+                return { Component: module.default };
+              },
+            },
+            {
+              path: 'messages',
+              lazy: async () => {
+                const module = await import('@/pages/admin/Messages');
+                return { Component: module.default };
+              },
+            },
+            {
+              path: 'groups',
+              lazy: async () => {
+                const module = await import('@/pages/admin/Groups');
+                return { Component: module.default };
+              },
+            },
+          ],
         },
       ],
     },

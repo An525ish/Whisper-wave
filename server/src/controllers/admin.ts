@@ -26,8 +26,9 @@ export const logout: RequestHandler = catchAsync(async (_req, res) => {
     .json({ success: true });
 });
 
-export const me: RequestHandler = catchAsync(async (_req, res) => {
-  const result = adminService.me();
+export const me: RequestHandler = catchAsync(async (req, res) => {
+  const token = (req.cookies as { adminToken?: string } | undefined)?.adminToken;
+  const result = adminService.me(token);
   res.status(200).json({ success: true, isAdmin: result.isAdmin });
 });
 

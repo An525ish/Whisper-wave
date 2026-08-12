@@ -9,7 +9,7 @@ import type {
   AdminUserListItem,
 } from '../types/admin.js';
 import { AppError } from '../utils/AppError.js';
-import { generateAdminToken } from '../utils/token.js';
+import { generateAdminToken, verifyAdminToken } from '../utils/token.js';
 import type { AdminLoginInput } from '../validators/admin.js';
 import { getPresenceSize } from './presence.js';
 
@@ -36,7 +36,17 @@ export const login = async (
   return { token: generateAdminToken() };
 };
 
-export const me = (): { isAdmin: true } => ({ isAdmin: true });
+export const me = (
+  token: string | undefined
+): { isAdmin: boolean } => {
+  if (!token) return { isAdmin: false };
+  try {
+    verifyAdminToken(token);
+    return { isAdmin: true };
+  } catch {
+    return { isAdmin: false };
+  }
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
