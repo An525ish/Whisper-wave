@@ -55,7 +55,7 @@ export const getMessages = async (
     const avatar =
       typeof sender.avatar === 'string'
         ? sender.avatar
-        : sender.avatar?.url;
+        : sender.avatar?.url || '';
 
     return {
       ...message,
