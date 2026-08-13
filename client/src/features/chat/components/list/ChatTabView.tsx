@@ -1,7 +1,7 @@
 import TabView from '@/shared/components/ui/swipeable-tabs/TabView';
 import { useSocket } from '@/socket/SocketProvider';
 import useSocketEvent from '@/shared/hooks/useSocketEvent';
-import { REFETCH_CHATS } from '@/shared/constants/socketEvents';
+import { SOCKET_EVENTS } from '@/shared/constants/socketEvents';
 import {
   useMarkChatReadMutation,
   useMyChatsQuery,
@@ -119,7 +119,7 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
   }, [refetch]);
 
   const events = {
-    [REFETCH_CHATS]: refetchChatListener,
+    [SOCKET_EVENTS.REFETCH_CHATS]: refetchChatListener,
   };
 
   useSocketEvent(socket, events);

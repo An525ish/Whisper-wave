@@ -32,7 +32,7 @@ const MediaPlaceholder = ({
     <img
       src={MEDIA_FALLBACK_ICONS[kind]}
       alt=""
-      className={`relative z-[1] opacity-45 motion-reduce:animate-none ${
+      className={`relative z-1 opacity-45 motion-reduce:animate-none ${
         shimmer ? 'animate-media-icon-shimmer' : ''
       } ${iconClassName}`}
       aria-hidden

@@ -18,6 +18,8 @@ type AccountBarProps = {
   /** full = both; account = avatar menu; notification = bell only */
   variant?: 'full' | 'account' | 'notification' | 'compact';
   overlayClassName?: string;
+  /** search = match Searchbar height (h-11); md = standard control */
+  notificationSize?: 'md' | 'search';
 };
 
 /** Notifications + account menu — profile column and list chrome. */
@@ -25,6 +27,7 @@ const AccountBar = ({
   className = '',
   variant = 'full',
   overlayClassName = 'absolute inset-0 z-20',
+  notificationSize = 'md',
 }: AccountBarProps) => {
   const [isNotification, setIsNotification] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
@@ -117,13 +120,15 @@ const AccountBar = ({
     <button
       type="button"
       ref={iconRef}
-      className="relative grid h-10 w-10 cursor-pointer place-items-center rounded-full border border-border bg-primary transition active:bg-primary/70"
+      className={`relative grid cursor-pointer place-items-center rounded-full border border-border bg-primary transition active:bg-primary/70 ${
+        notificationSize === 'search' ? 'h-11 w-11' : 'h-10 w-10'
+      }`}
       onClick={handleNotificationToggle}
       aria-label="Notifications"
       aria-expanded={isNotification}
     >
       <NotificationIcon
-        className={`hover:stroke-body ${isNotification ? 'stroke-body' : ''}`}
+        className={`h-5 w-5 text-body-300 ${isNotification ? 'text-body' : ''}`}
       />
       {totalNotificationCount > 0 ? (
         <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-red-dark bg-red" />
@@ -132,7 +137,12 @@ const AccountBar = ({
   );
 
   const accountMenu = (
-    <Dropdown options={options} name={userName} avatarUrl={avatarUrl} />
+    <Dropdown
+      options={options}
+      name={userName}
+      avatarUrl={avatarUrl}
+      size={variant === 'full' ? 'md' : 'sm'}
+    />
   );
 
   const notificationOverlay =
@@ -148,14 +158,14 @@ const AccountBar = ({
 
   return (
     <>
-      <div className={`relative shrink-0 ${className}`}>
+      <div className={`relative flex w-full shrink-0 items-center ${className}`}>
         {variant === 'full' ? (
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex w-full items-center justify-between gap-3">
             {notificationButton}
             {accountMenu}
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {showNotification ? notificationButton : null}
             {showAccount ? accountMenu : null}
           </div>

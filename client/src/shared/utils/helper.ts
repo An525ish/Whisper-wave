@@ -1,4 +1,3 @@
-import toast from 'react-hot-toast';
 import dayjs from 'dayjs';
 
 export const getFirstName = (fullName?: string | null): string => {
@@ -26,16 +25,16 @@ export const getFirstName = (fullName?: string | null): string => {
   return nameParts[0];
 };
 
+/** Returns null if valid, or an error message string if invalid. */
 export const validateFiles = (
   files: FileList | File[],
   individualLimit = 0,
   cumulativeLimit = 0,
-): boolean => {
+): string | null => {
   const fileType = files[0].type.split('/')[0];
 
   if (files.length > 5) {
-    toast.error(`You can only upload up to 5 ${fileType}`);
-    return false;
+    return `You can only upload up to 5 ${fileType}`;
   }
 
   let totalSize = 0;
@@ -45,40 +44,24 @@ export const validateFiles = (
     totalSize += file.size;
 
     if (individualLimit > 0 && file.size > individualLimit) {
-      toast.error(
-        `${fileType} size cannot exceed ${individualLimit / 1024 / 1024} MB`,
-      );
-      return false;
+      return `${fileType} size cannot exceed ${individualLimit / 1024 / 1024} MB`;
     }
   }
 
   if (cumulativeLimit > 0 && totalSize > cumulativeLimit) {
-    toast.error(
-      `${fileType} file size cannot exceed ${cumulativeLimit / 1024 / 1024} MB`,
-    );
-    return false;
+    return `${fileType} file size cannot exceed ${cumulativeLimit / 1024 / 1024} MB`;
   }
 
-  return true;
+  return null;
 };
 
-type LocalStorageHandlerArgs = {
-  key: string;
-  value?: unknown;
-  get?: boolean;
+export const getLocalStorage = <T>(key: string): T | null => {
+  const stored = localStorage.getItem(key);
+  return stored ? (JSON.parse(stored) as T) : null;
 };
 
-export const localStorageHandler = ({
-  key,
-  value,
-  get,
-}: LocalStorageHandlerArgs): unknown => {
-  if (get) {
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : null;
-  } else {
-    return localStorage.setItem(key, JSON.stringify(value));
-  }
+export const setLocalStorage = <T>(key: string, value: T): void => {
+  localStorage.setItem(key, JSON.stringify(value));
 };
 
 /** Chat day separator: Today / Yesterday / D MMM / D MMM, YYYY */
@@ -97,13 +80,34 @@ export const formatChatDayLabel = (iso?: string | null): string => {
   return date.format('D MMM, YYYY');
 };
 
-/** Mongo ObjectId string — rejects empty / "undefined" route params */
-export const isValidChatId = (id?: string | null): boolean =>
+/** WhatsApp-style chat list time: hh:mm A / Yesterday / ddd / D MMM / D MMM, YYYY */
+export const formatChatTime = (time?: string): string => {
+  if (!time) return '';
+  const messageDate = dayjs(time);
+  const now = dayjs();
+
+  if (messageDate.isSame(now, 'day')) {
+    return messageDate.format('hh:mm A');
+  }
+  if (messageDate.isSame(now.subtract(1, 'day'), 'day')) {
+    return 'Yesterday';
+  }
+  if (messageDate.isSame(now, 'week')) {
+    return messageDate.format('ddd');
+  }
+  if (messageDate.isSame(now, 'year')) {
+    return messageDate.format('D MMM');
+  }
+  return messageDate.format('D MMM, YYYY');
+};
+
+/** Single canonical Mongo ObjectId validator. */
+export const isValidMongoId = (id?: string | null): boolean =>
   Boolean(id && /^[a-f\d]{24}$/i.test(id));
 
-/** Persisted message id (Mongo ObjectId). */
-export const isValidMessageId = (id?: string | null): boolean =>
-  Boolean(id && /^[a-f\d]{24}$/i.test(id));
+// Aliases for semantic clarity at call sites — no import changes needed elsewhere.
+export const isValidChatId = isValidMongoId;
+export const isValidMessageId = isValidMongoId;
 
 type ChatMemberRef =
   | string

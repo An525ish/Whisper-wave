@@ -124,9 +124,9 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
             className="group relative shrink-0 cursor-pointer"
             title="Set group photo"
           >
-            <div className="relative h-[4.5rem] w-[4.5rem] overflow-hidden rounded-full ring-2 ring-border transition group-hover:ring-green/50 sm:h-20 sm:w-20">
+            <div className="relative h-18 w-18 overflow-hidden rounded-full ring-2 ring-border transition group-hover:ring-green/50 sm:h-20 sm:w-20">
               {showInitial ? (
-                <div className="grid h-full w-full place-items-center bg-gradient-to-br from-green-dark to-primary text-2xl font-semibold text-green">
+                <div className="grid h-full w-full place-items-center bg-linear-to-br from-green-dark to-primary text-2xl font-semibold text-green">
                   {initial}
                 </div>
               ) : (
@@ -192,7 +192,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-body-300">
             Add members
           </p>
-          <span className="min-w-[6.5rem] text-right text-xs tabular-nums text-body-300">
+          <span className="min-w-26 text-right text-xs tabular-nums text-body-300">
             {selectedMembers.length > 0
               ? `${selectedMembers.length} selected`
               : 'At least 2'}
@@ -213,20 +213,20 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
             </div>
           ) : friendsData.length === 0 ? (
             <EmptyState
-              className="h-full min-h-[12rem]"
+              className="h-full min-h-48"
               imageSrc="/images/no-member.svg"
               imageAlt="no friends"
               imageClassName="mx-auto w-36 opacity-40 sm:w-44"
-              titleClassName="mt-4 max-w-[16rem] text-center text-base font-medium text-body-300"
+              titleClassName="mt-4 max-w-64 text-center text-base font-medium text-body-300"
               title="Add friends first, then create a group"
             />
           ) : filteredMembers.length === 0 ? (
             <EmptyState
-              className="h-full min-h-[12rem]"
+              className="h-full min-h-48"
               imageSrc="/images/no-member.svg"
               imageAlt="no member"
               imageClassName="mx-auto w-36 opacity-40 sm:w-44"
-              titleClassName="mt-4 max-w-[16rem] text-center text-base font-medium text-body-300"
+              titleClassName="mt-4 max-w-64 text-center text-base font-medium text-body-300"
               title="No friends match your search"
             />
           ) : (

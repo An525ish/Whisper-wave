@@ -31,7 +31,7 @@ const Users = () => {
     });
 
     return filtered.map((user) => [
-      <p key={`${user._id}-id`} className="text-center truncate max-w-[10rem]">
+      <p key={`${user._id}-id`} className="text-center truncate max-w-40">
         {user._id}
       </p>,
       <div
@@ -62,7 +62,7 @@ const Users = () => {
 
       <div className="w-full px-12 mb-8">
         <Searchbar
-          className={'w-[18rem] mx-auto '}
+          className={'w-72 mx-auto '}
           searchText={searchText}
           setSearchText={setSearchText}
           expandable={false}

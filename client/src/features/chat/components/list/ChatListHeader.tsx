@@ -65,8 +65,8 @@ const ChatListHeader = ({
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
-          <div className="lg:hidden">
+        <div className="flex h-9 shrink-0 items-center gap-1.5">
+          <div className="flex h-full items-center lg:hidden">
             <AccountBar variant="account" />
           </div>
           <DotsMenu
@@ -96,9 +96,10 @@ const ChatListHeader = ({
             className="w-full"
           />
         </div>
-        <div className="shrink-0 lg:hidden">
+        <div className="flex h-11 shrink-0 items-center lg:hidden">
           <AccountBar
             variant="notification"
+            notificationSize="search"
             overlayClassName="fixed inset-0 z-50"
           />
         </div>

@@ -39,20 +39,20 @@ const ContextMenu = ({ menuState, hideContextMenu }: ContextMenuProps) => {
       ref={menuRef}
       data-context-menu
       role="menu"
-      className="fixed z-[300] min-w-[11rem] overflow-hidden rounded-xl border border-border bg-primary shadow-lg"
+      className="fixed z-300 min-w-44 overflow-hidden rounded-xl border border-border bg-primary shadow-lg"
       style={{ top: coords.y, left: coords.x }}
       onMouseDown={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
     >
       <ul className="py-1">
         {menuState.options.map((option: ContextMenuOption) => (
-          <li key={option.id} role="none">
+          <li key={option.label} role="none">
             <button
               type="button"
               role="menuitem"
-              className="flex w-full items-center gap-2 border-0 border-b px-4 py-2.5 text-left text-sm text-body-700 transition hover:bg-gradient-dark-black hover:text-body hover:[filter:none] full-border last:border-b-0"
+              className="flex w-full items-center gap-2 border-0 border-b px-4 py-2.5 text-left text-sm text-body-700 transition hover:bg-gradient-dark-black hover:text-body hover:filter-none full-border last:border-b-0"
               onClick={() => {
-                menuState.onOptionClick?.(option);
+                option.onClick();
                 hideContextMenu();
               }}
             >
@@ -63,7 +63,7 @@ const ContextMenu = ({ menuState, hideContextMenu }: ContextMenuProps) => {
                   {option.icon}
                 </span>
               )}
-              <span>{option.name}</span>
+              <span>{option.label}</span>
             </button>
           </li>
         ))}

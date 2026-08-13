@@ -8,7 +8,7 @@ const Home = () => {
           <img
             src="/logo-2.jpeg"
             alt="Whisper Wave"
-            className="mx-auto h-auto w-full max-w-[13rem] rounded-full mix-blend-overlay brightness-125 shadow-xl md:max-w-xs lg:max-w-md"
+            className="mx-auto h-auto w-full max-w-52 rounded-full mix-blend-overlay brightness-125 shadow-xl md:max-w-xs lg:max-w-md"
           />
           <p className="mt-6 font-display text-2xl font-semibold capitalize text-body-300 md:text-3xl">
             Welcome to Whisper Wave

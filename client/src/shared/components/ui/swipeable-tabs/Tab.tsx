@@ -24,7 +24,7 @@ const Tabs = ({
       <ul className="flex flex-nowrap justify-between overflow-auto text-center text-sm font-medium scrollbar-hide md:text-base">
         {tabsData.map((tab, index) => {
           return (
-            <li key={tab.id} className="relative grow-[1]" aria-label="Tabs">
+            <li key={tab.id} className="relative grow" aria-label="Tabs">
               <button
                 className={`group inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-t-lg border-b-2 px-2 py-3.5 text-sm md:p-4 md:text-base ${
                   activeTabIndex == index

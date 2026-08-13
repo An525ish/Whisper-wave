@@ -33,7 +33,7 @@ const LinkPreview = ({
       onClick={(e) => e.stopPropagation()}
     >
       <div
-        className={`relative h-[7.25rem] overflow-hidden ${heroBg}`}
+        className={`relative h-29 overflow-hidden ${heroBg}`}
       >
         <div
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.045)_0%,transparent_55%)]"

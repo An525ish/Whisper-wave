@@ -5,12 +5,9 @@ import ReadReceipt from '@/shared/components/icons/ReadReceipt';
 import useContextMenu from '@/shared/hooks/useContextMenu';
 import type { MouseEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import { getFirstName } from '@/shared/utils/helper';
+import { getFirstName, formatChatTime } from '@/shared/utils/helper';
 import { formatUnreadCount } from '@/features/chat/utils/unread';
 
-dayjs.extend(relativeTime);
 
 type ChatListItemLastMessage = {
   content?: string;
@@ -66,35 +63,27 @@ const ChatListItem = ({
 
     const options = [
       {
-        id: 1,
         icon: <ChatIcon className="h-4 w-4" />,
-        name: 'Open Conversation',
+        label: 'Open Conversation',
+        onClick: () => navigate(`/chat/${id}`),
       },
       ...(hasUnread
         ? [
             {
-              id: 3,
               icon: <ReadReceipt read />,
-              name: 'Mark as read',
+              label: 'Mark as read',
+              onClick: () => onMarkRead?.(id),
             },
           ]
         : []),
       {
-        id: 2,
         icon: '/icons/clear.svg',
-        name: 'Clear Message',
+        label: 'Clear Message',
+        onClick: () => undefined,
       },
     ];
 
-    showContextMenu({ x: e.clientX, y: e.clientY }, options, (option) => {
-      if (option.name === 'Open Conversation') {
-        navigate(`/chat/${id}`);
-        return;
-      }
-      if (option.name === 'Mark as read') {
-        onMarkRead?.(id);
-      }
-    });
+    showContextMenu({ x: e.clientX, y: e.clientY }, options);
   };
 
   const renderLastMessagePreview = () => {
@@ -115,25 +104,6 @@ const ChatListItem = ({
     return `${senderPrefix}${lastMessage.content}`;
   };
 
-  const formatTime = (time?: string) => {
-    if (!time) return '';
-    const messageDate = dayjs(time);
-    const now = dayjs();
-
-    if (messageDate.isSame(now, 'day')) {
-      return messageDate.format('hh:mm A');
-    }
-    if (messageDate.isSame(now.subtract(1, 'day'), 'day')) {
-      return 'Yesterday';
-    }
-    if (messageDate.isSame(now, 'week')) {
-      return messageDate.format('ddd');
-    }
-    if (messageDate.isSame(now, 'year')) {
-      return messageDate.format('D MMM');
-    }
-    return messageDate.format('D MMM, YYYY');
-  };
 
   return (
     <>
@@ -173,7 +143,7 @@ const ChatListItem = ({
                   hasUnread ? 'font-medium text-green' : 'text-body-300'
                 }`}
               >
-                {formatTime(lastMessage?.createdAt)}
+                {formatChatTime(lastMessage?.createdAt)}
               </p>
             </div>
             <div className="mt-0.5 flex items-center justify-between gap-2 md:mt-1">

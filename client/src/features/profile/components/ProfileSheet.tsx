@@ -64,7 +64,7 @@ const ProfileSheet = ({
       />
 
       <div
-        className={`relative flex h-dvh min-h-0 w-full max-w-none flex-col overflow-hidden rounded-none border-0 bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-none transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:h-[min(760px,calc(100dvh-1.5rem))] lg:max-w-[440px] lg:rounded-[1.75rem] lg:border lg:border-border/70 lg:bg-background/95 lg:pt-0 lg:pb-0 lg:shadow-[0_28px_80px_rgba(0,0,0,0.55)] lg:backdrop-blur-2xl ${
+        className={`relative flex h-dvh min-h-0 w-full max-w-none flex-col overflow-hidden rounded-none border-0 bg-background pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-none transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:h-[min(760px,calc(100dvh-1.5rem))] lg:max-w-110 lg:rounded-[1.75rem] lg:border lg:border-border/70 lg:bg-background/95 lg:pt-0 lg:pb-0 lg:shadow-[0_28px_80px_rgba(0,0,0,0.55)] lg:backdrop-blur-2xl ${
           entered
             ? 'translate-y-0 scale-100 opacity-100'
             : 'translate-y-4 scale-[0.99] opacity-0 lg:translate-y-0 lg:translate-x-4 lg:scale-[0.98]'
@@ -93,7 +93,7 @@ const ProfileSheet = ({
               {title}
             </h2>
             <span
-              className="inline-block w-[4.25rem] shrink-0 lg:hidden"
+              className="inline-block w-17 shrink-0 lg:hidden"
               aria-hidden
             />
           </div>

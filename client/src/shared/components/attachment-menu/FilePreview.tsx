@@ -39,7 +39,7 @@ const FilePreview = ({ file, onRemove }: FilePreviewProps) => {
       )}
       <button
         onClick={() => onRemove(file)}
-        className="absolute top-0 right-0 bg-primary text-white rounded-full w-[18px] h-[18px] flex items-center justify-center"
+        className="absolute top-0 right-0 bg-primary text-white rounded-full size-4.5 flex items-center justify-center"
       >
         ×
       </button>

@@ -5,6 +5,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type RefObject,
 } from 'react';
+import toast from 'react-hot-toast';
 import { validateFiles } from '@/shared/utils/helper';
 import ImagesIcon from '../icons/Images';
 import VideosIcon from '../icons/Video';
@@ -66,11 +67,11 @@ const AttachmentMenu = ({
   const handleUpload = useCallback(
     (files: FileList | null, limits: UploadLimits, type: string) => {
       if (!files) return;
-      if (validateFiles(files, limits.individual, limits.cumulative)) {
-        onFileSelect(type, Array.from(files));
-        onClose();
-        console.log(`${type} uploaded:`, files);
-      }
+      const error = validateFiles(files, limits.individual, limits.cumulative);
+      if (error) { toast.error(error); return; }
+      onFileSelect(type, Array.from(files));
+      onClose();
+      console.log(`${type} uploaded:`, files);
     },
     [onClose, onFileSelect],
   );

@@ -85,7 +85,7 @@ const ForwardDialog = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-80 flex items-end justify-center p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Forward messages"
@@ -140,7 +140,7 @@ const ForwardDialog = ({
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-body-300">
                 Select chats
               </p>
-              <span className="min-w-[6.5rem] text-right text-xs tabular-nums text-body-300">
+              <span className="min-w-26 text-right text-xs tabular-nums text-body-300">
                 {selectedCount > 0
                   ? `${selectedCount} selected`
                   : 'Pick one or more'}
@@ -161,20 +161,20 @@ const ForwardDialog = ({
                 </div>
               ) : chats.length === 0 ? (
                 <EmptyState
-                  className="h-full min-h-[12rem]"
+                  className="h-full min-h-48"
                   imageSrc="/images/no-member.svg"
                   imageAlt="no chats"
                   imageClassName="mx-auto w-36 opacity-40 sm:w-44"
-                  titleClassName="mt-4 max-w-[16rem] text-center text-base font-medium text-body-300"
+                  titleClassName="mt-4 max-w-64 text-center text-base font-medium text-body-300"
                   title="No other chats to forward to"
                 />
               ) : filtered.length === 0 ? (
                 <EmptyState
-                  className="h-full min-h-[12rem]"
+                  className="h-full min-h-48"
                   imageSrc="/images/no-member.svg"
                   imageAlt="no chats"
                   imageClassName="mx-auto w-36 opacity-40 sm:w-44"
-                  titleClassName="mt-4 max-w-[16rem] text-center text-base font-medium text-body-300"
+                  titleClassName="mt-4 max-w-64 text-center text-base font-medium text-body-300"
                   title="No chats match your search"
                 />
               ) : (

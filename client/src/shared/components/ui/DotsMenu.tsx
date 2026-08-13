@@ -52,13 +52,13 @@ const DotsMenu = ({
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative shrink-0">
+    <div ref={rootRef} className="relative flex shrink-0 items-center">
       <button
         type="button"
-        className={`grid h-9 w-9 place-items-center rounded-full border text-body transition ${
+        className={`grid h-9 w-9 place-items-center rounded-full border bg-primary text-body transition ${
           open
             ? 'border-green/50 bg-green/10 text-green'
-            : 'border-white/15 hover:border-green-light hover:text-white'
+            : 'border-border hover:border-green-light hover:text-white active:bg-primary/70'
         }`}
         aria-label={ariaLabel}
         aria-haspopup="menu"
@@ -73,7 +73,7 @@ const DotsMenu = ({
         <div
           id={menuId}
           role="menu"
-          className={`absolute top-11 z-40 min-w-44 overflow-hidden rounded-xl border border-white/10 bg-[rgba(28,22,38,0.96)] p-1 shadow-2xl backdrop-blur-xl ${
+          className={`absolute top-11 z-40 w-max min-w-52 overflow-hidden rounded-xl border border-border/70 bg-primary p-1 shadow-lg ring-1 ring-black/5 ${
             align === 'left' ? 'left-0' : 'right-0'
           }`}
         >
@@ -83,7 +83,7 @@ const DotsMenu = ({
               type="button"
               role="menuitem"
               disabled={item.disabled}
-              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition ${
+              className={`flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm transition ${
                 item.disabled
                   ? 'cursor-not-allowed text-body-300/50'
                   : item.danger

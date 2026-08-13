@@ -24,7 +24,7 @@ export default function Auth() {
                     }
                 </div>
                 <div className="mx-2 hidden h-full w-px rotate-180 bg-border md:block"></div>
-                <div className="hidden font-bold md:block md:flex-1 md:text-[3.25rem] lg:flex-[2] lg:text-[5rem]">
+                <div className="hidden font-bold md:block md:flex-1 md:text-[3.25rem] lg:flex-2 lg:text-[5rem]">
                     {isLogin ? 'Welcome Back' : 'New Here ?'}
                 </div>
             </div>

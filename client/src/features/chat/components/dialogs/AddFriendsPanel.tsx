@@ -101,20 +101,20 @@ const AddFriendsPanel = () => {
             </div>
           ) : showEmpty ? (
             <EmptyState
-              className="h-full min-h-[16rem]"
+              className="h-full min-h-64"
               imageSrc="/images/no-member.svg"
               imageAlt="no member"
               imageClassName="w-40 opacity-40 sm:w-48"
-              titleClassName="mt-3 max-w-[16rem] text-center text-base font-medium text-body-300"
+              titleClassName="mt-3 max-w-64 text-center text-base font-medium text-body-300"
               title={isError ? 'Search failed — try again' : 'No one found'}
             />
           ) : showIdleEmpty ? (
             <EmptyState
-              className="h-full min-h-[16rem]"
+              className="h-full min-h-64"
               imageSrc="/images/no-member.svg"
               imageAlt="search people"
               imageClassName="w-44 opacity-45 sm:w-52"
-              titleClassName="mt-3 max-w-[15rem] text-center text-base font-medium leading-snug text-body-300"
+              titleClassName="mt-3 max-w-60 text-center text-base font-medium leading-snug text-body-300"
               title="Search to find people to add"
             />
           ) : (
