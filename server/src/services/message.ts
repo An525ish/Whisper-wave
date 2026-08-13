@@ -19,6 +19,11 @@ import type {
 import type { MessageRecord, MessageReplyTo } from '../types/message.js';
 import { AppError } from '../utils/AppError.js';
 import { uploadToCloudinary } from '../utils/cloudinary.js';
+import {
+  assertCreator,
+  canDeleteMessage,
+  isGroupModerator,
+} from '../utils/groupRole.js';
 
 export const getMessages = async (
   userId: string,
@@ -587,7 +592,17 @@ export const deleteMessage = async (
     throw new AppError(404, 'Message not found');
   }
 
-  if (existing.sender.toString() !== userId.toString()) {
+  const chat = await chatRepo.findByIdLean(existing.chat.toString());
+  if (!chat) throw new AppError(404, 'Chat not found');
+
+  const isMember = chat.members.some(
+    (member) => member.toString() === userId.toString()
+  );
+  if (!isMember) {
+    throw new AppError(401, 'You are not authenticated to access the resource');
+  }
+
+  if (!canDeleteMessage(userId, chat, existing.sender.toString())) {
     throw new AppError(403, 'You can only delete your own messages');
   }
 
@@ -597,7 +612,6 @@ export const deleteMessage = async (
   const chatId = existing.chat.toString();
   await syncChatLastMessage(chatId);
 
-  const chat = await chatRepo.findByIdMembers(chatId);
   const messageIds = [messageId];
 
   return {
@@ -605,10 +619,10 @@ export const deleteMessage = async (
     notifications: [
       {
         event: MESSAGES_DELETED,
-        members: chat?.members ?? [],
+        members: chat.members,
         data: { chatId, messageIds },
       },
-      { event: REFETCH_CHATS, members: chat?.members ?? [], data: { chatId } },
+      { event: REFETCH_CHATS, members: chat.members, data: { chatId } },
     ],
   };
 };
@@ -618,25 +632,29 @@ export const deleteManyMessages = async (
   chatId: string,
   messageIds: string[]
 ): Promise<{ messageIds: string[]; notifications: RealtimeNotify[] }> => {
-  await getChatMembersOrThrow(userId, chatId);
+  const chat = await getChatMembersOrThrow(userId, chatId);
+  const canModerate =
+    Boolean(chat.groupChat) && isGroupModerator(userId, chat);
 
-  const deletedIds = await messageRepo.softDeleteManyByIds(messageIds, userId);
+  const deletedIds = await messageRepo.softDeleteManyByIds(messageIds, {
+    chatId,
+    ...(canModerate ? {} : { senderId: userId }),
+  });
   if (deletedIds.length === 0) {
     throw new AppError(400, 'No messages could be deleted');
   }
 
   await syncChatLastMessage(chatId);
-  const chat = await chatRepo.findByIdMembers(chatId);
 
   return {
     messageIds: deletedIds,
     notifications: [
       {
         event: MESSAGES_DELETED,
-        members: chat?.members ?? [],
+        members: chat.members,
         data: { chatId, messageIds: deletedIds },
       },
-      { event: REFETCH_CHATS, members: chat?.members ?? [], data: { chatId } },
+      { event: REFETCH_CHATS, members: chat.members, data: { chatId } },
     ],
   };
 };
@@ -646,6 +664,10 @@ export const clearChatMessages = async (
   chatId: string
 ): Promise<{ notifications: RealtimeNotify[] }> => {
   const chat = await getChatMembersOrThrow(userId, chatId);
+
+  if (chat.groupChat) {
+    assertCreator(userId, chat);
+  }
 
   await messageRepo.deleteByChatId(chatId);
   await chatRepo.clearLastMessage(chatId);

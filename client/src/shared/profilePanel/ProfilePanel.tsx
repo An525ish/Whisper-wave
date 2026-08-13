@@ -60,6 +60,7 @@ type ProfileMember = {
     name?: string;
     avatar?: string;
     isCreator?: boolean;
+    isAdmin?: boolean;
 };
 
 type ProfileDetailsData = {
@@ -294,7 +295,12 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
             (member) => member.isCreator && String(member._id) === userId,
         ) ||
             (creator?._id != null && String(creator._id) === userId))
-    const canEdit = isOwnProfile || isGroupCreator
+    const isGroupAdmin =
+        Boolean(groupChat) &&
+        (members ?? []).some(
+            (member) => member.isAdmin && String(member._id) === userId,
+        )
+    const canEdit = isOwnProfile || isGroupCreator || isGroupAdmin
     const isSaving = isUpdatingProfile || isUpdatingGroup
 
     const { attachments: mediaData, links: sharedLinks } = normalizeSharedContent(

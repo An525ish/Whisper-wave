@@ -11,6 +11,7 @@ import {
   markChatRead,
   markAllChatsRead,
   removeMember,
+  setMemberAdmin,
   updateGroupDetails,
 } from '../controllers/chat.js';
 import { auth, avatarUpload, validate } from '../middlewares/index.js';
@@ -21,6 +22,7 @@ import {
   findChatsSchema,
   markChatReadSchema,
   removeMemberSchema,
+  setMemberAdminSchema,
   updateGroupSchema,
 } from '../validators/chat.js';
 
@@ -63,6 +65,12 @@ chatRouter.put(
   validate(chatIdParamSchema, 'params'),
   validate(removeMemberSchema),
   removeMember
+);
+chatRouter.put(
+  '/set-admin/:chatId',
+  validate(chatIdParamSchema, 'params'),
+  validate(setMemberAdminSchema),
+  setMemberAdmin
 );
 chatRouter.delete(
   '/leave-group/:chatId',

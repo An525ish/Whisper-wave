@@ -177,17 +177,9 @@ const ChatListItem = ({
               </p>
             </div>
             <div className="mt-0.5 flex items-center justify-between gap-2 md:mt-1">
-              <div className="flex min-w-0 flex-1 items-center gap-1">
-                {showTicks ? (
-                  <span
-                    className="shrink-0"
-                    aria-label={lastMessage?.isRead ? 'Read' : 'Sent'}
-                  >
-                    <ReadReceipt read={Boolean(lastMessage?.isRead)} />
-                  </span>
-                ) : null}
+              <div className="flex min-w-0 flex-1 items-center overflow-hidden">
                 <p
-                  className={`min-w-0 flex-1 truncate text-[13px] md:text-sm ${
+                  className={`min-w-0 truncate text-[13px] md:text-sm ${
                     isTyping
                       ? 'font-medium text-green'
                       : hasUnread
@@ -197,6 +189,14 @@ const ChatListItem = ({
                 >
                   {renderLastMessagePreview()}
                 </p>
+                {showTicks ? (
+                  <span
+                    className="ml-1 inline-flex shrink-0 items-center"
+                    aria-label={lastMessage?.isRead ? 'Read' : 'Sent'}
+                  >
+                    <ReadReceipt read={Boolean(lastMessage?.isRead)} />
+                  </span>
+                ) : null}
               </div>
               {hasUnread ? (
                 <div className="ml-1 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-blue-light bg-blue/20 px-1 text-[11px] font-medium tabular-nums text-blue">

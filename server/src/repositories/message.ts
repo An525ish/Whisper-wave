@@ -80,7 +80,7 @@ export const softDeleteById = async (
 
 export const softDeleteManyByIds = async (
   ids: string[],
-  senderId: string
+  options?: { senderId?: string; chatId?: string }
 ): Promise<string[]> => {
   const objectIds = ids
     .filter((id) => Types.ObjectId.isValid(id))
@@ -88,14 +88,20 @@ export const softDeleteManyByIds = async (
 
   if (objectIds.length === 0) return [];
 
-  const result = await Message.updateMany(
-    {
-      _id: { $in: objectIds },
-      sender: senderId,
-      isDeleted: { $ne: true },
-    },
-    { $set: { isDeleted: true, content: undefined, attachments: [] } }
-  );
+  const filter: Record<string, unknown> = {
+    _id: { $in: objectIds },
+    isDeleted: { $ne: true },
+  };
+  if (options?.senderId) {
+    filter.sender = options.senderId;
+  }
+  if (options?.chatId) {
+    filter.chat = options.chatId;
+  }
+
+  const result = await Message.updateMany(filter, {
+    $set: { isDeleted: true, content: undefined, attachments: [] },
+  });
 
   if (result.modifiedCount === 0) return [];
 

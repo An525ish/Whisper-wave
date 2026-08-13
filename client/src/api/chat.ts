@@ -154,5 +154,10 @@ export const addMembers = (chatId: string, members: string[]) =>
 export const removeMember = (chatId: string, memberToBeRemoved: string) =>
   api.put(`/chat/remove-member/${chatId}`, { memberToBeRemoved });
 
+export const setMemberAdmin = (
+  chatId: string,
+  body: { memberId: string; makeAdmin: boolean },
+) => api.put(`/chat/set-admin/${chatId}`, body);
+
 export const leaveGroup = (chatId: string) =>
   api.delete(`/chat/leave-group/${chatId}`);

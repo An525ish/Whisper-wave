@@ -18,6 +18,7 @@ export const create = async (input: CreateChatInput): Promise<ChatLean> => {
     avatar: input.avatar,
     groupChat: input.groupChat ?? false,
     creator: input.creator,
+    admins: input.admins ?? [],
     members: input.members,
   });
 

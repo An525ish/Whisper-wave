@@ -24,6 +24,12 @@ import {
   deleteFromCloudinary,
   uploadToCloudinary,
 } from '../utils/cloudinary.js';
+import {
+  assertCanRemoveMember,
+  assertCreator,
+  assertModerator,
+  getGroupRole,
+} from '../utils/groupRole.js';
 
 const URL_IN_TEXT =
   /https?:\/\/[^\s<>"'`{}|\\^[\]]+/gi;
@@ -103,18 +109,6 @@ const extractUniqueLinks = (
   return links;
 };
 
-const assertCreator = (
-  userId: string,
-  creatorId: { toString(): string }
-): void => {
-  if (userId !== creatorId.toString()) {
-    throw new AppError(
-      401,
-      'Only group creator is authorised to perform this action'
-    );
-  }
-};
-
 const resolveGroupAvatarUrls = (
   groupAvatar: ChatAvatar | undefined,
   members: PopulatedMember[]
@@ -180,7 +174,7 @@ export const updateGroupDetails = async (
     throw new AppError(400, 'Only group chats can be updated');
   }
 
-  assertCreator(userId, chat.creator);
+  assertModerator(userId, chat);
 
   const patch: {
     name?: string;
@@ -440,6 +434,29 @@ export const getChatDetails = async (
 
   if (!chat) throw new AppError(400, 'No chat found');
 
+  const leanCreator =
+    chat.creator &&
+    typeof chat.creator === 'object' &&
+    '_id' in (chat.creator as object)
+      ? (chat.creator as PopulatedMember)._id
+      : chat.creator;
+  const memberIds = (
+    shouldPopulate
+      ? ((chat.members as PopulatedMember[]) ?? []).map((m) => m._id)
+      : ((chat.members as Types.ObjectId[]) ?? [])
+  ) as Array<{ toString(): string }>;
+  const adminIds = ((chat.admins as Types.ObjectId[] | undefined) ??
+    []) as Array<{ toString(): string }>;
+
+  chat.myRole = chat.groupChat
+    ? getGroupRole(userId, {
+        groupChat: true,
+        creator: leanCreator as { toString(): string },
+        admins: adminIds,
+        members: memberIds,
+      })
+    : null;
+
   if (shouldPopulate) {
     const typedMembers = chat.members as PopulatedMember[];
     const creator = chat.creator as PopulatedMember & {
@@ -478,6 +495,9 @@ export const getChatDetails = async (
         ? new Date(lastSeen).toISOString()
         : undefined,
       isCreator: _id.toString() === creator._id.toString(),
+      isAdmin: (chat.admins as Types.ObjectId[] | undefined)?.some(
+        (adminId) => adminId.toString() === _id.toString()
+      ) ?? false,
     }));
   }
 
@@ -491,7 +511,10 @@ export const addMembers = async (
 ): Promise<{ chat: unknown; notifications: RealtimeNotify[] }> => {
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
-  assertCreator(userId, chat.creator);
+  if (!chat.groupChat) {
+    throw new AppError(400, 'Only group chats can have members added');
+  }
+  assertModerator(userId, chat);
 
   const existingMembers = new Set(chat.members.map((m) => m.toString()));
   for (const member of members) existingMembers.add(member.toString());
@@ -501,7 +524,9 @@ export const addMembers = async (
   );
   const updated = await chatRepo.updateById(chatId, { members: nextMembers });
 
-  const newlyAdded = members.filter((id) => !chat.members.some((m) => m.toString() === id));
+  const newlyAdded = members.filter(
+    (id) => !chat.members.some((m) => m.toString() === id)
+  );
   if (newlyAdded.length > 0) {
     await chatReadRepo.initForMembers(chatId, newlyAdded);
   }
@@ -521,12 +546,21 @@ export const removeMember = async (
 ): Promise<{ notifications: RealtimeNotify[] }> => {
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
-  assertCreator(userId, chat.creator);
+  if (!chat.groupChat) {
+    throw new AppError(400, 'Only group chats support removing members');
+  }
+  assertCanRemoveMember(userId, chat, memberToBeRemoved);
 
   const nextMembers = chat.members.filter(
     (member) => member.toString() !== memberToBeRemoved.toString()
   );
-  await chatRepo.updateById(chatId, { members: nextMembers });
+  const nextAdmins = (chat.admins ?? []).filter(
+    (adminId) => adminId.toString() !== memberToBeRemoved.toString()
+  );
+  await chatRepo.updateById(chatId, {
+    members: nextMembers,
+    admins: nextAdmins,
+  });
 
   return {
     notifications: [
@@ -535,6 +569,42 @@ export const removeMember = async (
         members: [...nextMembers, memberToBeRemoved],
       },
     ],
+  };
+};
+
+export const setMemberAdmin = async (
+  userId: string,
+  chatId: string,
+  memberId: string,
+  makeAdmin: boolean
+): Promise<{ notifications: RealtimeNotify[] }> => {
+  const chat = await chatRepo.findByIdLean(chatId);
+  if (!chat) throw new AppError(404, 'Chat not found');
+  if (!chat.groupChat) {
+    throw new AppError(400, 'Only group chats have admins');
+  }
+  assertCreator(userId, chat);
+
+  const target = memberId.toString();
+  if (target === chat.creator.toString()) {
+    throw new AppError(400, 'Group creator already has full permissions');
+  }
+
+  const isMember = chat.members.some((m) => m.toString() === target);
+  if (!isMember) {
+    throw new AppError(400, 'User is not a member of this group');
+  }
+
+  const currentAdmins = new Set((chat.admins ?? []).map((id) => id.toString()));
+  if (makeAdmin) currentAdmins.add(target);
+  else currentAdmins.delete(target);
+
+  await chatRepo.updateById(chatId, {
+    admins: Array.from(currentAdmins).map((id) => new Types.ObjectId(id)),
+  });
+
+  return {
+    notifications: [{ event: REFETCH_CHATS, members: chat.members }],
   };
 };
 
@@ -560,14 +630,25 @@ export const leaveGroup = async (
   }
 
   const wasCreator = userId === chat.creator.toString();
+  let nextAdmins = (chat.admins ?? []).filter(
+    (adminId) => adminId.toString() !== userId.toString()
+  );
+
   const patch: {
     members: typeof remainingMembers;
     creator?: (typeof remainingMembers)[number];
-  } = { members: remainingMembers };
+    admins: Types.ObjectId[];
+  } = { members: remainingMembers, admins: nextAdmins };
 
   if (wasCreator) {
     const randomIndex = Math.floor(Math.random() * remainingMembers.length);
-    patch.creator = remainingMembers[randomIndex];
+    const newCreator = remainingMembers[randomIndex];
+    patch.creator = newCreator;
+    // New creator should not remain listed as admin.
+    nextAdmins = nextAdmins.filter(
+      (adminId) => adminId.toString() !== newCreator.toString()
+    );
+    patch.admins = nextAdmins;
   }
 
   await chatRepo.updateById(chatId, patch);
@@ -583,7 +664,7 @@ export const deleteGroup = async (
 ): Promise<{ message: string; notifications: RealtimeNotify[] }> => {
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
-  assertCreator(userId, chat.creator);
+  assertCreator(userId, chat);
 
   const members = [...chat.members];
   const name = chat.name;

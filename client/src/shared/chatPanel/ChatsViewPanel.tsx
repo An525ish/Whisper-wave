@@ -99,6 +99,8 @@ type ChatMember = string | { _id?: string };
 type ChatDetailsResponse = {
   data?: {
     members?: ChatMember[];
+    groupChat?: boolean;
+    myRole?: 'creator' | 'admin' | 'member' | null;
   };
 };
 
@@ -222,7 +224,7 @@ const ChatsViewPanel = ({
   const forwardMutation = useForwardMessagesMutation();
 
   const { data: chatDetails, isLoading, error, isError } = useChatDetailsQuery(
-    { id: chatId },
+    { id: chatId, populate: true },
     { skip: !chatId },
   );
 
@@ -231,8 +233,15 @@ const ChatsViewPanel = ({
     return [...pages].reverse().flatMap((page) => page.data ?? []);
   }, [messagesData?.pages]);
 
-  const isGroupChat = (messagesData?.pages?.[0] as MessagesPage | undefined)
-    ?.groupChat;
+  const isGroupChat = Boolean(
+    (messagesData?.pages?.[0] as MessagesPage | undefined)?.groupChat ??
+      (chatDetails as ChatDetailsResponse | undefined)?.data?.groupChat,
+  );
+  const myRole =
+    (chatDetails as ChatDetailsResponse | undefined)?.data?.myRole ?? null;
+  const canModerateGroup =
+    isGroupChat && (myRole === 'creator' || myRole === 'admin');
+  const canClearChat = !isGroupChat || myRole === 'creator';
   const memberIds = useMemo(
     () =>
       normalizeMemberIds(
@@ -495,8 +504,10 @@ const ChatsViewPanel = ({
   }, [isEditing, onEditingChange]);
 
   useEffect(() => {
-    onRegisterClearChat?.(() => setConfirmClearOpen(true));
-  }, [onRegisterClearChat]);
+    onRegisterClearChat?.(
+      canClearChat ? () => setConfirmClearOpen(true) : () => undefined,
+    );
+  }, [canClearChat, onRegisterClearChat]);
 
   const applyDeletedMessages = useCallback((messageIds: string[]) => {
     const idSet = new Set(messageIds);
@@ -761,6 +772,15 @@ const ChatsViewPanel = ({
     [user?._id],
   );
 
+  const canDeleteMessage = useCallback(
+    (msg: ChatMessage) =>
+      isValidMessageId(msg._id) &&
+      !msg.isDeleted &&
+      !msg.isUploading &&
+      (String(msg.sender._id) === String(user?._id ?? '') || canModerateGroup),
+    [canModerateGroup, user?._id],
+  );
+
   const canInteractMessage = useCallback(
     (msg: ChatMessage) =>
       isValidMessageId(msg._id) && !msg.isDeleted && !msg.isUploading,
@@ -778,9 +798,9 @@ const ChatsViewPanel = ({
   const deletableSelectedIds = useMemo(() => {
     if (selectedIds.size === 0) return [] as string[];
     return allMessages
-      .filter((msg) => selectedIds.has(msg._id) && canManageMessage(msg))
+      .filter((msg) => selectedIds.has(msg._id) && canDeleteMessage(msg))
       .map((msg) => msg._id);
-  }, [allMessages, canManageMessage, selectedIds]);
+  }, [allMessages, canDeleteMessage, selectedIds]);
 
   useEffect(() => {
     onDeletableSelectedCountChange?.(deletableSelectedIds.length);
@@ -1116,6 +1136,7 @@ const ChatsViewPanel = ({
       e.stopPropagation();
 
       const isOwn = canManageMessage(msg);
+      const canDelete = canDeleteMessage(msg);
       const options = [
         {
           id: 4,
@@ -1141,7 +1162,7 @@ const ChatsViewPanel = ({
               },
             ]
           : []),
-        ...(isOwn
+        ...(canDelete
           ? [
               {
                 id: 2,
@@ -1172,6 +1193,7 @@ const ChatsViewPanel = ({
       });
     },
     [
+      canDeleteMessage,
       canEditMessage,
       canInteractMessage,
       canManageMessage,
@@ -1551,7 +1573,9 @@ const ChatsViewPanel = ({
           description={
             confirmDelete.type === 'many'
               ? deletableSelectedIds.length < selectedIds.size
-                ? 'Only your own messages in this selection will be deleted for everyone.'
+                ? canModerateGroup
+                  ? 'Some selected messages could not be deleted.'
+                  : 'Only your own messages in this selection will be deleted for everyone.'
                 : 'Selected messages will be removed for everyone in this chat.'
               : 'This message will be removed for everyone in this chat.'
           }

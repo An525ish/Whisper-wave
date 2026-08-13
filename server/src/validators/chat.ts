@@ -30,6 +30,11 @@ export const removeMemberSchema = z.object({
   memberToBeRemoved: objectId,
 });
 
+export const setMemberAdminSchema = z.object({
+  memberId: objectId,
+  makeAdmin: z.boolean(),
+});
+
 export const findChatsSchema = z.object({
   userIds: z.array(objectId).min(1, 'No userId found'),
   notifications: z

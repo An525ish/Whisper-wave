@@ -53,6 +53,7 @@ type ChatDetailsData = {
   name?: string;
   groupChat?: boolean;
   members?: ChatMember[];
+  myRole?: 'creator' | 'admin' | 'member' | null;
 };
 
 type ChatDetailsResponse = {
@@ -125,7 +126,8 @@ const ChatHeader = ({
   }, []);
 
   const chatData = (chatDetails as ChatDetailsResponse | undefined)?.data || {};
-  const { avatar, name, groupChat } = chatData;
+  const { avatar, name, groupChat, myRole } = chatData;
+  const canClearChat = !groupChat || myRole === 'creator';
   const avatarList = Array.isArray(avatar) ? avatar : avatar ? [avatar] : [];
 
   const peerIds = useMemo(() => {
@@ -392,19 +394,21 @@ const ChatHeader = ({
                   </span>
                   Select messages
                 </button>
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-body-700 transition hover:bg-white/8 hover:text-red"
-                  onClick={() => {
-                    setIsDotsMenu(false);
-                    onClearChat?.();
-                  }}
-                >
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-white/5">
-                    <img src="/icons/clear.svg" alt="" className="h-3.5 w-3.5" />
-                  </span>
-                  Clear chat
-                </button>
+                {canClearChat ? (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-body-700 transition hover:bg-white/8 hover:text-red"
+                    onClick={() => {
+                      setIsDotsMenu(false);
+                      onClearChat?.();
+                    }}
+                  >
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-white/5">
+                      <img src="/icons/clear.svg" alt="" className="h-3.5 w-3.5" />
+                    </span>
+                    Clear chat
+                  </button>
+                ) : null}
 
                 {groupChat ? (
                   <>

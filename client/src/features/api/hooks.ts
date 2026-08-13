@@ -486,6 +486,27 @@ export function useRemoveMemberMutation() {
   });
 }
 
+export function useSetMemberAdminMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      chatId,
+      memberId,
+      makeAdmin,
+    }: {
+      chatId: string;
+      memberId: string;
+      makeAdmin: boolean;
+    }) => chatApi.setMemberAdmin(chatId, { memberId, makeAdmin }),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({
+        queryKey: ['chatDetails', vars.chatId],
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}
+
 export function useLeaveGroupMutation() {
   const queryClient = useQueryClient();
   return useMutation({

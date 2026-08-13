@@ -103,6 +103,24 @@ export const removeMember: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+export const setMemberAdmin: RequestHandler = catchAsync(async (req, res) => {
+  const { memberId, makeAdmin } = req.body as {
+    memberId: string;
+    makeAdmin: boolean;
+  };
+  const result = await chatService.setMemberAdmin(
+    req.userId!,
+    param(req.params.chatId),
+    memberId,
+    makeAdmin
+  );
+  flushNotifications(getIo(req), result.notifications);
+  res.status(200).json({
+    success: true,
+    message: makeAdmin ? 'Member promoted to admin' : 'Admin demoted to member',
+  });
+});
+
 export const leaveGroup: RequestHandler = catchAsync(async (req, res) => {
   const result = await chatService.leaveGroup(
     req.userId!,
