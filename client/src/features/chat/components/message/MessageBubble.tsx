@@ -85,6 +85,9 @@ const MessageBubble = ({
   onFileAction,
   onDownload,
 }: MessageBubbleProps) => {
+  const showAvatar = Boolean(isGroupChat && !sameSender);
+  const showName = Boolean(isGroupChat && !sameSender);
+
   const renderReceipt = (hidden = false) => {
     if (!showReadReceipt) return null;
     return (
@@ -126,15 +129,20 @@ const MessageBubble = ({
   if (isDeleted) {
     return (
       <div
-        className={`flex w-fit max-w-[min(100%,20rem)] items-end ${
-          sameSender ? 'self-end' : 'self-start'
+        className={`flex max-w-[min(100%,22rem)] items-end gap-2 ${
+          sameSender ? 'ml-auto flex-row-reverse' : 'mr-auto'
         }`}
       >
+        {showAvatar ? (
+          <div className="mb-0.5 h-7 w-7 shrink-0 overflow-hidden rounded-full ring-1 ring-white/10">
+            <Image src={avatarSrc} alt={displayName} className="h-full w-full object-cover" />
+          </div>
+        ) : null}
         <div
-          className={`rounded-2xl border border-dashed px-3.5 py-2 text-sm italic ${
+          className={`rounded-2xl border border-dashed px-3.5 py-2 text-sm italic shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${
             sameSender
-              ? 'border-green/25 bg-green-dark/30 text-body-300'
-              : 'border-border/60 bg-primary/50 text-body-300'
+              ? 'bubble-out border-green/25 bg-green-dark/30 text-body-300'
+              : 'bubble-in border-border/60 bg-primary/50 text-body-300'
           }`}
         >
           This message was deleted
@@ -145,158 +153,162 @@ const MessageBubble = ({
 
   return (
     <div
-      className={`flex w-fit max-w-[min(100%,20rem)] gap-2 items-end shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${
-        mediaOnly || linkOnly
-          ? 'p-1.5'
-          : hasAttachments
-            ? 'p-1.5 pb-2'
-            : 'px-3.5 pb-2.5 pt-2'
-      } ${
-        sameSender
-          ? 'bubble-out self-end border border-green/35 bg-green-dark/55'
-          : 'bubble-in self-start border border-border bg-primary/90'
-      } ${searchHighlight ? 'search-focus-blink' : ''}`}
+      className={`flex max-w-[min(100%,22rem)] items-end gap-2 ${
+        sameSender ? 'ml-auto flex-row-reverse' : 'mr-auto'
+      }`}
     >
-      {isGroupChat ? (
-        <div className="h-9 w-9 shrink-0 self-end overflow-hidden rounded-full border border-border/60 ring-1 ring-white/5">
+      {showAvatar ? (
+        <div className="mb-0.5 h-7 w-7 shrink-0 overflow-hidden rounded-full bg-background-alt ring-1 ring-white/10">
           <Image src={avatarSrc} alt={displayName} className="h-full w-full object-cover" />
         </div>
       ) : null}
 
-      <div className="relative min-w-0 max-w-full">
-        {isGroupChat ? (
-          <p
-            className={`px-1.5 pt-1 text-xs font-medium capitalize tracking-wide ${
-              hasAttachments ? 'mb-2' : 'mb-0.5'
-            } ${sameSender ? 'text-green/80' : 'text-green'}`}
-          >
-            {displayName}
-          </p>
-        ) : null}
+      <div
+        className={`min-w-0 max-w-full shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${
+          mediaOnly || linkOnly
+            ? 'p-1.5'
+            : hasAttachments
+              ? 'p-1.5 pb-2'
+              : showName
+                ? 'px-3.5 pb-2.5 pt-1.5'
+                : 'px-3.5 pb-2.5 pt-2'
+        } ${
+          sameSender
+            ? 'bubble-out border border-green/35 bg-green-dark/55'
+            : 'bubble-in border border-border bg-primary/90'
+        } ${searchHighlight ? 'search-focus-blink' : ''}`}
+      >
+        <div className="relative min-w-0 max-w-full">
+          {showName ? (
+            <p className="mb-1 truncate text-[11px] font-semibold capitalize tracking-wide text-green">
+              {displayName}
+            </p>
+          ) : null}
 
-        {replyTo ? (
-          <div
-            className={`mb-1.5 overflow-hidden rounded-lg border-l-2 ${
-              sameSender ? 'border-green/70 bg-black/30' : 'border-green bg-black/25'
-            }`}
-          >
-            <div className="flex items-stretch gap-2 px-2 py-1.5">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-semibold tracking-wide text-green">
-                  {replyTo.senderName}
-                </p>
-                <p className="mt-0.5 truncate text-xs leading-snug text-body-300">
-                  {replyPreviewText}
-                </p>
+          {replyTo ? (
+            <div
+              className={`mb-1.5 overflow-hidden rounded-lg border-l-2 ${
+                sameSender ? 'border-green/70 bg-black/30' : 'border-green bg-black/25'
+              }`}
+            >
+              <div className="flex items-stretch gap-2 px-2 py-1.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-semibold tracking-wide text-green">
+                    {replyTo.senderName}
+                  </p>
+                  <p className="mt-0.5 truncate text-xs leading-snug text-body-300">
+                    {replyPreviewText}
+                  </p>
+                </div>
+                {replyTo.previewAttachment?.url &&
+                (replyTo.previewAttachment.fileType?.startsWith('image/') ||
+                  /\.(avif|gif|jpe?g|png|webp)(\?|$)/i.test(replyTo.previewAttachment.url)) ? (
+                  <img
+                    src={replyTo.previewAttachment.url}
+                    alt=""
+                    className="h-10 w-10 shrink-0 self-center rounded-md object-cover ring-1 ring-white/10"
+                  />
+                ) : null}
               </div>
-              {replyTo.previewAttachment?.url &&
-              (replyTo.previewAttachment.fileType?.startsWith('image/') ||
-                /\.(avif|gif|jpe?g|png|webp)(\?|$)/i.test(replyTo.previewAttachment.url)) ? (
-                <img
-                  src={replyTo.previewAttachment.url}
-                  alt=""
-                  className="h-10 w-10 shrink-0 self-center rounded-md object-cover ring-1 ring-white/10"
-                />
+            </div>
+          ) : null}
+
+          {hasAttachments ? (
+            <div
+              className={`${
+                multiMedia
+                  ? 'grid w-58 max-w-full grid-cols-2 gap-1'
+                  : 'flex w-fit flex-col gap-1'
+              } ${hasText ? 'mb-1.5' : ''}`}
+            >
+              {attachments.map((attachment, index) => {
+                const url = attachment.url || attachment.tempUrl;
+                const fileType = resolveKind(attachment, url ?? '');
+                const isLast = index === attachments.length - 1;
+                const isVisualMedia =
+                  fileType === 'image' || fileType === 'video' || fileType === 'audio';
+                const stampOnMedia = mediaOnly && isLast && isVisualMedia;
+                const stampOnFile = mediaOnly && isLast && !isVisualMedia;
+
+                return (
+                  <div
+                    key={attachment.public_id || index}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => void onFileAction(e, attachment)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        void onFileAction(e as unknown as MouseEvent, attachment);
+                      }
+                    }}
+                    className={`block cursor-pointer overflow-hidden rounded-2xl text-left transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-green/45 ${
+                      multiMedia ? 'min-w-0' : 'w-fit max-w-full'
+                    }`}
+                  >
+                    <RenderAttachments
+                      fileType={fileType}
+                      url={url ?? ''}
+                      name={attachment.name}
+                      type={attachment.type}
+                      size={attachment.size}
+                      isUploading={attachment.uploading}
+                      overlay={stampOnMedia ? mediaTimestamp : stampOnFile ? fileTimestamp : null}
+                      fill={multiMedia}
+                      onDownload={!isVisualMedia ? () => { void onDownload(attachment); } : undefined}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {linkOnly ? (
+            <div className="relative min-w-0 w-full px-0.5">
+              {links.map((link, index) => (
+                <LinkPreview key={link.url} link={link} variant={linkVariant} lead={index === 0} />
+              ))}
+              <div className="mt-1 text-right leading-none">{timeReserve}</div>
+            </div>
+          ) : hasText ? (
+            <div className={`relative ${hasAttachments ? 'px-2 pt-0.5' : ''}`}>
+              <p className="m-0 text-sm leading-snug wrap-break-word whitespace-pre-wrap text-body">
+                <MessageContent content={content!} highlightQuery={highlightQuery} />
+                {links.length === 0 ? timeReserve : null}
+              </p>
+              {links.length > 0 ? (
+                <>
+                  {links.map((link, index) => (
+                    <LinkPreview
+                      key={link.url}
+                      link={link}
+                      variant={linkVariant}
+                      lead={index === 0 && !content}
+                    />
+                  ))}
+                  <div className="mt-1 text-right leading-none">{timeReserve}</div>
+                </>
               ) : null}
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        {hasAttachments ? (
-          <div
-            className={`${
-              multiMedia
-                ? 'grid w-58 max-w-full grid-cols-2 gap-1'
-                : 'flex w-fit flex-col gap-1'
-            } ${hasText ? 'mb-1.5' : ''}`}
-          >
-            {attachments.map((attachment, index) => {
-              const url = attachment.url || attachment.tempUrl;
-              const fileType = resolveKind(attachment, url ?? '');
-              const isLast = index === attachments.length - 1;
-              const isVisualMedia =
-                fileType === 'image' || fileType === 'video' || fileType === 'audio';
-              const stampOnMedia = mediaOnly && isLast && isVisualMedia;
-              const stampOnFile = mediaOnly && isLast && !isVisualMedia;
-
-              return (
-                <div
-                  key={attachment.public_id || index}
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => void onFileAction(e, attachment)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      void onFileAction(e as unknown as MouseEvent, attachment);
-                    }
-                  }}
-                  className={`block cursor-pointer overflow-hidden rounded-2xl text-left transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-green/45 ${
-                    multiMedia ? 'min-w-0' : 'w-fit max-w-full'
-                  }`}
-                >
-                  <RenderAttachments
-                    fileType={fileType}
-                    url={url ?? ''}
-                    name={attachment.name}
-                    type={attachment.type}
-                    size={attachment.size}
-                    isUploading={attachment.uploading}
-                    overlay={stampOnMedia ? mediaTimestamp : stampOnFile ? fileTimestamp : null}
-                    fill={multiMedia}
-                    onDownload={!isVisualMedia ? () => { void onDownload(attachment); } : undefined}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
-
-        {linkOnly ? (
-          <div className="relative min-w-0 w-full px-0.5">
-            {links.map((link, index) => (
-              <LinkPreview key={link.url} link={link} variant={linkVariant} lead={index === 0} />
-            ))}
-            <div className="mt-1 text-right leading-none">{timeReserve}</div>
-          </div>
-        ) : hasText ? (
-          <div className={`relative ${hasAttachments ? 'px-2 pt-0.5' : ''}`}>
-            <p className="m-0 text-sm leading-snug wrap-break-word whitespace-pre-wrap text-body">
-              <MessageContent content={content!} highlightQuery={highlightQuery} />
-              {links.length === 0 ? timeReserve : null}
-            </p>
-            {links.length > 0 ? (
-              <>
-                {links.map((link, index) => (
-                  <LinkPreview
-                    key={link.url}
-                    link={link}
-                    variant={linkVariant}
-                    lead={index === 0 && !content}
-                  />
-                ))}
-                <div className="mt-1 text-right leading-none">{timeReserve}</div>
-              </>
-            ) : null}
-          </div>
-        ) : null}
-
-        {showBubbleTimestamp
-          ? renderTimestamp(
-              `absolute bottom-0 right-1.5 translate-y-0.5 text-[11px] leading-[15px] whitespace-nowrap pointer-events-none select-none ${
-                sameSender ? 'text-body-700' : 'text-body-300'
-              }`,
-            )
-          : null}
-        {editedAt ? (
-          <span
-            className={`absolute bottom-0 ${
-              showBubbleTimestamp ? 'right-[4.5rem]' : 'right-1.5'
-            } translate-y-0.5 text-[10px] italic text-body-300`}
-          >
-            edited
-          </span>
-        ) : null}
+          {showBubbleTimestamp
+            ? renderTimestamp(
+                `absolute bottom-0 right-1.5 translate-y-0.5 text-[11px] leading-[15px] whitespace-nowrap pointer-events-none select-none ${
+                  sameSender ? 'text-body-700' : 'text-body-300'
+                }`,
+              )
+            : null}
+          {editedAt ? (
+            <span
+              className={`absolute bottom-0 ${
+                showBubbleTimestamp ? 'right-[4.5rem]' : 'right-1.5'
+              } translate-y-0.5 text-[10px] italic text-body-300`}
+            >
+              edited
+            </span>
+          ) : null}
+        </div>
       </div>
     </div>
   );
