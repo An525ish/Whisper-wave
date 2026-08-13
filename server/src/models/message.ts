@@ -1,5 +1,9 @@
 import mongoose, { Schema, model, type Document } from 'mongoose';
-import type { IMessageFields, MessageAttachment } from '../types/message.js';
+import type {
+  IMessageFields,
+  MessageAttachment,
+  MessageReplyTo,
+} from '../types/message.js';
 
 export type IMessage = IMessageFields & Document;
 
@@ -13,10 +17,25 @@ const attachmentSchema = new Schema<MessageAttachment>(
   { _id: false }
 );
 
+const replyToSchema = new Schema<MessageReplyTo>(
+  {
+    messageId: { type: Schema.Types.ObjectId, required: true },
+    content: { type: String },
+    senderName: { type: String, required: true },
+    previewAttachment: {
+      url: { type: String },
+      name: { type: String },
+      fileType: { type: String },
+    },
+  },
+  { _id: false }
+);
+
 const messageSchema = new Schema<IMessage>(
   {
     content: { type: String },
     attachments: [attachmentSchema],
+    replyTo: { type: replyToSchema },
     sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     chat: { type: Schema.Types.ObjectId, ref: 'Chat', required: true },
     status: {
@@ -25,6 +44,8 @@ const messageSchema = new Schema<IMessage>(
       default: 'sent',
     },
     readBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    isDeleted: { type: Boolean, default: false },
+    editedAt: { type: Date },
   },
   { timestamps: true }
 );

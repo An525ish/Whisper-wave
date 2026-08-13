@@ -12,7 +12,7 @@ export const findByChatPage = async (
   skip: number,
   limit: number
 ) =>
-  Message.find({ chat: chatId })
+  Message.find({ chat: chatId, status: { $ne: 'failed' } })
     .sort({ createdAt: -1 })
     .limit(limit)
     .skip(skip)
@@ -32,6 +32,7 @@ export const create = async (
     sender: input.sender,
     chat: input.chat,
     status: input.status ?? 'sent',
+    replyTo: input.replyTo,
   });
 
   return message.toObject() as MessageRecord;
@@ -42,6 +43,71 @@ export const updateById = async (
   patch: UpdateMessagePatch
 ): Promise<MessageRecord | null> =>
   Message.findByIdAndUpdate(id, { $set: patch }, { new: true }).lean<MessageRecord>();
+
+export const findByIdLean = async (
+  id: string
+): Promise<MessageRecord | null> =>
+  Message.findById(id).lean<MessageRecord>();
+
+export const findByIdsInChat = async (
+  chatId: string,
+  ids: string[]
+): Promise<MessageRecord[]> => {
+  const objectIds = ids
+    .filter((id) => Types.ObjectId.isValid(id))
+    .map((id) => new Types.ObjectId(id));
+
+  if (objectIds.length === 0) return [];
+
+  return Message.find({
+    chat: chatId,
+    _id: { $in: objectIds },
+    isDeleted: { $ne: true },
+    status: { $ne: 'failed' },
+  })
+    .sort({ createdAt: 1 })
+    .lean<MessageRecord[]>();
+};
+
+export const softDeleteById = async (
+  id: string | Types.ObjectId
+): Promise<MessageRecord | null> =>
+  Message.findByIdAndUpdate(
+    id,
+    { $set: { isDeleted: true, content: undefined, attachments: [] } },
+    { new: true }
+  ).lean<MessageRecord>();
+
+export const softDeleteManyByIds = async (
+  ids: string[],
+  senderId: string
+): Promise<string[]> => {
+  const objectIds = ids
+    .filter((id) => Types.ObjectId.isValid(id))
+    .map((id) => new Types.ObjectId(id));
+
+  if (objectIds.length === 0) return [];
+
+  const result = await Message.updateMany(
+    {
+      _id: { $in: objectIds },
+      sender: senderId,
+      isDeleted: { $ne: true },
+    },
+    { $set: { isDeleted: true, content: undefined, attachments: [] } }
+  );
+
+  if (result.modifiedCount === 0) return [];
+
+  const updated = await Message.find({
+    _id: { $in: objectIds },
+    isDeleted: true,
+  })
+    .select('_id')
+    .lean<Array<{ _id: Types.ObjectId }>>();
+
+  return updated.map((row) => row._id.toString());
+};
 
 export const deleteById = async (
   id: string | Types.ObjectId
@@ -112,7 +178,11 @@ export const countUnreadByChats = async (
 export const findLatestInChat = async (
   chatId: string
 ): Promise<MessageRecord | null> =>
-  Message.findOne({ chat: chatId })
+  Message.findOne({
+    chat: chatId,
+    status: { $ne: 'failed' },
+    isDeleted: { $ne: true },
+  })
     .sort({ createdAt: -1 })
     .lean<MessageRecord>();
 
@@ -144,6 +214,7 @@ export const searchInChat = async (
   const filter: Record<string, unknown> = {
     chat: input.chatId,
     status: { $ne: 'failed' },
+    isDeleted: { $ne: true },
   };
 
   if (input.senderId) {
@@ -205,6 +276,7 @@ export const findFirstOnOrAfter = async (
   Message.findOne({
     chat: chatId,
     status: { $ne: 'failed' },
+    isDeleted: { $ne: true },
     createdAt: { $gte: dateFrom },
   })
     .sort({ createdAt: 1 })
@@ -220,6 +292,7 @@ export const findFirstInDay = async (
   Message.findOne({
     chat: chatId,
     status: { $ne: 'failed' },
+    isDeleted: { $ne: true },
     createdAt: { $gte: dayStart, $lte: dayEnd },
   })
     .sort({ createdAt: 1 })
@@ -240,6 +313,7 @@ export const listActiveDatesInRange = async (
       $match: {
         chat: new Types.ObjectId(chatId),
         status: { $ne: 'failed' },
+        isDeleted: { $ne: true },
         createdAt: { $gte: from, $lte: to },
       },
     },
@@ -267,6 +341,7 @@ export const findOldestMessage = async (
   Message.findOne({
     chat: chatId,
     status: { $ne: 'failed' },
+    isDeleted: { $ne: true },
   })
     .sort({ createdAt: 1 })
     .select('createdAt')

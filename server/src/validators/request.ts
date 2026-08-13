@@ -24,8 +24,7 @@ export const updateProfileSchema = z
     email: z.string().email().optional(),
     oldPassword: z.string().min(6).optional(),
     newPassword: z.string().min(6).optional(),
-    avatar: z.unknown().optional(),
-    bio: z.string().max(200).optional(),
+    bio: z.string().max(70).optional(),
   })
   .refine(
     (data) =>

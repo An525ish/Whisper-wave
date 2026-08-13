@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 export type ContextMenuPosition = {
   x: number;
@@ -7,7 +7,7 @@ export type ContextMenuPosition = {
 
 export type ContextMenuOption = {
   id: number;
-  icon: string;
+  icon: string | ReactNode;
   name: string;
 };
 

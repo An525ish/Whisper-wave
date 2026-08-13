@@ -8,7 +8,7 @@ export type User = {
   name: string;
   username: string;
   bio?: string;
-  avatar?: Avatar;
+  avatar?: string | Avatar;
 };
 
 export type ApiSuccess<T = unknown> = {

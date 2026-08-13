@@ -33,6 +33,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
   const [groupname, setGroupName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [nameFocused, setNameFocused] = useState(false);
   const inputId = useId();
 
@@ -62,6 +63,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     if (avatarPreview?.startsWith('blob:')) {
       URL.revokeObjectURL(avatarPreview);
     }
+    setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
   };
 
@@ -70,10 +72,15 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     if (selectedMembers.length < 2)
       return toast.error('Select at least 2 members');
 
-    const created = (await createGroup('Creating your group...', {
-      name: groupname.trim(),
-      members: selectedMembers,
-    })) as CreateGroupResult | null;
+    const formData = new FormData();
+    formData.append('name', groupname.trim());
+    formData.append('members', JSON.stringify(selectedMembers));
+    if (avatarFile) formData.append('avatar', avatarFile);
+
+    const created = (await createGroup(
+      'Creating your group...',
+      formData,
+    )) as CreateGroupResult | null;
 
     const chatId = created?._id;
     onCreated?.();

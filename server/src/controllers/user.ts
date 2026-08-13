@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import { userService } from '../services/index.js';
 import type { UpdateProfileInput } from '../types/user.js';
+import type { UploadableFile } from '../types/message.js';
 import { catchAsync } from '../utils/catchAsync.js';
 
 export const getProfile: RequestHandler = catchAsync(async (req, res) => {
@@ -9,10 +10,15 @@ export const getProfile: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const updateProfile: RequestHandler = catchAsync(async (req, res) => {
-  await userService.updateProfile(req.userId!, req.body as UpdateProfileInput);
+  const user = await userService.updateProfile(
+    req.userId!,
+    req.body as UpdateProfileInput,
+    req.file as UploadableFile | undefined
+  );
   res.status(200).json({
     success: true,
     message: 'Profile updated successfully',
+    user,
   });
 });
 

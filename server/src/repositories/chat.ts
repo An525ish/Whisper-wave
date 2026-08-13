@@ -13,6 +13,8 @@ import type {
 export const create = async (input: CreateChatInput): Promise<ChatLean> => {
   const chat = await Chat.create({
     name: input.name,
+    bio: input.bio,
+    avatar: input.avatar,
     groupChat: input.groupChat ?? false,
     creator: input.creator,
     members: input.members,
@@ -68,7 +70,7 @@ export const findByIdsForMemberPopulated = async (
 
 export const findByIdPopulated = async (id: string) =>
   Chat.findById(id)
-    .populate('members', 'name avatar lastSeen')
+    .populate('members', 'name avatar bio lastSeen')
     .populate('creator', 'name avatar')
     .lean();
 
@@ -83,6 +85,10 @@ export const updateLastMessage = async (
   lastMessage: ChatLastMessage
 ): Promise<void> => {
   await Chat.findByIdAndUpdate(id, { lastMessage });
+};
+
+export const clearLastMessage = async (id: string): Promise<void> => {
+  await Chat.findByIdAndUpdate(id, { $unset: { lastMessage: 1 } });
 };
 
 export const deleteById = async (id: string): Promise<boolean> => {

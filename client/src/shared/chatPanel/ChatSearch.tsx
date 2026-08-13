@@ -612,6 +612,23 @@ const ChatSearch = ({
 
   useEffect(() => {
     if (!open) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
     const timer = setTimeout(() => {
       if (mode !== 'date') inputRef.current?.focus();
     }, 80);
@@ -840,15 +857,14 @@ const ChatSearch = ({
       />
 
       <div
-        className={`relative flex h-[min(680px,calc(100dvh-1.5rem))] w-full max-w-[420px] flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-background/95 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+        className={`relative flex h-[min(760px,calc(100dvh-1.5rem))] w-full max-w-[420px] flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-background/95 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
           entered
-            ? 'translate-y-0 scale-100 opacity-100'
-            : 'translate-y-3 scale-[0.98] opacity-0'
+            ? 'scale-100 opacity-100'
+            : 'scale-[0.98] opacity-0'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="pointer-events-none absolute inset-x-8 top-0 h-24 bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.14),transparent_70%)]" />
-        <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border/80 md:hidden" />
 
         <header className="relative shrink-0 px-4 pb-3 pt-3 sm:px-5 sm:pt-4">
           <div className="mb-3 flex items-start gap-2">
@@ -947,7 +963,7 @@ const ChatSearch = ({
                         selected ? 'text-green' : 'text-body-300'
                       }`}
                     />
-                    <span className="truncate text-xs font-medium leading-none">
+                    <span className="truncate text-[11px] font-medium leading-none sm:text-xs">
                       {tab.label}
                     </span>
                   </button>
@@ -956,133 +972,125 @@ const ChatSearch = ({
             </div>
           </div>
 
-          {/* Controls */}
-          <div className={mode === 'date' ? 'mt-3' : 'mt-3 space-y-2.5'}>
-            {mode === 'date' ? (
-              <>
-                <div className="my-5 flex justify-center gap-1.5">
-                  {DATE_PRESETS.map((preset) => {
-                    const iso = dayjs()
-                      .subtract(preset.daysAgo, 'day')
-                      .format('YYYY-MM-DD');
-                    const selected = selectedDate === iso;
-                    const hasMessages =
-                      !presetDatesFetched || presetActiveSet.has(iso);
+          {/* Controls — non-date modes stay in header; date calendar scrolls in body */}
+          {mode !== 'date' ? (
+            <div className="mt-3 space-y-2.5">
+              <div className="group/search relative flex h-10 items-center gap-2.5 rounded-full border border-[rgba(235,236,236,0.28)] bg-background/80 px-3 shadow-[inset_0_1px_0_rgba(235,236,236,0.08)] transition focus-within:border-[rgba(235,236,236,0.45)] focus-within:bg-background focus-within:shadow-[0_0_18px_rgba(235,236,236,0.07)]">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/80 text-body-300 transition group-focus-within/search:text-green">
+                  <SearchGlyph />
+                </span>
+                <input
+                  ref={inputRef}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    mode === 'media'
+                      ? 'Filter media…'
+                      : mode === 'links'
+                        ? 'Filter links…'
+                        : 'Search messages…'
+                  }
+                  className="min-w-0 flex-1 border-0 bg-transparent py-0 text-sm text-body placeholder:text-body-300/80 outline-none"
+                  aria-label="Search in conversation"
+                />
+              </div>
+
+              <div>
+                <div className="mb-1.5 flex items-center justify-between px-0.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-body-300">
+                    From
+                  </p>
+                  <p className="text-[10px] text-body-300">
+                    {isGroup ? 'People in group' : 'This chat'}
+                  </p>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
+                  {fromOptions.map((option) => {
+                    const selected = from === option.id;
                     return (
                       <button
-                        key={preset.id}
+                        key={option.id}
                         type="button"
-                        disabled={!hasMessages}
-                        onClick={() => setSelectedDate(iso)}
-                        className={`rounded-full px-3 py-1.5 text-center text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-35 ${
+                        onClick={() => {
+                          setFrom(option.id);
+                        }}
+                        className={`flex shrink-0 items-center gap-2 rounded-full border py-1 pl-1 pr-2.5 transition ${
                           selected
-                            ? 'bg-green/25 text-green ring-1 ring-inset ring-green/35'
-                            : 'border border-border/70 bg-primary/40 text-body-700 hover:border-green/35 hover:text-body'
+                            ? option.tone === 'self'
+                              ? 'border-green/45 bg-green/15 shadow-[0_0_16px_rgba(1,195,109,0.16)]'
+                              : option.tone === 'peer'
+                                ? 'border-blue/45 bg-blue/15 shadow-[0_0_16px_rgba(86,152,255,0.16)]'
+                                : 'border-white/25 bg-white/10'
+                            : 'border-border/70 bg-primary/30 hover:border-border hover:bg-primary/55'
                         }`}
                       >
-                        {preset.label}
+                        <PersonAvatar option={option} selected={selected} />
+                        <span
+                          className={`max-w-24 truncate text-[11px] font-semibold ${
+                            selected ? 'text-body' : 'text-body-700'
+                          }`}
+                        >
+                          {option.label}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
-                <SearchDatePicker
-                  chatId={chatId}
-                  value={selectedDate}
-                  onChange={setSelectedDate}
-                  onJump={handleJumpToSelectedDate}
-                  jumping={jumpDateMutation.isPending}
-                  statusNote={dateJumpNote}
-                  enabled={open && mode === 'date'}
-                />
-              </>
-            ) : (
-              <>
-                <div className="group/search relative flex h-10 items-center gap-2.5 rounded-full border border-[rgba(235,236,236,0.28)] bg-background/80 px-3 shadow-[inset_0_1px_0_rgba(235,236,236,0.08)] transition focus-within:border-[rgba(235,236,236,0.45)] focus-within:bg-background focus-within:shadow-[0_0_18px_rgba(235,236,236,0.07)]">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/80 text-body-300 transition group-focus-within/search:text-green">
-                    <SearchGlyph />
-                  </span>
-                  <input
-                    ref={inputRef}
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={
-                      mode === 'media'
-                        ? 'Filter media…'
-                        : mode === 'links'
-                          ? 'Filter links…'
-                          : 'Search messages…'
-                    }
-                    className="min-w-0 flex-1 border-0 bg-transparent py-0 text-sm text-body placeholder:text-body-300/80 outline-none"
-                    aria-label="Search in conversation"
-                  />
-                </div>
-
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between px-0.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-body-300">
-                      From
-                    </p>
-                    <p className="text-[10px] text-body-300">
-                      {isGroup ? 'People in group' : 'This chat'}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-hide">
-                    {fromOptions.map((option) => {
-                      const selected = from === option.id;
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => {
-                            setFrom(option.id);
-                          }}
-                          className={`flex shrink-0 items-center gap-2 rounded-full border py-1 pl-1 pr-2.5 transition ${
-                            selected
-                              ? option.tone === 'self'
-                                ? 'border-green/45 bg-green/15 shadow-[0_0_16px_rgba(1,195,109,0.16)]'
-                                : option.tone === 'peer'
-                                  ? 'border-blue/45 bg-blue/15 shadow-[0_0_16px_rgba(86,152,255,0.16)]'
-                                  : 'border-white/25 bg-white/10'
-                              : 'border-border/70 bg-primary/30 hover:border-border hover:bg-primary/55'
-                          }`}
-                        >
-                          <PersonAvatar option={option} selected={selected} />
-                          <span
-                            className={`max-w-24 truncate text-[11px] font-semibold ${
-                              selected ? 'text-body' : 'text-body-700'
-                            }`}
-                          >
-                            {option.label}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          ) : null}
         </header>
 
-        {mode === 'date' ? (
-          <>
-            <div className="mx-4 h-px shrink-0 bg-border/60 sm:mx-5" />
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center">
-              <p className="text-sm font-medium leading-snug text-body">
-                Every chat has a yesterday.
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-body-300">
-                Pick a day and jump straight back.
-              </p>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="mx-4 h-px shrink-0 bg-border/60 sm:mx-5" />
+        <div className="mx-4 h-px shrink-0 bg-border/60 sm:mx-5" />
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 scrollbar-hide sm:px-5 sm:py-4">
-              {!searchEnabled ? (
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 scrollbar-hide sm:px-5 sm:py-4">
+          {mode === 'date' ? (
+            <div className="flex flex-col gap-1">
+              <div className="my-3 flex justify-center gap-1.5 sm:my-4">
+                {DATE_PRESETS.map((preset) => {
+                  const iso = dayjs()
+                    .subtract(preset.daysAgo, 'day')
+                    .format('YYYY-MM-DD');
+                  const selected = selectedDate === iso;
+                  const hasMessages =
+                    !presetDatesFetched || presetActiveSet.has(iso);
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      disabled={!hasMessages}
+                      onClick={() => setSelectedDate(iso)}
+                      className={`rounded-full px-3 py-1.5 text-center text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-35 ${
+                        selected
+                          ? 'bg-green/25 text-green ring-1 ring-inset ring-green/35'
+                          : 'border border-border/70 bg-primary/40 text-body-700 hover:border-green/35 hover:text-body'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <SearchDatePicker
+                chatId={chatId}
+                value={selectedDate}
+                onChange={setSelectedDate}
+                onJump={handleJumpToSelectedDate}
+                jumping={jumpDateMutation.isPending}
+                statusNote={dateJumpNote}
+                enabled={open && mode === 'date'}
+              />
+              <div className="flex flex-col items-center justify-center px-6 py-6 text-center">
+                <p className="text-sm font-medium leading-snug text-body">
+                  Every chat has a yesterday.
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-body-300">
+                  Pick a day and jump straight back.
+                </p>
+              </div>
+            </div>
+          ) : !searchEnabled ? (
                 <div className="flex h-full min-h-36 flex-col items-center justify-center px-4 text-center">
                   <span className="mb-3 grid h-11 w-11 place-items-center rounded-2xl border border-border/70 bg-primary/40 text-green">
                     <ModeIcon mode={mode} className="h-5 w-5" />
@@ -1187,9 +1195,7 @@ const ChatSearch = ({
               })}
             </ul>
           )}
-            </div>
-          </>
-        )}
+        </div>
       </div>
     </div>
   );

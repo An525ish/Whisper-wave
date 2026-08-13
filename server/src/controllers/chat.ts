@@ -1,6 +1,7 @@
 import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import { chatService, flushNotifications } from '../services/index.js';
+import type { UploadableFile } from '../types/message.js';
 import { AppError } from '../utils/AppError.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { param } from '../utils/http.js';
@@ -9,8 +10,16 @@ const getIo = (req: { app: { get: (key: string) => unknown } }): Server | undefi
   req.app.get('io') as Server | undefined;
 
 export const createGroupChat: RequestHandler = catchAsync(async (req, res) => {
-  const { name, members } = req.body as { name: string; members: string[] };
-  const result = await chatService.createGroupChat(req.userId!, name, members);
+  const { name, members, bio } = req.body as {
+    name: string;
+    members: string[];
+    bio?: string;
+  };
+  const result = await chatService.createGroupChat(
+    req.userId!,
+    { name, members, bio },
+    req.file as UploadableFile | undefined
+  );
   flushNotifications(getIo(req), result.notifications);
   res.status(201).json({
     success: true,
@@ -20,16 +29,17 @@ export const createGroupChat: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const updateGroupDetails: RequestHandler = catchAsync(async (req, res) => {
-  const { name } = req.body as { name: string };
+  const { name, bio } = req.body as { name?: string; bio?: string };
   const result = await chatService.updateGroupDetails(
     req.userId!,
     param(req.params.chatId),
-    name
+    { name, bio },
+    req.file as UploadableFile | undefined
   );
   flushNotifications(getIo(req), result.notifications);
-  res.status(201).json({
+  res.status(200).json({
     success: true,
-    message: 'Group name updated successfully',
+    message: 'Group details updated successfully',
   });
 });
 

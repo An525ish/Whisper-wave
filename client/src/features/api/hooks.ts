@@ -77,6 +77,22 @@ export function useSignOutMutation() {
   });
 }
 
+export function useUpdateProfileMutation() {
+  const setUser = useAuthStore((s) => s.setUser);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authApi.updateProfile,
+    onSuccess: (res) => {
+      if (res.user) {
+        setUser(res.user);
+        queryClient.setQueryData(queryKeys.profile, res.user);
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}
+
 export function useMyChatsQuery() {
   return useQuery({
     queryKey: queryKeys.chats,
@@ -298,6 +314,110 @@ export function useSendAttachmentsMutation() {
   });
 }
 
+export function useEditMessageMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      messageId,
+      content,
+      chatId,
+    }: {
+      messageId: string;
+      content: string;
+      chatId: string;
+    }) => chatApi.editMessage(messageId, content),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.messages(variables.chatId),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}
+
+export function useDeleteMessageMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      messageId,
+    }: {
+      messageId: string;
+      chatId: string;
+    }) => chatApi.deleteMessage(messageId),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.messages(variables.chatId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.media(variables.chatId),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}
+
+export function useDeleteManyMessagesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      chatId,
+      messageIds,
+    }: {
+      chatId: string;
+      messageIds: string[];
+    }) => chatApi.deleteManyMessages(chatId, messageIds),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.messages(variables.chatId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.media(variables.chatId),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}
+
+export function useClearChatMessagesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (chatId: string) => chatApi.clearChatMessages(chatId),
+    onSuccess: (_data, chatId) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.messages(chatId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.media(chatId),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}
+
+export function useForwardMessagesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      targetChatId,
+      sourceChatId,
+      messageIds,
+    }: {
+      targetChatId: string;
+      sourceChatId: string;
+      messageIds: string[];
+    }) => chatApi.forwardMessages(targetChatId, { sourceChatId, messageIds }),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.messages(variables.targetChatId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.media(variables.targetChatId),
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}
+
 export function useFindChatsMutation() {
   return useMutation({
     mutationFn: chatApi.findChats,
@@ -310,6 +430,20 @@ export function useCreateGroupMutation() {
     mutationFn: chatApi.createGroup,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}
+
+export function useUpdateGroupDetailsMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ chatId, body }: { chatId: string; body: FormData }) =>
+      chatApi.updateGroupDetails(chatId, body),
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+      void queryClient.invalidateQueries({
+        queryKey: ['chatDetails', vars.chatId],
+      });
     },
   });
 }

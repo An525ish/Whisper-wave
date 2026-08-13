@@ -39,8 +39,12 @@ export const NotificationList = () => {
   const messageNotifications = useNotificationsStore(
     (s) => s.messageNotifications,
   );
-  const userIds = useMemo(
-    () => messageNotifications.map((el) => el.chatId),
+  const chatIdsKey = useMemo(
+    () =>
+      messageNotifications
+        .map((el) => `${el.chatId}:${el.count}`)
+        .sort()
+        .join('|'),
     [messageNotifications],
   );
   const [findChats, { isLoading }] = useAsyncMutation(useFindChatsMutation);
@@ -50,42 +54,52 @@ export const NotificationList = () => {
   >([]);
 
   useEffect(() => {
-    const handleFindChats = async () => {
-      if (userIds.length > 0) {
-        const res = await findChats('', {
-          userIds,
-          notifications: messageNotifications,
-        });
+    let cancelled = false;
 
-        if (res) {
-          const list =
-            (res as { data?: FoundChatNotification[] }).data ??
-            (res as FoundChatNotification[]);
-          setMsgNotificationsList(Array.isArray(list) ? list : []);
-        }
-      } else {
+    const handleFindChats = async () => {
+      if (messageNotifications.length === 0) {
         setMsgNotificationsList([]);
+        return;
+      }
+
+      const userIds = messageNotifications.map((el) => el.chatId);
+      const res = await findChats('', {
+        userIds,
+        notifications: messageNotifications,
+      });
+
+      if (cancelled) return;
+
+      if (res) {
+        const list =
+          (res as { data?: FoundChatNotification[] }).data ??
+          (res as FoundChatNotification[]);
+        setMsgNotificationsList(Array.isArray(list) ? list : []);
       }
     };
 
     void handleFindChats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- match prior behavior
-  }, [userIds.length]);
+    return () => {
+      cancelled = true;
+    };
+    // chatIdsKey captures id+count changes; findChats identity is unstable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatIdsKey]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2 scrollbar-hide">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 scrollbar-hide">
       {isLoading ? (
-        Array(3)
-          .fill(0)
-          .map((_, i) => <AvatarSkeleton key={i} className={'h-20 px-4 py-2'} />)
+        Array.from({ length: 3 }, (_, i) => (
+          <AvatarSkeleton key={i} className="h-16 rounded-2xl px-3 py-2" />
+        ))
       ) : msgNotificationsList.length === 0 ? (
         <EmptyState
           className="h-full"
           imageSrc="/images/no-notification.svg"
           imageAlt="notification"
-          imageClassName="w-4/5 mx-auto"
-          titleClassName="mt-8 text-center text-xl font-medium capitalize"
-          title="No new Notification"
+          imageClassName="mx-auto w-3/5 max-w-[14rem]"
+          titleClassName="mt-6 text-center text-base font-medium text-body-700"
+          title="No new messages"
         />
       ) : (
         msgNotificationsList.map((chat) => (
@@ -122,24 +136,22 @@ export const FriendRequestList = () => {
   }, [resetRequestNotification]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2 scrollbar-hide">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 scrollbar-hide">
       {isLoading ? (
-        Array(3)
-          .fill(0)
-          .map((_, i) => (
-            <AvatarSkeleton
-              key={i}
-              className={'h-20 bg-transparent px-4 py-1'}
-            />
-          ))
+        Array.from({ length: 3 }, (_, i) => (
+          <AvatarSkeleton
+            key={i}
+            className="h-24 rounded-2xl bg-transparent px-3 py-2"
+          />
+        ))
       ) : !notificationData || notificationData.length === 0 ? (
         <EmptyState
           className="h-full"
           imageSrc="/images/no-request.svg"
           imageAlt="request"
-          imageClassName="w-4/5 mx-auto"
-          titleClassName="mt-8 text-center text-xl font-medium capitalize"
-          title="No new Request"
+          imageClassName="mx-auto w-3/5 max-w-[14rem]"
+          titleClassName="mt-6 text-center text-base font-medium text-body-700"
+          title="No new requests"
         />
       ) : (
         notificationData.map((data) => (
