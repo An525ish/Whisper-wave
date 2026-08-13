@@ -1,5 +1,5 @@
 import { useSocket } from '@/socket/SocketProvider';
-import useSocketEvent from '@/hooks/socketEvent';
+import useSocketEvent from '@/shared/hooks/useSocketEvent';
 import {
   NEW_MESSAGE,
   NEW_MESSAGE_ALERT,
@@ -9,16 +9,16 @@ import {
   STOP_TYPING,
   USER_OFFLINE,
   USER_ONLINE,
-} from '@/lib/socketConstants';
-import { useNotificationsStore } from '@/stores/notifications';
-import { usePresenceStore } from '@/stores/presence';
-import { useProfileUiStore } from '@/stores/profileUi';
-import Title from '@/shared/Title';
-import ChatListPanel from '@/shared/chatListPanel/ChatListPanel';
-import ProfileHeader from '@/shared/profilePanel/ProfileHeader';
-import ProfilePanel from '@/shared/profilePanel/ProfilePanel';
-import ProfileSheet from '@/shared/profilePanel/ProfileSheet';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
+} from '@/shared/constants/socketEvents';
+import { useNotificationsStore } from '@/features/notifications/store';
+import { usePresenceStore } from '@/features/chat/stores/presence';
+import { useProfileUiStore } from '@/features/profile/store';
+import Title from '@/shared/components/Title';
+import ChatListPanel from '@/features/chat/components/list/ChatListPanel';
+import ProfileHeader from '@/features/profile/components/ProfileHeader';
+import ProfilePanel from '@/features/profile/components/ProfilePanel';
+import ProfileSheet from '@/features/profile/components/ProfileSheet';
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 
