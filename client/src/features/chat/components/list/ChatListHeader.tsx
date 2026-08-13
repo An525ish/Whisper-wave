@@ -4,16 +4,20 @@ import AccountBar from '@/features/profile/components/AccountBar';
 import { formatUnreadCount } from '@/features/chat/utils/unread';
 import DotsMenu from '@/shared/components/ui/DotsMenu';
 import ReadReceipt from '@/shared/components/icons/ReadReceipt';
+import AddMemberIcon from '@/shared/components/icons/AddMember';
+import CreateGroupIcon from '@/shared/components/icons/CreateGroup';
 import {
   useMarkAllChatsReadMutation,
   useMyChatsQuery,
 } from '@/features/chat/hooks';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import { useNotificationsStore } from '@/features/notifications/store';
+import type { NewConnectTab } from '@/features/chat/components/dialogs/NewConnectDialog';
 
 type ChatListHeaderProps = {
   searchText: string;
   setSearchText: Dispatch<SetStateAction<string>>;
+  onOpenNew?: (tab: NewConnectTab) => void;
 };
 
 type ChatsResponse = {
@@ -23,6 +27,7 @@ type ChatsResponse = {
 const ChatListHeader = ({
   searchText,
   setSearchText,
+  onOpenNew,
 }: ChatListHeaderProps) => {
   const { data: chats } = useMyChatsQuery();
   const chatsData = (chats as ChatsResponse | undefined)?.data;
@@ -42,7 +47,6 @@ const ChatListHeader = ({
 
   return (
     <div className="relative flex w-full flex-col gap-3 border-b border-border/50 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:border-0 md:p-2 md:pt-1">
-      {/* Row 1 — title + unread; account (mobile) + menu on the far right */}
       <div className="flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <img
@@ -76,16 +80,29 @@ const ChatListHeader = ({
               {
                 id: 'mark-all-read',
                 label: 'Mark all as read',
-                icon: <ReadReceipt read className="h-4 w-4" />,
+                tone: 'accent',
+                icon: <ReadReceipt read className="h-3.5 w-3.5" />,
                 disabled: unreadCount === 0,
                 onSelect: handleMarkAllRead,
+              },
+              {
+                id: 'add-friends',
+                label: 'Add friends',
+                dividerBefore: true,
+                icon: <AddMemberIcon className="h-3.5 w-3.5 fill-current" />,
+                onSelect: () => onOpenNew?.('friends'),
+              },
+              {
+                id: 'create-group',
+                label: 'Create group',
+                icon: <CreateGroupIcon className="h-3.5 w-3.5 fill-current" />,
+                onSelect: () => onOpenNew?.('group'),
               },
             ]}
           />
         </div>
       </div>
 
-      {/* Row 2 — search + notifications */}
       <div className="flex w-full items-center gap-2">
         <div className="min-w-0 flex-1">
           <Searchbar
