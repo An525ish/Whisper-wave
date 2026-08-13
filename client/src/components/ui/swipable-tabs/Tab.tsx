@@ -1,7 +1,11 @@
+import type { ReactNode } from 'react';
+import { formatUnreadCount } from '@/utils/unread';
+
 export type TabItem = {
   id: string | number;
   name: string;
-  badge?: boolean;
+  count?: number;
+  icon?: ReactNode;
 };
 
 type TabsProps = {
@@ -21,11 +25,8 @@ const Tabs = ({
         {tabsData.map((tab, index) => {
           return (
             <li key={tab.id} className="relative grow-[1]" aria-label="Tabs">
-              {tab.badge && (
-                <div className="absolute right-4 top-2 w-3 h-3 rounded-full border-2 border-red-dark bg-red animate-pulse"></div>
-              )}
               <button
-                className={`group inline-flex w-full items-center justify-center whitespace-nowrap rounded-t-lg border-b-2 px-2 py-3.5 text-sm md:p-4 md:text-base ${
+                className={`group inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-t-lg border-b-2 px-2 py-3.5 text-sm md:p-4 md:text-base ${
                   activeTabIndex == index
                     ? 'border-green text-white'
                     : 'border-transparent text-body-300 hover:border-white hover:text-white'
@@ -35,7 +36,33 @@ const Tabs = ({
                   handleTabChange(index);
                 }}
               >
+                {tab.icon ? (
+                  <span
+                    className={`grid h-5 w-5 shrink-0 place-items-center ${
+                      activeTabIndex == index
+                        ? 'text-white'
+                        : 'text-body-300 group-hover:text-white'
+                    }`}
+                    aria-hidden
+                  >
+                    {tab.icon}
+                  </span>
+                ) : null}
                 {tab.name}
+                {typeof tab.count === 'number' && tab.count > 0 ? (
+                  <span
+                    className={`grid h-5 shrink-0 place-items-center rounded-full border px-1.5 text-[11px] font-medium tabular-nums ${
+                      tab.count < 10 ? 'min-w-5' : 'w-fit'
+                    } ${
+                      activeTabIndex == index
+                        ? 'border-blue-light bg-blue/20 text-blue'
+                        : 'border-border bg-primary/60 text-body-700'
+                    }`}
+                    aria-label={`${tab.count} new`}
+                  >
+                    {formatUnreadCount(tab.count)}
+                  </span>
+                ) : null}
               </button>
             </li>
           );

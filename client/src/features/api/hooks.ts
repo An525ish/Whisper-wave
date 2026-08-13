@@ -515,3 +515,13 @@ export function useMarkChatReadMutation() {
     },
   });
 }
+
+export function useMarkAllChatsReadMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => chatApi.markAllChatsRead(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+    },
+  });
+}

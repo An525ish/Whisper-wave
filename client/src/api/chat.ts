@@ -110,6 +110,8 @@ export const markChatRead = (
   body?: { lastReadMessageId?: string },
 ) => api.put(`/chat/${chatId}/read`, body ?? {});
 
+export const markAllChatsRead = () => api.put('/chat/read-all');
+
 export const sendFriendRequest = (receiverId: unknown) =>
   api.post('/friend-request/send-request', receiverId);
 

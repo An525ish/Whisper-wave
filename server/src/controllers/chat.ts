@@ -139,6 +139,19 @@ export const markChatRead: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+export const markAllChatsRead: RequestHandler = catchAsync(async (req, res) => {
+  const result = await chatService.markAllChatsRead(req.userId!);
+  flushNotifications(getIo(req), result.notifications);
+  res.status(200).json({
+    success: true,
+    message: 'All chats marked as read',
+    data: {
+      marked: result.marked,
+      lastReadAt: result.lastReadAt,
+    },
+  });
+});
+
 export const getMedia: RequestHandler = catchAsync(async (req, res) => {
   const data = await chatService.getMedia(req.userId!, param(req.params.chatId));
   res.json({ success: true, data });

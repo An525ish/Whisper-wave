@@ -186,6 +186,39 @@ export const findLatestInChat = async (
     .sort({ createdAt: -1 })
     .lean<MessageRecord>();
 
+export const findReadStateByIds = async (
+  ids: Array<string | Types.ObjectId>
+): Promise<Array<{ _id: Types.ObjectId; readBy: Types.ObjectId[] }>> => {
+  const objectIds = ids
+    .map((id) => String(id))
+    .filter((id) => Types.ObjectId.isValid(id))
+    .map((id) => new Types.ObjectId(id));
+
+  if (objectIds.length === 0) return [];
+
+  return Message.find({ _id: { $in: objectIds } })
+    .select('_id readBy')
+    .lean<Array<{ _id: Types.ObjectId; readBy: Types.ObjectId[] }>>();
+};
+
+export const markReadByUserInChats = async (
+  userId: string,
+  chatIds: Array<string | Types.ObjectId>,
+  lastReadAt: Date
+): Promise<void> => {
+  if (chatIds.length === 0) return;
+
+  await Message.updateMany(
+    {
+      chat: { $in: chatIds },
+      sender: { $ne: userId },
+      createdAt: { $lte: lastReadAt },
+      readBy: { $ne: userId },
+    },
+    { $addToSet: { readBy: userId } }
+  );
+};
+
 const escapeRegex = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 

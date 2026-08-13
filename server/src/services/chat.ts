@@ -5,11 +5,14 @@ import * as chatReadRepo from '../repositories/chatRead.js';
 import * as messageRepo from '../repositories/message.js';
 import type {
   ChatAvatar,
+  ChatLastMessage,
   ChatListItem,
+  ChatListLastMessage,
   ChatNotificationInput,
   ChatSharedContent,
   ChatSharedLink,
   FindChatItem,
+  MarkAllChatsReadResult,
   MarkChatReadResult,
   PopulatedMember,
   RealtimeNotify,
@@ -24,6 +27,46 @@ import {
 
 const URL_IN_TEXT =
   /https?:\/\/[^\s<>"'`{}|\\^[\]]+/gi;
+
+const senderIdOf = (sender: unknown): string => {
+  if (!sender) return '';
+  if (typeof sender === 'string') return sender;
+  if (typeof sender === 'object' && sender !== null && '_id' in sender) {
+    return String((sender as { _id: unknown })._id);
+  }
+  return String(sender);
+};
+
+const senderNameOf = (sender: unknown): string | undefined => {
+  if (sender && typeof sender === 'object' && 'name' in sender) {
+    const name = (sender as { name?: unknown }).name;
+    return typeof name === 'string' ? name : undefined;
+  }
+  return undefined;
+};
+
+const toListLastMessage = (
+  lastMessage: ChatLastMessage | undefined,
+  userId: string,
+  readBy: string[]
+): ChatListLastMessage | null => {
+  if (!lastMessage) return null;
+
+  const senderId = senderIdOf(lastMessage.sender);
+  const isOwn = senderId === userId;
+  const isRead = isOwn && readBy.some((id) => id !== userId);
+
+  return {
+    _id: lastMessage._id ? String(lastMessage._id) : undefined,
+    content: lastMessage.content,
+    createdAt: lastMessage.createdAt,
+    type: lastMessage.type,
+    sender: senderId
+      ? { _id: senderId, name: senderNameOf(lastMessage.sender) }
+      : undefined,
+    isRead,
+  };
+};
 
 const extractUniqueLinks = (
   messages: Array<{ _id: Types.ObjectId; content?: string; createdAt: Date }>
@@ -185,7 +228,13 @@ export const getMyChats = async (
   ]);
 
   const chatIds = chats.map((c) => c._id);
-  const reads = await chatReadRepo.findByUserAndChats(userId, chatIds);
+  const lastMessageIds = chats
+    .map((c) => c.lastMessage?._id)
+    .filter((id): id is NonNullable<typeof id> => Boolean(id));
+  const [reads, lastMessageReads] = await Promise.all([
+    chatReadRepo.findByUserAndChats(userId, chatIds),
+    messageRepo.findReadStateByIds(lastMessageIds),
+  ]);
   const lastReadByChat = new Map(
     reads.map((r) => [r.chat.toString(), r.lastReadAt])
   );
@@ -194,6 +243,12 @@ export const getMyChats = async (
     chatIds,
     lastReadByChat
   );
+  const readByMap = new Map(
+    lastMessageReads.map((msg) => [
+      msg._id.toString(),
+      (msg.readBy ?? []).map(String),
+    ])
+  );
 
   const data = chats.map(({ _id, name, members, groupChat, lastMessage, avatar }) => {
     const typedMembers = members as unknown as PopulatedMember[];
@@ -201,6 +256,7 @@ export const getMyChats = async (
       (member) => member._id.toString() !== userId.toString()
     );
     const chatId = _id.toString();
+    const lastMessageId = lastMessage?._id ? String(lastMessage._id) : '';
 
     return {
       _id,
@@ -210,7 +266,11 @@ export const getMyChats = async (
         ? resolveGroupAvatarUrls(avatar, typedMembers)
         : [otherMembers[0]?.avatar?.url].filter(Boolean),
       members: otherMembers.map((member) => member._id),
-      lastMessage,
+      lastMessage: toListLastMessage(
+        lastMessage as ChatLastMessage | undefined,
+        userId,
+        readByMap.get(lastMessageId) ?? []
+      ),
       unreadCount: unreadByChat.get(chatId) ?? 0,
     };
   });
@@ -310,6 +370,52 @@ export const markChatRead = async (
         },
       },
     ],
+  };
+};
+
+export const markAllChatsRead = async (
+  userId: string
+): Promise<MarkAllChatsReadResult> => {
+  const chats = await chatRepo.findMembershipsForMember(userId);
+  const lastReadAt = new Date();
+
+  if (chats.length === 0) {
+    return { marked: 0, lastReadAt, notifications: [] };
+  }
+
+  await chatReadRepo.upsertMany(
+    chats.map((chat) => ({
+      chat: chat._id,
+      user: userId,
+      lastReadAt,
+      lastReadMessageId: chat.lastMessage?._id
+        ? String(chat.lastMessage._id)
+        : undefined,
+    }))
+  );
+
+  const chatIds = chats.map((chat) => chat._id);
+  await messageRepo.markReadByUserInChats(userId, chatIds, lastReadAt);
+
+  const notifications: RealtimeNotify[] = chats.map((chat) => ({
+    event: CHAT_READ,
+    members: chat.members.filter(
+      (member) => member.toString() !== userId.toString()
+    ),
+    data: {
+      chatId: chat._id.toString(),
+      userId,
+      lastReadAt: lastReadAt.toISOString(),
+      lastReadMessageId: chat.lastMessage?._id
+        ? String(chat.lastMessage._id)
+        : undefined,
+    },
+  }));
+
+  return {
+    marked: chats.length,
+    lastReadAt,
+    notifications,
   };
 };
 

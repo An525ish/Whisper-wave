@@ -30,6 +30,44 @@ export const findByUserAndChats = async (
     chat: { $in: chatIds },
   }).lean<ChatReadRecord[]>();
 
+export const upsertMany = async (
+  inputs: UpsertChatReadInput[]
+): Promise<void> => {
+  if (inputs.length === 0) return;
+
+  await ChatRead.bulkWrite(
+    inputs.map((input) => {
+      const chatOid =
+        typeof input.chat === 'string'
+          ? new Types.ObjectId(input.chat)
+          : input.chat;
+      const userOid =
+        typeof input.user === 'string'
+          ? new Types.ObjectId(input.user)
+          : input.user;
+      const lastReadMessageId = input.lastReadMessageId
+        ? typeof input.lastReadMessageId === 'string'
+          ? new Types.ObjectId(input.lastReadMessageId)
+          : input.lastReadMessageId
+        : undefined;
+
+      return {
+        updateOne: {
+          filter: { chat: chatOid, user: userOid },
+          update: {
+            $set: {
+              lastReadAt: input.lastReadAt,
+              ...(lastReadMessageId ? { lastReadMessageId } : {}),
+            },
+          },
+          upsert: true,
+          setDefaultsOnInsert: true,
+        },
+      };
+    })
+  );
+};
+
 export const initForMembers = async (
   chatId: string | Types.ObjectId,
   memberIds: Array<string | Types.ObjectId>,

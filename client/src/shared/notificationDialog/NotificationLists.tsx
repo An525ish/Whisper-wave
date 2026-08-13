@@ -39,6 +39,9 @@ export const NotificationList = () => {
   const messageNotifications = useNotificationsStore(
     (s) => s.messageNotifications,
   );
+  const clearMessageNotifications = useNotificationsStore(
+    (s) => s.clearMessageNotifications,
+  );
   const chatIdsKey = useMemo(
     () =>
       messageNotifications
@@ -88,6 +91,18 @@ export const NotificationList = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto px-1 py-1 scrollbar-hide">
+      {messageNotifications.length > 0 ? (
+        <div className="flex shrink-0 justify-end px-1">
+          <button
+            type="button"
+            className="rounded-lg px-2 py-1 text-sm font-medium text-body-700 transition hover:bg-white/8 hover:text-white"
+            onClick={clearMessageNotifications}
+            aria-label="Clear all message notifications"
+          >
+            Clear all
+          </button>
+        </div>
+      ) : null}
       {isLoading ? (
         Array.from({ length: 3 }, (_, i) => (
           <AvatarSkeleton key={i} className="h-16 rounded-2xl px-3 py-2" />
@@ -97,7 +112,8 @@ export const NotificationList = () => {
           className="h-full"
           imageSrc="/images/no-notification.svg"
           imageAlt="notification"
-          imageClassName="mx-auto w-3/5 max-w-[14rem]"
+          contentClassName="max-w-sm"
+          imageClassName="mx-auto w-[72%]"
           titleClassName="mt-6 text-center text-base font-medium text-body-700"
           title="No new messages"
         />
@@ -149,7 +165,8 @@ export const FriendRequestList = () => {
           className="h-full"
           imageSrc="/images/no-request.svg"
           imageAlt="request"
-          imageClassName="mx-auto w-3/5 max-w-[14rem]"
+          contentClassName="max-w-sm"
+          imageClassName="mx-auto w-[72%]"
           titleClassName="mt-6 text-center text-base font-medium text-body-700"
           title="No new requests"
         />

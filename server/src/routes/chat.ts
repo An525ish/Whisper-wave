@@ -9,6 +9,7 @@ import {
   getMyChats,
   leaveGroup,
   markChatRead,
+  markAllChatsRead,
   removeMember,
   updateGroupDetails,
 } from '../controllers/chat.js';
@@ -37,6 +38,7 @@ chatRouter.post(
   createGroupChat
 );
 chatRouter.post('/find-users', validate(findChatsSchema), findChats);
+chatRouter.put('/read-all', markAllChatsRead);
 chatRouter.put(
   '/:chatId/read',
   validate(chatIdParamSchema, 'params'),
