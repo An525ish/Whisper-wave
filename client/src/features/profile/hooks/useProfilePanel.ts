@@ -94,7 +94,6 @@ export type UseProfilePanelReturn = {
   setBioDraft: (v: string) => void
   nameMaxLength: number
   bioMaxLength: number
-  profileDirty: boolean
   sharedSheetOpen: boolean
   sharedSheetTab: SharedContentTab
   viewerOpen: boolean
@@ -113,7 +112,6 @@ export type UseProfilePanelReturn = {
   cancelBioEdit: () => void
   saveBio: () => Promise<boolean>
   handleCancelSelfProfile: () => void
-  handleDoneSelfProfile: () => Promise<void>
   handleAvatarChange: (event: ChangeEvent<HTMLInputElement>) => Promise<void>
   setViewerOpen: (v: boolean) => void
   setSharedSheetOpen: (v: boolean) => void
@@ -235,11 +233,6 @@ export const useProfilePanel = (
     }
   }
 
-  const savedName = (name ?? '').trim()
-  const savedBio = (bio ?? '').trim()
-  const nameDirty = nameDraft.trim() !== savedName
-  const bioDirty = bioDraft.trim() !== savedBio
-
   const startNameEdit = () => { setNameDraft(name ?? ''); setEditingName(true); setEditingBio(false) }
   const cancelNameEdit = () => { setEditingName(false); setNameDraft(name ?? '') }
 
@@ -285,12 +278,6 @@ export const useProfilePanel = (
     if (showSelfExitActions) closeSelfProfile()
   }
 
-  const handleDoneSelfProfile = async () => {
-    if (editingName || nameDirty) { const ok = await saveName(); if (!ok) return }
-    if (editingBio || bioDirty) { const ok = await saveBio(); if (!ok) return }
-    if (showSelfExitActions) closeSelfProfile()
-  }
-
   const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
@@ -317,12 +304,11 @@ export const useProfilePanel = (
     mediaFiles, docFiles, sharedLinks, isMediaLoading, viewerMediaFiles,
     editingName, editingBio, nameDraft, bioDraft, setNameDraft, setBioDraft,
     nameMaxLength: groupChat ? 60 : 50, bioMaxLength: 70,
-    profileDirty: nameDirty || bioDirty,
     sharedSheetOpen, sharedSheetTab, viewerOpen, initialImageIndex,
     showSelfExitActions, isSheet, avatarInputId, avatarInputRef,
     openSharedSheet, openImageViewerForFile, handleFileAction,
     startNameEdit, cancelNameEdit, saveName, startBioEdit, cancelBioEdit, saveBio,
-    handleCancelSelfProfile, handleDoneSelfProfile, handleAvatarChange,
+    handleCancelSelfProfile, handleAvatarChange,
     setViewerOpen, setSharedSheetOpen, isLoading, viewSelfProfile,
   }
 }

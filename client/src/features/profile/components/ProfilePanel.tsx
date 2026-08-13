@@ -116,23 +116,58 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
 
           {p.showSelfProfile ? (
             <div className="mt-auto flex min-h-0 flex-1 flex-col px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 sm:pb-5">
-              <div className="flex min-h-0 flex-1 items-center justify-center py-2 sm:py-3">
-                <img src="/images/profile-illustration.svg" alt="" className="pointer-events-none h-auto w-full max-h-[34vh] max-w-64 select-none object-contain opacity-85 sm:max-h-[40vh] sm:max-w-76 md:max-w-84" />
+              <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center py-2 sm:py-3">
+                <div
+                  className="pointer-events-none absolute inset-x-6 top-1/2 h-40 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(1,195,109,0.12)_0%,transparent_70%)] blur-2xl"
+                  aria-hidden
+                />
+                <img
+                  src="/images/profile-illustration.svg"
+                  alt=""
+                  className="pointer-events-none relative z-10 h-auto w-full max-h-[32vh] max-w-60 select-none object-contain opacity-90 sm:max-h-[38vh] sm:max-w-72 md:max-w-80"
+                />
               </div>
-              <div className="flex w-full max-w-70 shrink-0 items-center gap-2 self-center sm:max-w-xs">
-                <button
-                  type="button" onClick={p.handleCancelSelfProfile} disabled={p.isSaving}
-                  className="flex-1 rounded-xl border border-border/70 px-3 py-2.5 text-sm font-medium text-body-300 transition hover:border-border hover:bg-primary/40 hover:text-body disabled:opacity-40"
+
+              <div className="relative z-10 mx-auto flex w-full max-w-xs shrink-0 flex-col items-center gap-3 pb-1 pt-1 text-center">
+                <svg
+                  viewBox="0 0 160 12"
+                  className="h-3 w-40 text-green/35"
+                  fill="none"
+                  aria-hidden
                 >
-                  Cancel
-                </button>
-                <button
-                  type="button" onClick={() => void p.handleDoneSelfProfile()}
-                  disabled={p.isSaving || (!p.profileDirty && !p.showSelfExitActions)}
-                  className="flex-1 rounded-xl bg-green px-3 py-2.5 text-sm font-medium text-black transition hover:bg-green/90 disabled:opacity-40"
-                >
-                  {p.profileDirty ? 'Save' : 'Done'}
-                </button>
+                  <path
+                    d="M0 7 C20 2 40 12 60 7 C80 2 100 12 120 7 C140 2 150 7 160 7"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <p className="font-display text-lg leading-snug text-body sm:text-xl">
+                  Your whisper. Your wave.
+                </p>
+                <p className="max-w-[16rem] text-xs leading-relaxed text-body-300 sm:text-sm">
+                  Tap the pencil to edit — changes save as you go.
+                </p>
+
+                {p.showSelfExitActions ? (
+                  <button
+                    type="button"
+                    onClick={p.handleCancelSelfProfile}
+                    disabled={p.isSaving}
+                    className="mt-1 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-green transition hover:text-green/85 disabled:opacity-40"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
+                      <path
+                        d="M15 6 9 12l6 6"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    Back to conversation
+                  </button>
+                ) : null}
               </div>
             </div>
           ) : null}
