@@ -12,7 +12,7 @@ import {
   removeMember,
   updateGroupDetails,
 } from '../controllers/chat.js';
-import { auth, validate } from '../middlewares/index.js';
+import { auth, avatarUpload, validate } from '../middlewares/index.js';
 import {
   addMembersSchema,
   chatIdParamSchema,
@@ -30,7 +30,12 @@ chatRouter.use(auth);
 chatRouter.get('/get-my-chats', getMyChats);
 chatRouter.get('/get-chat-details', getChatDetails);
 chatRouter.get('/get-media/:chatId', validate(chatIdParamSchema, 'params'), getMedia);
-chatRouter.post('/create-group', validate(createGroupSchema), createGroupChat);
+chatRouter.post(
+  '/create-group',
+  avatarUpload,
+  validate(createGroupSchema),
+  createGroupChat
+);
 chatRouter.post('/find-users', validate(findChatsSchema), findChats);
 chatRouter.put(
   '/:chatId/read',
@@ -40,6 +45,7 @@ chatRouter.put(
 );
 chatRouter.put(
   '/update-group-details/:chatId',
+  avatarUpload,
   validate(chatIdParamSchema, 'params'),
   validate(updateGroupSchema),
   updateGroupDetails

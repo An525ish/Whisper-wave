@@ -17,9 +17,19 @@ const lastMessageSchema = new Schema<ChatLastMessage>(
   { _id: false }
 );
 
+const chatAvatarSchema = new Schema(
+  {
+    publicId: { type: String, required: true },
+    url: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 const chatSchema = new Schema<IChat>(
   {
     name: { type: String, required: true },
+    bio: { type: String, maxlength: 70 },
+    avatar: { type: chatAvatarSchema },
     groupChat: { type: Boolean, default: false },
     creator: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     members: [{ type: Schema.Types.ObjectId, ref: 'User', required: true }],

@@ -24,6 +24,7 @@ type NewMessagePayload = {
   message: string;
   members: string[];
   chatId: string;
+  replyToMessageId?: string;
 };
 
 type TypingPayload = {
@@ -49,7 +50,7 @@ export const registerSocketHandlers = (io: Server): void => {
 
     socket.on(NEW_MESSAGE, async (payload: NewMessagePayload) => {
       try {
-        const { message, members, chatId } = payload;
+        const { message, members, chatId, replyToMessageId } = payload;
 
         if (!message?.trim() || !chatId || !Array.isArray(members)) {
           return;
@@ -57,6 +58,10 @@ export const registerSocketHandlers = (io: Server): void => {
 
         const isMember = await messageService.assertChatMember(userId, chatId);
         if (!isMember) return;
+
+        const replyTo = replyToMessageId
+          ? await messageService.buildReplySnapshot(chatId, replyToMessageId)
+          : undefined;
 
         const realTimeMsg = {
           content: message,
@@ -68,6 +73,14 @@ export const registerSocketHandlers = (io: Server): void => {
           },
           chat: chatId,
           createdAt: new Date().toISOString(),
+          replyTo: replyTo
+            ? {
+                messageId: String(replyTo.messageId),
+                content: replyTo.content,
+                senderName: replyTo.senderName,
+                previewAttachment: replyTo.previewAttachment,
+              }
+            : undefined,
         };
 
         const memberSocketIds = getMemberSockets(members);
@@ -86,6 +99,7 @@ export const registerSocketHandlers = (io: Server): void => {
           userId,
           chatId,
           content: message,
+          replyToMessageId,
         });
       } catch (error) {
         logger.error({ err: error }, 'NEW_MESSAGE handler failed');

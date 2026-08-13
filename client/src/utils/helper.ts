@@ -101,6 +101,10 @@ export const formatChatDayLabel = (iso?: string | null): string => {
 export const isValidChatId = (id?: string | null): boolean =>
   Boolean(id && /^[a-f\d]{24}$/i.test(id));
 
+/** Persisted message id (Mongo ObjectId). */
+export const isValidMessageId = (id?: string | null): boolean =>
+  Boolean(id && /^[a-f\d]{24}$/i.test(id));
+
 type ChatMemberRef =
   | string
   | { _id?: string | { toString(): string } };

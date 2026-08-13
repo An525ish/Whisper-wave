@@ -4,13 +4,22 @@ const objectId = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id');
 
 export const createGroupSchema = z.object({
   name: z.string().trim().min(1, 'Group name is required').max(60),
-  members: z
-    .array(objectId)
-    .min(2, 'At least 3 members are required (including you)'),
+  members: z.preprocess((value) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value) as unknown;
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  }, z.array(objectId).min(2, 'At least 3 members are required (including you)')),
+  bio: z.string().trim().max(70).optional(),
 });
 
 export const updateGroupSchema = z.object({
-  name: z.string().trim().min(1, 'Group name is required').max(60),
+  name: z.string().trim().min(1, 'Group name is required').max(60).optional(),
+  bio: z.string().trim().max(70).optional(),
 });
 
 export const addMembersSchema = z.object({

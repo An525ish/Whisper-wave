@@ -27,7 +27,7 @@ const LinkPreview = ({
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group/link block w-full overflow-hidden rounded-md ${cardBg} ${
+      className={`group/link block w-full overflow-hidden rounded-t-[1.35rem] rounded-b-md ${cardBg} ${
         lead ? '' : 'mt-2'
       }`}
       onClick={(e) => e.stopPropagation()}

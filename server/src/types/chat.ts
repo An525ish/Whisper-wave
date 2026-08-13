@@ -17,9 +17,16 @@ export type ChatLastMessage = {
   createdAt?: Date;
 };
 
+export type ChatAvatar = {
+  publicId: string;
+  url: string;
+};
+
 export type IChatFields = {
   _id: Types.ObjectId;
   name: string;
+  bio?: string;
+  avatar?: ChatAvatar;
   groupChat: boolean;
   creator: Types.ObjectId;
   members: Types.ObjectId[];
@@ -32,6 +39,7 @@ export type PopulatedMember = {
   _id: { toString(): string };
   name: string;
   avatar?: { url?: string };
+  bio?: string;
   lastSeen?: Date | string;
 };
 
@@ -81,7 +89,7 @@ export type FindChatItem = {
   _id: unknown;
   groupChat: boolean;
   name: string;
-  avatar: string[] | null;
+  avatar: Array<string | undefined> | null;
   notificationCount: number;
 };
 
@@ -122,6 +130,8 @@ export type ChatSharedContent = {
 
 export type CreateChatInput = {
   name: string;
+  bio?: string;
+  avatar?: ChatAvatar;
   groupChat?: boolean;
   creator: string | Types.ObjectId;
   members: Array<string | Types.ObjectId>;
@@ -130,6 +140,8 @@ export type CreateChatInput = {
 export type ChatLean = {
   _id: Types.ObjectId;
   name: string;
+  bio?: string;
+  avatar?: ChatAvatar;
   groupChat: boolean;
   creator: Types.ObjectId;
   members: Types.ObjectId[];
@@ -160,13 +172,22 @@ export type FriendChatPopulated = {
 export type ChatWithMembersPopulated = {
   _id: Types.ObjectId;
   name: string;
+  bio?: string;
+  avatar?: ChatAvatar;
   groupChat: boolean;
   members: PopulatedMember[];
 };
 
 export type UpdateChatPatch = Partial<{
   name: string;
+  bio: string;
+  avatar: ChatAvatar;
   creator: Types.ObjectId | string;
   members: Array<Types.ObjectId | string>;
   lastMessage: ChatLastMessage;
 }>;
+
+export type UpdateGroupDetailsInput = {
+  name?: string;
+  bio?: string;
+};

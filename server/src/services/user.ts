@@ -8,7 +8,12 @@ import type {
   UpdateProfileInput,
   UpdateUserPatch,
 } from '../types/index.js';
+import type { UploadableFile } from '../types/message.js';
 import { AppError } from '../utils/AppError.js';
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from '../utils/cloudinary.js';
 
 export const getProfile = async (
   userId: string
@@ -28,8 +33,9 @@ export const getProfile = async (
 
 export const updateProfile = async (
   userId: string,
-  input: UpdateProfileInput
-): Promise<void> => {
+  input: UpdateProfileInput,
+  avatarFile?: UploadableFile
+): Promise<PublicUser & Record<string, unknown>> => {
   const user = await userRepo.findByIdWithPassword(userId);
   if (!user) {
     throw new AppError(404, 'User not found in the database');
@@ -48,12 +54,32 @@ export const updateProfile = async (
   if (input.name) patch.name = input.name;
   if (input.username) patch.username = input.username;
   if (input.bio !== undefined) patch.bio = input.bio;
-  if (input.avatar) patch.avatar = input.avatar;
   void input.email;
 
-  if (Object.keys(patch).length > 0) {
-    await userRepo.updateById(userId, patch);
+  if (avatarFile) {
+    const uploaded = await uploadToCloudinary([avatarFile]);
+    if (!uploaded.length) {
+      throw new AppError(400, 'Failed to upload avatar');
+    }
+    patch.avatar = {
+      publicId: uploaded[0].publicId,
+      url: uploaded[0].url,
+    };
+  } else if (input.avatar) {
+    patch.avatar = input.avatar;
   }
+
+  if (Object.keys(patch).length === 0) {
+    throw new AppError(400, 'No profile fields to update');
+  }
+
+  await userRepo.updateById(userId, patch);
+
+  if (avatarFile && user.avatar?.publicId) {
+    await deleteFromCloudinary([user.avatar.publicId]);
+  }
+
+  return getProfile(userId);
 };
 
 export const deleteProfile = async (userId: string): Promise<void> => {

@@ -6,6 +6,9 @@ export type AuthDataResponse = ApiSuccess & { data: User };
 
 export const getProfile = () => api.get<ProfileResponse>('/user/get-profile');
 
+export const updateProfile = (formData: FormData) =>
+  api.put<ProfileResponse>('/user/update-profile', formData);
+
 export const signIn = (body: { username: string; password: string }) =>
   api.post<AuthDataResponse>('/auth/signin', body);
 

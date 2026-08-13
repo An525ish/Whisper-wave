@@ -7,6 +7,18 @@ export type MessageAttachment = {
   fileType: string;
 };
 
+/** Snapshot of the message being replied to (kept if original is deleted). */
+export type MessageReplyTo = {
+  messageId: Types.ObjectId;
+  content?: string;
+  senderName: string;
+  previewAttachment?: {
+    url: string;
+    name: string;
+    fileType: string;
+  };
+};
+
 export type IMessageFields = {
   _id: Types.ObjectId;
   content?: string;
@@ -16,6 +28,9 @@ export type IMessageFields = {
   status: 'sent' | 'failed';
   /** Users who have read this message (connected receipts). */
   readBy: Types.ObjectId[];
+  isDeleted?: boolean;
+  editedAt?: Date;
+  replyTo?: MessageReplyTo;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -50,6 +65,7 @@ export type CreateMessageInput = {
   sender: string | Types.ObjectId;
   chat: string | Types.ObjectId;
   status?: 'sent' | 'failed';
+  replyTo?: MessageReplyTo;
 };
 
 export type MessageRecord = {
@@ -60,6 +76,9 @@ export type MessageRecord = {
   chat: Types.ObjectId;
   status: 'sent' | 'failed';
   readBy: Types.ObjectId[];
+  isDeleted?: boolean;
+  editedAt?: Date;
+  replyTo?: MessageReplyTo;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -69,4 +88,6 @@ export type UpdateMessagePatch = Partial<{
   attachments: MessageAttachment[];
   status: 'sent' | 'failed';
   readBy: Types.ObjectId[];
+  isDeleted: boolean;
+  editedAt: Date;
 }>;

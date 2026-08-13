@@ -56,7 +56,13 @@ const ContextMenu = ({ menuState, hideContextMenu }: ContextMenuProps) => {
                 hideContextMenu();
               }}
             >
-              <img className="h-5 w-5 shrink-0" src={option.icon} alt="" />
+              {typeof option.icon === 'string' ? (
+                <img className="h-5 w-5 shrink-0" src={option.icon} alt="" />
+              ) : (
+                <span className="grid h-5 w-5 shrink-0 place-items-center text-body-700">
+                  {option.icon}
+                </span>
+              )}
               <span>{option.name}</span>
             </button>
           </li>

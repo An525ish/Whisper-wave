@@ -22,6 +22,7 @@ export type {
 export type {
   LastMessageType,
   ChatLastMessage,
+  ChatAvatar,
   IChatFields,
   PopulatedMember,
   ChatListItem,
@@ -40,6 +41,7 @@ export type {
   FriendChatPopulated,
   ChatWithMembersPopulated,
   UpdateChatPatch,
+  UpdateGroupDetailsInput,
   ChatSharedLink,
   ChatSharedContent,
 } from './chat.js';

@@ -119,11 +119,32 @@ export const handleFriendRequest = (body: unknown) =>
 export const sendAttachments = (body: FormData) =>
   api.post('/message/send-attachments', body);
 
+export const editMessage = (messageId: string, content: string) =>
+  api.patch(`/message/${messageId}`, { content });
+
+export const deleteMessage = (messageId: string) =>
+  api.delete(`/message/${messageId}`);
+
+export const deleteManyMessages = (chatId: string, messageIds: string[]) =>
+  api.post(`/message/delete-many/${chatId}`, { messageIds });
+
+export const clearChatMessages = (chatId: string) =>
+  api.delete(`/message/clear/${chatId}`);
+
+export const forwardMessages = (
+  targetChatId: string,
+  body: { sourceChatId: string; messageIds: string[] },
+) => api.post(`/message/forward/${targetChatId}`, body);
+
 export const findChats = (body: unknown) =>
   api.post('/chat/find-users', body);
 
-export const createGroup = (body: { name: string; members: string[] }) =>
-  api.post('/chat/create-group', body);
+export const createGroup = (
+  body: FormData | { name: string; members: string[]; bio?: string },
+) => api.post('/chat/create-group', body);
+
+export const updateGroupDetails = (chatId: string, body: FormData) =>
+  api.put(`/chat/update-group-details/${chatId}`, body);
 
 export const addMembers = (chatId: string, members: string[]) =>
   api.put(`/chat/add-members/${chatId}`, { members });

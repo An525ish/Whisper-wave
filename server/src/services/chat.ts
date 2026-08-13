@@ -4,6 +4,7 @@ import * as chatRepo from '../repositories/chat.js';
 import * as chatReadRepo from '../repositories/chatRead.js';
 import * as messageRepo from '../repositories/message.js';
 import type {
+  ChatAvatar,
   ChatListItem,
   ChatNotificationInput,
   ChatSharedContent,
@@ -12,8 +13,14 @@ import type {
   MarkChatReadResult,
   PopulatedMember,
   RealtimeNotify,
+  UpdateGroupDetailsInput,
 } from '../types/chat.js';
+import type { UploadableFile } from '../types/message.js';
 import { AppError } from '../utils/AppError.js';
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from '../utils/cloudinary.js';
 
 const URL_IN_TEXT =
   /https?:\/\/[^\s<>"'`{}|\\^[\]]+/gi;
@@ -65,14 +72,46 @@ const assertCreator = (
   }
 };
 
+const resolveGroupAvatarUrls = (
+  groupAvatar: ChatAvatar | undefined,
+  members: PopulatedMember[]
+): Array<string | undefined> => {
+  if (groupAvatar?.url) return [groupAvatar.url];
+  return members
+    .slice(0, 3)
+    .map((member) => member.avatar?.url)
+    .filter(Boolean);
+};
+
+const uploadAvatarOrThrow = async (
+  avatarFile: UploadableFile
+): Promise<ChatAvatar> => {
+  const uploaded = await uploadToCloudinary([avatarFile]);
+  if (!uploaded.length) {
+    throw new AppError(400, 'Failed to upload avatar');
+  }
+  return {
+    publicId: uploaded[0].publicId,
+    url: uploaded[0].url,
+  };
+};
+
 export const createGroupChat = async (
   userId: string,
-  name: string,
-  members: string[]
+  input: { name: string; members: string[]; bio?: string },
+  avatarFile?: UploadableFile
 ): Promise<{ chat: unknown; notifications: RealtimeNotify[] }> => {
-  const allMembers = [...members, userId];
+  const allMembers = [...input.members, userId];
+  let avatar: ChatAvatar | undefined;
+
+  if (avatarFile) {
+    avatar = await uploadAvatarOrThrow(avatarFile);
+  }
+
   const chat = await chatRepo.create({
-    name,
+    name: input.name,
+    bio: input.bio,
+    avatar,
     groupChat: true,
     creator: userId,
     members: allMembers,
@@ -89,13 +128,39 @@ export const createGroupChat = async (
 export const updateGroupDetails = async (
   userId: string,
   chatId: string,
-  name: string
+  input: UpdateGroupDetailsInput,
+  avatarFile?: UploadableFile
 ): Promise<{ notifications: RealtimeNotify[] }> => {
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
+  if (!chat.groupChat) {
+    throw new AppError(400, 'Only group chats can be updated');
+  }
 
   assertCreator(userId, chat.creator);
-  const updated = await chatRepo.updateById(chatId, { name });
+
+  const patch: {
+    name?: string;
+    bio?: string;
+    avatar?: ChatAvatar;
+  } = {};
+
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.bio !== undefined) patch.bio = input.bio;
+
+  if (avatarFile) {
+    patch.avatar = await uploadAvatarOrThrow(avatarFile);
+  }
+
+  if (Object.keys(patch).length === 0) {
+    throw new AppError(400, 'No group details to update');
+  }
+
+  const updated = await chatRepo.updateById(chatId, patch);
+
+  if (avatarFile && chat.avatar?.publicId) {
+    await deleteFromCloudinary([chat.avatar.publicId]);
+  }
 
   return {
     notifications: [
@@ -130,7 +195,7 @@ export const getMyChats = async (
     lastReadByChat
   );
 
-  const data = chats.map(({ _id, name, members, groupChat, lastMessage }) => {
+  const data = chats.map(({ _id, name, members, groupChat, lastMessage, avatar }) => {
     const typedMembers = members as unknown as PopulatedMember[];
     const otherMembers = typedMembers.filter(
       (member) => member._id.toString() !== userId.toString()
@@ -142,10 +207,7 @@ export const getMyChats = async (
       groupChat: Boolean(groupChat),
       name: groupChat ? name : otherMembers[0]?.name || 'Unknown',
       avatar: groupChat
-        ? typedMembers
-            .slice(0, 3)
-            .map((member) => member.avatar?.url)
-            .filter(Boolean)
+        ? resolveGroupAvatarUrls(avatar, typedMembers)
         : [otherMembers[0]?.avatar?.url].filter(Boolean),
       members: otherMembers.map((member) => member._id),
       lastMessage,
@@ -176,7 +238,7 @@ export const findChats = async (
     lastReadByChat
   );
 
-  return chats.map(({ _id, name, members, groupChat }) => {
+  return chats.map(({ _id, name, members, groupChat, avatar }) => {
     const typedMembers = members as unknown as PopulatedMember[];
     const otherMembers = typedMembers.filter(
       (member) => member._id.toString() !== userId.toString()
@@ -187,7 +249,9 @@ export const findChats = async (
       _id,
       groupChat,
       name: groupChat ? name : otherMembers[0]?.name || 'Unknown',
-      avatar: groupChat ? null : [otherMembers[0]?.avatar?.url || ''],
+      avatar: groupChat
+        ? resolveGroupAvatarUrls(avatar, typedMembers)
+        : [otherMembers[0]?.avatar?.url || ''],
       notificationCount: unreadByChat.get(chatId) ?? 0,
     };
   });
@@ -288,9 +352,18 @@ export const getChatDetails = async (
     }
 
     chat.name = chat.groupChat ? chat.name : otherMembers[0]?.name || 'Unknown';
+    const storedAvatar =
+      chat.avatar &&
+      typeof chat.avatar === 'object' &&
+      'url' in chat.avatar
+        ? (chat.avatar as ChatAvatar)
+        : undefined;
     chat.avatar = chat.groupChat
-      ? null
+      ? resolveGroupAvatarUrls(storedAvatar, typedMembers)
       : [otherMembers[0]?.avatar?.url || ''];
+    if (!chat.groupChat && otherMembers[0]?.bio !== undefined) {
+      (chat as { bio?: string }).bio = otherMembers[0].bio;
+    }
     chat.members = typedMembers.map(({ _id, avatar, lastSeen, ...rest }) => ({
       ...rest,
       _id,

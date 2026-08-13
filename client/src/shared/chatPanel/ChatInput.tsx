@@ -5,11 +5,14 @@ import ClipIcon from "@/components/icons/Clip";
 import EmojiIcon from "@/components/icons/Emoji";
 import SendIcon from "@/components/icons/Send";
 import { MAX_FILES } from "@/lib/constants";
+import { readFilesFromClipboardEvent } from "@/utils/chatClipboard";
+import { useChatClipboardStore } from "@/stores/chatClipboard";
 import {
   useCallback,
   useEffect,
   useRef,
   useState,
+  type ClipboardEvent,
   type Dispatch,
   type SetStateAction,
   type TextareaHTMLAttributes,
@@ -23,6 +26,7 @@ type ChatInputProps = {
     attachments: File[];
     setAttachments: Dispatch<SetStateAction<File[]>>;
     handleSubmit: () => void | Promise<void>;
+    editMode?: boolean;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'className'>;
 
 const MAX_TEXTAREA_HEIGHT = 128;
@@ -50,6 +54,7 @@ const ChatInput = ({
     attachments,
     setAttachments,
     handleSubmit,
+    editMode = false,
     ...props }: ChatInputProps) => {
 
     const [isAttachmentClicked, setIsAttachmentClicked] = useState(false);
@@ -60,13 +65,25 @@ const ChatInput = ({
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
     useEffect(() => {
+        if (!editMode) return;
+        setIsAttachmentClicked(false);
+        setIsEmojiClicked(false);
+    }, [editMode]);
+
+    useEffect(() => {
         const node = textareaRef.current;
         if (!node) return;
         node.style.height = 'auto';
         node.style.height = `${Math.max(40, Math.min(node.scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
-    }, [message]);
+        if (editMode) {
+            node.focus();
+            const len = node.value.length;
+            node.setSelectionRange(len, len);
+        }
+    }, [message, editMode]);
 
     const toggleAttachmentMenu = () => {
+        if (editMode) return;
         setIsAttachmentClicked(prev => !prev);
     };
 
@@ -85,21 +102,54 @@ const ChatInput = ({
         setAttachments(prev => prev.filter(file => file !== fileToRemove));
     }, [setAttachments]);
 
-    const canSend = Boolean(message.trim()) || attachments.length > 0;
+    const handlePaste = useCallback((event: ClipboardEvent<HTMLTextAreaElement>) => {
+        if (editMode) return;
+
+        const stored = useChatClipboardStore.getState().payload;
+        const pastedFiles = readFilesFromClipboardEvent(event.clipboardData);
+        const storedFiles = stored?.files ?? [];
+        const allFiles = [...storedFiles, ...pastedFiles];
+
+        if (allFiles.length === 0) return;
+
+        event.preventDefault();
+
+        if (storedFiles.length > 0) {
+            useChatClipboardStore.getState().takePayload();
+        }
+
+        setAttachments((prev) => {
+            const combined = [...prev, ...allFiles];
+            if (combined.length > MAX_FILES) {
+                toast.error(`You can only upload up to ${MAX_FILES} files`);
+            }
+            return combined.slice(0, MAX_FILES);
+        });
+
+        const storedText = stored?.text?.trim() ?? '';
+        const clipboardText = event.clipboardData.getData('text/plain').trim();
+        const textToApply = storedFiles.length > 0 ? storedText : clipboardText;
+
+        if (textToApply) {
+            setMessage((prev) => (prev.trim() ? prev : textToApply));
+        }
+    }, [editMode, setAttachments, setMessage]);
+
+    const canSend = Boolean(message.trim()) || (!editMode && attachments.length > 0);
     const isMultiline = message.includes('\n');
 
     return (
         <div className="relative w-full">
-            {attachments.length > 0 && renderFilePreviews(attachments, handleRemoveFile)}
+            {!editMode && attachments.length > 0 && renderFilePreviews(attachments, handleRemoveFile)}
             <div className="relative flex w-full items-center gap-2">
-                {isAttachmentClicked && (
+                {!editMode && isAttachmentClicked && (
                     <AttachmentMenu
                         onClose={() => setIsAttachmentClicked(false)}
                         onFileSelect={handleFileSelect}
                         clipIconRef={clipIconRef}
                     />
                 )}
-                {isEmojiClicked && (
+                {!editMode && isEmojiClicked && (
                     <div className="absolute bottom-14 left-0 z-30 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl shadow-xl">
                         <EmojiMenu
                             width={280}
@@ -110,47 +160,56 @@ const ChatInput = ({
                         />
                     </div>
                 )}
-                <div className="flex min-h-10 min-w-0 flex-1 items-center gap-0.5 rounded-[1.5rem] border border-border bg-primary/40 px-1.5 py-0.5 md:gap-1 md:bg-transparent md:px-2">
-                    <span ref={emojiIconRef} className="shrink-0">
-                        <button
-                            type="button"
-                            className="grid h-10 w-10 place-items-center rounded-full transition active:bg-background/40"
-                            onClick={() => setIsEmojiClicked(prev => !prev)}
-                            aria-label="Emoji"
-                        >
-                            <EmojiIcon className="h-5 w-5 hover:fill-body" />
-                        </button>
-                    </span>
+                <div className={`flex min-h-10 min-w-0 flex-1 items-center gap-0.5 rounded-[1.5rem] border px-1.5 py-0.5 md:gap-1 md:bg-transparent md:px-2 ${
+                    editMode
+                        ? 'border-green/45 bg-green/10'
+                        : 'border-border bg-primary/40'
+                }`}>
+                    {!editMode ? (
+                        <span ref={emojiIconRef} className="shrink-0">
+                            <button
+                                type="button"
+                                className="grid h-10 w-10 place-items-center rounded-full transition active:bg-background/40"
+                                onClick={() => setIsEmojiClicked(prev => !prev)}
+                                aria-label="Emoji"
+                            >
+                                <EmojiIcon className="h-5 w-5 hover:fill-body" />
+                            </button>
+                        </span>
+                    ) : null}
                     <textarea
                         ref={textareaRef}
                         rows={1}
                         value={message}
-                        enterKeyHint="send"
+                        enterKeyHint={editMode ? 'done' : 'send'}
                         autoComplete="off"
                         {...props}
+                        onPaste={handlePaste}
                         className={`max-h-32 w-full min-h-10 min-w-0 resize-none overflow-y-auto bg-transparent px-1 outline-none md:px-2 text-[16px] md:text-sm ${
                             isMultiline
                                 ? 'py-2 leading-snug'
                                 : 'py-0 leading-10'
                         } ${className ?? ''}`}
                     />
-                    <span ref={clipIconRef} className="shrink-0">
-                        <button
-                            type="button"
-                            className="grid h-10 w-10 place-items-center rounded-full transition active:bg-background/40"
-                            onClick={toggleAttachmentMenu}
-                            aria-label="Attach file"
-                        >
-                            <ClipIcon className="h-5 w-5 rotate-90 hover:fill-body" />
-                        </button>
-                    </span>
+                    {!editMode ? (
+                        <span ref={clipIconRef} className="shrink-0">
+                            <button
+                                type="button"
+                                className="grid h-10 w-10 place-items-center rounded-full transition active:bg-background/40"
+                                onClick={toggleAttachmentMenu}
+                                aria-label="Attach file"
+                            >
+                                <ClipIcon className="h-5 w-5 rotate-90 hover:fill-body" />
+                            </button>
+                        </span>
+                    ) : null}
                 </div>
                 <button
                     type="button"
                     onClick={handleSubmit}
                     disabled={!canSend}
                     className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-green text-white shadow-md transition enabled:active:scale-95 disabled:opacity-40 md:h-10 md:w-10"
-                    aria-label="Send message"
+                    aria-label={editMode ? 'Save edit' : 'Send message'}
                 >
                     <SendIcon className="mt-0.5 mr-0.5 h-5 w-5 fill-white" />
                 </button>

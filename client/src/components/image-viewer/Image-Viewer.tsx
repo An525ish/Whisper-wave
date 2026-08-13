@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import ImageViewerIcon from './Image-Viewer-Icons';
 import {
   RetryableMediaImage,
@@ -196,7 +197,7 @@ const ImageViewer = ({
     );
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-5"
       role="dialog"
@@ -375,7 +376,8 @@ const ImageViewer = ({
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

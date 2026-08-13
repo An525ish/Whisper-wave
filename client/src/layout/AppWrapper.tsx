@@ -12,10 +12,13 @@ import {
 } from '@/lib/socketConstants';
 import { useNotificationsStore } from '@/stores/notifications';
 import { usePresenceStore } from '@/stores/presence';
+import { useProfileUiStore } from '@/stores/profileUi';
 import Title from '@/shared/Title';
 import ChatListPanel from '@/shared/chatListPanel/ChatListPanel';
 import ProfileHeader from '@/shared/profilePanel/ProfileHeader';
 import ProfilePanel from '@/shared/profilePanel/ProfilePanel';
+import ProfileSheet from '@/shared/profilePanel/ProfileSheet';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -50,6 +53,9 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
   const socket = useSocket();
   const { chatId } = useParams();
   const isChatOpen = Boolean(chatId);
+  const isNarrowProfile = useMediaQuery('(max-width: 1023px)');
+  const viewSelfProfile = useProfileUiStore((s) => s.viewSelfProfile);
+  const closeSelfProfile = useProfileUiStore((s) => s.closeSelfProfile);
   const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
@@ -96,6 +102,10 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
       typingTimeoutsRef.current.clear();
     };
   }, []);
+
+  useEffect(() => {
+    closeSelfProfile();
+  }, [chatId, closeSelfProfile]);
 
   const newMessageAlertHandler = useCallback(
     (res: NewMessageAlertPayload) => {
@@ -208,6 +218,13 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
           <ProfilePanel />
         </aside>
       </main>
+
+      <ProfileSheet
+        open={viewSelfProfile && isNarrowProfile}
+        onClose={closeSelfProfile}
+        forceSelf
+        title="Edit profile"
+      />
     </>
   );
 };

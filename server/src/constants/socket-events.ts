@@ -1,5 +1,8 @@
 export const NEW_MESSAGE = 'NEW_MESSAGE';
 export const NEW_MESSAGE_ALERT = 'NEW_MESSAGE_ALERT';
+export const MESSAGE_UPDATED = 'MESSAGE_UPDATED';
+export const MESSAGES_DELETED = 'MESSAGES_DELETED';
+export const CHAT_CLEARED = 'CHAT_CLEARED';
 export const ALERT = 'ALERT';
 export const REFETCH_CHATS = 'REFETCH_CHATS';
 export const NEW_ATTACHMENT = 'NEW_ATTACHMENT';

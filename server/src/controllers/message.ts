@@ -118,13 +118,18 @@ export const listActiveDates: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const sendAttachments: RequestHandler = catchAsync(async (req, res) => {
-  const { chatId, content } = req.body as { chatId: string; content?: string };
+  const { chatId, content, replyToMessageId } = req.body as {
+    chatId: string;
+    content?: string;
+    replyToMessageId?: string;
+  };
   const files = (req.files as UploadableFile[] | undefined) ?? [];
   const result = await messageService.sendAttachments(
     req.userId!,
     chatId,
     files,
-    content
+    content,
+    replyToMessageId
   );
 
   flushNotifications(getIo(req), result.notifications);
@@ -133,5 +138,83 @@ export const sendAttachments: RequestHandler = catchAsync(async (req, res) => {
     status: true,
     message: 'Message sent successfully with attachments',
     data: result.data,
+  });
+});
+
+export const editMessage: RequestHandler = catchAsync(async (req, res) => {
+  const { content } = req.body as { content: string };
+  const result = await messageService.editMessage(
+    req.userId!,
+    param(req.params.messageId),
+    content
+  );
+
+  flushNotifications(getIo(req), result.notifications);
+
+  res.status(200).json({
+    success: true,
+    data: result.data,
+  });
+});
+
+export const deleteMessage: RequestHandler = catchAsync(async (req, res) => {
+  const result = await messageService.deleteMessage(
+    req.userId!,
+    param(req.params.messageId)
+  );
+
+  flushNotifications(getIo(req), result.notifications);
+
+  res.status(200).json({
+    success: true,
+    messageIds: result.messageIds,
+  });
+});
+
+export const deleteManyMessages: RequestHandler = catchAsync(async (req, res) => {
+  const chatId = param(req.params.chatId);
+  const { messageIds } = req.body as { messageIds: string[] };
+  const result = await messageService.deleteManyMessages(
+    req.userId!,
+    chatId,
+    messageIds
+  );
+
+  flushNotifications(getIo(req), result.notifications);
+
+  res.status(200).json({
+    success: true,
+    messageIds: result.messageIds,
+  });
+});
+
+export const clearChatMessages: RequestHandler = catchAsync(async (req, res) => {
+  const chatId = param(req.params.chatId);
+  const result = await messageService.clearChatMessages(req.userId!, chatId);
+
+  flushNotifications(getIo(req), result.notifications);
+
+  res.status(200).json({
+    success: true,
+  });
+});
+
+export const forwardMessages: RequestHandler = catchAsync(async (req, res) => {
+  const targetChatId = param(req.params.targetChatId);
+  const { sourceChatId, messageIds } = req.body as {
+    sourceChatId: string;
+    messageIds: string[];
+  };
+  const result = await messageService.forwardMessages(
+    req.userId!,
+    sourceChatId,
+    targetChatId,
+    messageIds
+  );
+
+  flushNotifications(getIo(req), result.notifications);
+
+  res.status(200).json({
+    success: true,
   });
 });
