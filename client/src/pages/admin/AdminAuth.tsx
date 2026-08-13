@@ -1,4 +1,4 @@
-import AdminLogin from '@/components/auth/AdminLogin';
+import AdminLogin from '@/features/auth/components/AdminLoginForm';
 
 export default function AdminAuth() {
 

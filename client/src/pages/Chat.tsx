@@ -1,10 +1,10 @@
 import AppWrapper from '@/layout/AppWrapper';
-import ChatHeader from '@/shared/chatPanel/ChatHeader';
-import ChatSearch from '@/shared/chatPanel/ChatSearch';
-import ChatsViewPanel from '@/shared/chatPanel/ChatsViewPanel';
-import AddMemberDialog from '@/shared/chatPanel/groupChatPanel/AddMemberDialog';
-import ProfileSheet from '@/shared/profilePanel/ProfileSheet';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
+import ChatHeader from '@/features/chat/components/panel/ChatHeader';
+import ChatSearch from '@/features/chat/components/panel/ChatSearch';
+import ChatsViewPanel from '@/features/chat/components/panel/ChatsViewPanel';
+import AddMemberDialog from '@/features/chat/components/group/AddMemberDialog';
+import ProfileSheet from '@/features/profile/components/ProfileSheet';
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
