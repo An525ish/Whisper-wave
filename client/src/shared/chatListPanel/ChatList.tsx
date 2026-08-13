@@ -1,4 +1,4 @@
-import { useRef, type MouseEvent } from 'react';
+import { useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import AvatarSkeleton from '@/components/skeletons/AvatarSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
@@ -6,11 +6,11 @@ import ChatListItem from './ChatListItem';
 import { useAuthStore } from '@/stores/auth';
 import { usePresenceStore } from '@/stores/presence';
 import { normalizeMemberIds } from '@/utils/helper';
-import type { MessageNotification } from '@/types';
 
 type ChatLastMessage = {
   content?: string;
   createdAt?: string;
+  isRead?: boolean;
   sender?: {
     _id: string;
     name?: string;
@@ -24,26 +24,21 @@ type ChatListEntry = {
   groupChat?: boolean;
   members?: Array<string | { _id?: string }>;
   lastMessage?: ChatLastMessage | null;
+  unreadCount?: number;
 };
 
 type ChatListProps = {
   chats?: ChatListEntry[];
   type: string;
   isLoading?: boolean;
-  newMessageAlert: MessageNotification[];
-  handleDeleteChat: (
-    e: MouseEvent,
-    _id: string,
-    groupChat?: boolean,
-  ) => void;
+  onMarkRead?: (chatId: string) => void;
 };
 
 const ChatList = ({
   chats = [],
   type,
   isLoading,
-  newMessageAlert,
-  handleDeleteChat,
+  onMarkRead,
 }: ChatListProps) => {
   const user = useAuthStore((s) => s.user);
   const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
@@ -77,11 +72,8 @@ const ChatList = ({
         >
           {virtualizer.getVirtualItems().map((item) => {
             const data = chats[item.index];
-            const { avatar, name, _id, groupChat, members, lastMessage } =
+            const { avatar, name, _id, groupChat, members, lastMessage, unreadCount } =
               data;
-            const messageAlert = newMessageAlert.find(
-              ({ chatId }) => chatId === _id,
-            );
             const peerIds = normalizeMemberIds(members).filter(
               (id) => id !== selfId,
             );
@@ -106,10 +98,10 @@ const ChatList = ({
                   groupChat={groupChat}
                   isOnline={isOnline}
                   isTyping={isTyping}
-                  messageAlert={messageAlert}
+                  unreadCount={unreadCount}
                   id={_id}
                   lastMessage={lastMessage}
-                  handleDeleteChat={handleDeleteChat}
+                  onMarkRead={onMarkRead}
                   currentUserId={user?._id ?? ''}
                 />
               </div>

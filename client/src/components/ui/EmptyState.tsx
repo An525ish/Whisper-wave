@@ -7,6 +7,7 @@ type EmptyStateProps = {
   className?: string;
   imageClassName?: string;
   titleClassName?: string;
+  contentClassName?: string;
   icon?: ReactNode;
 };
 
@@ -17,12 +18,13 @@ const EmptyState = ({
   className = '',
   imageClassName = 'w-20 opacity-50',
   titleClassName = 'mt-3 text-center text-sm font-medium text-body-300',
+  contentClassName = 'max-w-xs',
   icon,
 }: EmptyStateProps) => (
   <div
     className={`flex w-full flex-col items-center justify-center py-6 ${className}`.trim()}
   >
-    <div className="flex max-w-xs flex-col items-center">
+    <div className={`flex w-full flex-col items-center ${contentClassName}`}>
       {icon}
       {imageSrc ? (
         <img src={imageSrc} alt={imageAlt} className={imageClassName} />

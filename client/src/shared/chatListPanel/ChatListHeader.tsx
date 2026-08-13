@@ -1,23 +1,48 @@
 import type { Dispatch, SetStateAction } from 'react';
 import Searchbar from '../Searchbar';
-import { useNotificationsStore } from '@/stores/notifications';
 import AccountBar from '@/shared/profilePanel/AccountBar';
 import { formatUnreadCount } from '@/utils/unread';
+import DotsMenu from '@/components/ui/DotsMenu';
+import ReadReceipt from '@/components/icons/ReadReceipt';
+import {
+  useMarkAllChatsReadMutation,
+  useMyChatsQuery,
+} from '@/features/api/hooks';
+import useAsyncMutation from '@/hooks/asyncMutation';
+import { useNotificationsStore } from '@/stores/notifications';
 
 type ChatListHeaderProps = {
   searchText: string;
   setSearchText: Dispatch<SetStateAction<string>>;
 };
 
+type ChatsResponse = {
+  data?: Array<{ unreadCount?: number }>;
+};
+
 const ChatListHeader = ({
   searchText,
   setSearchText,
 }: ChatListHeaderProps) => {
-  const unreadCount = useNotificationsStore((s) => s.messageNotificationCount);
+  const { data: chats } = useMyChatsQuery();
+  const chatsData = (chats as ChatsResponse | undefined)?.data;
+  const unreadCount =
+    chatsData?.reduce((sum, chat) => sum + (chat.unreadCount ?? 0), 0) ?? 0;
+  const resetMessageNotification = useNotificationsStore(
+    (s) => s.resetMessageNotification,
+  );
+  const [markAllRead] = useAsyncMutation(useMarkAllChatsReadMutation);
+
+  const handleMarkAllRead = () => {
+    if (unreadCount === 0) return;
+    void markAllRead('Marking all as read…', undefined).then((res) => {
+      if (res) resetMessageNotification();
+    });
+  };
 
   return (
     <div className="relative flex w-full flex-col gap-3 border-b border-border/50 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:border-0 md:p-2 md:pt-1">
-      {/* Row 1 — title + unread + account */}
+      {/* Row 1 — title + unread; account (mobile) + menu on the far right */}
       <div className="flex w-full items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <img
@@ -40,8 +65,23 @@ const ChatListHeader = ({
           </p>
         </div>
 
-        <div className="lg:hidden">
-          <AccountBar variant="account" />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div className="lg:hidden">
+            <AccountBar variant="account" />
+          </div>
+          <DotsMenu
+            ariaLabel="Chat list options"
+            align="right"
+            items={[
+              {
+                id: 'mark-all-read',
+                label: 'Mark all as read',
+                icon: <ReadReceipt read className="h-4 w-4" />,
+                disabled: unreadCount === 0,
+                onSelect: handleMarkAllRead,
+              },
+            ]}
+          />
         </div>
       </div>
 

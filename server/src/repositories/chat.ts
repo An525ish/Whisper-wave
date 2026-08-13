@@ -3,6 +3,7 @@ import type {
   ChatLastMessage,
   ChatLean,
   ChatMembersOnly,
+  ChatMembership,
   ChatWithMembersPopulated,
   CreateChatInput,
   DirectChatMembers,
@@ -45,10 +46,7 @@ export const findMyChatsPage = async (
 ) =>
   Chat.find({ members: userId })
     .populate('members', 'name username email avatar')
-    .populate({
-      path: 'lastMessage',
-      populate: { path: 'sender', select: 'name' },
-    })
+    .populate({ path: 'lastMessage.sender', select: 'name' })
     .sort({ updatedAt: -1 })
     .skip(skip)
     .limit(limit)
@@ -56,6 +54,13 @@ export const findMyChatsPage = async (
 
 export const countForMember = async (userId: string): Promise<number> =>
   Chat.countDocuments({ members: userId });
+
+export const findMembershipsForMember = async (
+  userId: string
+): Promise<ChatMembership[]> =>
+  Chat.find({ members: userId })
+    .select('_id members lastMessage')
+    .lean<ChatMembership[]>();
 
 export const findByIdsForMemberPopulated = async (
   userId: string,

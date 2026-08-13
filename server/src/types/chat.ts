@@ -43,14 +43,32 @@ export type PopulatedMember = {
   lastSeen?: Date | string;
 };
 
+export type ChatListLastMessage = {
+  _id?: string;
+  content?: string;
+  createdAt?: Date;
+  type?: LastMessageType;
+  sender?: {
+    _id: string;
+    name?: string;
+  };
+  isRead: boolean;
+};
+
 export type ChatListItem = {
   _id: unknown;
   groupChat: boolean;
   name: string;
   avatar: Array<string | undefined>;
   members: Array<{ toString(): string }>;
-  lastMessage: unknown;
+  lastMessage: ChatListLastMessage | null;
   unreadCount: number;
+};
+
+export type ChatMembership = {
+  _id: Types.ObjectId;
+  members: Types.ObjectId[];
+  lastMessage?: ChatLastMessage;
 };
 
 export type IChatReadFields = {
@@ -108,6 +126,12 @@ export type MarkChatReadResult = {
   chatId: string;
   lastReadAt: Date;
   lastReadMessageId?: string;
+  notifications: RealtimeNotify[];
+};
+
+export type MarkAllChatsReadResult = {
+  marked: number;
+  lastReadAt: Date;
   notifications: RealtimeNotify[];
 };
 

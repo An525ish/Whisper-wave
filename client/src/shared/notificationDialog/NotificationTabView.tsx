@@ -3,6 +3,8 @@ import { FriendRequestList, NotificationList } from './NotificationLists';
 import { useNotificationsStore } from '@/stores/notifications';
 import { useMemo } from 'react';
 import type { TabItem } from '@/components/ui/swipable-tabs/Tab';
+import ChatIcon from '@/components/icons/Chat';
+import AddMemberIcon from '@/components/icons/AddMember';
 
 const NotificationTabView = () => {
   const messageNotificationCount = useNotificationsStore(
@@ -17,12 +19,14 @@ const NotificationTabView = () => {
       {
         id: 'notification',
         name: 'Messages',
-        badge: messageNotificationCount > 0,
+        icon: <ChatIcon className="h-4 w-4" />,
+        count: messageNotificationCount,
       },
       {
         id: 'friendrequest',
         name: 'Requests',
-        badge: requestNotificationCount > 0,
+        icon: <AddMemberIcon className="h-4 w-4" />,
+        count: requestNotificationCount,
       },
     ],
     [messageNotificationCount, requestNotificationCount],
