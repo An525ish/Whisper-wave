@@ -46,7 +46,7 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
       <img
         src={avatar}
         alt=""
-        className="mx-auto h-24 w-24 rounded-full border-4 p-3 shadow-lg sm:h-[10rem] sm:w-[10rem] sm:p-4"
+        className="mx-auto h-24 w-24 rounded-full border-4 p-3 shadow-lg sm:h-40 sm:w-40 sm:p-4"
       />
 
       <form

@@ -1,15 +1,6 @@
 import { useSocket } from '@/socket/SocketProvider';
 import useSocketEvent from '@/shared/hooks/useSocketEvent';
-import {
-  NEW_MESSAGE,
-  NEW_MESSAGE_ALERT,
-  NEW_REQUEST,
-  ONLINE_USERS,
-  START_TYPING,
-  STOP_TYPING,
-  USER_OFFLINE,
-  USER_ONLINE,
-} from '@/shared/constants/socketEvents';
+import { SOCKET_EVENTS } from '@/shared/constants/socketEvents';
 import { useNotificationsStore } from '@/features/notifications/store';
 import { usePresenceStore } from '@/features/chat/stores/presence';
 import { useProfileUiStore } from '@/features/profile/store';
@@ -166,14 +157,14 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
 
   const events = useMemo(
     () => ({
-      [NEW_MESSAGE_ALERT]: newMessageAlertHandler,
-      [NEW_REQUEST]: newRequestHandler,
-      [ONLINE_USERS]: onlineUsersHandler,
-      [USER_ONLINE]: userOnlineHandler,
-      [USER_OFFLINE]: userOfflineHandler,
-      [START_TYPING]: startTypingHandler,
-      [STOP_TYPING]: stopTypingHandler,
-      [NEW_MESSAGE]: newMessageHandler,
+      [SOCKET_EVENTS.NEW_MESSAGE_ALERT]: newMessageAlertHandler,
+      [SOCKET_EVENTS.NEW_REQUEST]: newRequestHandler,
+      [SOCKET_EVENTS.ONLINE_USERS]: onlineUsersHandler,
+      [SOCKET_EVENTS.USER_ONLINE]: userOnlineHandler,
+      [SOCKET_EVENTS.USER_OFFLINE]: userOfflineHandler,
+      [SOCKET_EVENTS.START_TYPING]: startTypingHandler,
+      [SOCKET_EVENTS.STOP_TYPING]: stopTypingHandler,
+      [SOCKET_EVENTS.NEW_MESSAGE]: newMessageHandler,
     }),
     [
       newMessageAlertHandler,
@@ -206,8 +197,8 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
         <section
           className={`min-h-0 min-w-0 flex-col ${
             isChatOpen
-              ? 'flex flex-1 md:flex-[2]'
-              : 'hidden md:flex md:flex-[2]'
+              ? 'flex flex-1 md:flex-2'
+              : 'hidden md:flex md:flex-2'
           }`}
         >
           {children}

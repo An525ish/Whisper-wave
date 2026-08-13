@@ -58,7 +58,7 @@ const Messages = () => {
           </div>
         </div>,
         <p key={`${msg._id}-chat`}>{msg.chat?.name ?? '—'}</p>,
-        <p key={`${msg._id}-content`} className="truncate max-w-[14rem]">
+        <p key={`${msg._id}-content`} className="truncate max-w-56">
           {msg.content || (msg.attachments?.length ? '[attachment]' : '—')}
         </p>,
         <p key={`${msg._id}-status`}>{msg.status ?? '—'}</p>,
@@ -78,7 +78,7 @@ const Messages = () => {
 
       <div className="w-full px-12 mb-8">
         <Searchbar
-          className={'w-[18rem] mx-auto '}
+          className={'w-72 mx-auto '}
           searchText={searchText}
           setSearchText={setSearchText}
           expandable={false}

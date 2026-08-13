@@ -53,7 +53,7 @@ const ConfirmationModal = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+      className="fixed inset-0 z-80 flex items-center justify-center p-4"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -62,14 +62,14 @@ const ConfirmationModal = ({
       <button
         type="button"
         aria-label="Dismiss"
-        className={`absolute inset-0 bg-black/60 backdrop-blur-[8px] transition-opacity duration-300 motion-reduce:transition-none ${
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none ${
           entered ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}
       />
 
       <div
-        className={`relative w-[min(100%,22.5rem)] overflow-hidden rounded-[1.5rem] border border-white/10 bg-background-alt/95 p-5 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:p-6 ${
+        className={`relative w-[min(100%,22.5rem)] overflow-hidden rounded-3xl border border-white/10 bg-background-alt/95 p-5 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:p-6 ${
           entered
             ? 'translate-y-0 scale-100 opacity-100'
             : 'translate-y-3 scale-[0.98] opacity-0'

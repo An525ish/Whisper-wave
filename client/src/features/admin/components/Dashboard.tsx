@@ -77,7 +77,7 @@ const Dashboard = () => {
       </div>
 
       <div className="flex text-body-700 justify-between gap-12 mt-12">
-        <div className="w-3/5 h-[20rem]">
+        <div className="w-3/5 h-80">
           <p className="flex gap-4 border-b border-border pb-2 mb-4 text-xl font-semibold">
             New Users{' '}
             <span className="text-green">
@@ -90,7 +90,7 @@ const Dashboard = () => {
             label="New users"
           />
         </div>
-        <div className="w-2/5 h-[20rem]">
+        <div className="w-2/5 h-80">
           <p className="flex gap-4 border-b border-border pb-2 mb-4 text-xl font-semibold">
             Messages{' '}
             <span className="text-green">
@@ -129,7 +129,7 @@ const Dashboard = () => {
             <p className="font-semibold text-xl">Weekly Message Stats</p>
           </div>
           <div>
-            <div className="mb-8 h-[10rem]">
+            <div className="mb-8 h-40">
               <SingleAreaChart
                 labels={seriesLabels as never[]}
                 values={messagesSeries as never[]}

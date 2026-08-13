@@ -14,7 +14,7 @@ const bubbleShell = (isOut: boolean, minHeight: string) =>
 const ChatMessageSkeleton = ({
   variant,
   width,
-  minHeight = 'min-h-[2.375rem]',
+  minHeight = 'min-h-9.5',
 }: ChatMessageSkeletonProps) => {
   const isOut = variant === 'out';
 
@@ -46,7 +46,7 @@ const SKELETON_THREAD: Array<{
   { variant: 'out', width: '7.25rem' },
   { variant: 'in', width: '6rem' },
   { variant: 'out', width: '4.25rem' },
-  { variant: 'in', width: '14.5rem', minHeight: 'min-h-[3.5rem]' },
+  { variant: 'in', width: '14.5rem', minHeight: 'min-h-14' },
   { variant: 'out', width: '10rem' },
   { variant: 'in', width: '5.75rem' },
   { variant: 'out', width: '8.5rem' },

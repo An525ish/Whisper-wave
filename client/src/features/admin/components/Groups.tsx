@@ -31,7 +31,7 @@ const Groups = () => {
       .map((group) => [
         <p
           key={`${group._id}-id`}
-          className="text-center truncate max-w-[10rem]"
+          className="text-center truncate max-w-40"
         >
           {group._id}
         </p>,
@@ -66,7 +66,7 @@ const Groups = () => {
 
       <div className="w-full px-12 mb-8">
         <Searchbar
-          className={'w-[18rem] mx-auto '}
+          className={'w-72 mx-auto '}
           searchText={searchText}
           setSearchText={setSearchText}
           expandable={false}

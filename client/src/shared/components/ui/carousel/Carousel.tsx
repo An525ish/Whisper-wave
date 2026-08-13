@@ -82,7 +82,7 @@ function MemberSlide({ members }: MemberSlideProps) {
       {members.map(({ name, avatar, _id }) => (
         <div
           key={_id}
-          className="flex w-[3.25rem] flex-col items-center gap-1"
+          className="flex w-13 flex-col items-center gap-1"
           title={name}
         >
           <AvatarRing tone="silver" className="h-11 w-11">

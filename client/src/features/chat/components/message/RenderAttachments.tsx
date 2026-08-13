@@ -10,6 +10,8 @@ import {
 } from '@/shared/components/media/RetryableMedia';
 import ImageViewerIcon from '@/shared/components/image-viewer/ImageViewerIcons';
 import type { MouseEvent, ReactNode } from 'react';
+import VideosIcon from '@/shared/components/icons/Video';
+import MicrophoneIcon from '@/shared/components/icons/Microphone';
 
 type RenderAttachmentsProps = {
   fileType: FileFormatKind | string;
@@ -41,21 +43,19 @@ const formatBytes = (bytes?: number) => {
 };
 
 const tileClass = (fill?: boolean) =>
-  `relative aspect-[4/3] overflow-hidden rounded-[1rem] bg-[#0c1014] ${
-    fill ? 'w-full' : 'w-[14.5rem] max-w-full'
+  `relative aspect-4/3 overflow-hidden rounded-2xl bg-[#0c1014] ${
+    fill ? 'w-full' : 'w-58 max-w-full'
   }`;
 
 const mediaFillClass = 'absolute inset-0 h-full w-full object-cover';
 
 const PlayBadge = () => (
   <span
-    className="pointer-events-none absolute inset-0 z-[1] grid place-items-center"
+    className="pointer-events-none absolute inset-0 z-1 grid place-items-center"
     aria-hidden
   >
     <span className="grid h-11 w-11 place-items-center rounded-full bg-black/55 ring-1 ring-white/25 backdrop-blur-sm">
-      <svg viewBox="0 0 20 20" className="ml-0.5 h-5 w-5 fill-white" aria-hidden>
-        <path d="M6.5 4.5v11l9-5.5-9-5.5Z" />
-      </svg>
+      <VideosIcon className="ml-0.5 h-5 w-5 fill-white" />
     </span>
   </span>
 );
@@ -63,7 +63,7 @@ const PlayBadge = () => (
 const BottomFade = ({ children }: { children?: ReactNode }) => (
   <>
     <div
-      className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-14 bg-gradient-to-t from-black/65 via-black/25 to-transparent"
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-1 h-14 bg-linear-to-t from-black/65 via-black/25 to-transparent"
       aria-hidden
     />
     {children}
@@ -155,15 +155,13 @@ const RenderAttachments = ({
   if (isAudio) {
     return (
       <div
-        className={`relative max-w-full overflow-hidden rounded-[1rem] border border-white/10 bg-black/25 px-2.5 py-2.5 ${
-          fill ? 'w-full' : 'w-[14.5rem]'
+        className={`relative max-w-full overflow-hidden rounded-2xl border border-white/10 bg-black/25 px-2.5 py-2.5 ${
+          fill ? 'w-full' : 'w-58'
         }`}
       >
         <div className="mb-1.5 flex items-center gap-2 px-0.5">
           <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-green/20 text-green">
-            <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current" aria-hidden>
-              <path d="M10 2.5a1 1 0 0 1 1 1V10a1 1 0 1 1-2 0V3.5a1 1 0 0 1 1-1Zm0 12.25a3.75 3.75 0 0 0 3.75-3.75h1.5A5.25 5.25 0 0 1 4.75 11h1.5A3.75 3.75 0 0 0 10 14.75Z" />
-            </svg>
+            <MicrophoneIcon className="h-3.5 w-3.5 fill-current" />
           </span>
           <p className="min-w-0 flex-1 truncate text-xs font-medium text-body">
             {name || 'Audio'}
@@ -218,8 +216,8 @@ const RenderFile = ({
 
   return (
     <div
-      className={`relative flex max-w-full items-center gap-2 overflow-hidden rounded-[1rem] border border-white/10 bg-black/20 px-2.5 py-2.5 ${
-        fill ? 'w-full' : 'w-[14.5rem]'
+      className={`relative flex max-w-full items-center gap-2 overflow-hidden rounded-2xl border border-white/10 bg-black/20 px-2.5 py-2.5 ${
+        fill ? 'w-full' : 'w-58'
       }`}
     >
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-background-alt/70 ring-1 ring-white/10">

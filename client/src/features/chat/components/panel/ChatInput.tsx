@@ -160,7 +160,7 @@ const ChatInput = ({
                         />
                     </div>
                 )}
-                <div className={`flex min-h-10 min-w-0 flex-1 items-center gap-0.5 rounded-[1.5rem] border px-1.5 py-0.5 md:gap-1 md:bg-transparent md:px-2 ${
+                <div className={`flex min-h-10 min-w-0 flex-1 items-center gap-0.5 rounded-3xl border px-1.5 py-0.5 md:gap-1 md:bg-transparent md:px-2 ${
                     editMode
                         ? 'border-green/45 bg-green/10'
                         : 'border-border bg-primary/40'

@@ -6,16 +6,16 @@ export type ContextMenuPosition = {
 };
 
 export type ContextMenuOption = {
-  id: number;
   icon: string | ReactNode;
-  name: string;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
 };
 
 export type ContextMenuState = {
   visible: boolean;
   position: ContextMenuPosition;
   options: ContextMenuOption[];
-  onOptionClick: ((option: ContextMenuOption) => void) | null;
 };
 
 const useContextMenu = () => {
@@ -23,15 +23,13 @@ const useContextMenu = () => {
     visible: false,
     position: { x: 0, y: 0 },
     options: [],
-    onOptionClick: null,
   });
 
   const showContextMenu = (
     position: ContextMenuPosition,
     options: ContextMenuOption[],
-    onOptionClick: (option: ContextMenuOption) => void,
   ): void => {
-    setMenuState({ visible: true, position, options, onOptionClick });
+    setMenuState({ visible: true, position, options });
   };
 
   const hideContextMenu = (): void => {

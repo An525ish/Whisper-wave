@@ -59,7 +59,7 @@ const NotificationDialog = ({
               Notifications
             </p>
             {isFullscreen ? (
-              <span className="inline-block w-[4.25rem] shrink-0" aria-hidden />
+              <span className="inline-block w-17 shrink-0" aria-hidden />
             ) : null}
           </header>
         ) : null}

@@ -16,7 +16,7 @@ const renderHighlightedText = (text: string, query?: string): ReactNode => {
     part.toLowerCase() === query.toLowerCase() ? (
       <mark
         key={`${part}-${index}`}
-        className="rounded-[2px] bg-[#f6e05e]/85 px-0.5 text-background"
+        className="rounded-sm bg-[#f6e05e]/85 px-0.5 text-background"
       >
         {part}
       </mark>
