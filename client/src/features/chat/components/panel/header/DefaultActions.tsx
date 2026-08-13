@@ -5,7 +5,7 @@ import LeaveGroupIcon from '@/shared/components/icons/LeaveGroup';
 import MembersIcon from '@/shared/components/icons/Members';
 import SelectMessagesIcon from '@/shared/components/icons/SelectMessages';
 import AccountBar from '@/features/profile/components/AccountBar';
-import { type RefObject } from 'react';
+import { type ReactNode, type RefObject } from 'react';
 import searchIcon from '@/assets/search.svg';
 
 type DefaultActionsProps = {
@@ -23,6 +23,50 @@ type DefaultActionsProps = {
   onAddMember: () => void;
   onLeaveGroup: () => void;
 };
+
+type MenuRowProps = {
+  label: string;
+  icon: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  tone?: 'default' | 'accent' | 'danger';
+};
+
+const chipTone = {
+  default: 'bg-white/6 text-body-700 group-hover:bg-white/10 group-hover:text-body',
+  accent: 'bg-green/15 text-green group-hover:bg-green/25',
+  danger: 'bg-white/6 text-body-700 group-hover:bg-red/15 group-hover:text-red',
+} as const;
+
+const rowTone = {
+  default: 'text-body-700 hover:bg-white/6 hover:text-body',
+  accent: 'text-body hover:bg-green/10 hover:text-green',
+  danger: 'text-body-700 hover:bg-red/10 hover:text-red',
+} as const;
+
+const MenuRow = ({
+  label,
+  icon,
+  onClick,
+  disabled,
+  tone = 'default',
+}: MenuRowProps) => (
+  <button
+    type="button"
+    disabled={disabled}
+    onClick={onClick}
+    className={`group flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm transition disabled:opacity-45 ${rowTone[tone]}`}
+  >
+    <span
+      className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition ${chipTone[tone]}`}
+    >
+      {icon}
+    </span>
+    <span className={tone === 'accent' ? 'font-medium' : 'font-normal'}>
+      {label}
+    </span>
+  </button>
+);
 
 const DefaultActions = ({
   isDotsMenu,
@@ -65,10 +109,10 @@ const DefaultActions = ({
       type="button"
       ref={buttonRef}
       onClick={onToggle}
-      className={`grid h-10 w-10 place-items-center rounded-full border bg-primary text-body transition ${
+      className={`grid h-11 w-11 place-items-center rounded-full border text-body transition md:h-10 md:w-10 ${
         searchOpen || isDotsMenu
           ? 'border-green/50 bg-green/10 text-green'
-          : 'border-border hover:border-green-light hover:text-white active:bg-primary/70'
+          : 'border-white/15 group hover:border-green-light hover:text-white'
       }`}
       aria-label="Chat options"
       aria-expanded={isDotsMenu}
@@ -79,58 +123,50 @@ const DefaultActions = ({
     {isDotsMenu ? (
       <div
         ref={menuRef}
-        className="absolute right-0 top-12 z-60 w-max min-w-52 origin-top-right overflow-hidden rounded-xl border border-border/70 bg-primary py-1 shadow-lg ring-1 ring-black/5 md:right-2"
+        role="menu"
+        className="absolute right-0 top-12 z-40 w-48 origin-top-right animate-menu-pop overflow-hidden rounded-2xl border border-white/12 bg-[linear-gradient(165deg,rgba(48,38,60,0.97)_0%,rgba(28,22,38,0.98)_100%)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.45),0_0_0_1px_rgba(1,195,109,0.08)] backdrop-blur-xl md:right-2 md:top-14 motion-reduce:animate-none"
       >
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 whitespace-nowrap px-3 py-1.5 text-left text-sm text-body-300 transition hover:text-body"
-          onClick={onOpenSearch}
-        >
-          <img src={searchIcon} alt="" className="h-4 w-4 shrink-0" />
-          <span>Search chat</span>
-        </button>
+        <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-linear-to-r from-transparent via-green/35 to-transparent" />
 
-        <div className="my-0.5 h-px bg-border/70" />
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 whitespace-nowrap px-3 py-1.5 text-left text-sm text-body-300 transition hover:text-body"
+        <MenuRow
+          label="Search chat"
+          tone="accent"
+          onClick={onOpenSearch}
+          icon={<img src={searchIcon} alt="" className="h-3.5 w-3.5" />}
+        />
+
+        <div className="mx-2 my-0.5 h-px bg-white/8" />
+
+        <MenuRow
+          label="Select messages"
           onClick={onToggleSelectMode}
-        >
-          <SelectMessagesIcon className="h-4 w-4 shrink-0" />
-          Select messages
-        </button>
+          icon={<SelectMessagesIcon className="h-3.5 w-3.5" />}
+        />
 
         {canClearChat ? (
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 whitespace-nowrap px-3 py-1.5 text-left text-sm text-body-300 transition hover:text-red"
+          <MenuRow
+            label="Clear chat"
+            tone="danger"
             onClick={onClearChat}
-          >
-            <img src="/icons/clear.svg" alt="" className="h-4 w-4 shrink-0" />
-            Clear chat
-          </button>
+            icon={<img src="/icons/clear.svg" alt="" className="h-3.5 w-3.5" />}
+          />
         ) : null}
 
         {groupChat ? (
           <>
-            <div className="my-0.5 h-px bg-border/70" />
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 whitespace-nowrap px-3 py-1.5 text-left text-sm text-body-300 transition hover:text-body"
+            <div className="mx-2 my-0.5 h-px bg-white/8" />
+            <MenuRow
+              label="Members"
               onClick={onAddMember}
-            >
-              <MembersIcon className="h-4 w-4 shrink-0" />
-              Members
-            </button>
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 whitespace-nowrap px-3 py-1.5 text-left text-sm text-body-300 transition hover:text-body"
+              icon={<MembersIcon className="h-3.5 w-3.5" />}
+            />
+            <MenuRow
+              label="Leave group"
+              tone="danger"
               onClick={onLeaveGroup}
               disabled={isLeaveGroupLoading}
-            >
-              <LeaveGroupIcon className="h-4 w-4 shrink-0" />
-              Leave group
-            </button>
+              icon={<LeaveGroupIcon className="h-3 w-3" />}
+            />
           </>
         ) : null}
       </div>

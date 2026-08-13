@@ -13,13 +13,35 @@ export type DotsMenuItem = {
   icon?: ReactNode;
   onSelect: () => void;
   disabled?: boolean;
+  /** @deprecated Prefer tone="danger" */
   danger?: boolean;
+  tone?: 'default' | 'accent' | 'danger';
+  dividerBefore?: boolean;
 };
 
 type DotsMenuProps = {
   ariaLabel: string;
   items: DotsMenuItem[];
   align?: 'left' | 'right';
+};
+
+const chipTone = {
+  default:
+    'bg-white/6 text-body-700 group-hover:bg-white/10 group-hover:text-body',
+  accent: 'bg-green/15 text-green group-hover:bg-green/25',
+  danger: 'bg-white/6 text-body-700 group-hover:bg-red/15 group-hover:text-red',
+} as const;
+
+const rowTone = {
+  default: 'text-body-700 hover:bg-white/6 hover:text-body',
+  accent: 'text-body hover:bg-green/10 hover:text-green',
+  danger: 'text-body-700 hover:bg-red/10 hover:text-red',
+} as const;
+
+const resolveTone = (item: DotsMenuItem): keyof typeof rowTone => {
+  if (item.tone) return item.tone;
+  if (item.danger) return 'danger';
+  return 'default';
 };
 
 const DotsMenu = ({
@@ -55,10 +77,10 @@ const DotsMenu = ({
     <div ref={rootRef} className="relative flex shrink-0 items-center">
       <button
         type="button"
-        className={`grid h-9 w-9 place-items-center rounded-full border bg-primary text-body transition ${
+        className={`grid h-9 w-9 place-items-center rounded-full border text-body transition ${
           open
             ? 'border-green/50 bg-green/10 text-green'
-            : 'border-border hover:border-green-light hover:text-white active:bg-primary/70'
+            : 'border-white/15 hover:border-green-light hover:text-white active:bg-primary/70'
         }`}
         aria-label={ariaLabel}
         aria-haspopup="menu"
@@ -73,37 +95,44 @@ const DotsMenu = ({
         <div
           id={menuId}
           role="menu"
-          className={`absolute top-11 z-40 w-max min-w-52 overflow-hidden rounded-xl border border-border/70 bg-primary p-1 shadow-lg ring-1 ring-black/5 ${
-            align === 'left' ? 'left-0' : 'right-0'
+          className={`absolute top-11 z-40 w-48 origin-top-right animate-menu-pop overflow-hidden rounded-2xl border border-white/12 bg-[linear-gradient(165deg,rgba(48,38,60,0.97)_0%,rgba(28,22,38,0.98)_100%)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.45),0_0_0_1px_rgba(1,195,109,0.08)] backdrop-blur-xl motion-reduce:animate-none ${
+            align === 'left' ? 'left-0 origin-top-left' : 'right-0'
           }`}
         >
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              role="menuitem"
-              disabled={item.disabled}
-              className={`flex w-full items-center gap-2 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm transition ${
-                item.disabled
-                  ? 'cursor-not-allowed text-body-300/50'
-                  : item.danger
-                    ? 'text-body-700 hover:bg-white/8 hover:text-red'
-                    : 'text-body-700 hover:bg-white/8 hover:text-green'
-              }`}
-              onClick={() => {
-                if (item.disabled) return;
-                item.onSelect();
-                setOpen(false);
-              }}
-            >
-              {item.icon ? (
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-white/5">
-                  {item.icon}
-                </span>
-              ) : null}
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
+          <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-linear-to-r from-transparent via-green/35 to-transparent" />
+
+          {items.map((item) => {
+            const tone = resolveTone(item);
+            return (
+              <div key={item.id}>
+                {item.dividerBefore ? (
+                  <div className="mx-2 my-0.5 h-px bg-white/8" />
+                ) : null}
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={item.disabled}
+                  className={`group flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2 py-1.5 text-left text-sm transition disabled:cursor-not-allowed disabled:opacity-45 ${rowTone[tone]}`}
+                  onClick={() => {
+                    if (item.disabled) return;
+                    item.onSelect();
+                    setOpen(false);
+                  }}
+                >
+                  {item.icon ? (
+                    <span
+                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition ${chipTone[tone]}`}
+                    >
+                      {item.icon}
+                    </span>
+                  ) : null}
+                  <span className={tone === 'accent' ? 'font-medium' : undefined}>
+                    {item.label}
+                  </span>
+                </button>
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </div>

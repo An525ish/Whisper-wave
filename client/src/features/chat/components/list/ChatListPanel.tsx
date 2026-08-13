@@ -20,6 +20,7 @@ const ChatListPanel = () => {
         <ChatHeader
           searchText={searchText}
           setSearchText={setSearchText}
+          onOpenNew={openNew}
         />
       </div>
 
