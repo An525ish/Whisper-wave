@@ -18,17 +18,20 @@ import {
   useChatDetailsQuery,
   useMyFriendsQuery,
   useRemoveMemberMutation,
+  useSetMemberAdminMutation,
 } from '@/features/api/hooks';
 import { useParams } from 'react-router-dom';
 import useAsyncMutation from '@/hooks/asyncMutation';
 import AvatarSkeleton from '@/components/skeletons/AvatarSkeleton';
 import type { User } from '@/types';
+import { useAuthStore } from '@/stores/auth';
 
 type GroupMember = {
   _id: string;
   name: string;
   avatar?: string;
   isCreator?: boolean;
+  isAdmin?: boolean;
 };
 
 type AddMemberDialogProps = {
@@ -43,21 +46,9 @@ type FriendsResponse = {
 type ChatDetailsResponse = {
   data?: {
     members?: GroupMember[];
+    myRole?: 'creator' | 'admin' | 'member' | null;
   };
 };
-
-const options = [
-  {
-    id: 1,
-    icon: '/icons/chat-icon.svg',
-    name: 'Open Conversation',
-  },
-  {
-    id: 2,
-    icon: '/icons/remove-user-icon.svg',
-    name: 'Remove Member',
-  },
-];
 
 const AddMemberDialog = ({
   isMemberDialog,
@@ -68,6 +59,7 @@ const AddMemberDialog = ({
   const [isAddMember, setIsAddMember] = useState(false);
   const [contextTargetId, setContextTargetId] = useState<string | null>(null);
   const { menuState, showContextMenu, hideContextMenu } = useContextMenu();
+  const selfId = useAuthStore((s) => s.user?._id);
 
   const handleSelectMember = (id: string) => {
     setSelectedMembers((prev) =>
@@ -81,8 +73,10 @@ const AddMemberDialog = ({
     id: chatId,
     populate: true,
   });
-  const members =
-    (chatDetails as ChatDetailsResponse | undefined)?.data?.members ?? [];
+  const chatData = (chatDetails as ChatDetailsResponse | undefined)?.data;
+  const members = chatData?.members ?? [];
+  const myRole = chatData?.myRole ?? null;
+  const canManageMembers = myRole === 'creator' || myRole === 'admin';
 
   const { data: NonGroupMembers, isLoading: isAvailableMembersLoading } =
     useMyFriendsQuery({ chatId });
@@ -91,6 +85,7 @@ const AddMemberDialog = ({
 
   const [addMember, { isLoading }] = useAsyncMutation(useAddMemberMutation);
   const [removeMember] = useAsyncMutation(useRemoveMemberMutation);
+  const [setMemberAdmin] = useAsyncMutation(useSetMemberAdminMutation);
 
   const onSubmit = async () => {
     await addMember('Adding member...', {
@@ -109,9 +104,36 @@ const AddMemberDialog = ({
     setContextTargetId(null);
   };
 
-  const handleContextMenu = (e: MouseEvent, memberId: string) => {
+  const handleContextMenu = (e: MouseEvent, member: GroupMember) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const memberId = String(member._id);
+    const options: Array<{ id: number; icon: string; name: string }> = [];
+
+    if (
+      canManageMembers &&
+      !member.isCreator &&
+      memberId !== String(selfId ?? '') &&
+      !(myRole === 'admin' && member.isAdmin)
+    ) {
+      options.push({
+        id: 2,
+        icon: '/icons/remove-user-icon.svg',
+        name: 'Remove Member',
+      });
+    }
+
+    if (myRole === 'creator' && !member.isCreator) {
+      options.push({
+        id: 3,
+        icon: '/icons/remove-user-icon.svg',
+        name: member.isAdmin ? 'Dismiss as admin' : 'Make group admin',
+      });
+    }
+
+    if (options.length === 0) return;
+
     setContextTargetId(memberId);
     showContextMenu(
       { x: e.clientX, y: e.clientY },
@@ -121,6 +143,20 @@ const AddMemberDialog = ({
           await removeMember('Removing Member', {
             chatId: chatId ?? '',
             memberToBeRemoved: memberId,
+          });
+        }
+        if (option.name === 'Make group admin') {
+          await setMemberAdmin('Updating admin…', {
+            chatId: chatId ?? '',
+            memberId,
+            makeAdmin: true,
+          });
+        }
+        if (option.name === 'Dismiss as admin') {
+          await setMemberAdmin('Updating admin…', {
+            chatId: chatId ?? '',
+            memberId,
+            makeAdmin: false,
           });
         }
         setContextTargetId(null);
@@ -174,7 +210,7 @@ const AddMemberDialog = ({
           />
         </div>
 
-        {!isAddMember ? (
+        {!isAddMember && canManageMembers ? (
           <button
             type="button"
             className="group mb-2 flex shrink-0 items-center gap-2 text-body-700 transition hover:text-green"
@@ -249,7 +285,8 @@ const AddMemberDialog = ({
                     title="No Member To Show"
                   />
                 ) : (
-                  filteredMembers.map(({ _id, name, avatar, isCreator }) => {
+                  filteredMembers.map((member) => {
+                    const { _id, name, avatar, isCreator, isAdmin } = member;
                     const isContextTarget = contextTargetId === _id;
                     return (
                       <div
@@ -259,7 +296,7 @@ const AddMemberDialog = ({
                             ? 'bg-gradient-line-fade-light'
                             : 'hover:bg-gradient-line-fade-light'
                         }`}
-                        onContextMenu={(e) => handleContextMenu(e, _id)}
+                        onContextMenu={(e) => handleContextMenu(e, member)}
                       >
                         <AvatarCard avatars={[avatar]} />
                         <div className="flex min-w-0 flex-1 items-center justify-between gap-3 text-body-700">
@@ -269,6 +306,10 @@ const AddMemberDialog = ({
                           {isCreator ? (
                             <span className="shrink-0 rounded-full border border-green-light bg-green-dark/45 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-green">
                               Creator
+                            </span>
+                          ) : isAdmin ? (
+                            <span className="shrink-0 rounded-full border border-blue-light bg-blue/20 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-blue">
+                              Admin
                             </span>
                           ) : null}
                         </div>

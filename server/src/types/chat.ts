@@ -29,6 +29,8 @@ export type IChatFields = {
   avatar?: ChatAvatar;
   groupChat: boolean;
   creator: Types.ObjectId;
+  /** Group admins (subset of members; never includes creator). */
+  admins: Types.ObjectId[];
   members: Types.ObjectId[];
   lastMessage?: ChatLastMessage;
   createdAt: Date;
@@ -159,6 +161,7 @@ export type CreateChatInput = {
   groupChat?: boolean;
   creator: string | Types.ObjectId;
   members: Array<string | Types.ObjectId>;
+  admins?: Array<string | Types.ObjectId>;
 };
 
 export type ChatLean = {
@@ -168,6 +171,7 @@ export type ChatLean = {
   avatar?: ChatAvatar;
   groupChat: boolean;
   creator: Types.ObjectId;
+  admins?: Types.ObjectId[];
   members: Types.ObjectId[];
   lastMessage?: ChatLastMessage;
   createdAt?: Date;
@@ -207,6 +211,7 @@ export type UpdateChatPatch = Partial<{
   bio: string;
   avatar: ChatAvatar;
   creator: Types.ObjectId | string;
+  admins: Array<Types.ObjectId | string>;
   members: Array<Types.ObjectId | string>;
   lastMessage: ChatLastMessage;
 }>;

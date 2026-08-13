@@ -32,6 +32,7 @@ const chatSchema = new Schema<IChat>(
     avatar: { type: chatAvatarSchema },
     groupChat: { type: Boolean, default: false },
     creator: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    admins: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     members: [{ type: Schema.Types.ObjectId, ref: 'User', required: true }],
     lastMessage: { type: lastMessageSchema },
   },

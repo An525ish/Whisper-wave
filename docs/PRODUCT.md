@@ -85,9 +85,28 @@ These are the features the current Whisper Wave codebase already implements, now
 - Persistent DM with all your connections
 - Connection origin story ("you matched as `midnight_fox` and `blue_static`, 14 days ago")
 - Friend requests and group chats (existing feature)
+- Group roles: **creator**, **admin**, **member** (see below)
 - File and media sharing (existing feature)
 - Notification system (existing feature)
 - Connection suggestions based on mutual connections
+
+### Group roles
+
+| Action | Creator | Admin | Member |
+|---|---|---|---|
+| Send / reply / forward | yes | yes | yes |
+| Edit own message | yes | yes | yes |
+| Delete own message | yes | yes | yes |
+| Delete anyone’s message | yes | yes | no |
+| Add members | yes | yes | no |
+| Remove members | yes (not self) | yes (members only; not creator/admins) | no |
+| Promote / demote admin | yes | no | no |
+| Edit group name / bio / avatar | yes | yes | no |
+| Clear all chat history | yes | no | no |
+| Leave group | yes | yes | yes |
+| Delete group | yes | no | no |
+
+DMs stay sender-only for edit/delete. Clear-all in DMs remains available to either participant.
 
 ---
 

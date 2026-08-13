@@ -242,7 +242,7 @@ If B never comes back: pending expires. A keeps their account. They just don’t
 | Send files | `POST /api/message/send-attachments` — compress → Cloudinary → Message + lastMessage. Alert excludes sender. |
 | Typing | `START_TYPING` / `STOP_TYPING` — relay only. |
 | Read / unread | Per-user `ChatRead` (`chat`+`user` unique). Unread = messages from others with `createdAt > lastReadAt` (no cursor → count all from others). DM receipts via `readBy` + `CHAT_READ`. `PUT /api/chat/read-all` marks every chat read. Message notification “Clear all” dismisses the inbox only and does not change unread. |
-| Friend request / groups / profile | Existing REST routes, still Mongo. New chats init `ChatRead` for members at create time. |
+| Friend request / groups / profile | Existing REST routes, still Mongo. New chats init `ChatRead` for members at create time. Groups use `creator` + `admins[]` roles (creator/admin can delete any message; creator-only clear-all / delete group / promote admins). |
 
 Disconnect here does **not** delete the person. That’s the difference from anonymous.
 

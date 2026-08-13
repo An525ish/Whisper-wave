@@ -9,6 +9,9 @@ import {
 import ChatList from '@/shared/chatListPanel/ChatList';
 import { useCallback, useEffect } from 'react';
 import { useNotificationsStore } from '@/stores/notifications';
+import GridAllIcon from '@/components/icons/GridAll';
+import ChatIcon from '@/components/icons/Chat';
+import MembersIcon from '@/components/icons/Members';
 
 type ChatRow = {
   _id: string;
@@ -33,14 +36,17 @@ const tabsData = Object.freeze({
   0: {
     id: 'allchats',
     name: 'All Chats',
+    icon: <GridAllIcon className="h-4 w-4" />,
   },
   1: {
     id: 'personal',
     name: 'Personal',
+    icon: <ChatIcon className="h-4 w-4" />,
   },
   2: {
     id: 'group',
     name: 'Groups',
+    icon: <MembersIcon className="h-5 w-5" />,
   },
 });
 
