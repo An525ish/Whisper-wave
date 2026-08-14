@@ -17,7 +17,6 @@ import { ChatMessagesSkeleton } from '@/shared/components/skeletons/ChatMessageS
 import toast from 'react-hot-toast';
 import type { Avatar } from '@/shared/types';
 import { isValidMessageId, normalizeMemberIds } from '@/shared/utils/helper';
-import dayjs from 'dayjs';
 import ChatBox, { type MessageReplyTo } from '@/features/chat/components/message/ChatBox';
 import ChatInput from './ChatInput';
 import ForwardDialog from '@/features/chat/components/dialogs/ForwardDialog';
@@ -25,6 +24,7 @@ import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import type {
   ChatDetailsResponse, ChatMessage, SendAttachmentsResult,
 } from '@/features/chat/types';
+import { isOutgoingMessageRead } from '@/features/chat/utils/messageUtils';
 import DoubleChevronDown from '@/shared/components/icons/DoubleChevronDown';
 import ReplyComposerBar from './ReplyComposerBar';
 
@@ -156,12 +156,16 @@ const ChatsViewPanel = forwardRef<ChatsViewPanelHandle, ChatsViewPanelProps>(({
 
   const [sendAttachments] = useAsyncMutation(useSendAttachmentsMutation);
 
-  const isMessageRead = (msg: ChatMessage) => {
-    if (isGroupChat) return false;
-    if (String(msg.sender._id) !== String(user?._id ?? '')) return false;
-    if (peerLastReadAt && msg.createdAt) return !dayjs(msg.createdAt).isAfter(dayjs(peerLastReadAt));
-    return (msg.readBy ?? []).map(String).some((id) => id !== String(user?._id ?? ''));
-  };
+  const isMessageRead = useCallback(
+    (msg: ChatMessage) =>
+      isOutgoingMessageRead(msg, {
+        userId: String(user?._id ?? ''),
+        isGroupChat,
+        memberIds,
+        peerLastReadAt,
+      }),
+    [isGroupChat, memberIds, peerLastReadAt, user?._id],
+  );
 
   const handleMessageChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
@@ -261,7 +265,7 @@ const ChatsViewPanel = forwardRef<ChatsViewPanelHandle, ChatsViewPanelProps>(({
                           onClick={() => { if (selectable) toggleSelected(msg._id); }}
                           role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
                           onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(msg._id); } } : undefined}>
-                          <ChatBox chatData={msg} isGroupChat={isGroupChat} showReadReceipt={!isGroupChat && sameSender}
+                          <ChatBox chatData={msg} isGroupChat={isGroupChat} showReadReceipt={sameSender}
                             isRead={isMessageRead(msg)} searchHighlight={msg._id === highlightedMessageId}
                             highlightQuery={msg._id === highlightedMessageId && highlightQuery ? highlightQuery : undefined}
                             isDeleted={Boolean(msg.isDeleted)} editedAt={msg.editedAt} />

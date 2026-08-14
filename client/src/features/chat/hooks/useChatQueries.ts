@@ -21,6 +21,9 @@ export function useChatDetailsQuery(
     queryKey: queryKeys.chatDetails(id, params.populate),
     queryFn: () => chatApi.getChatDetails({ id, populate: params.populate }),
     enabled: isValidChatId(id) && !options?.skip,
+    // Keep members/groupChat flag warm so typing indicators and
+    // the online dot work from the first keystroke after a chat switch.
+    staleTime: 30_000,
   });
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import type { Socket } from 'socket.io-client';
 import dayjs from 'dayjs';
 import useSocketEvent from '@/shared/hooks/useSocketEvent';
@@ -169,6 +169,36 @@ export function useChatMessages({
     [chatId, markCurrentChatRead],
   );
 
+  const applyReadByUser = useCallback(
+    (readerId: string, lastReadAt: string) => {
+      const patchMessage = (msg: ChatMessage): ChatMessage => {
+        if (String(msg.sender._id) !== String(user?._id ?? '')) return msg;
+        if (msg.createdAt && dayjs(msg.createdAt).isAfter(dayjs(lastReadAt))) return msg;
+        const readBy = new Set((msg.readBy ?? []).map(String));
+        readBy.add(readerId);
+        return { ...msg, readBy: Array.from(readBy) };
+      };
+
+      setLiveMessages((prev) => prev.map(patchMessage));
+
+      if (!chatId) return;
+      queryClient.setQueryData<InfiniteData<MessagesPage>>(
+        queryKeys.messages(chatId),
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data?.map(patchMessage),
+            })),
+          };
+        },
+      );
+    },
+    [chatId, queryClient, user?._id],
+  );
+
   const chatReadListener = useCallback(
     (res: ChatReadPayload) => {
       if (res.chatId !== chatId) return;
@@ -176,17 +206,9 @@ export function useChatMessages({
       setPeerLastReadAt((prev) =>
         !prev || dayjs(res.lastReadAt).isAfter(dayjs(prev)) ? res.lastReadAt : prev,
       );
-      setLiveMessages((prev) =>
-        prev.map((msg) => {
-          if (String(msg.sender._id) !== String(user?._id ?? '')) return msg;
-          if (msg.createdAt && dayjs(msg.createdAt).isAfter(dayjs(res.lastReadAt))) return msg;
-          const readBy = new Set((msg.readBy ?? []).map(String));
-          readBy.add(res.userId);
-          return { ...msg, readBy: Array.from(readBy) };
-        }),
-      );
+      applyReadByUser(res.userId, res.lastReadAt);
     },
-    [chatId, user?._id],
+    [applyReadByUser, chatId, user?._id],
   );
 
   const messageUpdatedListener = useCallback(

@@ -54,13 +54,24 @@ const senderNameOf = (sender: unknown): string | undefined => {
 const toListLastMessage = (
   lastMessage: ChatLastMessage | undefined,
   userId: string,
-  readBy: string[]
+  readBy: string[],
+  opts?: { groupChat?: boolean; memberIds?: string[] }
 ): ChatListLastMessage | null => {
   if (!lastMessage) return null;
 
   const senderId = senderIdOf(lastMessage.sender);
   const isOwn = senderId === userId;
-  const isRead = isOwn && readBy.some((id) => id !== userId);
+
+  let isRead = false;
+  if (isOwn && senderId) {
+    if (opts?.groupChat && opts.memberIds) {
+      const others = opts.memberIds.filter((id) => id !== senderId);
+      isRead =
+        others.length > 0 && others.every((id) => readBy.includes(id));
+    } else {
+      isRead = readBy.some((id) => id !== userId);
+    }
+  }
 
   return {
     _id: lastMessage._id ? String(lastMessage._id) : undefined,
@@ -263,7 +274,13 @@ export const getMyChats = async (
       lastMessage: toListLastMessage(
         lastMessage as ChatLastMessage | undefined,
         userId,
-        readByMap.get(lastMessageId) ?? []
+        readByMap.get(lastMessageId) ?? [],
+        groupChat
+          ? {
+              groupChat: true,
+              memberIds: typedMembers.map((member) => member._id.toString()),
+            }
+          : undefined,
       ),
       unreadCount: unreadByChat.get(chatId) ?? 0,
     };
