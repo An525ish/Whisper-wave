@@ -1,15 +1,15 @@
 import { useSocket } from '@/socket/SocketProvider';
-import useSocketEvent from '@/shared/hooks/useSocketEvent';
-import { SOCKET_EVENTS } from '@/shared/constants/socketEvents';
-import { useNotificationsStore } from '@/features/notifications/store';
-import { usePresenceStore } from '@/features/chat/stores/presence';
-import { useProfileUiStore } from '@/features/profile/store';
-import Title from '@/shared/components/Title';
-import ChatListPanel from '@/features/chat/components/list/ChatListPanel';
-import ProfileHeader from '@/features/profile/components/ProfileHeader';
-import ProfilePanel from '@/features/profile/components/ProfilePanel';
-import ProfileSheet from '@/features/profile/components/ProfileSheet';
-import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
+import useSocketEvent from '@/hooks/shared/useSocketEvent';
+import { SOCKET_EVENTS } from '@/constants/socket';
+import { useNotificationsStore } from '@/stores/notifications';
+import { usePresenceStore } from '@/stores/chat/presence';
+import { useProfileUiStore } from '@/stores/profile';
+import Title from '@/components/ui/Title';
+import ChatListPanel from '@/components/chat/list/ChatListPanel';
+import ProfileHeader from '@/components/profile/ProfileHeader';
+import ProfilePanel from '@/components/profile/ProfilePanel';
+import ProfileSheet from '@/components/profile/ProfileSheet';
+import { useMediaQuery } from '@/hooks/shared/useMediaQuery';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 

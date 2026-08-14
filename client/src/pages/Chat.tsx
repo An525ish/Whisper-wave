@@ -1,10 +1,11 @@
 import AppWrapper from '@/layout/AppWrapper';
-import ChatHeader from '@/features/chat/components/panel/ChatHeader';
-import ChatSearch from '@/features/chat/components/panel/ChatSearch';
-import ChatsViewPanel, { type ChatsViewPanelHandle } from '@/features/chat/components/panel/ChatsViewPanel';
-import AddMemberDialog from '@/features/chat/components/group/AddMemberDialog';
-import ProfileSheet from '@/features/profile/components/ProfileSheet';
-import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
+import ChatHeader from '@/components/chat/conversation/header/ConversationHeader';
+import ChatSearch from '@/components/chat/conversation/search/MessageSearch';
+import ChatsViewPanel, { type ConversationPanelHandle } from '@/components/chat/conversation/ConversationPanel';
+import OlderMessagesLoader from '@/components/chat/conversation/OlderMessagesLoader';
+import AddMemberDialog from '@/components/chat/dialogs/AddMemberDialog';
+import ProfileSheet from '@/components/profile/ProfileSheet';
+import { useMediaQuery } from '@/hooks/shared/useMediaQuery';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -18,7 +19,8 @@ const Chat = () => {
   const [deletableSelectedCount, setDeletableSelectedCount] = useState(0);
   const [isDeletingSelected, setIsDeletingSelected] = useState(false);
   const [isEditingMessage, setIsEditingMessage] = useState(false);
-  const panelRef = useRef<ChatsViewPanelHandle>(null);
+  const [isFetchingOlder, setIsFetchingOlder] = useState(false);
+  const panelRef = useRef<ConversationPanelHandle>(null);
   const handleCancelSelect = useCallback(() => {
     setSelectMode(false);
     setSelectedCount(0);
@@ -46,6 +48,7 @@ const Chat = () => {
     setSelectedCount(0);
     setDeletableSelectedCount(0);
     setIsEditingMessage(false);
+    setIsFetchingOlder(false);
   }, [chatId]);
 
   const handleJumpToMessage = useCallback(
@@ -96,6 +99,7 @@ const Chat = () => {
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[calc(max(0.5rem,env(safe-area-inset-top))+5.25rem)] bg-linear-to-b from-[rgb(33,26,42)]/50 from-25% via-[rgb(33,26,42)]/22 to-transparent md:top-1 md:h-28 md:rounded-t-xl"
         />
+        <OlderMessagesLoader visible={isFetchingOlder && !searchOpen} />
         <div className={`pointer-events-none absolute inset-x-0 top-0 z-30 md:top-1 ${
           isEditingMessage ? 'pointer-events-none opacity-40' : ''
         }`}>
@@ -130,6 +134,7 @@ const Chat = () => {
           onDeletableSelectedCountChange={setDeletableSelectedCount}
           onDeletingSelectedChange={setIsDeletingSelected}
           onEditingChange={setIsEditingMessage}
+          onFetchingNextPageChange={setIsFetchingOlder}
         />
 
         {isMemberDialog ? (

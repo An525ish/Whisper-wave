@@ -1,6 +1,6 @@
-import ForgotPassword from '@/features/auth/components/ForgotPasswordForm';
-import Login from '@/features/auth/components/LoginForm';
-import Register from '@/features/auth/components/RegisterForm';
+import ForgotPassword from '@/components/auth/ForgotPasswordForm';
+import Login from '@/components/auth/LoginForm';
+import Register from '@/components/auth/RegisterForm';
 import { useState } from 'react';
 
 export default function Auth() {

@@ -1,9 +1,9 @@
-import ChatIcon from '@/shared/components/icons/Chat';
-import CreateGroupIcon from '@/shared/components/icons/CreateGroup';
-import DashboardIcon from '@/shared/components/icons/Dashboard';
-import MembersIcon from '@/shared/components/icons/Members';
-import Sidebar from '@/shared/components/sidebar/Sidebar';
-import SidebarItem from '@/shared/components/sidebar/SidebarItem';
+import ChatIcon from '@/components/ui/icons/Chat';
+import CreateGroupIcon from '@/components/ui/icons/CreateGroup';
+import DashboardIcon from '@/components/ui/icons/Dashboard';
+import MembersIcon from '@/components/ui/icons/Members';
+import Sidebar from '@/components/ui/sidebar/Sidebar';
+import SidebarItem from '@/components/ui/sidebar/SidebarItem';
 import { Outlet } from 'react-router-dom';
 
 const sidebarItems = Object.freeze([
