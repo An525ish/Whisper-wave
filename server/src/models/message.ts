@@ -50,8 +50,12 @@ const messageSchema = new Schema<IMessage>(
   { timestamps: true }
 );
 
-messageSchema.index({ chat: 1, createdAt: -1 });
+// Primary pagination + count queries (status/isDeleted filters applied after index scan without these)
+messageSchema.index({ chat: 1, status: 1, createdAt: -1 });
+// Per-sender queries (edit, delete, context)
 messageSchema.index({ chat: 1, sender: 1, createdAt: -1 });
+// markReadByUser updateMany: chat + sender≠ + createdAt range
+messageSchema.index({ chat: 1, createdAt: -1 });
 
 export const Message =
   (mongoose.models.Message as mongoose.Model<IMessage> | undefined) ||

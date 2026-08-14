@@ -1,5 +1,4 @@
 import type { Server, Socket } from 'socket.io';
-import { v4 as uuid } from 'uuid';
 import {
   NEW_MESSAGE,
   NEW_MESSAGE_ALERT,
@@ -22,6 +21,7 @@ import { logger } from '../utils/logger.js';
 
 type NewMessagePayload = {
   message: string;
+  /** Client-provided for typing fan-out only — never trusted for message delivery. */
   members: string[];
   chatId: string;
   replyToMessageId?: string;
@@ -31,6 +31,28 @@ type TypingPayload = {
   members: string[];
   chatId: string;
 };
+
+/** Simple per-socket sliding-window rate limiter. */
+const makeSocketRateLimiter = (maxEvents: number, windowMs: number) => {
+  const timestamps = new Map<string, number[]>();
+  return {
+    allow(socketId: string): boolean {
+      const now = Date.now();
+      const cutoff = now - windowMs;
+      const times = (timestamps.get(socketId) ?? []).filter((t) => t > cutoff);
+      if (times.length >= maxEvents) return false;
+      times.push(now);
+      timestamps.set(socketId, times);
+      return true;
+    },
+    remove(socketId: string): void {
+      timestamps.delete(socketId);
+    },
+  };
+};
+
+// 30 messages / 10 s per socket — generous for normal use, stops floods
+const messageLimiter = makeSocketRateLimiter(30, 10_000);
 
 export const registerSocketHandlers = (io: Server): void => {
   io.on('connection', (socket: Socket) => {
@@ -56,29 +78,33 @@ export const registerSocketHandlers = (io: Server): void => {
           return;
         }
 
-        const isMember = await messageService.assertChatMember(userId, chatId);
-        if (!isMember) return;
+        // Persist first so every recipient gets the canonical MongoDB _id.
+        // This eliminates client-side duplicates caused by uuid vs ObjectId mismatch.
+        const persisted = await messageService.persistTextMessage({
+          userId,
+          chatId,
+          content: message,
+          replyToMessageId,
+        });
 
-        const replyTo = replyToMessageId
-          ? await messageService.buildReplySnapshot(chatId, replyToMessageId)
-          : undefined;
+        if (!persisted.ok) return;
 
         const realTimeMsg = {
           content: message,
-          _id: uuid(),
+          _id: persisted.messageId,
           sender: {
             _id: userId,
             name: user.name,
             avatar: user.avatar.url,
           },
           chat: chatId,
-          createdAt: new Date().toISOString(),
-          replyTo: replyTo
+          createdAt: persisted.createdAt,
+          replyTo: persisted.replyTo
             ? {
-                messageId: String(replyTo.messageId),
-                content: replyTo.content,
-                senderName: replyTo.senderName,
-                previewAttachment: replyTo.previewAttachment,
+                messageId: String(persisted.replyTo.messageId),
+                content: persisted.replyTo.content,
+                senderName: persisted.replyTo.senderName,
+                previewAttachment: persisted.replyTo.previewAttachment,
               }
             : undefined,
         };
@@ -90,17 +116,14 @@ export const registerSocketHandlers = (io: Server): void => {
           message: realTimeMsg,
         });
 
+        // NEW_MESSAGE_ALERT and REFETCH_CHATS go to other members only.
+        // The sender already updates its chat list locally via mark-read invalidation.
         socket.broadcast
           .to(memberSocketIds)
           .emit(NEW_MESSAGE_ALERT, { chatId });
-        io.to(memberSocketIds).emit(REFETCH_CHATS, { chatId });
-
-        await messageService.persistTextMessage({
-          userId,
-          chatId,
-          content: message,
-          replyToMessageId,
-        });
+        socket.broadcast
+          .to(memberSocketIds)
+          .emit(REFETCH_CHATS, { chatId });
       } catch (error) {
         logger.error({ err: error }, 'NEW_MESSAGE handler failed');
       }

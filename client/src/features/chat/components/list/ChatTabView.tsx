@@ -114,10 +114,6 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
     refetch();
   }, [refetch]);
 
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
   const events = {
     [SOCKET_EVENTS.REFETCH_CHATS]: refetchChatListener,
   };
