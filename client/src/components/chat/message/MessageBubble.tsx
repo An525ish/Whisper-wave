@@ -6,6 +6,7 @@ import ReadReceipt from '@/components/ui/icons/ReadReceipt';
 import RenderAttachments from '@/components/chat/message/RenderAttachments';
 import LinkPreview from '@/components/chat/message/LinkPreview';
 import MessageContent from '@/components/chat/message/MessageContent';
+import ReplyQuote from '@/components/chat/message/ReplyQuote';
 import type { ChatAttachment, MessageReplyTo } from '@/types/chat';
 
 export type MessageBubbleProps = {
@@ -180,30 +181,13 @@ const MessageBubble = ({
           ) : null}
 
           {replyTo ? (
-            <div
-              className={`mb-1.5 overflow-hidden rounded-lg border-l-2 ${
-                sameSender ? 'border-green/70 bg-black/30' : 'border-green bg-black/25'
-              }`}
-            >
-              <div className="flex items-stretch gap-2 px-2 py-1.5">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11px] font-semibold tracking-wide text-green">
-                    {replyTo.senderName}
-                  </p>
-                  <p className="mt-0.5 truncate text-xs leading-snug text-body-300">
-                    {replyPreviewText}
-                  </p>
-                </div>
-                {replyTo.previewAttachment?.url &&
-                (replyTo.previewAttachment.fileType?.startsWith('image/') ||
-                  /\.(avif|gif|jpe?g|png|webp)(\?|$)/i.test(replyTo.previewAttachment.url)) ? (
-                  <img
-                    src={replyTo.previewAttachment.url}
-                    alt=""
-                    className="h-10 w-10 shrink-0 self-center rounded-md object-cover ring-1 ring-white/10"
-                  />
-                ) : null}
-              </div>
+            <div className="mb-1.5 -ml-1">
+              <ReplyQuote
+                tone={sameSender ? 'outgoing' : 'incoming'}
+                senderName={replyTo.senderName}
+                previewText={replyPreviewText}
+                previewAttachment={replyTo.previewAttachment}
+              />
             </div>
           ) : null}
 

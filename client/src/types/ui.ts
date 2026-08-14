@@ -21,6 +21,8 @@ export type TabItem = {
   icon?: ReactNode;
 };
 
+export type TabVariant = 'underline' | 'pills';
+
 export type DropdownOption = {
   label: string;
   Icon?: ComponentType<IconProps>;

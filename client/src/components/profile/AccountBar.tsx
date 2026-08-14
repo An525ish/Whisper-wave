@@ -2,7 +2,6 @@ import NotificationIcon from '@/components/ui/icons/Notification';
 import PencilIcon from '@/components/ui/icons/Pencil';
 import Dropdown from '@/components/ui/Dropdown';
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import NotificationDialog from '@/components/notifications/NotificationDialog';
 import toast from 'react-hot-toast';
 import { useSignOutMutation } from '@/hooks/auth';
@@ -58,15 +57,6 @@ const AccountBar = ({
   useEffect(() => {
     setIsNotification(false);
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (!isNotification || !isFullscreenOverlay) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [isNotification, isFullscreenOverlay]);
 
   const handleLogout = async () => {
     try {
@@ -147,13 +137,21 @@ const AccountBar = ({
 
   const notificationOverlay =
     isNotification && showNotification ? (
-      <div ref={notificationRef} className={overlayClassName}>
+      isFullscreenOverlay ? (
         <NotificationDialog
           isNotification={isNotification}
           onClose={() => setIsNotification(false)}
-          variant={isFullscreenOverlay ? 'fullscreen' : 'panel'}
+          variant="fullscreen"
         />
-      </div>
+      ) : (
+        <div ref={notificationRef} className={overlayClassName}>
+          <NotificationDialog
+            isNotification={isNotification}
+            onClose={() => setIsNotification(false)}
+            variant="panel"
+          />
+        </div>
+      )
     ) : null;
 
   return (
@@ -172,9 +170,7 @@ const AccountBar = ({
         )}
       </div>
 
-      {isFullscreenOverlay && notificationOverlay
-        ? createPortal(notificationOverlay, document.body)
-        : notificationOverlay}
+      {notificationOverlay}
     </>
   );
 };

@@ -1,18 +1,13 @@
 import CloseIcon from '@/components/ui/icons/Close';
 import ReplyIcon from '@/components/ui/icons/Reply';
 import type { MessageReplyTo } from '@/types/chat';
+import { isReplyImagePreview } from '@/utils/chat';
 
 type ReplyComposerBarProps = {
   senderName: string;
   previewText: string;
   previewAttachment?: MessageReplyTo['previewAttachment'];
   onCancel: () => void;
-};
-
-const isImageAttachment = (fileType?: string, url?: string) => {
-  if (fileType?.startsWith('image/')) return true;
-  if (!url) return false;
-  return /\.(avif|gif|jpe?g|png|webp)(\?|$)/i.test(url);
 };
 
 const ReplyBar = ({
@@ -23,7 +18,7 @@ const ReplyBar = ({
 }: ReplyComposerBarProps) => {
   const showThumb =
     previewAttachment?.url &&
-    isImageAttachment(previewAttachment.fileType, previewAttachment.url);
+    isReplyImagePreview(previewAttachment.fileType, previewAttachment.url);
 
   return (
     <div

@@ -9,14 +9,14 @@ import { MAX_TEXTAREA_HEIGHT } from "@/constants/chat";
 import { readFilesFromClipboardEvent } from "@/utils/chat";
 import { useChatClipboardStore } from "@/stores/chat/clipboard";
 import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ClipboardEvent,
-  type Dispatch,
-  type SetStateAction,
-  type TextareaHTMLAttributes,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type ClipboardEvent,
+    type Dispatch,
+    type SetStateAction,
+    type TextareaHTMLAttributes,
 } from "react";
 import toast from "react-hot-toast";
 

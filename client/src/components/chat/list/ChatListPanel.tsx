@@ -40,13 +40,11 @@ const ChatListPanel = () => {
       ) : null}
 
       {isNewOpen ? (
-        <div className="absolute inset-0 z-30">
-          <NewConnectDialog
-            isOpen={isNewOpen}
-            initialTab={newTab}
-            onClose={() => setIsNewOpen(false)}
-          />
-        </div>
+        <NewConnectDialog
+          isOpen={isNewOpen}
+          initialTab={newTab}
+          onClose={() => setIsNewOpen(false)}
+        />
       ) : null}
     </div>
   );
