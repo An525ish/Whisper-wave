@@ -99,7 +99,7 @@ const Tabs = ({
                 type="button"
                 role="tab"
                 aria-selected={selected}
-                className={`group inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-t-lg border-b-2 px-2 py-3.5 text-sm md:p-4 md:text-base ${
+                className={`group inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-t-lg border-b-2 px-2 py-3.5 text-sm md:p-3 md:text-base ${
                   selected
                     ? 'border-green text-white'
                     : 'border-transparent text-body-300 hover:border-white hover:text-white'

@@ -17,8 +17,6 @@ type AccountBarProps = {
   /** full = both; account = avatar menu; notification = bell only */
   variant?: 'full' | 'account' | 'notification' | 'compact';
   overlayClassName?: string;
-  /** search = match Searchbar height (h-11); md = standard control */
-  notificationSize?: 'md' | 'search';
 };
 
 /** Notifications + account menu — profile column and list chrome. */
@@ -26,7 +24,6 @@ const AccountBar = ({
   className = '',
   variant = 'full',
   overlayClassName = 'absolute inset-0 z-20',
-  notificationSize = 'md',
 }: AccountBarProps) => {
   const [isNotification, setIsNotification] = useState(false);
   const notificationRef = useRef<HTMLDivElement | null>(null);
@@ -110,9 +107,7 @@ const AccountBar = ({
     <button
       type="button"
       ref={iconRef}
-      className={`relative grid cursor-pointer place-items-center rounded-full border border-border bg-primary transition active:bg-primary/70 ${
-        notificationSize === 'search' ? 'h-11 w-11' : 'h-10 w-10'
-      }`}
+      className="relative grid h-10 w-10 cursor-pointer place-items-center rounded-full border border-border bg-primary transition active:bg-primary/70"
       onClick={handleNotificationToggle}
       aria-label="Notifications"
       aria-expanded={isNotification}
