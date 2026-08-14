@@ -1,9 +1,7 @@
+import type { MediaFile, MediaKind } from '@/shared/types/media';
 import ImageViewerIcon from './ImageViewerIcons';
-import type { MediaFile } from './ImageViewer';
 import toast from 'react-hot-toast';
 import { getMediaDisplayName } from '@/shared/utils/fileFormat';
-
-type MediaKind = 'image' | 'video' | 'audio';
 
 const CloseIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 20 20" fill="none" aria-hidden>

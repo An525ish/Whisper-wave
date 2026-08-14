@@ -17,14 +17,13 @@ import type {
   MessagesPage,
   NewMessagePayload,
   TimelineItem,
-} from './panelTypes';
-
-type User = { _id?: string; name?: string; avatar?: unknown } | null;
+  SocketUser,
+} from '@/features/chat/types';
 
 interface Params {
   chatId: string | undefined;
   socket: Socket;
-  user: User;
+  user: SocketUser;
   isGroupChat?: boolean;
   onChatCleared?: () => void;
   onMessagesDeleted?: (messageIds: string[]) => void;

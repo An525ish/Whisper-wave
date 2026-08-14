@@ -1,22 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ContextMenuPosition, ContextMenuOption, ContextMenuState } from '@/shared/types';
+import { useEffect, useState } from 'react';
 
-export type ContextMenuPosition = {
-  x: number;
-  y: number;
-};
-
-export type ContextMenuOption = {
-  icon: string | ReactNode;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-};
-
-export type ContextMenuState = {
-  visible: boolean;
-  position: ContextMenuPosition;
-  options: ContextMenuOption[];
-};
 
 const useContextMenu = () => {
   const [menuState, setMenuState] = useState<ContextMenuState>({

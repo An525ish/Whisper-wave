@@ -1,12 +1,8 @@
 import AvatarCard from '@/shared/components/ui/AvatarCard';
 import Button from '@/shared/components/ui/Button';
 import { useState } from 'react';
-import type { User } from '@/shared/types';
+import type { FriendSuggestion } from '@/shared/types';
 
-type FriendSuggestion = Pick<User, '_id' | 'name'> & {
-  avatar?: string | null;
-  isRequested?: boolean;
-};
 
 type FriendSuggestionListItemProps = {
   data: FriendSuggestion;

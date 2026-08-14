@@ -1,8 +1,7 @@
 import { api } from '@/api/client';
-import type { ApiSuccess, User } from '@/shared/types';
-
-export type ProfileResponse = ApiSuccess & { user: User };
-export type AuthDataResponse = ApiSuccess & { data: User };
+import type { ApiSuccess } from '@/shared/types';
+import type { ProfileResponse, AuthDataResponse } from '../types';
+export type { ProfileResponse, AuthDataResponse } from '../types';
 
 export const getProfile = () => api.get<ProfileResponse>('/user/get-profile');
 

@@ -7,35 +7,19 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import type { ApiSuccess, Avatar } from '@/shared/types';
-import { formatUnreadCount } from '@/features/chat/utils/unread';
-
-dayjs.extend(relativeTime);
-
-type MessageNotifyItem = {
-  id: string;
-  name?: string;
-  avatar?: string | null;
-  count?: number;
-  timestamp?: string | number;
-};
-
-type FriendRequestNotify = {
-  _id: string;
-  createdAt?: string;
-  sender: {
-    name?: string;
-    avatar?: string | Avatar;
-  };
-};
+import type { ApiSuccess } from '@/shared/types';
+import type { MessageNotifyItem, FriendRequestNotifyItemProps } from '@/features/notifications/types';
 
 type NotificationItemProps = {
   notification: MessageNotifyItem;
 };
+import { formatUnreadCount } from '@/features/chat/utils/unread';
 
-type FriendRequestNotifyItemProps = {
-  notification: FriendRequestNotify;
-};
+dayjs.extend(relativeTime);
+
+
+
+
 
 const useRelativeTime = (timestamp?: string | number) => {
   const [timeAgo, setTimeAgo] = useState('');

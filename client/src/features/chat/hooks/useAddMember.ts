@@ -2,7 +2,7 @@ import { useEffect, useState, type Dispatch, type MouseEvent, type SetStateActio
 import { useParams } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/store';
 import useContextMenu from '@/shared/hooks/useContextMenu';
-import type { ContextMenuOption, ContextMenuState } from '@/shared/hooks/useContextMenu';
+import type { ContextMenuOption, ContextMenuState } from '@/shared/types';
 import {
   useAddMemberMutation,
   useChatDetailsQuery,
@@ -48,7 +48,7 @@ export type UseAddMemberReturn = {
   handleSelectMember: (id: string) => void;
   addMemberHandler: () => void;
   closeContextMenu: () => void;
-  handleContextMenu: (e: MouseEvent, member: GroupMember) => void;
+  handleContextMenu: (e: MouseEvent<HTMLElement>, member: GroupMember) => void;
   onSubmit: () => Promise<void>;
 };
 
@@ -93,7 +93,7 @@ const useAddMember = (onClose: () => void): UseAddMemberReturn => {
     setContextTargetId(null);
   };
 
-  const handleContextMenu = (e: MouseEvent, member: GroupMember) => {
+  const handleContextMenu = (e: MouseEvent<HTMLElement>, member: GroupMember) => {
     e.preventDefault();
     e.stopPropagation();
 

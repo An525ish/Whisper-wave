@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { isValidMessageId } from '@/shared/utils/helper';
-import type { ChatMessage } from './panelTypes';
+import type { ChatMessage } from '@/features/chat/types';
 import {
   useClearChatMessagesMutation,
   useDeleteManyMessagesMutation,

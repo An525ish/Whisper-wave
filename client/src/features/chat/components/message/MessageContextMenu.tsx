@@ -1,12 +1,5 @@
+import type { MessageContextMenuOption } from '@/features/chat/types';
 import { type MouseEvent, type ReactNode, useRef, useState } from 'react';
-
-export type MessageContextMenuOption = {
-  id: string;
-  label: string;
-  icon?: string;
-  danger?: boolean;
-  onClick: () => void;
-};
 
 type MessageContextMenuProps = {
   children: ReactNode;

@@ -21,7 +21,8 @@ import { logger } from '../utils/logger.js';
 
 type NewMessagePayload = {
   message: string;
-  /** Client-provided for typing fan-out only — never trusted for message delivery. */
+  /** Client hint for typing indicators only — NEVER used for message/alert delivery.
+   *  The server always re-derives the member list from the DB after persistence. */
   members: string[];
   chatId: string;
   replyToMessageId?: string;
@@ -72,6 +73,8 @@ export const registerSocketHandlers = (io: Server): void => {
 
     socket.on(NEW_MESSAGE, async (payload: NewMessagePayload) => {
       try {
+        if (!messageLimiter.allow(socket.id)) return;
+
         const { message, members, chatId, replyToMessageId } = payload;
 
         if (!message?.trim() || !chatId || !Array.isArray(members)) {
@@ -109,9 +112,11 @@ export const registerSocketHandlers = (io: Server): void => {
             : undefined,
         };
 
-        const memberSocketIds = getMemberSockets(members);
+        // Use the DB-derived member list — never trust the client-supplied array
+        // for delivery (spoofed arrays could spam arbitrary users with alerts).
+        const trustedSocketIds = getMemberSockets(persisted.memberIds);
 
-        io.to(memberSocketIds).emit(NEW_MESSAGE, {
+        io.to(trustedSocketIds).emit(NEW_MESSAGE, {
           chatId,
           message: realTimeMsg,
         });
@@ -119,10 +124,10 @@ export const registerSocketHandlers = (io: Server): void => {
         // NEW_MESSAGE_ALERT and REFETCH_CHATS go to other members only.
         // The sender already updates its chat list locally via mark-read invalidation.
         socket.broadcast
-          .to(memberSocketIds)
+          .to(trustedSocketIds)
           .emit(NEW_MESSAGE_ALERT, { chatId });
         socket.broadcast
-          .to(memberSocketIds)
+          .to(trustedSocketIds)
           .emit(REFETCH_CHATS, { chatId });
       } catch (error) {
         logger.error({ err: error }, 'NEW_MESSAGE handler failed');
@@ -131,18 +136,23 @@ export const registerSocketHandlers = (io: Server): void => {
 
     socket.on(START_TYPING, ({ members, chatId }: TypingPayload) => {
       if (!chatId || !Array.isArray(members)) return;
-      const memberSocketIds = getMemberSockets(members);
+      // Cap recipients to guard against amplification; DB membership is validated
+      // on NEW_MESSAGE — typing hints are low-value and per-keystroke so no DB call.
+      const capped = members.slice(0, 50);
+      const memberSocketIds = getMemberSockets(capped);
       socket.broadcast.to(memberSocketIds).emit(START_TYPING, { chatId });
     });
 
     socket.on(STOP_TYPING, ({ members, chatId }: TypingPayload) => {
       if (!chatId || !Array.isArray(members)) return;
-      const memberSocketIds = getMemberSockets(members);
+      const capped = members.slice(0, 50);
+      const memberSocketIds = getMemberSockets(capped);
       socket.broadcast.to(memberSocketIds).emit(STOP_TYPING, { chatId });
     });
 
     socket.on('disconnect', () => {
       removeUserSocket(userId);
+      messageLimiter.remove(socket.id);
       void (async () => {
         try {
           const lastSeen = await userRepo.updateLastSeen(userId);

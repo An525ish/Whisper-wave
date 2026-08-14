@@ -1,9 +1,6 @@
 import AvatarCard from '@/shared/components/ui/AvatarCard';
-import type { User } from '@/shared/types';
+import type { SuggestionMember } from '@/shared/types';
 
-type SuggestionMember = Pick<User, '_id' | 'name'> & {
-  avatar?: string | null;
-};
 
 type SuggestionListItemProps = {
   data: SuggestionMember;

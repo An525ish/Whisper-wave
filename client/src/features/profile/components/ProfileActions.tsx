@@ -6,8 +6,7 @@ import FilesIcon from '@/shared/components/icons/FilesIcon'
 import LinkIcon from '@/shared/components/icons/Link'
 import { fileData, fileFormat, getMediaDisplayName, getMediaKindFromFile } from '@/shared/utils/fileFormat'
 import type { MouseEvent } from 'react'
-import type { MediaFile, SharedLink } from '@/features/profile/components/shared-content/types'
-import type { SharedContentTab } from '@/features/profile/components/SharedContentSheet'
+import type { MediaFile, SharedLink, SharedContentTab } from '@/features/profile/components/shared-content/types'
 
 type ProfileActionsProps = {
   mediaFiles: MediaFile[]

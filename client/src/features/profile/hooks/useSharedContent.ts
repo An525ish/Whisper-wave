@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getMediaDisplayName, getMediaKindFromFile } from '@/shared/utils/fileFormat'
-import type { MediaFile, PhotoFilter, SharedLink } from '@/features/profile/components/shared-content/types'
-import type { SharedContentTab } from '@/features/profile/components/SharedContentSheet'
+import type { MediaFile, PhotoFilter, SharedLink, SharedContentTab } from '@/features/profile/components/shared-content/types'
 
 type UseSharedContentProps = {
   mediaFiles: MediaFile[]

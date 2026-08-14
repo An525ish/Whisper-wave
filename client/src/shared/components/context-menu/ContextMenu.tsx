@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { ContextMenuOption, ContextMenuState } from '@/shared/hooks/useContextMenu';
+import type { ContextMenuOption, ContextMenuState } from '@/shared/types';
 
 type ContextMenuProps = {
   menuState: ContextMenuState;

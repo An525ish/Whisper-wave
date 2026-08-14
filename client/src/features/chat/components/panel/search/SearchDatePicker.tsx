@@ -1,9 +1,9 @@
 import ChevronLeft from '@/shared/components/icons/ChevronLeft'
 import { useActiveMessageDatesQuery } from '@/features/chat/hooks'
 import dayjs, { type Dayjs } from 'dayjs'
+import { WEEKDAYS } from '@/features/chat/constants/searchConfig'
 import { useEffect, useMemo, useState } from 'react'
 
-const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const
 
 type SearchDatePickerProps = {
   chatId?: string

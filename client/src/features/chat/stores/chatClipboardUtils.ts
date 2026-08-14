@@ -1,13 +1,9 @@
-import type { ChatBoxData } from '@/features/chat/components/message/ChatBox';
+import type { ChatBoxData } from '@/features/chat/types';
+import type { ChatCopyPayload } from '@/features/chat/types';
 
 type CopyAttachment = NonNullable<ChatBoxData['attachments']>[number] & {
   fileType?: string;
   uploading?: boolean;
-};
-
-export type ChatCopyPayload = {
-  text: string;
-  files: File[];
 };
 
 const guessMime = (att: CopyAttachment, blobType: string): string => {

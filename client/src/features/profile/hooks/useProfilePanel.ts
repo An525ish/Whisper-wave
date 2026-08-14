@@ -15,7 +15,7 @@ import { useSocket } from '@/socket/SocketProvider'
 import useSocketEvent from '@/shared/hooks/useSocketEvent'
 import { fileFormat } from '@/shared/utils/fileFormat'
 import { SOCKET_EVENTS } from '@/shared/constants/socketEvents'
-import type { SharedContentTab } from '@/features/profile/components/SharedContentSheet'
+import type { SharedContentTab } from '@/features/profile/components/shared-content/types'
 import type { MediaFile, SharedLink } from '@/features/profile/components/shared-content/types'
 
 type ProfileMember = {

@@ -1,12 +1,8 @@
+import type { ErrorEntry } from '@/shared/types';
 import { useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { ApiError } from '@/api/client';
 
-export type ErrorEntry = {
-  isError?: boolean;
-  error?: unknown;
-  fallback?: () => void;
-} & Record<string, unknown>;
 
 function readErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.message) return error.message;

@@ -7,15 +7,9 @@ import CreateGroupIcon from '@/shared/components/icons/CreateGroup';
 import ChatIcon from '@/shared/components/icons/Chat';
 import ArrowUp from '@/shared/components/icons/ArrowUp';
 import { useAdminStatsQuery } from '@/features/admin/hooks';
-import type { AdminStats, IconProps } from '@/shared/types';
-import type { ComponentType } from 'react';
+import type { AdminStats } from '@/shared/types';
+import type { TitleStat } from '@/features/admin/types';
 
-type TitleStat = {
-  title: string;
-  Icon: ComponentType<IconProps>;
-  value: number | string;
-  online?: boolean;
-};
 
 const Dashboard = () => {
   const { data } = useAdminStatsQuery();

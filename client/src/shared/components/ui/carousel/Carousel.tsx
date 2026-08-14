@@ -3,6 +3,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import './styles.css';
 import Image from '../Image';
+import type { CarouselMember, AvatarRingTone } from '@/shared/types/ui';
 import {
   useMemo,
   useRef,
@@ -10,7 +11,6 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
-import type { User } from '@/shared/types';
 
 // Vite/ESM often nests the CJS default export one level deeper
 const Slider = (
@@ -18,9 +18,6 @@ const Slider = (
   ReactSlick
 ) as ComponentType<Record<string, unknown>>;
 
-type CarouselMember = Pick<User, '_id' | 'name'> & {
-  avatar?: string | null;
-};
 
 const MEMBERS_PER_SLIDE = 6;
 /** Show pager once the slider has this many members */
@@ -36,7 +33,6 @@ const chunkArray = <T,>(array: T[], chunkSize: number): T[][] => {
   return result;
 };
 
-type AvatarRingTone = 'silver' | 'green';
 
 /** Gradient ring around circular avatars */
 export function AvatarRing({

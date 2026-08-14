@@ -1,14 +1,5 @@
-type FromFilter = 'anyone' | 'me' | 'others' | string
-
-export type FromOption = {
-  id: FromFilter
-  label: string
-  avatar?: string | null
-  tone: 'all' | 'self' | 'peer'
-}
-
-const initialOf = (label: string) => (label.trim()[0] || '?').toUpperCase()
-
+import type { FromFilter, FromOption } from '@/features/chat/types'
+import { getInitial } from '@/shared/utils/helper'
 const PersonAvatar = ({ option, selected }: { option: FromOption; selected: boolean }) => {
   if (option.avatar) {
     return (
@@ -23,7 +14,7 @@ const PersonAvatar = ({ option, selected }: { option: FromOption; selected: bool
         : selected ? 'bg-body text-background' : 'bg-white/10 text-body-700'
   return (
     <span className={`grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold ${toneClass}`}>
-      {option.tone === 'all' ? '∞' : initialOf(option.label)}
+      {option.tone === 'all' ? '∞' : getInitial(option.label)}
     </span>
   )
 }

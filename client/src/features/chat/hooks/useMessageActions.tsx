@@ -15,7 +15,7 @@ import CopyIcon from '@/shared/components/icons/Copy';
 import SelectMessagesIcon from '@/shared/components/icons/SelectMessages';
 import TrashIcon from '@/shared/components/icons/Trash';
 import type { Avatar } from '@/shared/types';
-import type { ChatMessage } from './panelTypes';
+import type { ChatMessage } from '@/features/chat/types';
 import { useEditMessageMutation, useForwardMessagesMutation } from './useMessageMutations';
 
 interface Params {

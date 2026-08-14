@@ -5,7 +5,7 @@ import {
   RetryableMediaVideo,
 } from '@/shared/components/media/RetryableMedia';
 import { getMediaKindFromFile } from '@/shared/utils/fileFormat';
-import type { MediaFile } from './ImageViewer';
+import type { MediaFile } from '@/shared/types/media';
 
 const galleryThumbFallbackIconClass = 'h-9 w-9';
 
