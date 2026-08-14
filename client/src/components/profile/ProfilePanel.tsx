@@ -5,6 +5,7 @@ import { ProfileNameBlock, ProfileBioSection } from '@/components/profile/Profil
 import GroupMembersList from '@/components/profile/GroupMembersList'
 import ProfileActions from '@/components/profile/ProfileActions'
 import SharedContentSheet from '@/components/profile/SharedContentSheet'
+import ProfilePanelSkeleton from '@/components/profile/ProfilePanelSkeleton'
 
 type ProfilePanelProps = {
   variant?: 'column' | 'sheet'
@@ -14,8 +15,8 @@ type ProfilePanelProps = {
 const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelProps) => {
   const p = useProfilePanel(variant, forceSelf)
 
-  if (p.chatId && !p.showSelfProfile) {
-    if (p.isLoading) return <></>
+  if (p.chatId && !p.showSelfProfile && p.isLoading) {
+    return <ProfilePanelSkeleton variant={variant} />
   }
 
   const formProps = {

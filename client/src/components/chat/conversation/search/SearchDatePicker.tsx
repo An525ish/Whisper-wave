@@ -170,13 +170,13 @@ const SearchDatePicker = ({ chatId, value, onChange, onJump, jumping, statusNote
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <button type="button" disabled={!selected?.isValid()}
-            className="inline-flex h-7 min-w-13 items-center justify-center rounded-full border border-green/30 bg-background/50 px-2.5 text-[10px] font-semibold text-body-700 transition enabled:hover:border-green/50 enabled:hover:text-body disabled:opacity-35"
+            className="inline-flex h-7 w-14 items-center justify-center rounded-full border border-green/30 bg-background/50 text-[10px] font-semibold text-body-700 transition enabled:hover:border-green/50 enabled:hover:text-body disabled:opacity-35"
             onClick={() => onChange('')}>
             Clear
           </button>
           {onJump ? (
             <button type="button" disabled={!selected?.isValid() || !selectedHasMessages || jumping} onClick={onJump}
-              className="inline-flex h-7 min-w-13 items-center justify-center rounded-full bg-gradient-green px-2.5 text-[10px] font-semibold text-white-pure shadow-[0_4px_12px_rgba(1,195,109,0.3)] transition enabled:hover:brightness-110 disabled:opacity-40">
+              className="inline-flex h-6 w-12 items-center justify-center rounded-full bg-gradient-green text-[10px] font-semibold text-white-pure shadow-[0_4px_12px_rgba(1,195,109,0.3)] transition enabled:hover:brightness-110 disabled:opacity-40">
               Jump
             </button>
           ) : null}

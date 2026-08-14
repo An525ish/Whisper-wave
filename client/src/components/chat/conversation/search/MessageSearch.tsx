@@ -3,6 +3,7 @@ import { useChatSearch } from '@/hooks/chat/useChatSearch'
 import SearchFilters from '@/components/chat/conversation/search/SearchFilters'
 import SearchResultItem from '@/components/chat/conversation/search/SearchResultItem'
 import SearchDatePicker from '@/components/chat/conversation/search/SearchDatePicker'
+import EmptyState from '@/components/ui/EmptyState'
 import dayjs from 'dayjs'
 import type { ChatSearchHit, SearchMode } from '@/types/chat'
 import { SEARCH_MODES as MODES, DATE_PRESETS } from '@/constants/chat'
@@ -22,6 +23,35 @@ const SearchGlyph = ({ className = 'h-3.5 w-3.5' }: { className?: string }) => (
     <path d="m16.2 16.2 4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
   </svg>
 )
+
+const SEARCH_EMPTY = {
+  messages: {
+    image: '/images/no-personal-chat.svg',
+    idle: 'Type to search this chat',
+    empty: 'No matching messages',
+  },
+  media: {
+    image: '/images/no-media.svg',
+    idle: 'No media yet',
+    empty: 'No media matches',
+  },
+  links: {
+    image: '/images/no-link.svg',
+    idle: 'No links yet',
+    empty: 'No links match',
+  },
+} as const
+
+const searchEmptyTitle = (
+  mode: SearchMode,
+  query: string,
+  kind: 'idle' | 'empty',
+) => {
+  if (mode === 'date') return 'Every chat has a yesterday.'
+  const copy = SEARCH_EMPTY[mode]
+  if (kind === 'empty' && query) return `Nothing for “${query}”`
+  return copy[kind]
+}
 
 const ModeIcon = ({ mode, className = 'h-4 w-4' }: { mode: SearchMode; className?: string }) => {
   if (mode === 'messages') return (
@@ -72,23 +102,25 @@ const MessageSearch = ({ chatId, open, onClose, onJumpToMessage }: ChatSearchPro
       >
         <div className="pointer-events-none absolute inset-x-8 top-0 h-24 bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.14),transparent_70%)]" />
 
-        <header className="relative shrink-0 px-4 pb-3 pt-3 sm:px-5 sm:pt-4">
-          <div className="mb-3 flex items-start gap-2">
+        <header className="relative shrink-0 px-4 pb-3 pt-3 sm:px-5">
+          <div className="mb-4 flex h-10 items-center gap-2">
             <button type="button" onClick={onClose}
-              className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/80 bg-background-alt/60 text-body transition hover:border-green/40 hover:bg-primary/80 hover:text-white"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/80 bg-background-alt/60 text-body transition hover:border-green/40 hover:bg-primary/80 hover:text-white"
               aria-label="Close"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <div className="min-w-0 flex-1 pt-0.5">
-              <h2 id="chat-search-title" className="truncate text-lg font-semibold tracking-tight text-white sm:text-xl">Find in chat</h2>
-              <p className="mt-0.5 min-h-5 truncate text-xs text-body-300 sm:text-sm">
+            <div className="flex min-h-10 min-w-0 flex-1 flex-col justify-center gap-0.5">
+              <h2 id="chat-search-title" className="truncate text-[15px] font-semibold leading-tight tracking-tight text-white">
+                Find in chat
+              </h2>
+              <p className="truncate text-xs leading-tight text-body-300">
                 {activeMode.hint}
                 {s.searchEnabled ? <span className="text-body-700"> · {s.isFetching && s.total === 0 ? '…' : `${s.total} found`}</span> : null}
               </p>
             </div>
             {s.searchEnabled ? (
-              <div className="mt-0.5 flex items-center overflow-hidden rounded-full border border-border/70 bg-background-alt/50 p-0.5">
+              <div className="flex h-10 items-center overflow-hidden rounded-full border border-border/70 bg-background-alt/50 p-0.5">
                 <button type="button" className="grid h-8 w-8 place-items-center rounded-full text-body-300 transition hover:bg-primary/70 hover:text-body disabled:opacity-30"
                   onClick={() => s.jumpRelative(-1)} disabled={s.total === 0} aria-label="Previous match">
                   <ChevronLeft className="h-4 w-4 rotate-90" />
@@ -143,10 +175,10 @@ const MessageSearch = ({ chatId, open, onClose, onJumpToMessage }: ChatSearchPro
 
         <div className="mx-4 h-px shrink-0 bg-border/60 sm:mx-5" />
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 scrollbar-hide sm:px-5 sm:py-4">
+        <div className={`min-h-0 flex-1 overscroll-contain px-4 py-3 sm:px-5 sm:py-4 ${s.mode === 'date' ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hide'}`}>
           {s.mode === 'date' ? (
-            <div className="flex flex-col gap-1">
-              <div className="my-3 flex justify-center gap-1.5 sm:my-4">
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="mb-3 flex shrink-0 justify-center gap-1.5">
                 {DATE_PRESETS.map((preset) => {
                   const iso = dayjs().subtract(preset.daysAgo, 'day').format('YYYY-MM-DD')
                   const selected = s.selectedDate === iso
@@ -160,23 +192,25 @@ const MessageSearch = ({ chatId, open, onClose, onJumpToMessage }: ChatSearchPro
                   )
                 })}
               </div>
-              <SearchDatePicker chatId={chatId} value={s.selectedDate} onChange={s.setSelectedDate}
-                onJump={s.handleJumpToSelectedDate} jumping={s.jumping} statusNote={s.dateJumpNote} enabled={open && s.mode === 'date'} />
-              <div className="flex flex-col items-center justify-center px-6 py-6 text-center">
-                <p className="text-sm font-medium leading-snug text-body">Every chat has a yesterday.</p>
-                <p className="mt-1 text-xs leading-relaxed text-body-300">Pick a day and jump straight back.</p>
+              <div className="min-h-0 shrink overflow-hidden">
+                <SearchDatePicker chatId={chatId} value={s.selectedDate} onChange={s.setSelectedDate}
+                  onJump={s.handleJumpToSelectedDate} jumping={s.jumping} statusNote={s.dateJumpNote} enabled={open && s.mode === 'date'} />
               </div>
+              <img
+                src="/images/no-dates.svg"
+                alt="Every chat has a yesterday."
+                className="mx-auto mt-auto h-28 w-auto shrink-0 sm:h-32"
+              />
             </div>
           ) : !s.searchEnabled ? (
-            <div className="flex h-full min-h-36 flex-col items-center justify-center px-4 text-center">
-              <span className="mb-3 grid h-11 w-11 place-items-center rounded-2xl border border-border/70 bg-primary/40 text-green">
-                <ModeIcon mode={s.mode} className="h-5 w-5" />
-              </span>
-              <p className="text-sm font-medium text-body-700">
-                {s.mode === 'media' ? 'Browse shared media' : s.mode === 'links' ? 'Browse shared links' : 'Type to search this chat'}
-              </p>
-              <p className="mt-1 text-xs text-body-300">Tap a result to jump in the thread</p>
-            </div>
+            <EmptyState
+              className="h-full min-h-36"
+              imageSrc={SEARCH_EMPTY[s.mode].image}
+              imageAlt=""
+              imageClassName="w-28 opacity-80 sm:w-32"
+              titleClassName="mt-3 text-center text-sm font-medium text-body-700"
+              title={searchEmptyTitle(s.mode, s.query, 'idle')}
+            />
           ) : s.isFetching && s.total === 0 ? (
             <div className="space-y-2 py-1">
               {[0, 1, 2, 3].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-primary/35" />)}
@@ -184,10 +218,14 @@ const MessageSearch = ({ chatId, open, onClose, onJumpToMessage }: ChatSearchPro
           ) : s.isError ? (
             <p className="py-10 text-center text-sm text-body-300">Couldn't search right now</p>
           ) : s.total === 0 ? (
-            <div className="flex h-full min-h-36 flex-col items-center justify-center text-center">
-              <p className="text-sm font-medium text-body-700">No matches</p>
-              <p className="mt-1 text-xs text-body-300">{s.query ? `Nothing for "${s.query}"` : 'Try another filter'}</p>
-            </div>
+            <EmptyState
+              className="h-full min-h-36"
+              imageSrc={SEARCH_EMPTY[s.mode].image}
+              imageAlt=""
+              imageClassName="w-28 opacity-80 sm:w-32"
+              titleClassName="mt-3 text-center text-sm font-medium text-body-700"
+              title={searchEmptyTitle(s.mode, s.query, 'empty')}
+            />
           ) : (
             <ul className="flex flex-col gap-1.5">
               {[...s.hits].reverse().map((hit) => {

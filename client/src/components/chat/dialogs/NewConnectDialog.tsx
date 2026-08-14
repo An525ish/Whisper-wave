@@ -1,10 +1,13 @@
 import DialogWrapper from '@/components/ui/DialogWrapper';
+import BottomSheet from '@/components/ui/BottomSheet';
 import ChevronLeft from '@/components/ui/icons/ChevronLeft';
 import AddMemberIcon from '@/components/ui/icons/AddMember';
 import CreateGroupIcon from '@/components/ui/icons/CreateGroup';
+import Tabs from '@/components/ui/swipeable-tabs/Tab';
 import { useEffect, useState } from 'react';
 import AddFriendsPanel from '@/components/chat/dialogs/AddFriendsPanel';
 import CreateGroupPanel from '@/components/chat/dialogs/CreateGroupPanel';
+import { useMediaQuery } from '@/hooks/shared/useMediaQuery';
 import type { NewConnectTab } from '@/types/chat';
 
 export type { NewConnectTab };
@@ -42,6 +45,7 @@ const NewConnectDialog = ({
   onClose,
 }: NewConnectDialogProps) => {
   const [activeTab, setActiveTab] = useState<NewConnectTab>(initialTab);
+  const isMobileSheet = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
     if (isOpen) setActiveTab(initialTab);
@@ -50,94 +54,81 @@ const NewConnectDialog = ({
   const activeIndex = TABS.findIndex((t) => t.id === activeTab);
   const active = TABS[activeIndex] ?? TABS[0];
 
+  const body = (
+    <>
+      <header className="shrink-0 px-3 pb-4 pt-2 sm:px-5">
+        <div className="mb-4 flex h-11 items-center gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/12 bg-white/6 text-body transition hover:border-green/40 hover:bg-green/10 hover:text-green"
+            aria-label="Close"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <div className="flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-0.5">
+            <h2
+              id="new-connect-title"
+              key={active.id}
+              className="truncate text-[15px] font-semibold leading-tight tracking-tight text-white"
+            >
+              {active.title}
+            </h2>
+            <p className="truncate text-xs leading-tight text-body-300">
+              {active.hint}
+            </p>
+          </div>
+        </div>
+
+        <Tabs
+          variant="pills"
+          ariaLabel="Connect options"
+          activeTabIndex={activeIndex}
+          handleTabChange={(index) => {
+            const next = TABS[index];
+            if (next) setActiveTab(next.id);
+          }}
+          tabsData={TABS.map((tab) => ({
+            id: tab.id,
+            name: tab.label,
+            icon:
+              tab.id === 'friends' ? (
+                <AddMemberIcon className="h-[1.15rem] w-[1.15rem] fill-current stroke-current" />
+              ) : (
+                <CreateGroupIcon className="h-[1.05rem] w-[1.05rem] fill-current stroke-current" />
+              ),
+          }))}
+        />
+      </header>
+
+      <div className="mx-3 h-px shrink-0 bg-border/70 sm:mx-5" />
+
+      <div className="min-h-0 flex-1 overflow-hidden px-3 py-4 sm:px-5">
+        {activeTab === 'friends' ? (
+          <AddFriendsPanel />
+        ) : (
+          <CreateGroupPanel onCreated={onClose} />
+        )}
+      </div>
+    </>
+  );
+
+  if (isMobileSheet) {
+    return (
+      <BottomSheet
+        open={isOpen}
+        onClose={onClose}
+        labelledBy="new-connect-title"
+      >
+        {body}
+      </BottomSheet>
+    );
+  }
+
   return (
     <DialogWrapper isOpen={isOpen}>
-      <div className="flex h-full min-h-0 flex-col">
-        <header className="shrink-0 px-3 pb-4 pt-2 sm:px-5">
-          <div className="mb-4 flex items-start gap-1">
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-0.5 grid h-11 w-11 shrink-0 place-items-center rounded-full transition active:bg-primary/70"
-              aria-label="Close"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-
-            <div className="min-w-0 flex-1 pt-1.5">
-              <h2
-                key={active.id}
-                className="truncate text-[1.35rem] font-semibold leading-tight tracking-tight text-white"
-              >
-                {active.title}
-              </h2>
-              <p className="mt-1 text-sm leading-snug text-body-300">
-                {active.hint}
-              </p>
-            </div>
-          </div>
-
-          <div
-            className="relative grid grid-cols-2 rounded-2xl border border-border/80 bg-background-alt/80 p-1"
-            role="tablist"
-            aria-label="Connect options"
-          >
-            <span
-              className="pointer-events-none absolute top-1 bottom-1 rounded-xl border border-border bg-primary shadow-[inset_0_1px_0_rgba(235,236,236,0.06)] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-              style={{
-                left: `calc(${activeIndex} * 50% + 0.25rem)`,
-                width: 'calc(50% - 0.5rem)',
-              }}
-              aria-hidden
-            />
-            {TABS.map((tab) => {
-              const selected = activeTab === tab.id;
-              const isFriends = tab.id === 'friends';
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative z-10 flex items-center justify-center gap-2.5 rounded-xl py-2.5 text-sm font-medium transition-colors duration-200 ${
-                    selected ? 'text-white' : 'text-body-300 hover:text-body-700'
-                  }`}
-                >
-                  {isFriends ? (
-                    <AddMemberIcon
-                      className={`h-[1.15rem] w-[1.15rem] transition ${
-                        selected
-                          ? 'fill-green stroke-green'
-                          : 'fill-body-300 stroke-body-300'
-                      }`}
-                    />
-                  ) : (
-                    <CreateGroupIcon
-                      className={`h-[1.05rem] w-[1.05rem] transition ${
-                        selected
-                          ? 'fill-green stroke-green'
-                          : 'fill-body-300 stroke-body-300'
-                      }`}
-                    />
-                  )}
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-        </header>
-
-        <div className="mx-3 h-px shrink-0 bg-border/70 sm:mx-5" />
-
-        <div className="min-h-0 flex-1 overflow-hidden px-3 py-4 sm:px-5">
-          {activeTab === 'friends' ? (
-            <AddFriendsPanel />
-          ) : (
-            <CreateGroupPanel onCreated={onClose} />
-          )}
-        </div>
-      </div>
+      <div className="flex h-full min-h-0 flex-col">{body}</div>
     </DialogWrapper>
   );
 };

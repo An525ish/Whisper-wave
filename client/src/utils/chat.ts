@@ -58,6 +58,12 @@ export const buildReplySnapshot = (msg: ChatMessage): MessageReplyTo => {
 export const getReplyPreviewText = (reply: MessageReplyTo): string =>
   reply.previewAttachment?.name || reply.content?.trim() || 'Message';
 
+export const isReplyImagePreview = (fileType?: string, url?: string): boolean => {
+  if (fileType?.startsWith('image/')) return true;
+  if (!url) return false;
+  return /\.(avif|gif|jpe?g|png|webp)(\?|$)/i.test(url);
+};
+
 
 // ── from features/chat/stores/chatClipboardUtils.ts ──────────────────────────────
 import type { ChatBoxData } from '@/types/chat';

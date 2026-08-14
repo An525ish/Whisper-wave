@@ -1,7 +1,6 @@
 import ChevronLeft from '@/components/ui/icons/ChevronLeft';
 import AvatarCard from '@/components/ui/AvatarCard';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
-import AvatarSkeleton from '@/components/ui/skeletons/AvatarSkeleton';
 import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useChatDetailsQuery, useLeaveGroupMutation } from '@/hooks/chat';
@@ -36,6 +35,32 @@ const headerShellClass =
 
 const headerInnerClass =
   'rounded-xl border border-white/10 bg-[rgba(33,26,42,0.48)] px-2 py-1.5 pl-1.5 pr-3 shadow-[0_10px_28px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:pl-2.5 lg:pr-5';
+
+const bone = 'animate-pulse bg-white/18';
+
+const ConversationHeaderSkeleton = () => (
+  <div className={headerShellClass}>
+    <div className={headerInnerClass}>
+      <div className="relative flex items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-1.5">
+          <div className="inline-flex h-11 w-8 shrink-0 md:hidden" aria-hidden />
+          <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-1.5">
+            <div
+              className={`mx-1 h-11 w-11 shrink-0 rounded-full border-2 border-white/10 ${bone} md:mx-2 md:h-12 md:w-12`}
+            />
+            <div className="min-w-0 pr-2">
+              <div className={`h-[19px] w-28 rounded-md ${bone} md:h-5 md:w-36`} />
+              <div className={`mt-1 h-3.5 w-16 rounded-md ${bone} md:h-4 md:w-24`} />
+            </div>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2 md:gap-3">
+          <div className={`h-10 w-10 rounded-full border border-white/15 ${bone}`} />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 const ConversationHeader = ({
   chatId,
@@ -140,11 +165,7 @@ const ConversationHeader = ({
   };
 
   if (isLoading) {
-    return (
-      <div className={headerShellClass}>
-        <AvatarSkeleton className="h-14 rounded-xl border border-border px-3 py-1 md:h-16" />
-      </div>
-    );
+    return <ConversationHeaderSkeleton />;
   }
 
   return (

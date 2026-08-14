@@ -49,19 +49,21 @@ const LinksList = ({ links, query, onCopyLink }: LinksListProps) => {
             <p className="truncate text-sm font-medium text-body">{link.host}</p>
             <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-body-300">{link.url}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => onCopyLink(link.url)}
-              className="inline-flex items-center gap-1 rounded-lg bg-background-alt px-2 py-1.5 text-[11px] font-medium text-body-700 ring-1 ring-border/60 transition hover:text-white"
+              aria-label="Copy link"
+              className="grid h-8 w-8 place-items-center rounded-lg bg-background-alt text-body-700 ring-1 ring-border/60 transition hover:text-white"
             >
-              <CopyIcon className="h-3.5 w-3.5" /> Copy
+              <CopyIcon className="h-3.5 w-3.5" />
             </button>
             <a
               href={link.url} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg bg-green/10 px-2 py-1.5 text-[11px] font-medium text-green ring-1 ring-green/25 transition hover:bg-green/15"
+              aria-label="Open link"
+              className="grid h-8 w-8 place-items-center rounded-lg bg-green/10 text-green ring-1 ring-green/25 transition hover:bg-green/15"
             >
-              <ExternalLinkIcon className="h-3.5 w-3.5" /> Open
+              <ExternalLinkIcon className="h-3.5 w-3.5" />
             </a>
           </div>
         </div>

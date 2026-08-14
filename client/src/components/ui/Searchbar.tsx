@@ -16,8 +16,8 @@ type SearchbarProps = {
   width?: string;
   className?: string;
   expandable?: boolean;
-  /** box = filled field; line = icon + underline (dialogs) */
-  variant?: 'box' | 'line';
+  /** box = filled field; line = icon + underline (dialogs); pill = sheet search */
+  variant?: 'box' | 'line' | 'pill';
 };
 
 /**
@@ -56,6 +56,44 @@ export default function Searchbar({
       inputRef.current?.focus();
     }
   }, [expandable, isSearchBarFocused]);
+
+  if (!expandable && variant === 'pill') {
+    return (
+      <div
+        className={`group/search relative flex h-10 items-center gap-2.5 rounded-full border px-3 transition ${
+          isFocused
+            ? 'border-green/35 bg-background/80 shadow-[0_0_18px_rgba(1,195,109,0.08)]'
+            : 'border-white/10 bg-black-light/35'
+        } ${className}`}
+      >
+        <img
+          src={searchIcon}
+          alt=""
+          className={`h-4 w-4 shrink-0 transition ${isFocused ? 'opacity-90' : 'opacity-55'}`}
+        />
+        <input
+          type="search"
+          value={searchText}
+          onChange={handleSearchChange}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          className="min-w-0 flex-1 border-0 bg-transparent py-0 text-sm text-body placeholder:text-body-300/80 outline-none [&::-ms-clear]:hidden [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+        />
+        {searchText ? (
+          <button
+            type="button"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm text-body-300 transition hover:bg-white/8 hover:text-body"
+            onClick={() => setSearchText('')}
+            aria-label="Clear search"
+          >
+            ✕
+          </button>
+        ) : null}
+      </div>
+    );
+  }
 
   if (!expandable && variant === 'line') {
     return (

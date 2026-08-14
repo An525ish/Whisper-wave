@@ -109,7 +109,7 @@ const HeaderActions = ({
       type="button"
       ref={buttonRef}
       onClick={onToggle}
-      className={`grid h-11 w-11 place-items-center rounded-full border text-body transition md:h-10 md:w-10 ${
+      className={`grid h-10 w-10 place-items-center rounded-full border text-body transition ${
         searchOpen || isDotsMenu
           ? 'border-green/50 bg-green/10 text-green'
           : 'border-white/15 group hover:border-green-light hover:text-white'
@@ -117,7 +117,7 @@ const HeaderActions = ({
       aria-label="Chat options"
       aria-expanded={isDotsMenu}
     >
-      <ThreeDotsIcon className="h-4 w-4 fill-current transition group-hover:fill-green group-hover:text-green" />
+      <ThreeDotsIcon className="h-5 w-5 fill-current transition group-hover:fill-green group-hover:text-green" />
     </button>
 
     {isDotsMenu ? (

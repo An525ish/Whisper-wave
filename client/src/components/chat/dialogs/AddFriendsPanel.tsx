@@ -40,8 +40,8 @@ const AddFriendsPanel = () => {
     try {
       await sendFriendRequest('Sending Friend Request', { receiverId });
       setSentRequests((prev) => [...prev, receiverId]);
-    } catch (error) {
-      console.error('Error adding friend:', error);
+    } catch {
+      setSentRequests((prev) => prev.filter((id) => id !== receiverId));
     }
   };
 
@@ -54,39 +54,43 @@ const AddFriendsPanel = () => {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="shrink-0 px-1">
+      <div className="shrink-0">
         <Searchbar
           searchText={searchText}
           setSearchText={setSearchText}
           expandable={false}
-          variant="line"
+          variant="pill"
           autoFocus
           placeholder="Search people by name…"
           className="w-full"
         />
       </div>
 
-      <div className="mt-5 flex min-h-0 flex-1 flex-col">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col">
         {hasQuery || users.length > 0 ? (
-          <div className="mb-2 flex shrink-0 items-center justify-between gap-2 px-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-body-300">
+          <div className="mb-2 flex shrink-0 items-center justify-between gap-2 px-0.5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-body-300">
               {hasQuery ? 'Results' : 'Suggested'}
             </p>
-            {isUpdating ? (
+            {hasQuery && users.length > 0 ? (
+              <span className="inline-flex h-5 items-center rounded-full bg-green/15 px-2 text-[11px] font-semibold tabular-nums text-green ring-1 ring-inset ring-green/25">
+                {users.length}
+              </span>
+            ) : isUpdating ? (
               <span className="text-xs text-body-300">Updating…</span>
             ) : null}
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
           {showInitialSkeletons ? (
-            <div className="space-y-1 px-1">
+            <div className="space-y-1">
               {Array(3)
                 .fill(0)
                 .map((_, i) => (
                   <AvatarSkeleton
                     key={i}
-                    className="h-16 rounded-lg bg-transparent px-2"
+                    className="h-16 rounded-2xl bg-transparent px-2"
                   />
                 ))}
             </div>
@@ -110,7 +114,7 @@ const AddFriendsPanel = () => {
             />
           ) : (
             <div
-              className={`flex flex-col gap-0.5 px-1 transition-opacity duration-150 ${
+              className={`flex flex-col gap-1 transition-opacity duration-150 ${
                 isUpdating ? 'opacity-70' : 'opacity-100'
               }`}
             >

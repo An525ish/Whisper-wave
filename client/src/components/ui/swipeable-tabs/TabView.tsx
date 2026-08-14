@@ -1,16 +1,20 @@
 import { useEffect, useState, Children, type ReactNode } from 'react';
-import Tabs, { type TabItem } from '@/components/ui/swipeable-tabs/Tab';
+import Tabs, { type TabItem, type TabVariant } from '@/components/ui/swipeable-tabs/Tab';
 
 type TabViewProps = {
   tabsData: Record<string, TabItem> | TabItem[];
   children: ReactNode | ((activeTabIndex: number) => ReactNode);
   initialTabIndex?: number;
+  variant?: TabVariant;
+  ariaLabel?: string;
 };
 
 const TabView = ({
   tabsData,
   children,
   initialTabIndex = 0,
+  variant = 'underline',
+  ariaLabel,
 }: TabViewProps) => {
   const [activeTabIndex, setActiveTabIndex] = useState(initialTabIndex);
 
@@ -32,6 +36,8 @@ const TabView = ({
           tabsData={Object.values(tabsData)}
           activeTabIndex={activeTabIndex}
           handleTabChange={handleTabChange}
+          variant={variant}
+          ariaLabel={ariaLabel}
         />
       </div>
 
@@ -41,7 +47,7 @@ const TabView = ({
           style={{ transform: `translateX(-${activeTabIndex * 100}%)` }}
         >
           {Children.map(panels, (child) => (
-            <div className="h-full min-h-0 w-full min-w-full flex-shrink-0">
+            <div className="h-full min-h-0 w-full min-w-full shrink-0">
               {child}
             </div>
           ))}

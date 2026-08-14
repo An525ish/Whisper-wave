@@ -1,6 +1,6 @@
 import AvatarCard from '@/components/ui/AvatarCard';
+import CheckboxIcon from '@/components/ui/icons/Checkbox';
 import type { SuggestionMember } from '@/types';
-
 
 type SuggestionListItemProps = {
   data: SuggestionMember;
@@ -18,24 +18,22 @@ const SuggestionListItem = ({
   return (
     <button
       type="button"
-      className="flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-left transition hover:bg-background/50"
+      aria-pressed={isSelected}
+      className={`flex w-full items-center gap-2 rounded-2xl px-2 py-2 text-left transition ${
+        isSelected
+          ? 'bg-green/10 ring-1 ring-inset ring-green/25'
+          : 'hover:bg-white/4'
+      }`}
       onClick={() => handleSelectMember(_id)}
     >
-      <AvatarCard avatars={[avatar]} />
-
-      <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-        <p className="truncate font-medium capitalize text-body">{name}</p>
-        <span
-          className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 text-xs ${
-            isSelected
-              ? 'border-green bg-green text-white'
-              : 'border-border text-transparent'
-          }`}
-          aria-hidden
-        >
-          ✓
-        </span>
-      </div>
+      <AvatarCard avatars={[avatar]} avatarClassName="shadow-none" />
+      <p className="min-w-0 flex-1 truncate text-sm font-medium capitalize text-body">
+        {name}
+      </p>
+      <CheckboxIcon
+        checked={isSelected}
+        className={`h-5 w-5 shrink-0 ${isSelected ? 'text-green' : 'text-body-300/70'}`}
+      />
     </button>
   );
 };

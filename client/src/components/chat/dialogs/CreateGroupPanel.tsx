@@ -2,6 +2,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import useAsyncMutation from '@/hooks/shared/useAsyncMutation';
 import { useCreateGroupMutation, useMyFriendsQuery } from '@/hooks/chat';
 import Searchbar from '@/components/ui/Searchbar';
+import PencilIcon from '@/components/ui/icons/Pencil';
 import {
   useEffect,
   useId,
@@ -89,7 +90,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     const message =
       error instanceof Error ? error.message : 'Something went wrong';
     return (
-      <div className="rounded-xl bg-red-dark/40 p-4 text-sm text-red">
+      <div className="rounded-2xl bg-red-dark/40 p-4 text-sm text-red">
         {message}
       </div>
     );
@@ -105,20 +106,20 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
 
   const initial = groupname.trim().charAt(0).toUpperCase();
   const showInitial = !avatarPreview && Boolean(initial);
+  const selectedCount = selectedMembers.length;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Identity — avatar + name */}
-      <div className="shrink-0 px-1 pb-5">
-        <div className="flex items-center gap-4">
+      <div className="shrink-0 rounded-2xl bg-background-alt/55 p-3 ring-1 ring-border/45">
+        <div className="flex items-center gap-3.5">
           <label
             htmlFor={inputId}
             className="group relative shrink-0 cursor-pointer"
             title="Set group photo"
           >
-            <div className="relative h-18 w-18 overflow-hidden rounded-full ring-2 ring-border transition group-hover:ring-green/50 sm:h-20 sm:w-20">
+            <div className="relative h-16 w-16 overflow-hidden rounded-full ring-2 ring-border transition group-hover:ring-green/50">
               {showInitial ? (
-                <div className="grid h-full w-full place-items-center bg-linear-to-br from-green-dark to-primary text-2xl font-semibold text-green">
+                <div className="grid h-full w-full place-items-center bg-linear-to-br from-green-dark to-primary text-xl font-semibold text-green">
                   {initial}
                 </div>
               ) : (
@@ -130,14 +131,10 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
                   }`}
                 />
               )}
-              <div className="absolute inset-0 grid place-items-center bg-black/0 transition group-hover:bg-black/45">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-white opacity-0 transition group-hover:opacity-100">
-                  Edit
-                </span>
-              </div>
+              <div className="absolute inset-0 grid place-items-center bg-black/0 transition group-hover:bg-black/45" />
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 grid h-7 w-7 place-items-center rounded-full border border-border bg-primary text-xs shadow-md">
-              ✎
+            <span className="absolute -bottom-0.5 -right-0.5 grid h-7 w-7 place-items-center rounded-full bg-green text-background shadow-md ring-2 ring-background">
+              <PencilIcon className="h-3 w-3" />
             </span>
             <input
               id={inputId}
@@ -153,8 +150,8 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
               Group name
             </p>
             <input
-              className={`w-full border-b bg-transparent pb-2 text-lg font-medium outline-none transition placeholder:font-normal placeholder:text-body-300 ${
-                nameFocused ? 'border-green/70' : 'border-border'
+              className={`w-full border-b bg-transparent pb-1.5 text-base font-medium outline-none transition placeholder:font-normal placeholder:text-white/25 ${
+                nameFocused ? 'border-green/70' : 'border-border/80'
               }`}
               type="text"
               placeholder="Give it a name…"
@@ -168,38 +165,42 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
         </div>
       </div>
 
-      <div className="shrink-0 px-1">
+      <div className="mt-3 shrink-0">
         <Searchbar
           searchText={searchText}
           setSearchText={setSearchText}
           expandable={false}
-          variant="line"
+          variant="pill"
           placeholder="Filter friends…"
           className="w-full"
         />
       </div>
 
-      <div className="mt-5 flex min-h-0 flex-1 flex-col">
-        <div className="mb-2 flex shrink-0 items-center justify-between gap-2 px-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-body-300">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col">
+        <div className="mb-2 flex shrink-0 items-center justify-between gap-2 px-0.5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-body-300">
             Add members
           </p>
-          <span className="min-w-26 text-right text-xs tabular-nums text-body-300">
-            {selectedMembers.length > 0
-              ? `${selectedMembers.length} selected`
-              : 'At least 2'}
+          <span
+            className={`inline-flex h-5 items-center rounded-full px-2 text-[11px] font-semibold tabular-nums ring-1 ring-inset ${
+              selectedCount >= 2
+                ? 'bg-green/15 text-green ring-green/25'
+                : 'bg-white/6 text-body-300 ring-white/10'
+            }`}
+          >
+            {selectedCount > 0 ? `${selectedCount} selected` : 'At least 2'}
           </span>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
           {isLoading ? (
-            <div className="space-y-1 px-1">
+            <div className="space-y-1">
               {Array(5)
                 .fill(0)
                 .map((_, i) => (
                   <AvatarSkeleton
                     key={i}
-                    className="h-16 rounded-lg bg-transparent px-2"
+                    className="h-16 rounded-2xl bg-transparent px-2"
                   />
                 ))}
             </div>
@@ -222,7 +223,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
               title="No friends match your search"
             />
           ) : (
-            <div className="flex flex-col gap-0.5 px-1">
+            <div className="flex flex-col gap-1">
               {filteredMembers.map((friend) => (
                 <SuggestionListItem
                   key={friend._id}
@@ -243,12 +244,12 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
         </div>
       </div>
 
-      <div className="shrink-0 pt-3">
+      <div className="shrink-0 border-t border-border/50 pt-3">
         <button
           type="button"
           onClick={onSubmit}
           disabled={!canCreate || isCreateGroupLoading}
-          className="h-12 w-full rounded-xl bg-gradient-green text-sm font-semibold text-white shadow-md transition enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-gradient-green text-sm font-semibold text-white shadow-[0_10px_24px_rgba(1,195,109,0.28)] transition enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isCreateGroupLoading ? 'Creating…' : 'Create group'}
         </button>

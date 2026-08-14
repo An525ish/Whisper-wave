@@ -19,7 +19,7 @@ const AvatarCard = ({ avatars, max = 3, avatarClassName }: AvatarCardProps) => {
           key={`${src ?? 'avatar'}-${index}`}
           className={`overflow-hidden rounded-full border-2 border-border shadow-md first:ml-0 ${
             stacked
-              ? '-ml-5 h-10 w-10 md:-ml-6 md:h-11 md:w-11'
+              ? '-ml-5 h-11 w-11 md:-ml-6 md:h-12 md:w-12'
               : '-ml-3 h-11 w-11 md:-ml-4 md:h-12 md:w-12'
           } ${avatarClassName ?? ''}`}
           style={{ zIndex: shown.length - index }}

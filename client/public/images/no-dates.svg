@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 188" fill="none">
+  <ellipse cx="140" cy="176" rx="88" ry="10" fill="rgba(1,195,109,0.1)"/>
+  <path d="M22 168 C56 158 90 176 140 168 C190 160 224 176 258 166 L258 188 L22 188 Z" fill="rgba(42,33,54,0.85)"/>
+  <path d="M14 176 C58 168 94 184 140 176 C186 168 222 184 266 174 L266 188 L14 188 Z" fill="rgba(1,195,109,0.22)"/>
+
+  <rect x="58" y="28" width="164" height="128" rx="22" fill="#2a2136" stroke="rgba(1,195,109,0.35)" stroke-width="2"/>
+  <path d="M58 50 V28 A22 22 0 0 1 80 28 H200 A22 22 0 0 1 222 28 V50 Z" fill="#1b3c37"/>
+
+  <circle cx="88" cy="38" r="5.5" fill="#01c36d"/>
+  <circle cx="192" cy="38" r="5.5" fill="#01c36d"/>
+  <rect x="84.5" y="22" width="7" height="20" rx="3.5" fill="#ebecec"/>
+  <rect x="188.5" y="22" width="7" height="20" rx="3.5" fill="#ebecec"/>
+
+  <text x="140" y="72" text-anchor="middle" fill="#ebecec" font-family="DM Sans, sans-serif" font-size="11" font-weight="600">Every chat has a</text>
+  <text x="140" y="88" text-anchor="middle" fill="#01c36d" font-family="DM Sans, sans-serif" font-size="13" font-weight="700">yesterday.</text>
+
+  <g fill="rgba(235,236,236,0.16)">
+    <circle cx="96" cy="110" r="5.5"/>
+    <circle cx="122" cy="110" r="5.5"/>
+    <circle cx="174" cy="110" r="5.5"/>
+    <circle cx="200" cy="110" r="5.5"/>
+    <circle cx="96" cy="132" r="5.5"/>
+    <circle cx="122" cy="132" r="5.5"/>
+    <circle cx="148" cy="132" r="5.5"/>
+    <circle cx="174" cy="132" r="5.5"/>
+  </g>
+  <circle cx="148" cy="110" r="6.5" fill="#01c36d"/>
+  <circle cx="200" cy="132" r="6.5" fill="rgba(1,195,109,0.45)"/>
+
+  <g transform="translate(196 8)">
+    <path d="M6 8 C6 3 11 0 18 0 H44 C51 0 56 3 56 8 V22 C56 27 51 30 44 30 H30 L20 38 V30 H18 C11 30 6 27 6 22 Z" fill="#211a2a" stroke="rgba(1,195,109,0.55)" stroke-width="1.5"/>
+    <circle cx="22" cy="15" r="2.6" fill="rgba(1,195,109,0.85)"/>
+    <circle cx="32" cy="15" r="2.6" fill="rgba(1,195,109,0.55)"/>
+    <circle cx="42" cy="15" r="2.6" fill="rgba(1,195,109,0.35)"/>
+  </g>
+</svg>
