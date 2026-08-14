@@ -1,4 +1,5 @@
 import ChevronLeft from '@/components/ui/icons/ChevronLeft'
+import CountBadge from '@/components/ui/CountBadge'
 import { useSharedContent } from '@/hooks/profile/useSharedContent'
 import MediaGrid from '@/components/profile/shared-content/MediaGrid'
 import FilesList from '@/components/profile/shared-content/FilesList'
@@ -73,9 +74,7 @@ const SharedContentSheet = ({ mediaFiles, docFiles, links, initialTab, onClose, 
                   Shared content
                 </h2>
                 {totalShared > 0 ? (
-                  <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-green/15 px-2 text-[11px] font-semibold tabular-nums text-green ring-1 ring-inset ring-green/25">
-                    {totalShared}
-                  </span>
+                  <CountBadge count={totalShared} />
                 ) : null}
               </div>
               <p className="mt-0.5 truncate text-xs text-body-300 sm:text-sm">

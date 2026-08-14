@@ -1,4 +1,5 @@
 import EmptyState from '@/components/ui/EmptyState';
+import CountBadge from '@/components/ui/CountBadge';
 import ChevronLeft from '@/components/ui/icons/ChevronLeft';
 import AvatarSkeleton from '@/components/ui/skeletons/AvatarSkeleton';
 import AvatarCard from '@/components/ui/AvatarCard';
@@ -77,8 +78,6 @@ const ForwardDialog = ({
 
   if (!open) return null;
 
-  const messageCountLabel =
-    messageIds.length === 1 ? '1 message' : `${messageIds.length} messages`;
   const selectedCount = selectedChatIds.length;
   const forwardLabel = isForwarding
     ? 'Sending…'
@@ -131,9 +130,7 @@ const ForwardDialog = ({
                 >
                   Forward
                 </h2>
-                <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-green/15 px-2 text-[11px] font-semibold tabular-nums text-green ring-1 ring-inset ring-green/25">
-                  {messageCountLabel}
-                </span>
+                <CountBadge count={messageIds.length} />
               </div>
               <p className="mt-0.5 truncate text-xs text-body-300 sm:text-sm">
                 {selectedCount > 0
@@ -209,7 +206,7 @@ const ForwardDialog = ({
                     className={`flex w-full items-center gap-2 rounded-2xl px-2 py-2 text-left transition ${
                       selected
                         ? 'bg-green/10 ring-1 ring-inset ring-green/25'
-                        : 'hover:bg-white/4'
+                        : 'hover:bg-gradient-row-hover'
                     }`}
                   >
                     <AvatarCard avatars={avatars} avatarClassName="shadow-none" />

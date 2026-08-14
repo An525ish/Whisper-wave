@@ -1,4 +1,5 @@
 import EmptyState from '@/components/ui/EmptyState';
+import CountBadge from '@/components/ui/CountBadge';
 import useAsyncMutation from '@/hooks/shared/useAsyncMutation';
 import { useCreateGroupMutation, useMyFriendsQuery } from '@/hooks/chat';
 import Searchbar from '@/components/ui/Searchbar';
@@ -181,15 +182,14 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-body-300">
             Add members
           </p>
-          <span
-            className={`inline-flex h-5 items-center rounded-full px-2 text-[11px] font-semibold tabular-nums ring-1 ring-inset ${
-              selectedCount >= 2
-                ? 'bg-green/15 text-green ring-green/25'
-                : 'bg-white/6 text-body-300 ring-white/10'
-            }`}
-          >
-            {selectedCount > 0 ? `${selectedCount} selected` : 'At least 2'}
-          </span>
+          {selectedCount > 0 ? (
+            <div className="flex items-center gap-1.5">
+              <CountBadge count={selectedCount} />
+              <span className="text-[11px] text-body-300">selected</span>
+            </div>
+          ) : (
+            <span className="text-[11px] text-body-300">At least 2</span>
+          )}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide">

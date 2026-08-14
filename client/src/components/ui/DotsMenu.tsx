@@ -78,14 +78,14 @@ const DotsMenu = ({
         aria-controls={menuId}
         onClick={() => setOpen((prev) => !prev)}
       >
-        <ThreeDotsIcon className="h-3.5 w-3.5 fill-current" />
+        <ThreeDotsIcon className="h-5 w-5 fill-current" />
       </button>
 
       {open ? (
         <div
           id={menuId}
           role="menu"
-          className={`absolute top-11 z-40 w-48 origin-top-right animate-menu-pop overflow-hidden rounded-2xl border border-white/12 bg-[linear-gradient(165deg,rgba(48,38,60,0.97)_0%,rgba(28,22,38,0.98)_100%)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.45),0_0_0_1px_rgba(1,195,109,0.08)] backdrop-blur-xl motion-reduce:animate-none ${
+          className={`absolute top-12 z-40 w-48 origin-top-right animate-menu-pop overflow-hidden rounded-2xl border border-white/12 bg-[linear-gradient(165deg,rgba(48,38,60,0.97)_0%,rgba(28,22,38,0.98)_100%)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.45),0_0_0_1px_rgba(1,195,109,0.08)] backdrop-blur-xl motion-reduce:animate-none ${
             align === 'left' ? 'left-0 origin-top-left' : 'right-0'
           }`}
         >

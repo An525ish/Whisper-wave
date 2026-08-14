@@ -2,7 +2,7 @@ import AvatarCard from '@/components/ui/AvatarCard';
 import ReadReceipt from '@/components/ui/icons/ReadReceipt';
 import { Link, useParams } from 'react-router-dom';
 import { getFirstName, formatChatTime } from '@/utils/helpers';
-import { formatUnreadCount } from '@/utils/chat';
+import CountBadge from '@/components/ui/CountBadge';
 import type { ChatLastMessage } from '@/types/chat';
 
 type ChatListItemProps = {
@@ -60,7 +60,7 @@ const ChatListItem = ({
   return (
     <Link to={`/chat/${id}`} className="select-none">
       <div
-        className={`flex cursor-pointer items-center gap-1 rounded-xl px-3 py-3.5 transition active:scale-[0.99] md:gap-2 md:rounded-lg md:p-4 gradient-border hover:bg-gradient-background ${
+        className={`flex cursor-pointer items-center gap-1 rounded-xl px-3 py-3.5 transition active:scale-[0.99] md:gap-2 md:rounded-lg md:p-4 gradient-border hover:bg-gradient-row-hover ${
           isActive
             ? 'bg-gradient-background'
             : hasUnread
@@ -119,11 +119,7 @@ const ChatListItem = ({
                 </span>
               ) : null}
             </div>
-            {hasUnread ? (
-              <div className="ml-1 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-blue-light bg-blue/20 px-1 text-[11px] font-medium tabular-nums text-blue">
-                {formatUnreadCount(unreadCount)}
-              </div>
-            ) : null}
+            <CountBadge count={unreadCount} className="ml-1" />
           </div>
         </div>
       </div>

@@ -72,6 +72,14 @@
     #2d2537 70%,
     #211a2a 100%
   );
+  --background-image-gradient-row-hover: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(57, 48, 70, 0.28) 28%,
+    rgba(45, 37, 55, 0.38) 50%,
+    rgba(57, 48, 70, 0.28) 72%,
+    transparent 100%
+  );
   --background-image-gradient-green: linear-gradient(
     180deg,
     #01c36d 0%,

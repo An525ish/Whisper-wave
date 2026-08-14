@@ -12,6 +12,7 @@ import { useNotificationsStore } from '@/stores/notifications';
 import useAsyncMutation from '@/hooks/shared/useAsyncMutation';
 import AvatarSkeleton from '@/components/ui/skeletons/AvatarSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
+import CountBadge from '@/components/ui/CountBadge';
 
 type FoundChatNotification = {
   _id: string;
@@ -166,9 +167,7 @@ export const FriendRequestList = () => {
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-body-300">
             Pending
           </p>
-          <span className="inline-flex h-5 items-center rounded-full bg-green/15 px-2 text-[11px] font-semibold tabular-nums text-green ring-1 ring-inset ring-green/25">
-            {notificationData?.length}
-          </span>
+          <CountBadge count={notificationData?.length ?? 0} />
         </div>
       ) : null}
       {isLoading ? (

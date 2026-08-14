@@ -1,5 +1,5 @@
 import type { TabItem, TabVariant } from '@/types/ui';
-import { formatUnreadCount } from '@/utils/chat';
+import CountBadge from '@/components/ui/CountBadge';
 
 export type { TabItem, TabVariant };
 
@@ -10,22 +10,6 @@ type TabsProps = {
   variant?: TabVariant;
   ariaLabel?: string;
 };
-
-const pillsBadge = (selected: boolean) =>
-  `grid h-5 min-w-5 shrink-0 place-items-center rounded-full px-1 text-[10px] font-semibold tabular-nums leading-none ${
-    selected
-      ? 'bg-green/20 text-green ring-1 ring-inset ring-green/35'
-      : 'bg-border/50 text-body-300 ring-1 ring-inset ring-white/4'
-  }`;
-
-const underlineBadge = (selected: boolean, count: number) =>
-  `grid h-5 shrink-0 place-items-center rounded-full border px-1.5 text-[11px] font-medium tabular-nums ${
-    count < 10 ? 'min-w-5' : 'w-fit'
-  } ${
-    selected
-      ? 'border-blue-light bg-blue/20 text-blue'
-      : 'border-border bg-primary/60 text-body-700'
-  }`;
 
 const Tabs = ({
   tabsData = [],
@@ -77,9 +61,7 @@ const Tabs = ({
               ) : null}
               <span className="truncate">{tab.name}</span>
               {typeof tab.count === 'number' && tab.count > 0 ? (
-                <span className={pillsBadge(selected)}>
-                  {formatUnreadCount(tab.count)}
-                </span>
+                <CountBadge count={tab.count} />
               ) : null}
             </button>
           );
@@ -123,12 +105,10 @@ const Tabs = ({
                 ) : null}
                 {tab.name}
                 {typeof tab.count === 'number' && tab.count > 0 ? (
-                  <span
-                    className={underlineBadge(selected, tab.count)}
-                    aria-label={`${tab.count} new`}
-                  >
-                    {formatUnreadCount(tab.count)}
-                  </span>
+                  <CountBadge
+                    count={tab.count}
+                    label={`${tab.count} new`}
+                  />
                 ) : null}
               </button>
             </li>
