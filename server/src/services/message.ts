@@ -173,13 +173,24 @@ export const sendAttachments = async (
   }
 };
 
-/** Persist a realtime text message after membership is validated. */
+/** Persist a realtime text message after membership is validated.
+ *  Returns the canonical DB members list so the socket handler never
+ *  fans-out based on a client-supplied (potentially spoofed) array. */
 export const persistTextMessage = async (input: {
   userId: string;
   chatId: string;
   content: string;
   replyToMessageId?: string;
-}): Promise<{ ok: true; replyTo?: MessageReplyTo } | { ok: false }> => {
+}): Promise<
+  | {
+      ok: true;
+      messageId: string;
+      createdAt: string;
+      memberIds: string[];
+      replyTo?: MessageReplyTo;
+    }
+  | { ok: false }
+> => {
   const chat = await chatRepo.findByIdMembers(input.chatId);
   if (!chat) return { ok: false };
 
@@ -207,7 +218,13 @@ export const persistTextMessage = async (input: {
     createdAt: newMessage.createdAt,
   });
 
-  return { ok: true, replyTo };
+  return {
+    ok: true,
+    messageId: String(newMessage._id),
+    createdAt: new Date(newMessage.createdAt).toISOString(),
+    memberIds: chat.members.map((m) => m.toString()),
+    replyTo,
+  };
 };
 
 export const assertChatMember = async (

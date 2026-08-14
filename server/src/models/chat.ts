@@ -39,6 +39,11 @@ const chatSchema = new Schema<IChat>(
   { timestamps: true }
 );
 
+// members is the most-queried field: Chat.find({ members: userId })
+chatSchema.index({ members: 1 });
+// Sort / recency queries always land on updatedAt
+chatSchema.index({ members: 1, updatedAt: -1 });
+
 export const Chat =
   (mongoose.models.Chat as mongoose.Model<IChat> | undefined) ||
   model<IChat>('Chat', chatSchema);

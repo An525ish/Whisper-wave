@@ -7,6 +7,8 @@ export function useMyChatsQuery() {
   return useQuery({
     queryKey: queryKeys.chats,
     queryFn: chatApi.getMyChats,
+    // Updated via socket REFETCH_CHATS and mutation invalidations — no need to re-fetch on every focus/remount.
+    staleTime: 30_000,
   });
 }
 

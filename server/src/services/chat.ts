@@ -335,14 +335,15 @@ export const markChatRead = async (
   const resolvedMessageId =
     lastReadMessageId ?? latest?._id?.toString() ?? undefined;
 
-  await chatReadRepo.upsert({
-    chat: chatId,
-    user: userId,
-    lastReadAt,
-    lastReadMessageId: resolvedMessageId,
-  });
-
-  await messageRepo.markReadByUser(chatId, userId, lastReadAt);
+  await Promise.all([
+    chatReadRepo.upsert({
+      chat: chatId,
+      user: userId,
+      lastReadAt,
+      lastReadMessageId: resolvedMessageId,
+    }),
+    messageRepo.markReadByUser(chatId, userId, lastReadAt),
+  ]);
 
   const otherMembers = chat.members.filter(
     (member) => member.toString() !== userId.toString()

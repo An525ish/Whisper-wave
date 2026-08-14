@@ -21,7 +21,7 @@ export const findByChatPage = async (
     .populate('chat', 'groupChat');
 
 export const countByChat = async (chatId: string): Promise<number> =>
-  Message.countDocuments({ chat: chatId });
+  Message.countDocuments({ chat: chatId, status: { $ne: 'failed' } });
 
 export const create = async (
   input: CreateMessageInput
@@ -126,12 +126,15 @@ export const deleteByChatId = async (chatId: string): Promise<void> => {
   await Message.deleteMany({ chat: chatId });
 };
 
-export const findAttachmentsByChat = async (chatId: string) =>
+export const findAttachmentsByChat = async (chatId: string, limit = 200) =>
   Message.find({
     chat: chatId,
+    status: { $ne: 'failed' },
+    isDeleted: { $ne: true },
     attachments: { $exists: true, $not: { $size: 0 } },
   })
     .sort({ updatedAt: -1 })
+    .limit(limit)
     .lean<MessageRecord[]>();
 
 /** Text messages that likely contain URLs (for shared-links panel). */
@@ -147,7 +150,8 @@ export const findTextContentsByChat = async (chatId: string) =>
 
 export const countAll = async (): Promise<number> => Message.countDocuments();
 
-/** Unread = messages from others after lastReadAt; missing cursor counts all from others. */
+/** Unread = messages from others after lastReadAt; missing cursor counts all from others.
+ *  Single aggregation instead of N separate countDocuments round-trips. */
 export const countUnreadByChats = async (
   userId: string,
   chatIds: Array<string | Types.ObjectId>,
@@ -161,22 +165,33 @@ export const countUnreadByChats = async (
     typeof id === 'string' ? new Types.ObjectId(id) : id
   );
 
-  await Promise.all(
-    chatOids.map(async (chatOid) => {
-      const chatKey = chatOid.toString();
-      const lastReadAt = lastReadByChat.get(chatKey);
-      const filter: Record<string, unknown> = {
-        chat: chatOid,
-        sender: { $ne: userOid },
-      };
-      if (lastReadAt) {
-        filter.createdAt = { $gt: lastReadAt };
-      }
+  // Build per-chat $or conditions so each chat uses its own lastReadAt cursor.
+  const perChatConditions = chatOids.map((chatOid) => {
+    const chatKey = chatOid.toString();
+    const lastReadAt = lastReadByChat.get(chatKey);
+    const cond: Record<string, unknown> = {
+      chat: chatOid,
+      sender: { $ne: userOid },
+      status: { $ne: 'failed' },
+      isDeleted: { $ne: true },
+    };
+    if (lastReadAt) cond.createdAt = { $gt: lastReadAt };
+    return cond;
+  });
 
-      const count = await Message.countDocuments(filter);
-      counts.set(chatKey, count);
-    })
-  );
+  type AggRow = { _id: Types.ObjectId; count: number };
+  const rows = await Message.aggregate<AggRow>([
+    { $match: { $or: perChatConditions } },
+    { $group: { _id: '$chat', count: { $sum: 1 } } },
+  ]);
+
+  for (const row of rows) {
+    counts.set(row._id.toString(), row.count);
+  }
+  // Chats not in the result have 0 unread
+  for (const chatOid of chatOids) {
+    if (!counts.has(chatOid.toString())) counts.set(chatOid.toString(), 0);
+  }
 
   return counts;
 };

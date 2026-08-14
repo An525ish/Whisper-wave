@@ -22,6 +22,8 @@ export function useInfiniteMessagesQuery(chatId?: string) {
       return lastPageParam < totalPages ? lastPageParam + 1 : undefined;
     },
     enabled: isValidChatId(id),
+    // Messages arrive via socket into liveMessages — avoid page waterfalls on refocus/remount.
+    staleTime: 60_000,
   });
 }
 
@@ -115,6 +117,9 @@ export function useGetMediaQuery(
     queryKey: queryKeys.media(chatId),
     queryFn: () => chatApi.getMedia(chatId),
     enabled: isValidChatId(chatId) && !options?.skip,
+    // Attachments and links don't change on every message. Re-fetch only when
+    // explicitly invalidated (after sendAttachments) or after 5 minutes.
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -128,9 +133,9 @@ export function useMarkChatReadMutation() {
       chatId: string;
       lastReadMessageId?: string;
     }) => chatApi.markChatRead(chatId, { lastReadMessageId }),
-    onSuccess: (_data, vars) => {
+    onSuccess: () => {
+      // Only refresh the chat list (unread counts) — message content is unchanged by a read receipt.
       void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.messages(vars.chatId) });
     },
   });
 }
