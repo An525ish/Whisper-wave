@@ -33,11 +33,18 @@ const AppLoader = () => {
             className="absolute inset-2 rounded-full border border-green/15 animate-loader-pulse motion-reduce:animate-none sm:inset-2.5 md:inset-3 lg:inset-3.5"
             aria-hidden
           />
-          <img
-            src="/logo-4.png"
-            alt=""
-            className="relative z-10 h-[6.5rem] w-[6.5rem] object-contain sm:h-[8.25rem] sm:w-[8.25rem] md:h-44 md:w-44 lg:h-52 lg:w-52 xl:h-64 xl:w-64"
-          />
+          {/* Logo slot scales with the ring — avoids breakpoint mismatch + load pop */}
+          <div className="relative z-10 flex h-[94%] w-[94%] items-center justify-center">
+            <img
+              src="/logo-4.png"
+              alt=""
+              width={512}
+              height={512}
+              decoding="sync"
+              fetchPriority="high"
+              className="h-full w-full object-contain object-center"
+            />
+          </div>
         </div>
 
         <p className="mt-8 font-display text-4xl font-semibold tracking-tight text-white sm:mt-10 sm:text-5xl md:mt-12 md:text-6xl lg:text-7xl">

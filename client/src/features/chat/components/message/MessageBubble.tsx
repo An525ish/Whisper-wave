@@ -55,6 +55,9 @@ const resolveKind = (attachment: ChatAttachment, url: string): FileFormatKind =>
   return fileFormat(url);
 };
 
+const metaRowClass =
+  'inline-flex h-[19px] items-center whitespace-nowrap text-[11px] leading-none tabular-nums';
+
 const attachmentTimeClass =
   'rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide tabular-nums text-white-pure shadow-sm backdrop-blur-[1px]';
 
@@ -88,11 +91,26 @@ const MessageBubble = ({
   const showAvatar = Boolean(isGroupChat && !sameSender);
   const showName = Boolean(isGroupChat && !sameSender);
 
+  const bubblePadding = (() => {
+    if (mediaOnly || linkOnly) {
+      return sameSender ? 'p-1.5' : 'p-1.5 pr-3.5';
+    }
+    if (hasAttachments) {
+      return sameSender ? 'p-1.5 pb-2' : 'p-1.5 pb-2 pr-3.5';
+    }
+    if (showName) {
+      return sameSender
+        ? 'pl-3.5 pr-2 pb-2 pt-1.5'
+        : 'pl-3.5 pr-3.5 pb-2 pt-1.5';
+    }
+    return sameSender ? 'pl-3.5 pr-2 py-2' : 'pl-3.5 pr-3.5 py-2';
+  })();
+
   const renderReceipt = (hidden = false) => {
     if (!showReadReceipt) return null;
     return (
       <span
-        className={`ml-1 inline-flex shrink-0 items-center ${hidden ? 'opacity-0' : ''}`}
+        className={`ml-2 inline-flex shrink-0 items-center ${hidden ? 'opacity-0' : ''}`}
         aria-label={isRead ? 'Read' : 'Sent'}
       >
         <ReadReceipt read={isRead} />
@@ -101,20 +119,14 @@ const MessageBubble = ({
   };
 
   const renderTimestamp = (className: string) => (
-    <time
-      dateTime={createdAt}
-      className={`inline-flex flex-nowrap items-center whitespace-nowrap ${className}`}
-    >
+    <time dateTime={createdAt} className={`${metaRowClass} ${className}`}>
       <span>{currentTime}</span>
       {renderReceipt()}
     </time>
   );
 
   const timeReserve = (
-    <span
-      aria-hidden
-      className="pointer-events-none ml-4 inline-flex flex-nowrap items-center select-none whitespace-nowrap align-bottom text-[11px] leading-[15px] opacity-0"
-    >
+    <span aria-hidden className={`pointer-events-none ml-2 align-bottom ${metaRowClass} select-none opacity-0`}>
       {currentTime}
       {renderReceipt(true)}
     </span>
@@ -122,7 +134,7 @@ const MessageBubble = ({
 
   const showBubbleTimestamp = !mediaOnly;
   const mediaTimestamp = renderTimestamp(
-    `pointer-events-none absolute bottom-1 right-2 z-2 ${attachmentTimeClass}`,
+    `pointer-events-none absolute bottom-0 right-0.5 z-2 ${attachmentTimeClass}`,
   );
   const fileTimestamp = renderTimestamp(`pointer-events-none ${attachmentTimeClass}`);
 
@@ -164,15 +176,7 @@ const MessageBubble = ({
       ) : null}
 
       <div
-        className={`min-w-0 max-w-full shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${
-          mediaOnly || linkOnly
-            ? 'p-1.5'
-            : hasAttachments
-              ? 'p-1.5 pb-2'
-              : showName
-                ? 'px-3.5 pb-2.5 pt-1.5'
-                : 'px-3.5 pb-2.5 pt-2'
-        } ${
+        className={`min-w-0 max-w-full shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${bubblePadding} ${
           sameSender
             ? 'bubble-out border border-green/35 bg-green-dark/55'
             : 'bubble-in border border-border bg-primary/90'
@@ -272,7 +276,7 @@ const MessageBubble = ({
             </div>
           ) : hasText ? (
             <div className={`relative ${hasAttachments ? 'px-2 pt-0.5' : ''}`}>
-              <p className="m-0 text-sm leading-snug wrap-break-word whitespace-pre-wrap text-body">
+              <p className="m-0 text-sm leading-[19px] wrap-break-word whitespace-pre-wrap text-body">
                 <MessageContent content={content!} highlightQuery={highlightQuery} />
                 {links.length === 0 ? timeReserve : null}
               </p>
@@ -294,7 +298,7 @@ const MessageBubble = ({
 
           {showBubbleTimestamp
             ? renderTimestamp(
-                `absolute bottom-0 right-1.5 translate-y-0.5 text-[11px] leading-[15px] whitespace-nowrap pointer-events-none select-none ${
+                `absolute bottom-0 right-0 translate-y-1 pointer-events-none select-none ${
                   sameSender ? 'text-body-700' : 'text-body-300'
                 }`,
               )
@@ -302,8 +306,8 @@ const MessageBubble = ({
           {editedAt ? (
             <span
               className={`absolute bottom-0 ${
-                showBubbleTimestamp ? 'right-[4.5rem]' : 'right-1.5'
-              } translate-y-0.5 text-[10px] italic text-body-300`}
+                showBubbleTimestamp ? 'right-[4.5rem]' : 'right-0.5'
+              } translate-y-1 text-[10px] italic text-body-300`}
             >
               edited
             </span>

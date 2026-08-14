@@ -13,6 +13,7 @@ import * as userRepo from '../repositories/user.js';
 import {
   getMemberSockets,
   getOnlineUserIds,
+  isUserOnline,
   messageService,
   removeUserSocket,
   setUserSocket,
@@ -151,8 +152,13 @@ export const registerSocketHandlers = (io: Server): void => {
     });
 
     socket.on('disconnect', () => {
-      removeUserSocket(userId);
+      removeUserSocket(userId, socket.id);
       messageLimiter.remove(socket.id);
+      logger.debug({ userId, socketId: socket.id }, 'User disconnected');
+
+      // Only mark the user offline when every tab/device has disconnected.
+      if (isUserOnline(userId)) return;
+
       void (async () => {
         try {
           const lastSeen = await userRepo.updateLastSeen(userId);
@@ -165,7 +171,6 @@ export const registerSocketHandlers = (io: Server): void => {
           logger.error({ err: error, userId }, 'Failed to persist lastSeen');
         }
       })();
-      logger.debug({ userId, socketId: socket.id }, 'User disconnected');
     });
   });
 };

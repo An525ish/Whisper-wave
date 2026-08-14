@@ -10,6 +10,7 @@ export {
   getMemberSockets,
   getOnlineUserIds,
   getPresenceSize,
+  isUserOnline,
   removeUserSocket,
   setUserSocket,
 } from './presence.js';

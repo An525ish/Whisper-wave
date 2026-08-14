@@ -67,9 +67,6 @@ const ChatHeader = ({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const user = useAuthStore((s) => s.user);
-  const typingChatIds = usePresenceStore((s) => s.typingChatIds);
-  const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
-  const lastSeenByUserId = usePresenceStore((s) => s.lastSeenByUserId);
   const setUserLastSeen = usePresenceStore((s) => s.setUserLastSeen);
 
   const { data: chatDetails, isLoading } = useChatDetailsQuery({
@@ -120,9 +117,15 @@ const ChatHeader = ({
     }
   }, [chatData.members, setUserLastSeen]);
 
-  const isTyping = Boolean(chatId && typingChatIds[chatId]);
-  const peerOnline = !groupChat && peerId ? onlineUserIds.includes(peerId) : false;
-  const peerLastSeen = !groupChat && peerId ? (lastSeenByUserId[peerId] ?? null) : null;
+  // Granular selectors — each subscribes only to its own slice so other chats
+  // typing or other users coming online do not re-render this header.
+  const isTyping = usePresenceStore((s) => Boolean(chatId && s.typingChatIds[chatId]));
+  const peerOnline = usePresenceStore(
+    (s) => !groupChat && !!peerId && s.onlineUserIds.includes(peerId),
+  );
+  const peerLastSeen = usePresenceStore(
+    (s) => (!groupChat && peerId ? (s.lastSeenByUserId[peerId] ?? null) : null),
+  );
 
   const statusLabel = selectMode
     ? `${selectedCount} selected`
