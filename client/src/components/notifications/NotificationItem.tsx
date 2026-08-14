@@ -1,5 +1,4 @@
 import AvatarCard from '@/components/ui/AvatarCard';
-import Button from '@/components/ui/Button';
 import useErrors from '@/hooks/shared/useError';
 import { useHandleFriendRequestMutation } from '@/hooks/chat';
 import dayjs from 'dayjs';
@@ -8,18 +7,17 @@ import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import type { ApiSuccess } from '@/types';
-import type { MessageNotifyItem, FriendRequestNotifyItemProps } from '@/types/notifications';
-
-type NotificationItemProps = {
-  notification: MessageNotifyItem;
-};
+import type {
+  MessageNotifyItem,
+  FriendRequestNotifyItemProps,
+} from '@/types/notifications';
 import { formatUnreadCount } from '@/utils/chat';
 
 dayjs.extend(relativeTime);
 
-
-
-
+type NotificationItemProps = {
+  notification: MessageNotifyItem;
+};
 
 const useRelativeTime = (timestamp?: string | number) => {
   const [timeAgo, setTimeAgo] = useState('');
@@ -47,24 +45,25 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
   return (
     <Link
       to={`/chat/${id}`}
-      className="group flex items-center gap-3 rounded-2xl border border-border/50 bg-primary/25 px-3 py-3 transition hover:border-border/80 hover:bg-primary/45"
+      className="flex items-center gap-2 rounded-2xl px-2 py-2.5 transition hover:bg-white/4"
     >
-      <AvatarCard avatars={[avatar]} />
+      <AvatarCard avatars={[avatar]} avatarClassName="shadow-none" />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
-          <p className="truncate text-sm font-medium text-white">{name}</p>
+          <p className="truncate text-sm font-semibold text-white">{name}</p>
           {timeAgo ? (
-            <p className="shrink-0 text-[11px] text-body-300">{timeAgo}</p>
+            <p className="shrink-0 text-[11px] font-medium text-green">
+              {timeAgo}
+            </p>
           ) : null}
         </div>
-        <div className="mt-0.5 flex items-center gap-2">
+        <div className="mt-0.5 flex items-center justify-between gap-2">
           <p className="truncate text-xs text-body-700">
-            {formatUnreadCount(unread)} new message
-            {unread === 1 ? '' : 's'}
+            {unread === 1 ? 'New message' : 'New messages'}
           </p>
           {unread > 0 ? (
-            <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-green/20 px-1.5 text-[10px] font-semibold tabular-nums text-green">
+            <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-green/20 px-1.5 text-[10px] font-semibold tabular-nums text-green ring-1 ring-inset ring-green/30">
               {formatUnreadCount(unread)}
             </span>
           ) : null}
@@ -116,10 +115,12 @@ export const FriendRequestNotifyItem = ({
     { error: handleFriendRequest.error, isError: handleFriendRequest.isError },
   ]);
 
+  const busy = !!clickedButton;
+
   return (
-    <div className="rounded-2xl border border-border/50 bg-primary/25 px-3 py-3">
-      <div className="flex items-center gap-3">
-        <AvatarCard avatars={[avatarSrc]} />
+    <div className="rounded-2xl px-2 py-2.5">
+      <div className="flex items-center gap-2">
+        <AvatarCard avatars={[avatarSrc]} avatarClassName="shadow-none" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <p className="truncate text-sm font-medium text-white">{name}</p>
@@ -127,27 +128,35 @@ export const FriendRequestNotifyItem = ({
               <p className="shrink-0 text-[11px] text-body-300">{timeAgo}</p>
             ) : null}
           </div>
-          <p className="mt-0.5 text-xs text-body-700">wants to connect</p>
+          <p className="mt-0.5 text-xs text-body-700">Wants to connect</p>
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
-        <Button
-          variant={clickedButton === 'accept' ? 'primary' : 'outlineGreen'}
-          className="w-full"
+      <div className="mt-2.5 flex gap-2 pl-1">
+        <button
+          type="button"
           onClick={() => handleRequest(true)}
-          disabled={!!clickedButton}
+          disabled={busy}
+          className={`inline-flex h-8 flex-1 items-center justify-center rounded-full text-[12px] font-semibold transition ${
+            clickedButton === 'accept'
+              ? 'bg-gradient-green text-white'
+              : 'bg-green/10 text-green ring-1 ring-inset ring-green/30 hover:bg-green/20 enabled:active:scale-[0.98]'
+          } disabled:cursor-default`}
         >
           Accept
-        </Button>
-        <Button
-          variant={clickedButton === 'decline' ? 'danger' : 'outlineRed'}
-          className="w-full"
+        </button>
+        <button
+          type="button"
           onClick={() => handleRequest(false)}
-          disabled={!!clickedButton}
+          disabled={busy}
+          className={`inline-flex h-8 flex-1 items-center justify-center rounded-full text-[12px] font-semibold transition ${
+            clickedButton === 'decline'
+              ? 'bg-white/8 text-body-300'
+              : 'text-body-300 ring-1 ring-inset ring-white/12 hover:bg-white/6 hover:text-body enabled:active:scale-[0.98]'
+          } disabled:cursor-default`}
         >
           Ignore
-        </Button>
+        </button>
       </div>
     </div>
   );

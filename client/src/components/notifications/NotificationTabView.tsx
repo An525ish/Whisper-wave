@@ -33,7 +33,7 @@ const NotificationTabView = () => {
   );
 
   return (
-    <TabView tabsData={tabsData}>
+    <TabView tabsData={tabsData} variant="pills" ariaLabel="Notification types">
       <NotificationList />
       <FriendRequestList />
     </TabView>
