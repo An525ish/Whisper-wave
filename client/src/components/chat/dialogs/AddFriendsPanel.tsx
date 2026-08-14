@@ -1,5 +1,6 @@
 import EmptyState from '@/components/ui/EmptyState';
 import Searchbar from '@/components/ui/Searchbar';
+import CountBadge from '@/components/ui/CountBadge';
 import { useEffect, useState } from 'react';
 import {
   useSearchUsersQuery,
@@ -73,9 +74,7 @@ const AddFriendsPanel = () => {
               {hasQuery ? 'Results' : 'Suggested'}
             </p>
             {hasQuery && users.length > 0 ? (
-              <span className="inline-flex h-5 items-center rounded-full bg-green/15 px-2 text-[11px] font-semibold tabular-nums text-green ring-1 ring-inset ring-green/25">
-                {users.length}
-              </span>
+              <CountBadge count={users.length} />
             ) : isUpdating ? (
               <span className="text-xs text-body-300">Updating…</span>
             ) : null}

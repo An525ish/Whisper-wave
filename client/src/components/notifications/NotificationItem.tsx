@@ -11,7 +11,7 @@ import type {
   MessageNotifyItem,
   FriendRequestNotifyItemProps,
 } from '@/types/notifications';
-import { formatUnreadCount } from '@/utils/chat';
+import CountBadge from '@/components/ui/CountBadge';
 
 dayjs.extend(relativeTime);
 
@@ -45,7 +45,7 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
   return (
     <Link
       to={`/chat/${id}`}
-      className="flex items-center gap-2 rounded-2xl px-2 py-2.5 transition hover:bg-white/4"
+      className="flex items-center gap-2 rounded-2xl px-2 py-2.5 transition hover:bg-gradient-row-hover"
     >
       <AvatarCard avatars={[avatar]} avatarClassName="shadow-none" />
 
@@ -62,11 +62,7 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
           <p className="truncate text-xs text-body-700">
             {unread === 1 ? 'New message' : 'New messages'}
           </p>
-          {unread > 0 ? (
-            <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-green/20 px-1.5 text-[10px] font-semibold tabular-nums text-green ring-1 ring-inset ring-green/30">
-              {formatUnreadCount(unread)}
-            </span>
-          ) : null}
+          <CountBadge count={unread} />
         </div>
       </div>
     </Link>
@@ -118,7 +114,7 @@ export const FriendRequestNotifyItem = ({
   const busy = !!clickedButton;
 
   return (
-    <div className="rounded-2xl px-2 py-2.5">
+    <div className="rounded-2xl px-2 py-2.5 transition hover:bg-gradient-row-hover">
       <div className="flex items-center gap-2">
         <AvatarCard avatars={[avatarSrc]} avatarClassName="shadow-none" />
         <div className="min-w-0 flex-1">

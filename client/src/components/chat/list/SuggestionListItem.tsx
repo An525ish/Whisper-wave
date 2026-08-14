@@ -19,11 +19,7 @@ const SuggestionListItem = ({
     <button
       type="button"
       aria-pressed={isSelected}
-      className={`flex w-full items-center gap-2 rounded-2xl px-2 py-2 text-left transition ${
-        isSelected
-          ? 'bg-green/10 ring-1 ring-inset ring-green/25'
-          : 'hover:bg-white/4'
-      }`}
+      className="flex w-full items-center gap-2 rounded-2xl px-2 py-2 text-left transition hover:bg-gradient-row-hover"
       onClick={() => handleSelectMember(_id)}
     >
       <AvatarCard avatars={[avatar]} avatarClassName="shadow-none" />
