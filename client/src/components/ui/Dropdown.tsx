@@ -60,7 +60,7 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md' }: DropdownProps) => {
         <div
           className={`absolute top-full z-60 mt-1 origin-top rounded-xl border border-border/70 bg-primary py-0.5 shadow-lg ring-1 ring-black/5 focus:outline-none ${
             compact
-              ? 'right-0 w-[calc(100%+0.75rem)]'
+              ? 'right-0 w-max min-w-full'
               : 'left-0 w-full'
           }`}
           role="menu"

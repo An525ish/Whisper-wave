@@ -99,20 +99,20 @@ const ChatListHeader = ({
         </div>
       </div>
 
-      <div className="flex w-full items-center gap-2">
+      <div className="mt-3 flex w-full items-center gap-2 md:mt-0">
         <div className="min-w-0 flex-1">
           <Searchbar
             searchText={searchText}
             setSearchText={setSearchText}
             expandable={false}
+            variant="pill"
             placeholder="Search chats…"
             className="w-full"
           />
         </div>
-        <div className="flex h-11 shrink-0 items-center lg:hidden">
+        <div className="flex h-10 shrink-0 items-center lg:hidden">
           <AccountBar
             variant="notification"
-            notificationSize="search"
             overlayClassName="fixed inset-0 z-50"
           />
         </div>

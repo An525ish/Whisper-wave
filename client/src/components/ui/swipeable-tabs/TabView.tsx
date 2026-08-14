@@ -31,7 +31,7 @@ const TabView = ({
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col">
-      <div className="mb-4 w-full shrink-0">
+      <div className="mb-3 w-full shrink-0">
         <Tabs
           tabsData={Object.values(tabsData)}
           activeTabIndex={activeTabIndex}

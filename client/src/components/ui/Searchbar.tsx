@@ -145,7 +145,7 @@ export default function Searchbar({
           onChange={handleSearchChange}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="h-11 w-full rounded-xl border border-border bg-primary py-2 pl-10 pr-9 text-[15px] outline-none transition placeholder:text-body-300 focus:border-body/40"
+          className="h-10 w-full rounded-xl border border-border bg-primary py-2 pl-10 pr-9 text-[15px] outline-none transition placeholder:text-body-300 focus:border-body/40"
         />
         {searchText ? (
           <button
