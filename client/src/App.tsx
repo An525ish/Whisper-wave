@@ -1,8 +1,8 @@
 import { RouterProvider } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { useProfileQuery } from '@/features/chat/hooks';
-import { useAuthStore } from '@/features/auth/store';
-import AppLoader from '@/shared/components/loader/AppLoader';
+import { useProfileQuery } from '@/hooks/chat';
+import { useAuthStore } from '@/stores/auth';
+import AppLoader from '@/components/ui/loader/AppLoader';
 import { router } from '@/app/router';
 import '@/App.css';
 

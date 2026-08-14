@@ -5,12 +5,12 @@ import {
   type RouteObject,
 } from 'react-router-dom';
 import { SocketProvider } from '@/socket/SocketProvider';
-import { useAuthStore } from '@/features/auth/store';
-import { useAdminStore } from '@/features/admin/store';
+import { useAuthStore } from '@/stores/auth';
+import { useAdminStore } from '@/stores/admin';
 import type { ReactNode } from 'react';
 import AdminWrapper from '@/layout/AdminWrapper';
-import AppLoader from '@/shared/components/loader/AppLoader';
-import { useAdminMeQuery } from '@/features/admin/hooks';
+import AppLoader from '@/components/ui/loader/AppLoader';
+import { useAdminMeQuery } from '@/hooks/admin';
 import RouteError from '@/app/RouteError';
 
 function ProtectedRoutes({
@@ -86,28 +86,28 @@ const appRoutes = [
           {
             path: 'dashboard',
             lazy: async () => {
-              const module = await import('@/features/admin/components/Dashboard');
+              const module = await import('@/components/admin/Dashboard');
               return { Component: module.default };
             },
           },
           {
             path: 'users',
             lazy: async () => {
-              const module = await import('@/features/admin/components/Users');
+              const module = await import('@/components/admin/Users');
               return { Component: module.default };
             },
           },
           {
             path: 'messages',
             lazy: async () => {
-              const module = await import('@/features/admin/components/Messages');
+              const module = await import('@/components/admin/Messages');
               return { Component: module.default };
             },
           },
           {
             path: 'groups',
             lazy: async () => {
-              const module = await import('@/features/admin/components/Groups');
+              const module = await import('@/components/admin/Groups');
               return { Component: module.default };
             },
           },

@@ -1,0 +1,16 @@
+import type { IconProps } from '@/types';
+
+const ThreeDotsIcon = ({ ...props }: IconProps) => (
+  <svg
+    {...props}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <circle cx="12" cy="5" r="1.75" />
+    <circle cx="12" cy="12" r="1.75" />
+    <circle cx="12" cy="19" r="1.75" />
+  </svg>
+);
+
+export default ThreeDotsIcon;

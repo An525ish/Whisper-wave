@@ -1,4 +1,4 @@
-import { BASE_URL } from '@/shared/constants/app';
+import { BASE_URL } from '@/constants/app';
 
 export class ApiError extends Error {
   status: number;

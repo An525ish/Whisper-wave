@@ -1,0 +1,56 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import * as chatApi from '@/api/chat';
+import { queryKeys } from '@/hooks/chat';
+import { isValidChatId } from '@/utils/helpers';
+
+export function useMyChatsQuery() {
+  return useQuery({
+    queryKey: queryKeys.chats,
+    queryFn: chatApi.getMyChats,
+    // Updated via socket REFETCH_CHATS and mutation invalidations — no need to re-fetch on every focus/remount.
+    staleTime: 30_000,
+  });
+}
+
+export function useChatDetailsQuery(
+  params: { id?: string; populate?: boolean },
+  options?: { skip?: boolean },
+) {
+  const id = params.id ?? '';
+  return useQuery({
+    queryKey: queryKeys.chatDetails(id, params.populate),
+    queryFn: () => chatApi.getChatDetails({ id, populate: params.populate }),
+    enabled: isValidChatId(id) && !options?.skip,
+    // Keep members/groupChat flag warm so typing indicators and
+    // the online dot work from the first keystroke after a chat switch.
+    staleTime: 30_000,
+  });
+}
+
+export function useMyFriendsQuery(params?: { chatId?: string }) {
+  return useQuery({
+    queryKey: queryKeys.friends(params?.chatId),
+    queryFn: () => chatApi.getMyFriends(params),
+  });
+}
+
+export function useSearchUsersQuery(name: string) {
+  const trimmed = name.trim();
+
+  return useQuery({
+    queryKey: queryKeys.searchUsers(trimmed),
+    queryFn: () => chatApi.searchUser(trimmed),
+    enabled: trimmed.length > 0,
+    staleTime: 30_000,
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+}
+
+export function useGetMyNotificationsQuery() {
+  return useQuery({
+    queryKey: queryKeys.notifications,
+    queryFn: chatApi.getMyNotifications,
+    staleTime: 0,
+  });
+}
