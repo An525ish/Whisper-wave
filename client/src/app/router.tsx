@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 import AdminWrapper from '@/layout/AdminWrapper';
 import AppLoader from '@/shared/components/loader/AppLoader';
 import { useAdminMeQuery } from '@/features/admin/hooks';
+import RouteError from '@/app/RouteError';
 
 function ProtectedRoutes({
   allow,
@@ -62,97 +63,104 @@ function AdminAuthed() {
   );
 }
 
+const appRoutes = [
+  {
+    path: '/admin',
+    element: <AdminBootstrap />,
+    children: [
+      {
+        element: <AdminGuestOnly />,
+        children: [
+          {
+            path: '',
+            lazy: async () => {
+              const module = await import('@/pages/admin/AdminAuth');
+              return { Component: module.default };
+            },
+          },
+        ],
+      },
+      {
+        element: <AdminAuthed />,
+        children: [
+          {
+            path: 'dashboard',
+            lazy: async () => {
+              const module = await import('@/features/admin/components/Dashboard');
+              return { Component: module.default };
+            },
+          },
+          {
+            path: 'users',
+            lazy: async () => {
+              const module = await import('@/features/admin/components/Users');
+              return { Component: module.default };
+            },
+          },
+          {
+            path: 'messages',
+            lazy: async () => {
+              const module = await import('@/features/admin/components/Messages');
+              return { Component: module.default };
+            },
+          },
+          {
+            path: 'groups',
+            lazy: async () => {
+              const module = await import('@/features/admin/components/Groups');
+              return { Component: module.default };
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    path: '/auth',
+    element: <GuestOnly />,
+    children: [
+      {
+        path: '',
+        lazy: async () => {
+          const module = await import('@/pages/Auth');
+          return { Component: module.default };
+        },
+      },
+    ],
+  },
+  {
+    path: '/',
+    element: <AuthedLayout />,
+    children: [
+      {
+        path: '/',
+        lazy: async () => {
+          const module = await import('@/pages/Home');
+          return { Component: module.default };
+        },
+      },
+      {
+        path: 'chat/:chatId',
+        lazy: async () => {
+          const module = await import('@/pages/Chat');
+          return { Component: module.default };
+        },
+      },
+    ],
+  },
+  {
+    path: '*',
+    lazy: async () => {
+      const module = await import('@/pages/PageNotFound');
+      return { Component: module.default };
+    },
+  },
+] satisfies RouteObject[];
+
 export const router: ReturnType<typeof createBrowserRouter> =
   createBrowserRouter([
     {
-      path: '/admin',
-      element: <AdminBootstrap />,
-      children: [
-        {
-          element: <AdminGuestOnly />,
-          children: [
-            {
-              path: '',
-              lazy: async () => {
-                const module = await import('@/pages/admin/AdminAuth');
-                return { Component: module.default };
-              },
-            },
-          ],
-        },
-        {
-          element: <AdminAuthed />,
-          children: [
-            {
-              path: 'dashboard',
-              lazy: async () => {
-                const module = await import('@/features/admin/components/Dashboard');
-                return { Component: module.default };
-              },
-            },
-            {
-              path: 'users',
-              lazy: async () => {
-                const module = await import('@/features/admin/components/Users');
-                return { Component: module.default };
-              },
-            },
-            {
-              path: 'messages',
-              lazy: async () => {
-                const module = await import('@/features/admin/components/Messages');
-                return { Component: module.default };
-              },
-            },
-            {
-              path: 'groups',
-              lazy: async () => {
-                const module = await import('@/features/admin/components/Groups');
-                return { Component: module.default };
-              },
-            },
-          ],
-        },
-      ],
+      errorElement: <RouteError />,
+      children: appRoutes,
     },
-    {
-      path: '/auth',
-      element: <GuestOnly />,
-      children: [
-        {
-          path: '',
-          lazy: async () => {
-            const module = await import('@/pages/Auth');
-            return { Component: module.default };
-          },
-        },
-      ],
-    },
-    {
-      path: '/',
-      element: <AuthedLayout />,
-      children: [
-        {
-          path: '/',
-          lazy: async () => {
-            const module = await import('@/pages/Home');
-            return { Component: module.default };
-          },
-        },
-        {
-          path: 'chat/:chatId',
-          lazy: async () => {
-            const module = await import('@/pages/Chat');
-            return { Component: module.default };
-          },
-        },
-      ],
-    },
-    {
-      path: '*',
-      lazy: async () => {
-        const module = await import('@/pages/PageNotFound');
-        return { Component: module.default };
-      },
-    },
-  ] satisfies RouteObject[]);
+  ]);
