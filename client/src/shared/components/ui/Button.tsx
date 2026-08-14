@@ -1,6 +1,6 @@
+import type { ButtonVariant } from '@/shared/types/ui';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type ButtonVariant = 'primary' | 'danger' | 'outlineGreen' | 'outlineRed' | 'ghost';
 
 type ButtonProps = {
   variant?: ButtonVariant;

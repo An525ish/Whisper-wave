@@ -1,20 +1,7 @@
 import { getFirstName } from '@/shared/utils/helper'
 import dayjs from 'dayjs'
-import type { ReactNode } from 'react'
-import type { ChatSearchHit } from '@/features/chat/components/panel/ChatSearch'
-
-const highlightSnippet = (text: string, query: string): ReactNode => {
-  if (!query.trim()) return text
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const parts = text.split(new RegExp(`(${escaped})`, 'ig'))
-  return parts.map((part, index) =>
-    part.toLowerCase() === query.toLowerCase() ? (
-      <mark key={`${part}-${index}`} className="rounded-sm bg-yellow/90 px-0.5 font-medium text-background">{part}</mark>
-    ) : (
-      <span key={`${part}-${index}`}>{part}</span>
-    ),
-  )
-}
+import { highlightSnippet } from '@/shared/utils/highlight'
+import type { ChatSearchHit } from '@/features/chat/types'
 
 type SearchResultItemProps = {
   hit: ChatSearchHit

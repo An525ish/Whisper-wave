@@ -1,3 +1,4 @@
+import type { SidebarContextValue } from '@/shared/types';
 import {
   createContext,
   useState,
@@ -6,9 +7,6 @@ import {
 import ThreeDotsIcon from '../icons/ThreeDots';
 import LeaveGroupIcon from '../icons/LeaveGroup';
 
-export type SidebarContextValue = {
-  expanded: boolean;
-};
 
 export const SidebarContext = createContext<SidebarContextValue>({
   expanded: true,

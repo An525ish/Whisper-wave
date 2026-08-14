@@ -7,49 +7,7 @@ import {
 } from 'react';
 import toast from 'react-hot-toast';
 import { validateFiles } from '@/shared/utils/helper';
-import ImagesIcon from '../icons/Images';
-import VideosIcon from '../icons/Video';
-import AudiosIcon from '../icons/Audio';
-import FilesIcon from '../icons/FilesIcon';
-
-type UploadLimits = {
-  individual: number;
-  cumulative: number;
-};
-
-type UploadTypeConfig = {
-  title: string;
-  accept: string;
-  Icon: typeof ImagesIcon;
-  limits: UploadLimits;
-};
-
-const UPLOAD_TYPES: Record<string, UploadTypeConfig> = {
-  IMAGES: {
-    title: 'Images',
-    accept: 'image/jpeg, image/png, image/gif',
-    Icon: ImagesIcon,
-    limits: { individual: 5 * 1024 * 1024, cumulative: 20 * 1024 * 1024 },
-  },
-  VIDEOS: {
-    title: 'Videos',
-    accept: 'video/mp4, video/quicktime',
-    Icon: VideosIcon,
-    limits: { individual: 50 * 1024 * 1024, cumulative: 250 * 1024 * 1024 },
-  },
-  AUDIOS: {
-    title: 'Audios',
-    accept: 'audio/mpeg, audio/wav, audio/ogg',
-    Icon: AudiosIcon,
-    limits: { individual: 20 * 1024 * 1024, cumulative: 100 * 1024 * 1024 },
-  },
-  DOCUMENTS: {
-    title: 'Documents',
-    accept: '*',
-    Icon: FilesIcon,
-    limits: { individual: 50 * 1024 * 1024, cumulative: 150 * 1024 * 1024 },
-  },
-};
+import { UPLOAD_TYPES, type UploadLimits } from '@/shared/constants/uploadConfig';
 
 type AttachmentMenuProps = {
   onClose: () => void;

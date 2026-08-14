@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { TimelineItem } from './panelTypes';
+import type { TimelineItem } from '@/features/chat/types';
 
 const NEAR_BOTTOM_PX = 120;
 

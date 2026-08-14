@@ -4,7 +4,7 @@ import { getFirstName } from '@/shared/utils/helper'
 import dayjs from 'dayjs'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { ChatSearchHit } from '@/features/chat/components/panel/ChatSearch'
-import type { FromOption } from '@/features/chat/components/panel/search/SearchFilters'
+import type { FromOption } from '@/features/chat/types'
 
 type SearchMode = 'messages' | 'media' | 'links' | 'date'
 type FromFilter = 'anyone' | 'me' | 'others' | string

@@ -1,32 +1,7 @@
 import { api } from '@/api/client';
-import type { AdminStats, ApiSuccess, User } from '@/shared/types';
-
-export type AdminMeResponse = ApiSuccess & { isAdmin: boolean };
-
-export type AdminUser = User & {
-  createdAt?: string;
-  friendsCount?: number;
-  groupsCount?: number;
-};
-
-export type AdminMessage = {
-  _id: string;
-  content?: string;
-  sender: { _id: string; name?: string };
-  chat?: string;
-  createdAt?: string;
-  attachments?: unknown[];
-};
-
-export type AdminGroup = {
-  _id: string;
-  name: string;
-  groupChat: boolean;
-  members?: { _id: string; name?: string }[];
-  creator?: { _id: string; name?: string };
-  createdAt?: string;
-  totalMessages?: number;
-};
+import type { AdminStats, ApiSuccess } from '@/shared/types';
+import type { AdminMeResponse, AdminUser, AdminMessage, AdminGroup } from '../types';
+export type { AdminMeResponse, AdminUser, AdminMessage, AdminGroup } from '../types';
 
 export const adminLogin = (secretKey: string) =>
   api.post<AdminMeResponse>('/admin/login', { secretKey });

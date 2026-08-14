@@ -1,19 +1,12 @@
 import ChevronLeft from '@/shared/components/icons/ChevronLeft'
-import ImagesIcon from '@/shared/components/icons/Images'
-import FilesIcon from '@/shared/components/icons/FilesIcon'
-import LinkIcon from '@/shared/components/icons/Link'
-import GridAllIcon from '@/shared/components/icons/GridAll'
-import VideosIcon from '@/shared/components/icons/Video'
-import AudiosIcon from '@/shared/components/icons/Audio'
 import { useSharedContent } from '@/features/profile/hooks/useSharedContent'
 import MediaGrid from '@/features/profile/components/shared-content/MediaGrid'
 import FilesList from '@/features/profile/components/shared-content/FilesList'
 import LinksList from '@/features/profile/components/shared-content/LinksList'
-import type { ComponentType, MouseEvent } from 'react'
-import type { IconProps } from '@/shared/types'
-import type { MediaFile, SharedLink, PhotoFilter } from '@/features/profile/components/shared-content/types'
+import type { MouseEvent } from 'react'
+import { SHARED_CONTENT_TABS, PHOTO_FILTER_OPTIONS } from '@/features/profile/constants/sharedContent'
+import type { MediaFile, SharedLink, PhotoFilter, SharedContentTab } from '@/features/profile/components/shared-content/types'
 
-export type SharedContentTab = 'photos' | 'attachments' | 'links'
 
 type SharedContentSheetProps = {
   mediaFiles: MediaFile[]
@@ -25,7 +18,6 @@ type SharedContentSheetProps = {
   onOpenDocument: (e: MouseEvent, url: string | undefined, name: string | undefined) => void
 }
 
-type TabIcon = ComponentType<IconProps>
 
 const tabIconClass = (selected: boolean, strokeOnly = false) =>
   strokeOnly
@@ -47,18 +39,7 @@ const filterCountBadgeClass = (selected: boolean) =>
     selected ? 'bg-white/12 text-white/85' : 'bg-background-alt/90 text-body-300'
   }`
 
-const TABS: { id: SharedContentTab; label: string; hint: string; Icon: TabIcon; strokeOnly?: boolean }[] = [
-  { id: 'photos', label: 'Images', hint: 'Photos, videos & audio', Icon: ImagesIcon },
-  { id: 'attachments', label: 'Files', hint: 'Documents & downloads', Icon: FilesIcon },
-  { id: 'links', label: 'Links', hint: 'URLs shared in chat', Icon: LinkIcon, strokeOnly: true },
-]
 
-const PHOTO_FILTERS: { key: PhotoFilter; label: string; Icon: TabIcon; strokeOnly?: boolean }[] = [
-  { key: 'all', label: 'All', Icon: GridAllIcon, strokeOnly: true },
-  { key: 'image', label: 'Photos', Icon: ImagesIcon },
-  { key: 'video', label: 'Videos', Icon: VideosIcon },
-  { key: 'audio', label: 'Audio', Icon: AudiosIcon },
-]
 
 const SearchIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 20 20" fill="none" aria-hidden>
@@ -71,8 +52,8 @@ const SharedContentSheet = ({ mediaFiles, docFiles, links, initialTab, onClose, 
     filteredPhotos, filteredDocs, filteredLinks, photoCounts, totalShared, copyLink } =
     useSharedContent({ mediaFiles, docFiles, links, initialTab, onClose })
 
-  const activeIndex = TABS.findIndex((t) => t.id === activeTab)
-  const activeMeta = TABS[activeIndex] ?? TABS[0]
+  const activeIndex = SHARED_CONTENT_TABS.findIndex((t) => t.id === activeTab)
+  const activeMeta = SHARED_CONTENT_TABS[activeIndex] ?? SHARED_CONTENT_TABS[0]
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:p-4 md:items-center md:justify-end md:pr-6 lg:pr-8" role="dialog" aria-modal="true" aria-labelledby="shared-content-title">
@@ -109,7 +90,7 @@ const SharedContentSheet = ({ mediaFiles, docFiles, links, initialTab, onClose, 
             <span className="pointer-events-none absolute bottom-0 z-10 h-0.5 rounded-full bg-linear-to-r from-green-gradFrom via-green to-green-gradTo transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
               style={{ left: `${activeIndex * 33.333}%`, width: '33.333%' }} aria-hidden />
             <div className="grid grid-cols-3">
-              {TABS.map((tab) => {
+              {SHARED_CONTENT_TABS.map((tab) => {
                 const selected = activeTab === tab.id
                 const count = tab.id === 'photos' ? mediaFiles.length : tab.id === 'attachments' ? docFiles.length : links.length
                 const TabIcon = tab.Icon
@@ -140,7 +121,7 @@ const SharedContentSheet = ({ mediaFiles, docFiles, links, initialTab, onClose, 
             <div className="mt-2 h-9">
               {activeTab === 'photos' && photoCounts.all > 0 ? (
                 <div className="relative flex h-full items-stretch overflow-x-auto rounded-xl bg-black-light/35 p-0.5 scrollbar-hide">
-                  {PHOTO_FILTERS.map(({ key, label, Icon, strokeOnly }, index, arr) => {
+                  {PHOTO_FILTER_OPTIONS.map(({ key, label, Icon, strokeOnly }, index, arr) => {
                     const count = photoCounts[key]
                     if (key !== 'all' && count === 0) return null
                     const selected = photoFilter === key

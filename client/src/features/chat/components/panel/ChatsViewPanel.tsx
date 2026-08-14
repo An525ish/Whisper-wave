@@ -24,7 +24,7 @@ import ForwardDialog from '@/features/chat/components/dialogs/ForwardDialog';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import type {
   ChatDetailsResponse, ChatMessage, SendAttachmentsResult,
-} from '@/features/chat/hooks/panelTypes';
+} from '@/features/chat/types';
 import DoubleChevronDown from '@/shared/components/icons/DoubleChevronDown';
 import ReplyComposerBar from './ReplyComposerBar';
 

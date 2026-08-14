@@ -10,10 +10,14 @@ import type { UploadableFile } from '../types/message.js';
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
+const MAX_FILES_PER_REQUEST = 5;
+
 const multerUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 1024 * 1024 * 50,
+    // Cap file count to match the client MAX_FILES constant and prevent memory DoS.
+    files: MAX_FILES_PER_REQUEST,
   },
 });
 

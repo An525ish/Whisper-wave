@@ -7,17 +7,7 @@ import type { MouseEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getFirstName, formatChatTime } from '@/shared/utils/helper';
 import { formatUnreadCount } from '@/features/chat/utils/unread';
-
-
-type ChatListItemLastMessage = {
-  content?: string;
-  createdAt?: string;
-  isRead?: boolean;
-  sender?: {
-    _id: string;
-    name?: string;
-  };
-};
+import type { ChatLastMessage } from '@/features/chat/types';
 
 type ChatListItemProps = {
   avatar?: string[];
@@ -26,7 +16,7 @@ type ChatListItemProps = {
   groupChat?: boolean;
   isOnline?: boolean;
   isTyping?: boolean;
-  lastMessage?: ChatListItemLastMessage | null;
+  lastMessage?: ChatLastMessage | null;
   unreadCount?: number;
   currentUserId: string;
   onMarkRead?: (chatId: string) => void;

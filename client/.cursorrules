@@ -1,0 +1,204 @@
+# Whisper-wave Client — Cursor AI Rules
+
+These rules are non-negotiable. Every PR must satisfy them. When in doubt, err
+toward extracting to the correct layer rather than keeping code in a component.
+
+---
+
+## 1. Folder Structure — Feature-Slice Architecture
+
+```
+src/
+  features/
+    {domain}/          # e.g. chat, auth, admin, profile, notifications
+      api/             # axios/fetch calls only — no business logic
+      components/      # React components (.tsx)
+      hooks/           # custom hooks (useXxx.ts) + panelTypes.ts
+      stores/          # zustand stores
+      utils/           # pure functions
+      types.ts         # all data-model types for this domain
+  shared/
+    components/        # reusable UI components
+    hooks/             # reusable hooks
+    utils/             # pure utility functions
+    constants/         # app-wide magic values and config objects
+    types/
+      index.ts         # barrel — re-exports from sub-files
+      user.ts          # User, Avatar, ApiSuccess, notification types
+      ui.ts            # shared UI types (EmptyStateProps shape, TabItem, etc.)
+      media.ts         # MediaFile, PhotoFilter, SharedLink
+      socket.ts        # all socket payload types
+      icon.ts          # IconProps
+  pages/               # page-level route components only
+  layout/              # layout wrappers (AppWrapper, AdminWrapper)
+  app/                 # router, providers, queryClient
+  socket/              # SocketProvider
+```
+
+No other top-level folders under `src/`. No feature code in `pages/`.
+
+---
+
+## 2. Type & Interface Placement — STRICT
+
+### The only type allowed in a .tsx component file:
+```tsx
+// ONE Props type, directly above its component. Nothing else.
+type Props = { ... };
+const MyComponent = ({ ... }: Props) => { ... };
+```
+
+### Hook files (.ts):
+Only a single private `interface Params { ... }` (or equivalent) is allowed for
+the hook's own parameter bag. All other types must live in types files.
+
+### All other types go here:
+| Type category          | File                                  |
+|------------------------|---------------------------------------|
+| Domain data models     | `features/{domain}/types.ts`          |
+| Shared UI shape types  | `shared/types/ui.ts`                  |
+| Media/file types       | `shared/types/media.ts`               |
+| Socket payload types   | `shared/types/socket.ts`              |
+| Icon SVG prop types    | `shared/types/icon.ts`                |
+| User/auth types        | `shared/types/user.ts`                |
+| Admin-specific types   | `features/admin/types.ts`             |
+
+NEVER define a reusable type inside a .tsx or hook file and import it elsewhere.
+If another file needs the type, it belongs in a types file.
+
+---
+
+## 3. Constants & Config
+
+- No magic numbers, string literals, or config objects in component files.
+- No inline timeouts, limits, or pixel values without a named constant.
+- App-wide constants → `shared/constants/app.ts`
+- Route strings → `shared/constants/routes.ts`
+- Socket event names → `shared/constants/socketEvents.ts`
+- Upload limits/MIME lists → `shared/constants/uploadConfig.ts`
+- Feature-scoped constants → `features/{domain}/constants.ts`
+
+```ts
+// WRONG — in a component or hook
+const debounce = 450;
+
+// RIGHT — in shared/constants/app.ts
+export const SEARCH_DEBOUNCE_MS = 450 as const;
+```
+
+---
+
+## 4. Separation of Concerns
+
+Components must contain ONLY:
+1. Import statements
+2. One `Props` type definition
+3. JSX (return statement)
+
+Everything else belongs elsewhere:
+
+| Concern              | Location                        |
+|----------------------|---------------------------------|
+| Business logic       | `hooks/useXxx.ts`               |
+| Pure data transforms | `utils/*.ts`                    |
+| API calls            | `api/index.ts`                  |
+| Global state         | `stores/*.ts` (zustand)         |
+| Server state         | hooks via react-query            |
+
+A component may call hooks and pass values to JSX. It must not contain
+`useEffect`, `useState`, `useCallback`, or `useMemo` calls directly — extract
+to a hook instead.
+
+---
+
+## 5. File Size
+
+Maximum 350 lines per file. If a file exceeds this:
+- Extract sub-components into separate files in the same `components/` folder.
+- Extract logic into a dedicated hook.
+- Split a large hook into smaller, focused hooks.
+
+---
+
+## 6. Pure Utilities — No Side Effects
+
+Functions in any `utils/` file must be pure:
+- No `toast(...)` calls
+- No `navigate(...)` calls
+- No React hook calls (`useState`, `useEffect`, etc.)
+- No direct DOM access
+- Same input always produces same output
+
+Side effects belong in hooks or event handlers in components.
+
+---
+
+## 7. Context Menu Pattern
+
+Always attach behavior via `onClick` on option objects. Never dispatch by id or
+name string inside a generic handler.
+
+```ts
+// CORRECT
+const options = [
+  { label: 'Delete', icon: <TrashIcon />, onClick: () => handleDelete(id), danger: true },
+  { label: 'Copy',   icon: <CopyIcon />,  onClick: () => handleCopy(id) },
+];
+
+// WRONG — dispatching by string inside a shared handler
+const handleAction = (actionName: string) => {
+  if (actionName === 'delete') handleDelete(id);
+  if (actionName === 'copy') handleCopy(id);
+};
+```
+
+---
+
+## 8. Exports from Component Files
+
+A `.tsx` file may only export:
+- The default React component
+- Its `Props` type (for use by a direct parent only)
+
+NEVER import a type from a `.tsx` file in any other module. If the type is
+needed elsewhere, move it to the appropriate `types.ts` file and import from
+there.
+
+---
+
+## 9. Custom Hooks
+
+- Every custom hook must start with `use` (e.g., `useChatScroll`, not
+  `chatScroll` or `getChatScroll`).
+- Any logic in a component body that has more than one line or uses a hook
+  primitive must be extracted into a custom hook.
+- Hook files live in `features/{domain}/hooks/` or `shared/hooks/`.
+
+---
+
+## 10. Naming Conventions
+
+| Thing              | Convention             | Example                    |
+|--------------------|------------------------|----------------------------|
+| Components         | PascalCase             | `MessageBubble.tsx`        |
+| Hooks              | camelCase with `use`   | `useChatScroll.ts`         |
+| Utility functions  | camelCase              | `formatFileSize`           |
+| Constants objects  | SCREAMING_SNAKE_CASE   | `UPLOAD_CONFIG`            |
+| Scalar constants   | SCREAMING_SNAKE_CASE   | `MAX_FILES`                |
+| Folders            | kebab-case             | `context-menu/`, `image-viewer/` |
+| Type files         | lowercase              | `types.ts`, `ui.ts`        |
+
+---
+
+## 11. No console.log in Production Code
+
+Remove all `console.log`, `console.warn`, and `console.error` calls before
+committing. Use a logger abstraction or remove entirely.
+
+---
+
+## 12. Admin Types Isolation
+
+All admin-domain types must live in `features/admin/types.ts`.
+Never define `AdminUserRow`, `AdminGroupRow`, `AdminMessageRow`, or any admin
+type in a component file, hook file, or shared types file.

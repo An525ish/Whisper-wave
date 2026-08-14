@@ -35,6 +35,21 @@ if (!parsed.success) {
 
 export const env = parsed.data;
 export const isProd = env.NODE_ENV === 'production';
-/** JWT secret for admin cookies; falls back to ACCESS_TOKEN_SECRET. */
-export const adminTokenSecret =
-  env.ADMIN_TOKEN_SECRET ?? env.ACCESS_TOKEN_SECRET;
+
+/** JWT secret for admin cookies.
+ *  Falls back to ACCESS_TOKEN_SECRET when ADMIN_TOKEN_SECRET is not set,
+ *  which means a compromised user secret also compromises admin.
+ *  Always set ADMIN_TOKEN_SECRET to a separate value in production. */
+export const adminTokenSecret = (() => {
+  if (!env.ADMIN_TOKEN_SECRET) {
+    if (isProd) {
+      // Warn loudly — do not block startup, but make it obvious in logs.
+      console.warn(
+        '[SECURITY] ADMIN_TOKEN_SECRET is not set. Falling back to ACCESS_TOKEN_SECRET. ' +
+          'Set a separate ADMIN_TOKEN_SECRET in production to isolate admin credentials.',
+      );
+    }
+    return env.ACCESS_TOKEN_SECRET;
+  }
+  return env.ADMIN_TOKEN_SECRET;
+})();

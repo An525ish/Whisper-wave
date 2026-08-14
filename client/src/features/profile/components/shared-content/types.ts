@@ -13,3 +13,5 @@ export type SharedLink = {
 };
 
 export type PhotoFilter = 'all' | 'image' | 'video' | 'audio';
+
+export type SharedContentTab = 'photos' | 'attachments' | 'links';

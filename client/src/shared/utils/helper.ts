@@ -1,3 +1,5 @@
+import type { SharedMediaRow } from '@/shared/types';
+import { MAX_FILES } from '@/shared/constants/app';
 import dayjs from 'dayjs';
 
 export const getFirstName = (fullName?: string | null): string => {
@@ -33,8 +35,8 @@ export const validateFiles = (
 ): string | null => {
   const fileType = files[0].type.split('/')[0];
 
-  if (files.length > 5) {
-    return `You can only upload up to 5 ${fileType}`;
+  if (files.length > MAX_FILES) {
+    return `You can only upload up to ${MAX_FILES} ${fileType}`;
   }
 
   let totalSize = 0;
@@ -149,3 +151,18 @@ export const formatLastSeen = (iso?: string | null): string | null => {
   }
   return `last seen ${date.format('D MMM, YYYY')} at ${time}`;
 };
+
+
+export const normalizeMediaAttachments = (
+  data:
+    | SharedMediaRow[]
+    | { attachments?: SharedMediaRow[]; links?: unknown[] }
+    | undefined,
+): SharedMediaRow[] => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  return data.attachments ?? [];
+};
+
+export const getInitial = (label: string): string =>
+  (label.trim()[0] || '?').toUpperCase();
