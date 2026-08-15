@@ -1,6 +1,7 @@
 import AuthField from '@/components/auth/AuthField';
 import AuthLoginFaces from '@/components/auth/AuthLoginFaces';
 import AuthSubmit from '@/components/auth/AuthSubmit';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { useSignInMutation } from '@/hooks/auth';
 import type { LoginForm } from '@/types/auth';
 import { useForm } from 'react-hook-form';
@@ -18,18 +19,11 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>({
-    mode: 'onChange',
-    defaultValues: {
-      username: 'Cleveland6',
-      password: 'password123',
-    },
-  });
+  } = useForm<LoginForm>({ mode: 'onChange' });
 
   const onSubmit = async (data: LoginForm) => {
     try {
-      const response = await signIn.mutateAsync(data);
-      toast.success(response.message || 'Logged in');
+      await signIn.mutateAsync(data);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Something went wrong',
@@ -84,7 +78,8 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
 
         <div className="mt-auto flex flex-col gap-3 pt-3">
           <AuthSubmit pending={signIn.isPending}>Sign in</AuthSubmit>
-          <p className="text-center text-sm text-body-300">
+          <GoogleSignInButton disabled={signIn.isPending} />
+          <p className="mt-2 pb-0.5 text-center text-sm text-body-300">
             New here?{' '}
             <button
               type="button"

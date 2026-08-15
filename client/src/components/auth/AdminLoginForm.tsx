@@ -20,8 +20,6 @@ const AdminLogin = () => {
   const onSubmit = async (data: AdminLoginForm) => {
     try {
       await login.mutateAsync(data.secretkey);
-
-      toast.success('Welcome Admin');
       navigate('/admin/dashboard', { replace: true });
     } catch (error) {
       toast.error(

@@ -25,17 +25,13 @@ export default function ResetPassword() {
   } = useForm<ResetPasswordForm>({ mode: 'onChange' });
 
   const onSubmit = async (data: ResetPasswordForm) => {
-    if (!token) {
-      toast.error('Reset link is missing or incomplete');
-      return;
-    }
+    if (!token) return;
 
     try {
-      const response = await resetPassword.mutateAsync({
+      await resetPassword.mutateAsync({
         token,
         password: data.password,
       });
-      toast.success(response.message || 'Password updated');
       navigate('/auth', { replace: true });
     } catch (error) {
       toast.error(

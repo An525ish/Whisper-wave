@@ -1,18 +1,20 @@
 import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { compare, hash } from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
 import type { Types } from 'mongoose';
 import * as pendingSignupRepo from '../repositories/pendingSignup.js';
 import * as userRepo from '../repositories/user.js';
 import type { AuthResult, PublicUser } from '../types/user.js';
 import type { UploadableFile } from '../types/message.js';
 import { AppError } from '../utils/AppError.js';
-import { uploadToCloudinary } from '../utils/cloudinary.js';
-import { isDisposableEmail } from '../utils/disposableEmail.js';
+import { uploadToCloudinary, uploadUrlToCloudinary } from '../utils/cloudinary.js';
+import { isAllowedEmail } from '../utils/disposableEmail.js';
 import { getClientBaseUrl, isMailConfigured, sendMail } from '../utils/mail.js';
 import { generateToken } from '../utils/token.js';
-import { isProd } from '../config/env.js';
+import { env, isProd } from '../config/env.js';
 import type {
   ForgotPasswordInput,
+  GoogleSignInInput,
   ResetPasswordInput,
   SignInInput,
   SignUpCompleteInput,
@@ -20,6 +22,8 @@ import type {
   SignUpStartInput,
   SignUpVerifyInput,
 } from '../validators/auth.js';
+
+const googleClient = new OAuth2Client();
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 const PENDING_TTL_MS = 30 * 60 * 1000;
@@ -57,10 +61,10 @@ const assertMailReady = (): void => {
 };
 
 const assertAcceptableEmail = (email: string): void => {
-  if (isDisposableEmail(email)) {
+  if (!isAllowedEmail(email)) {
     throw new AppError(
       400,
-      'Temporary or disposable emails are not allowed. Use a real inbox.'
+      'Please use a well-known email provider (Gmail, Outlook, Yahoo, iCloud, etc.).'
     );
   }
 };
@@ -287,7 +291,7 @@ export const forgotPassword = async (
   const message =
     'If an account exists for that email, we sent a reset link.';
 
-  if (isDisposableEmail(email)) {
+  if (!isAllowedEmail(email)) {
     return { message };
   }
 
@@ -333,4 +337,149 @@ export const resetPassword = async (
   await userRepo.clearPasswordReset(user._id.toString());
 
   return { message: 'Password updated. You can sign in now.' };
+};
+
+/** Derive a valid, available username from a Google display name. */
+const deriveUsername = async (displayName: string): Promise<string> => {
+  const base = displayName
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .slice(0, 20) || 'user';
+
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const candidate = attempt === 0 ? base : `${base}_${Math.floor(Math.random() * 9000) + 1000}`;
+    const taken = await userRepo.findByUsername(candidate);
+    if (!taken) return candidate;
+  }
+  // Guaranteed-unique fallback using base36 timestamp suffix
+  return `${base}_${Date.now().toString(36)}`;
+};
+
+type GoogleIdentity = {
+  googleId: string;
+  email: string;
+  name: string;
+  picture?: string;
+};
+
+const resolveGoogleIdentity = async (
+  input: GoogleSignInInput
+): Promise<GoogleIdentity> => {
+  if (input.credential) {
+    let ticket;
+    try {
+      ticket = await googleClient.verifyIdToken({
+        idToken: input.credential,
+        audience: env.GOOGLE_CLIENT_ID,
+      });
+    } catch {
+      throw new AppError(401, 'Invalid Google credential. Please try again.');
+    }
+
+    const payload = ticket.getPayload();
+    if (!payload?.sub || !payload.email || !payload.email_verified) {
+      throw new AppError(401, 'Google account does not have a verified email.');
+    }
+
+    return {
+      googleId: payload.sub,
+      email: payload.email,
+      name: payload.name || 'Whisper User',
+      picture: payload.picture,
+    };
+  }
+
+  // Access-token path (custom themed button via GIS popup)
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${input.accessToken}` },
+    });
+    if (!res.ok) {
+      throw new AppError(401, 'Invalid Google token. Please try again.');
+    }
+    const profile = (await res.json()) as {
+      sub?: string;
+      email?: string;
+      email_verified?: boolean | string;
+      name?: string;
+      picture?: string;
+    };
+    const verified =
+      profile.email_verified === true || profile.email_verified === 'true';
+    if (!profile.sub || !profile.email || !verified) {
+      throw new AppError(401, 'Google account does not have a verified email.');
+    }
+    return {
+      googleId: profile.sub,
+      email: profile.email,
+      name: profile.name || 'Whisper User',
+      picture: profile.picture,
+    };
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(401, 'Could not verify Google account. Please try again.');
+  }
+};
+
+export const googleSignIn = async (
+  input: GoogleSignInInput
+): Promise<AuthResult> => {
+  if (!env.GOOGLE_CLIENT_ID) {
+    throw new AppError(503, 'Google Sign-In is not configured on this server.');
+  }
+
+  const { googleId, email, name, picture } = await resolveGoogleIdentity(input);
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // --- Returning user (matched by googleId or email) ---
+  const existingByGoogle = await userRepo.findByGoogleId(googleId);
+  if (existingByGoogle) {
+    return {
+      token: generateToken(existingByGoogle._id.toString()),
+      message: `Welcome back, ${existingByGoogle.name}`,
+      user: toPublicUser(existingByGoogle),
+    };
+  }
+
+  const existingByEmail = await userRepo.findByEmail(normalizedEmail);
+  if (existingByEmail) {
+    await userRepo.updateById(existingByEmail._id.toString(), { googleId });
+    return {
+      token: generateToken(existingByEmail._id.toString()),
+      message: `Welcome back, ${existingByEmail.name}`,
+      user: toPublicUser(existingByEmail),
+    };
+  }
+
+  // --- New user — create account ---
+  assertAcceptableEmail(normalizedEmail);
+
+  let avatar: { publicId: string; url: string };
+  try {
+    avatar = picture
+      ? await uploadUrlToCloudinary(picture)
+      : { publicId: 'no-avatar', url: '/images/no-avatar.svg' };
+  } catch {
+    avatar = { publicId: 'no-avatar', url: '/images/no-avatar.svg' };
+  }
+
+  const username = await deriveUsername(name);
+  const randomPassword = await hash(randomBytes(32).toString('hex'), 10);
+
+  const newUser = await userRepo.create({
+    name,
+    username,
+    email: normalizedEmail,
+    password: randomPassword,
+    googleId,
+    avatar,
+  });
+
+  return {
+    token: generateToken(newUser._id.toString()),
+    message: `Welcome to Whisper Wave, ${newUser.name}`,
+    user: toPublicUser(newUser),
+  };
 };

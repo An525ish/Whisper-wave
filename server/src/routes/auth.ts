@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   completeSignUp,
   forgotPassword,
+  googleSignIn,
   resendSignUpOtp,
   resetPassword,
   signIn,
@@ -18,6 +19,7 @@ import {
 } from '../middlewares/index.js';
 import {
   forgotPasswordSchema,
+  googleSignInSchema,
   resetPasswordSchema,
   signInSchema,
   signUpCompleteSchema,
@@ -41,6 +43,7 @@ authRouter.post(
 );
 
 authRouter.post('/signin', validate(signInSchema), signIn);
+authRouter.post('/google', validate(googleSignInSchema), googleSignIn);
 authRouter.post('/signout', auth, signOut);
 authRouter.post(
   '/forgot-password',

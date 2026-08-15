@@ -5,6 +5,7 @@ import type { UploadableFile } from '../types/message.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import type {
   ForgotPasswordInput,
+  GoogleSignInInput,
   ResetPasswordInput,
   SignInInput,
   SignUpCompleteInput,
@@ -105,4 +106,19 @@ export const resetPassword: RequestHandler = catchAsync(async (req, res) => {
     success: true,
     message: result.message,
   });
+});
+
+export const googleSignIn: RequestHandler = catchAsync(async (req, res) => {
+  const result = await authService.googleSignIn(
+    req.body as GoogleSignInInput
+  );
+
+  res
+    .status(200)
+    .cookie('accessToken', result.token, cookieOptions)
+    .json({
+      success: true,
+      message: result.message,
+      data: result.user,
+    });
 });

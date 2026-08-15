@@ -28,6 +28,11 @@ export const findByEmail = async (
 ): Promise<LeanUser | null> =>
   User.findOne({ email: email.toLowerCase().trim() }).lean<LeanUser>();
 
+export const findByGoogleId = async (
+  googleId: string
+): Promise<LeanUser | null> =>
+  User.findOne({ googleId }).lean<LeanUser>();
+
 export const findByPasswordResetToken = async (
   tokenHash: string
 ): Promise<UserAuthRecord | null> =>
