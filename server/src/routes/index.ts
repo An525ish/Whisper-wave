@@ -3,6 +3,7 @@ import { apiLimiter } from '../middlewares/index.js';
 import { adminRouter } from './admin.js';
 import { authRouter } from './auth.js';
 import { chatRouter } from './chat.js';
+import { gifRouter } from './gif.js';
 import { messageRouter } from './message.js';
 import { friendRequestRouter } from './request.js';
 import { userRouter } from './user.js';
@@ -15,5 +16,6 @@ export const registerRoutes = (app: Express): void => {
   app.use('/api/user', userRouter);
   app.use('/api/chat', chatRouter);
   app.use('/api/message', messageRouter);
+  app.use('/api/gif', gifRouter);
   app.use('/api/friend-request', friendRequestRouter);
 };

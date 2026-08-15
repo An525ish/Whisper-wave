@@ -173,6 +173,90 @@ export const sendAttachments = async (
   }
 };
 
+const mimeFromKlipyUrl = (url: string, fallback = 'image/gif') => {
+  try {
+    const path = new URL(url).pathname.toLowerCase();
+    if (path.endsWith('.png')) return 'image/png';
+    if (path.endsWith('.webp')) return 'image/webp';
+    if (path.endsWith('.jpg') || path.endsWith('.jpeg')) return 'image/jpeg';
+    if (path.endsWith('.gif')) return 'image/gif';
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+};
+
+export const sendGif = async (
+  userId: string,
+  chatId: string,
+  gifId: string,
+  gifUrl: string,
+  gifTitle: string,
+  replyToMessageId?: string,
+  mimeType?: string,
+  kind: 'gif' | 'meme' = 'gif'
+): Promise<{ data: unknown; notifications: RealtimeNotify[] }> => {
+  const [user, chat] = await Promise.all([
+    userRepo.findByIdNameAvatar(userId),
+    chatRepo.findByIdLean(chatId),
+  ]);
+
+  if (!user || !chat) throw new AppError(400, 'No chat found');
+
+  const isMember = chat.members.some(
+    (member) => member.toString() === userId.toString()
+  );
+  if (!isMember) {
+    throw new AppError(401, 'You are not authenticated to access the resource');
+  }
+
+  const replyTo = replyToMessageId
+    ? await buildReplySnapshot(chatId, replyToMessageId)
+    : undefined;
+
+  const fileType = mimeType || mimeFromKlipyUrl(gifUrl);
+  const ext = fileType.split('/')[1] || 'gif';
+  const label = kind === 'meme' ? 'Meme' : 'GIF';
+
+  const attachment = {
+    publicId: gifId,
+    url: gifUrl,
+    name: gifTitle || `${label.toLowerCase()}.${ext}`,
+    fileType,
+  };
+
+  const message = await messageRepo.create({
+    attachments: [attachment],
+    sender: userId,
+    chat: chatId,
+    replyTo,
+  });
+
+  await chatRepo.updateLastMessage(chatId, {
+    _id: message._id,
+    content: label,
+    sender: user._id,
+    type: 'media',
+    createdAt: message.createdAt,
+  });
+
+  return {
+    data: {
+      ...message,
+      sender: { _id: userId, name: user.name, avatar: user.avatar.url },
+    },
+    notifications: [
+      {
+        event: NEW_MESSAGE_ALERT,
+        members: chat.members.filter((m) => m.toString() !== userId),
+        data: { chatId },
+      },
+      { event: NEW_ATTACHMENT, members: chat.members, data: { chatId } },
+      { event: REFETCH_CHATS, members: chat.members, data: { chatId } },
+    ],
+  };
+};
+
 /** Persist a realtime text message after membership is validated.
  *  Returns the canonical DB members list so the socket handler never
  *  fans-out based on a client-supplied (potentially spoofed) array. */

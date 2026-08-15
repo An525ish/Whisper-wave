@@ -32,6 +32,26 @@ export const deleteManyMessagesSchema = z.object({
     .max(50),
 });
 
+export const sendGifSchema = z.object({
+  chatId: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid chat id'),
+  gifId: z.string().min(1).max(100),
+  gifUrl: z
+    .string()
+    .url()
+    .refine((u) => new URL(u).hostname.endsWith('klipy.com'), {
+      message: 'Media URL must be from klipy.com',
+    }),
+  gifTitle: z.string().max(200).optional(),
+  mimeType: z
+    .enum(['image/gif', 'image/png', 'image/webp', 'image/jpeg'])
+    .optional(),
+  kind: z.enum(['gif', 'meme']).optional(),
+  replyToMessageId: z
+    .string()
+    .regex(/^[a-f\d]{24}$/i, 'Invalid message id')
+    .optional(),
+});
+
 export const forwardMessagesSchema = z.object({
   sourceChatId: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid chat id'),
   messageIds: z

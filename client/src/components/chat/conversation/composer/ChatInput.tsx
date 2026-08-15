@@ -1,9 +1,10 @@
 import AttachmentMenu from "@/components/chat/conversation/composer/attachment-menu/AttachmentMenu";
 import FilePreview from "@/components/chat/conversation/composer/attachment-menu/FilePreview";
-import EmojiMenu from "@/components/chat/conversation/composer/emoji-menu/EmojiMenu";
+import ComposerPicker from "@/components/chat/conversation/composer/ComposerPicker";
 import ClipIcon from "@/components/ui/icons/Clip";
 import EmojiIcon from "@/components/ui/icons/Emoji";
 import SendIcon from "@/components/ui/icons/Send";
+import type { GifItem } from "@/api/gif";
 import { MAX_FILES } from "@/constants/app";
 import { MAX_TEXTAREA_HEIGHT } from "@/constants/chat";
 import { readFilesFromClipboardEvent } from "@/utils/chat";
@@ -27,6 +28,7 @@ type ChatInputProps = {
     attachments: File[];
     setAttachments: Dispatch<SetStateAction<File[]>>;
     handleSubmit: () => void | Promise<void>;
+    onGifSelect?: (gif: GifItem) => void;
     editMode?: boolean;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'className'>;
 
@@ -53,6 +55,7 @@ const ChatInput = ({
     attachments,
     setAttachments,
     handleSubmit,
+    onGifSelect,
     editMode = false,
     ...props }: ChatInputProps) => {
 
@@ -149,13 +152,15 @@ const ChatInput = ({
                     />
                 )}
                 {!editMode && isEmojiClicked && (
-                    <div className="absolute bottom-14 left-0 z-30 max-w-[calc(100vw-1rem)] overflow-hidden rounded-xl shadow-xl">
-                        <EmojiMenu
-                            width={280}
-                            height={280}
-                            onClose={() => setIsEmojiClicked(false)}
-                            emojiIconRef={emojiIconRef}
+                    <div className="absolute bottom-14 left-0 z-30 max-w-[calc(100vw-1rem)]">
+                        <ComposerPicker
+                            triggerRef={emojiIconRef}
                             setMessage={setMessage}
+                            onClose={() => setIsEmojiClicked(false)}
+                            onGifSelect={(gif) => {
+                                onGifSelect?.(gif);
+                                setIsEmojiClicked(false);
+                            }}
                         />
                     </div>
                 )}
