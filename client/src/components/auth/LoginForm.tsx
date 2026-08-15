@@ -19,7 +19,13 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>({ mode: 'onChange' });
+  } = useForm<LoginForm>({
+    mode: 'onChange',
+    defaultValues: {
+      username: 'Cleveland6',
+      password: 'password123',
+    },
+  });
 
   const onSubmit = async (data: LoginForm) => {
     try {

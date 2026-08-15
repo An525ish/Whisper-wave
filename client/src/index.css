@@ -1103,8 +1103,7 @@
   .auth-flip__face--back {
     position: absolute;
     inset: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    overflow: hidden;
   }
 }
 
