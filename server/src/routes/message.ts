@@ -10,6 +10,7 @@ import {
   listActiveDates,
   searchMessages,
   sendAttachments,
+  sendGif,
 } from '../controllers/message.js';
 import {
   attachmentsUpload,
@@ -22,6 +23,7 @@ import {
   editMessageSchema,
   forwardMessagesSchema,
   sendAttachmentsSchema,
+  sendGifSchema,
 } from '../validators/message.js';
 
 export const messageRouter = Router();
@@ -43,6 +45,7 @@ messageRouter.post(
   validate(sendAttachmentsSchema),
   sendAttachments
 );
+messageRouter.post('/send-gif', validate(sendGifSchema), sendGif);
 messageRouter.post(
   '/delete-many/:chatId',
   validate(deleteManyMessagesSchema),

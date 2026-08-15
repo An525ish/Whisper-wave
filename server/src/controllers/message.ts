@@ -2,6 +2,7 @@ import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import { flushNotifications, messageService } from '../services/index.js';
 import type { UploadableFile } from '../types/message.js';
+import { sendGifSchema } from '../validators/message.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { param } from '../utils/http.js';
 
@@ -137,6 +138,30 @@ export const sendAttachments: RequestHandler = catchAsync(async (req, res) => {
   res.status(200).json({
     status: true,
     message: 'Message sent successfully with attachments',
+    data: result.data,
+  });
+});
+
+export const sendGif: RequestHandler = catchAsync(async (req, res) => {
+  const { chatId, gifId, gifUrl, gifTitle, replyToMessageId, mimeType, kind } =
+    sendGifSchema.parse(req.body);
+
+  const result = await messageService.sendGif(
+    req.userId!,
+    chatId,
+    gifId,
+    gifUrl,
+    gifTitle ?? (kind === 'meme' ? 'Meme' : 'GIF'),
+    replyToMessageId,
+    mimeType,
+    kind ?? 'gif'
+  );
+
+  flushNotifications(getIo(req), result.notifications);
+
+  res.status(200).json({
+    success: true,
+    message: kind === 'meme' ? 'Meme sent' : 'GIF sent',
     data: result.data,
   });
 });

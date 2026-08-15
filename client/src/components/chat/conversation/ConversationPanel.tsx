@@ -6,7 +6,8 @@ import useErrors from '@/hooks/shared/useError';
 import { useSocket } from '@/socket/SocketProvider';
 import {
   useChatDetailsQuery, useChatMessages, useChatScroll, useDeleteActions,
-  useMessageActions, useMessageSelection, useSendAttachmentsMutation, useTypingIndicator,
+  useMessageActions, useMessageSelection, useSendAttachmentsMutation,
+  useSendGifMutation, useTypingIndicator,
 } from '@/hooks/chat';
 import ContextMenu from '@/components/ui/context-menu/ContextMenu';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
@@ -165,6 +166,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   }), [canClearChat, copyMessagesByIds, deletableSelectedIds.length, openForwardDialog, selectedIds, setConfirmClearOpen, setConfirmDelete]);
 
   const [sendAttachments] = useAsyncMutation(useSendAttachmentsMutation);
+  const { mutate: sendGifMutation } = useSendGifMutation();
 
   const isMessageRead = useCallback(
     (msg: ChatMessage) =>
@@ -232,6 +234,69 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
       scrollToBottom();
     } catch { toast.error('Failed to send attachments'); setLiveMessages((prev) => prev.filter((m) => m._id !== tempId)); }
   };
+
+  const handleGifSelect = useCallback(
+    (gif: {
+      url: string;
+      id: string;
+      title: string;
+      mimeType?: string;
+      kind?: 'gif' | 'meme';
+    }) => {
+      if (!chatId) return;
+      const replyToMessageId =
+        replyingTo && isValidMessageId(replyingTo._id) ? replyingTo._id : undefined;
+      const replySnapGif = replyingTo ? buildReplySnapshot(replyingTo) : undefined;
+      const tempId = `pending-gif-${Date.now()}`;
+      const mime = gif.mimeType ?? 'image/gif';
+      const label = gif.kind === 'meme' ? 'Meme' : 'GIF';
+      setLiveMessages((prev) => [
+        ...prev,
+        {
+          _id: tempId,
+          sender: {
+            _id: user?._id ?? '',
+            name: user?.name ?? '',
+            avatar: user?.avatar as Avatar | undefined,
+          },
+          attachments: [{ tempUrl: gif.url, name: gif.title || label, type: mime, uploading: true }],
+          createdAt: new Date().toISOString(),
+          isUploading: true,
+          replyTo: replySnapGif,
+        },
+      ]);
+      clearReply();
+      scrollToBottom();
+      sendGifMutation(
+        {
+          chatId,
+          gifId: gif.id,
+          gifUrl: gif.url,
+          gifTitle: gif.title,
+          mimeType: mime as 'image/gif' | 'image/png' | 'image/webp' | 'image/jpeg',
+          kind: gif.kind ?? 'gif',
+          replyToMessageId,
+        },
+        {
+          onSuccess: (result) => {
+            const payload = ((result as { data?: unknown })?.data ?? result) as ChatMessage;
+            setLiveMessages((prev) =>
+              prev.map((m) =>
+                m._id === tempId
+                  ? { ...payload, attachments: (payload.attachments ?? []).map((att) => ({ ...att, uploading: false })) }
+                  : m
+              )
+            );
+          },
+          onError: () => {
+            toast.error(`Failed to send ${label}`);
+            setLiveMessages((prev) => prev.filter((m) => m._id !== tempId));
+          },
+        }
+      );
+    },
+    [chatId, replyingTo, user, setLiveMessages, clearReply, scrollToBottom, sendGifMutation]
+  );
 
   const replySnapshot = replyingTo ? buildReplySnapshot(replyingTo) : null;
 
@@ -312,6 +377,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
         <ChatInput message={message} setMessage={setMessage} disabled={isLoading || editIsPending}
           autoFocus={true} onKeyDown={handleEnterPress} handleSubmit={handleSubmit}
           onChange={handleMessageChange} attachments={attachments} setAttachments={setAttachments}
+          onGifSelect={handleGifSelect}
           editMode={isEditing} className="text-body-700 placeholder:text-body-300" placeholder={isEditing ? 'Edit message…' : 'Message…'} />
       </div>
 
