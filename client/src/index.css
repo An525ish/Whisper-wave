@@ -1117,10 +1117,6 @@
 
 /* Mobile: active face drives height; inactive face overlays for the flip */
 @media (max-width: 767px) {
-  .auth-flip--back {
-    max-height: min(34rem, calc(100dvh - 12rem));
-  }
-
   .auth-flip--back .auth-flip__face--front {
     position: absolute;
     inset: 0;
@@ -1129,11 +1125,7 @@
   .auth-flip--back .auth-flip__face--back {
     position: relative;
     inset: auto;
-    max-height: inherit;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
   }
 }
 
