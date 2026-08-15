@@ -1099,16 +1099,28 @@
     inset: 0;
   }
 
-  .auth-flip__face--front,
-  .auth-flip__face--back {
+  .auth-flip__face--front {
     position: absolute;
     inset: 0;
     overflow: hidden;
+  }
+
+  .auth-flip__face--back {
+    position: absolute;
+    inset: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
   }
 }
 
 /* Mobile: active face drives height; inactive face overlays for the flip */
 @media (max-width: 767px) {
+  .auth-flip--back {
+    max-height: min(34rem, calc(100dvh - 12rem));
+  }
+
   .auth-flip--back .auth-flip__face--front {
     position: absolute;
     inset: 0;
@@ -1117,7 +1129,11 @@
   .auth-flip--back .auth-flip__face--back {
     position: relative;
     inset: auto;
-    overflow: visible;
+    max-height: inherit;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -1467,6 +1483,16 @@
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--color-body-300);
+}
+
+.auth-forgot__hint {
+  margin-top: 0.7rem;
+  padding: 0 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: rgba(235, 236, 236, 0.55);
+  text-align: center;
 }
 
 .auth-signup-steps {

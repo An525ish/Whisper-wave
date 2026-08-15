@@ -95,8 +95,8 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
           </>
         )}
 
-        <div className={`mt-2 flex min-h-0 flex-1 flex-col ${p.isSheet ? 'overflow-y-auto overscroll-contain scrollbar-hide' : ''}`}>
-          <div className="shrink-0">
+        <div className={`mt-2 flex min-h-0 flex-1 flex-col ${p.isSheet ? 'overflow-y-auto overscroll-contain scrollbar-hide' : 'min-h-0 overflow-hidden'}`}>
+          <div className="relative z-20 shrink-0">
             {p.chatId && p.groupChat ? (
               <>
                 <GroupMembersList creator={p.creator} members={p.members} />
@@ -116,59 +116,58 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
           ) : null}
 
           {p.showSelfProfile ? (
-            <div className="mt-auto flex min-h-0 flex-1 flex-col px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 sm:pb-5">
-              <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center py-2 sm:py-3">
+            <div className="mt-auto flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 sm:pb-5">
+              <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-hidden py-2 sm:gap-3.5 sm:py-3">
                 <div
-                  className="pointer-events-none absolute inset-x-6 top-1/2 h-40 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(1,195,109,0.12)_0%,transparent_70%)] blur-2xl"
+                  className="pointer-events-none absolute inset-x-8 top-[42%] h-28 max-h-[40%] -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(1,195,109,0.12)_0%,transparent_70%)] blur-2xl"
                   aria-hidden
                 />
                 <img
                   src="/images/profile-illustration.svg"
                   alt=""
-                  className="pointer-events-none relative z-10 h-auto w-full max-h-[32vh] max-w-60 select-none object-contain opacity-90 sm:max-h-[38vh] sm:max-w-72 md:max-w-80"
+                  className="pointer-events-none relative z-[1] h-auto w-full min-h-0 max-h-[min(11rem,26vh)] max-w-52 select-none object-contain opacity-90 sm:max-h-[min(14rem,32vh)] sm:max-w-72 md:max-w-80"
                 />
-              </div>
-
-              <div className="relative z-10 mx-auto flex w-full max-w-xs shrink-0 flex-col items-center gap-3 pb-1 pt-1 text-center">
-                <svg
-                  viewBox="0 0 160 12"
-                  className="h-3 w-40 text-green/35"
-                  fill="none"
-                  aria-hidden
-                >
-                  <path
-                    d="M0 7 C20 2 40 12 60 7 C80 2 100 12 120 7 C140 2 150 7 160 7"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <p className="font-display text-lg leading-snug text-body sm:text-xl">
-                  Your whisper. Your wave.
-                </p>
-                <p className="max-w-[16rem] text-xs leading-relaxed text-body-300 sm:text-sm">
-                  Tap the pencil to edit — changes save as you go.
-                </p>
-
-                {p.showSelfExitActions ? (
-                  <button
-                    type="button"
-                    onClick={p.handleCancelSelfProfile}
-                    disabled={p.isSaving}
-                    className="mt-1 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-green transition hover:text-green/85 disabled:opacity-40"
+                <div className="relative z-[1] mx-auto flex w-full max-w-xs shrink-0 flex-col items-center gap-2.5 pb-1 pt-0.5 text-center sm:gap-3">
+                  <svg
+                    viewBox="0 0 160 12"
+                    className="h-3 w-40 text-green/35"
+                    fill="none"
+                    aria-hidden
                   >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
-                      <path
-                        d="M15 6 9 12l6 6"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    Back to conversation
-                  </button>
-                ) : null}
+                    <path
+                      d="M0 7 C20 2 40 12 60 7 C80 2 100 12 120 7 C140 2 150 7 160 7"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <p className="font-display text-lg leading-snug text-body sm:text-xl">
+                    Your whisper. Your wave.
+                  </p>
+                  <p className="max-w-[16rem] text-xs leading-relaxed text-body-300 sm:text-sm">
+                    Soft edits. Instant ripples. The pencil is yours.
+                  </p>
+
+                  {p.showSelfExitActions ? (
+                    <button
+                      type="button"
+                      onClick={p.handleCancelSelfProfile}
+                      disabled={p.isSaving}
+                      className="mt-1 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-green transition hover:text-green/85 disabled:opacity-40"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden>
+                        <path
+                          d="M15 6 9 12l6 6"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      Back to conversation
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
           ) : null}
