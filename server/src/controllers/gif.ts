@@ -40,6 +40,12 @@ type KlipyResponse = {
   };
 };
 
+type KlipyPage = {
+  items: KlipyItem[];
+  page: number;
+  hasNext: boolean;
+};
+
 const KIND_PATH: Record<KlipyKind, string> = {
   gif: 'gifs',
   meme: 'static-memes',
@@ -83,7 +89,7 @@ const klipyFetch = async (
   kind: KlipyKind,
   action: 'trending' | 'search',
   params: Record<string, string | number>,
-): Promise<KlipyItem[]> => {
+): Promise<KlipyPage> => {
   const key = process.env.KLIPY_API_KEY?.trim();
   if (!key) {
     throw new AppError(503, 'KLIPY_API_KEY not configured');
@@ -112,7 +118,12 @@ const klipyFetch = async (
     throw new AppError(502, 'Klipy returned an unsuccessful response');
   }
 
-  return body.data?.data ?? [];
+  const page = body.data?.current_page ?? Number(params.page) ?? 1;
+  return {
+    items: body.data?.data ?? [],
+    page,
+    hasNext: Boolean(body.data?.has_next),
+  };
 };
 
 const clampPerPage = (raw: unknown, fallback = 24) => {
@@ -135,7 +146,7 @@ export const searchMedia: RequestHandler = catchAsync(async (req, res) => {
       ? req.query.customer_id
       : req.userId;
 
-  const items = await klipyFetch(kind, 'search', {
+  const result = await klipyFetch(kind, 'search', {
     q,
     page,
     per_page: perPage,
@@ -147,7 +158,9 @@ export const searchMedia: RequestHandler = catchAsync(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: items.map((item) => normalise(item, kind)),
+    data: result.items.map((item) => normalise(item, kind)),
+    page: result.page,
+    hasNext: result.hasNext,
   });
 });
 
@@ -160,7 +173,7 @@ export const trendingMedia: RequestHandler = catchAsync(async (req, res) => {
       ? req.query.customer_id
       : req.userId;
 
-  const items = await klipyFetch(kind, 'trending', {
+  const result = await klipyFetch(kind, 'trending', {
     page,
     per_page: perPage,
     content_filter: 'medium',
@@ -171,7 +184,9 @@ export const trendingMedia: RequestHandler = catchAsync(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: items.map((item) => normalise(item, kind)),
+    data: result.items.map((item) => normalise(item, kind)),
+    page: result.page,
+    hasNext: result.hasNext,
   });
 });
 

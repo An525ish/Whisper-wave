@@ -23,6 +23,21 @@ export const findByUsernameWithPassword = async (
 ): Promise<UserAuthRecord | null> =>
   User.findOne({ username }).select('+password').lean<UserAuthRecord>();
 
+export const findByEmail = async (
+  email: string
+): Promise<LeanUser | null> =>
+  User.findOne({ email: email.toLowerCase().trim() }).lean<LeanUser>();
+
+export const findByPasswordResetToken = async (
+  tokenHash: string
+): Promise<UserAuthRecord | null> =>
+  User.findOne({
+    passwordResetToken: tokenHash,
+    passwordResetExpires: { $gt: new Date() },
+  })
+    .select('+password +passwordResetToken +passwordResetExpires')
+    .lean<UserAuthRecord>();
+
 export const findByIdWithPassword = async (
   id: string
 ): Promise<UserAuthRecord | null> =>
@@ -49,10 +64,33 @@ export const create = async (
     _id: user._id,
     name: user.name,
     username: user.username,
+    email: user.email,
     password: user.password,
     avatar: user.avatar,
     bio: user.bio,
   };
+};
+
+export const setPasswordReset = async (
+  id: string,
+  tokenHash: string,
+  expiresAt: Date
+): Promise<void> => {
+  await User.findByIdAndUpdate(id, {
+    $set: {
+      passwordResetToken: tokenHash,
+      passwordResetExpires: expiresAt,
+    },
+  });
+};
+
+export const clearPasswordReset = async (id: string): Promise<void> => {
+  await User.findByIdAndUpdate(id, {
+    $unset: {
+      passwordResetToken: 1,
+      passwordResetExpires: 1,
+    },
+  });
 };
 
 export const updateById = async (

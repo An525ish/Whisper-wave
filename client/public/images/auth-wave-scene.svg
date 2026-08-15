@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 320" fill="none" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="aw-wave" x1="40" y1="180" x2="380" y2="240" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#01c36d" stop-opacity="0.15"/>
+      <stop offset="0.5" stop-color="#01c36d" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5698ff" stop-opacity="0.25"/>
+    </linearGradient>
+    <linearGradient id="aw-phone" x1="150" y1="40" x2="280" y2="280" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#393046"/>
+      <stop offset="1" stop-color="#2a2136"/>
+    </linearGradient>
+    <radialGradient id="aw-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(210 150) rotate(90) scale(140 110)">
+      <stop stop-color="#01c36d" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#01c36d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <ellipse cx="210" cy="165" rx="150" ry="110" fill="url(#aw-glow)"/>
+
+  <!-- soft floor wave -->
+  <path d="M28 248 C 90 220, 140 270, 210 248 S 330 210, 392 248" stroke="url(#aw-wave)" stroke-width="18" stroke-linecap="round" opacity="0.45"/>
+  <path d="M40 262 C 100 240, 150 278, 220 258 S 340 228, 380 264" stroke="#01c36d" stroke-width="2.5" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- phone / chat window -->
+  <rect x="142" y="48" width="136" height="212" rx="28" fill="url(#aw-phone)" stroke="#ebecec" stroke-opacity="0.12"/>
+  <rect x="154" y="68" width="112" height="160" rx="14" fill="#211a2a"/>
+  <circle cx="210" cy="240" r="7" fill="#01c36d" opacity="0.9"/>
+
+  <!-- chat bubbles -->
+  <rect x="166" y="86" width="64" height="28" rx="12" fill="#2a2136" stroke="#01c36d" stroke-opacity="0.35"/>
+  <rect x="190" y="126" width="60" height="28" rx="12" fill="#01c36d" fill-opacity="0.85"/>
+  <rect x="166" y="166" width="72" height="28" rx="12" fill="#2a2136" stroke="#ebecec" stroke-opacity="0.12"/>
+
+  <!-- floating signal nodes -->
+  <circle cx="96" cy="110" r="22" fill="#2a2136" stroke="#01c36d" stroke-opacity="0.45" stroke-width="1.5"/>
+  <circle cx="96" cy="110" r="8" fill="#01c36d"/>
+  <circle cx="324" cy="128" r="18" fill="#2a2136" stroke="#5698ff" stroke-opacity="0.4" stroke-width="1.5"/>
+  <circle cx="324" cy="128" r="6" fill="#5698ff" fill-opacity="0.85"/>
+  <circle cx="118" cy="196" r="14" fill="#2a2136" stroke="#ebecec" stroke-opacity="0.2"/>
+  <circle cx="118" cy="196" r="5" fill="#ebecec" fill-opacity="0.55"/>
+
+  <!-- connecting dashes -->
+  <path d="M118 110 H142" stroke="#01c36d" stroke-opacity="0.35" stroke-dasharray="3 4"/>
+  <path d="M278 128 H306" stroke="#5698ff" stroke-opacity="0.35" stroke-dasharray="3 4"/>
+  <path d="M132 196 H154" stroke="#ebecec" stroke-opacity="0.2" stroke-dasharray="3 4"/>
+
+  <!-- ripple rings near phone -->
+  <circle cx="210" cy="154" r="78" stroke="#01c36d" stroke-opacity="0.12" stroke-width="1"/>
+  <circle cx="210" cy="154" r="102" stroke="#01c36d" stroke-opacity="0.08" stroke-width="1"/>
+</svg>

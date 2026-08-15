@@ -126,6 +126,13 @@ const appRoutes = [
           return { Component: module.default };
         },
       },
+      {
+        path: 'reset-password',
+        lazy: async () => {
+          const module = await import('@/pages/ResetPassword');
+          return { Component: module.default };
+        },
+      },
     ],
   },
   {

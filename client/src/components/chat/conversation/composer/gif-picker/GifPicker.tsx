@@ -108,13 +108,21 @@ const GifPicker = ({ kind, onSelect }: GifPickerProps) => {
   const [inputValue, setInputValue] = useState('');
   const query = useDebounce(inputValue, 400);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const {
-    data: items = [],
+    data,
     isFetching,
+    isFetchingNextPage,
     isError,
+    hasNextPage,
+    fetchNextPage,
     refetch,
+    isPending,
   } = useGifSearch(query, kind);
+
+  const items = data?.pages.flatMap((page) => page.data) ?? [];
 
   useEffect(() => {
     setInputValue('');
@@ -124,10 +132,34 @@ const GifPicker = ({ kind, onSelect }: GifPickerProps) => {
     inputRef.current?.focus();
   }, [kind]);
 
+  useEffect(() => {
+    const root = scrollRef.current;
+    const sentinel = sentinelRef.current;
+    if (!root || !sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0]?.isIntersecting &&
+          hasNextPage &&
+          !isFetchingNextPage
+        ) {
+          void fetchNextPage();
+        }
+      },
+      { root, rootMargin: '120px', threshold: 0 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, items.length]);
+
   const label = kind === 'meme' ? 'memes' : 'GIFs';
   const titleLabel = kind === 'meme' ? 'Memes' : 'GIFs';
   const illustrationSrc =
     kind === 'meme' ? '/images/no-meme.svg' : '/images/no-gif.svg';
+  const showInitialSpinner = isPending && items.length === 0;
+  const isSearching = isFetching && !isFetchingNextPage && items.length > 0;
 
   return (
     <div className="flex h-full flex-col gap-2">
@@ -135,12 +167,15 @@ const GifPicker = ({ kind, onSelect }: GifPickerProps) => {
         value={inputValue}
         onChange={setInputValue}
         placeholder={`Search ${label}…`}
-        isFetching={isFetching}
+        isFetching={isSearching || showInitialSpinner}
         inputRef={inputRef}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
-        {isError ? (
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"
+      >
+        {isError && items.length === 0 ? (
           <EmptyState
             className="h-full min-h-40 py-4"
             imageSrc={illustrationSrc}
@@ -153,7 +188,7 @@ const GifPicker = ({ kind, onSelect }: GifPickerProps) => {
             description="Check your connection and try again."
             action={<RetryButton onClick={() => void refetch()} />}
           />
-        ) : !isFetching && items.length === 0 && inputValue.trim() ? (
+        ) : !isPending && items.length === 0 && inputValue.trim() ? (
           <EmptyState
             className="h-full min-h-40 py-4"
             imageSrc={illustrationSrc}
@@ -165,7 +200,7 @@ const GifPicker = ({ kind, onSelect }: GifPickerProps) => {
             title={`No ${label} found`}
             description={`Nothing matched “${inputValue.trim()}”. Try a different keyword.`}
           />
-        ) : !isFetching && items.length === 0 ? (
+        ) : !isPending && items.length === 0 ? (
           <EmptyState
             className="h-full min-h-40 py-4"
             imageSrc={illustrationSrc}
@@ -179,7 +214,15 @@ const GifPicker = ({ kind, onSelect }: GifPickerProps) => {
             action={<RetryButton onClick={() => void refetch()} />}
           />
         ) : (
-          <MediaGrid items={items} onSelect={onSelect} />
+          <>
+            <MediaGrid items={items} onSelect={onSelect} />
+            <div ref={sentinelRef} className="h-8 w-full" aria-hidden />
+            {isFetchingNextPage ? (
+              <div className="flex justify-center py-2">
+                <span className="h-4 w-4 animate-spin rounded-full border border-green/40 border-t-green" />
+              </div>
+            ) : null}
+          </>
         )}
       </div>
 

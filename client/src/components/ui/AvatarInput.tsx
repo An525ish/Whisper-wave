@@ -1,5 +1,5 @@
+import { AVATAR_FALLBACK } from '@/constants/app';
 import { useState, type ChangeEvent } from 'react';
-import avatarImg from '@/assets/avatar.png';
 
 type AvatarInputProps = {
   file?: File | null;
@@ -7,7 +7,7 @@ type AvatarInputProps = {
 };
 
 const AvatarInput = ({ setFile }: AvatarInputProps) => {
-  const [preview, setPreview] = useState<string>(avatarImg);
+  const [preview, setPreview] = useState<string>(AVATAR_FALLBACK);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const next = event.target.files?.[0];
@@ -23,33 +23,27 @@ const AvatarInput = ({ setFile }: AvatarInputProps) => {
   };
 
   return (
-    <div className="flex justify-center">
-      <label htmlFor="avatar" className="relative">
-        <figure className="relative w-28 h-28">
-          <img
-            src={preview}
-            alt="avatar"
-            className="w-28 h-28 object-cover rounded-full border-2 border-blue shadow-lg cursor-pointer transition-all duration-300 hover:shadow-md"
-          />
-          <figcaption className="absolute top-0 left-0 w-full h-full rounded-full bg-black/0 flex items-center justify-center opacity-0 transition-all duration-300 hover:opacity-100 hover:bg-black/50 cursor-pointer">
-            <img
-              src="https://raw.githubusercontent.com/ThiagoLuizNunes/angular-boilerplate/master/src/assets/imgs/camera-white.png"
-              className="w-12 h-12"
-              alt=""
-            />
-          </figcaption>
-          <span className="absolute bottom-3 right-0 w-6 h-6 flex justify-center items-center bg-primary rounded-full cursor-pointer">
-            📷
-          </span>
-        </figure>
+    <div className="flex items-center gap-3.5 rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
+      <label
+        htmlFor="auth-avatar"
+        className="group relative inline-flex h-[3.25rem] w-[3.25rem] shrink-0 cursor-pointer overflow-hidden rounded-full ring-2 ring-green/30 transition hover:ring-green/60 focus-within:ring-2 focus-within:ring-green/50"
+      >
+        <img src={preview} alt="" className="h-full w-full object-cover" />
+        <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[9px] font-semibold uppercase tracking-wider text-white opacity-0 transition group-hover:opacity-100">
+          Edit
+        </span>
+        <input
+          id="auth-avatar"
+          type="file"
+          accept="image/*"
+          onChange={handleChange}
+          className="sr-only"
+        />
       </label>
-      <input
-        type="file"
-        onChange={handleChange}
-        id="avatar"
-        accept="image/*"
-        className="hidden"
-      />
+      <div className="min-w-0 text-left">
+        <p className="text-sm font-medium text-white">Profile photo</p>
+        <p className="text-xs text-body-300">Optional — tap to upload</p>
+      </div>
     </div>
   );
 };

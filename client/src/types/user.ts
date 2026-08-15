@@ -7,6 +7,7 @@ export type User = {
   _id: string;
   name: string;
   username: string;
+  email?: string;
   bio?: string;
   avatar?: string | Avatar;
 };

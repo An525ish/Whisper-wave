@@ -6,7 +6,8 @@ export const usernameSchema = z
   .string()
   .min(1, 'Username is required')
   .min(3, 'Username must be at least 3 characters')
-  .regex(/^[a-zA-Z0-9]+$/, 'Invalid Username');
+  .max(30, 'Username must be at most 30 characters')
+  .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores');
 
 export const fullnameSchema = z
   .string()
@@ -28,6 +29,11 @@ export const emailSchema = z
   .min(1, 'Email is required')
   .email('Invalid email address');
 
+export const otpSchema = z
+  .string()
+  .min(1, 'Code is required')
+  .regex(/^\d{6}$/, 'Enter the 6-digit code');
+
 export const adminSecretSchema = z
   .string()
   .min(1, 'Secret key is required')
@@ -37,18 +43,6 @@ export const signInSchema = z.object({
   username: usernameSchema,
   password: z.string().min(1, 'Password is required'),
 });
-
-export const signUpSchema = z
-  .object({
-    name: fullnameSchema,
-    username: usernameSchema,
-    password: passwordSchema,
-    confirmPassword: z.string().min(1, 'Confirm password is required'),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
 
 export const adminLoginSchema = z.object({
   secretkey: adminSecretSchema,
@@ -68,4 +62,5 @@ export const validateUsername = zodField(usernameSchema);
 export const validateFullname = zodField(fullnameSchema);
 export const validatePassword = zodField(passwordSchema);
 export const validateEmail = zodField(emailSchema);
+export const validateOtp = zodField(otpSchema);
 export const validateAdminSecret = zodField(adminSecretSchema);

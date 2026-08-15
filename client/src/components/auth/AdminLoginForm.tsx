@@ -1,12 +1,11 @@
-import avatar from '@/assets/avatar.png';
-import { useForm } from 'react-hook-form';
-import InputField from '@/components/ui/InputField';
-import Button from '@/components/ui/Button';
-import { validateAdminSecret } from '@/utils/authValidators';
-import { Link, useNavigate } from 'react-router-dom';
+import AuthField from '@/components/auth/AuthField';
+import AuthSubmit from '@/components/auth/AuthSubmit';
 import { useAdminLoginMutation } from '@/hooks/admin';
-import toast from 'react-hot-toast';
 import type { AdminLoginForm } from '@/types/auth';
+import { validateAdminSecret } from '@/utils/authValidators';
+import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
+import { Link, useNavigate } from 'react-router-dom';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -32,38 +31,44 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="w-full">
-      <img
-        src={avatar}
-        alt=""
-        className="mx-auto h-24 w-24 rounded-full border-4 p-3 shadow-lg sm:h-40 sm:w-40 sm:p-4"
-      />
+    <div className="w-full text-left">
+      <h2 className="font-display text-[1.85rem] leading-none tracking-tight text-white">
+        Ops console
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-body-300">
+        Secret key unlocks the dashboard. Keep it quiet.
+      </p>
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="mx-auto my-6 flex w-full max-w-sm flex-col items-center gap-4 px-2 sm:my-8 sm:w-4/5 lg:w-3/5"
+        className="mt-7 flex flex-col gap-4"
       >
-        <InputField
+        <AuthField
           type="password"
           name="secretkey"
-          placeholder="Secret Key"
+          label="Secret key"
+          placeholder="Admin secret"
+          autoComplete="current-password"
           register={register}
           validate={validateAdminSecret}
           errors={errors}
         />
 
-        <Button type="submit" className="mt-4 w-full">
-          Sign In
-        </Button>
+        <AuthSubmit pending={login.isPending} className="mt-2">
+          Enter dashboard
+        </AuthSubmit>
 
-        {login.isError && (
-          <p className="text-xs w-full text-red">We cannot find the secret key</p>
-        )}
-
-        <Link to={'/auth'}>
-          <p className="text-base w-full mt-4 text-green cursor-pointer">
-            <span className="mr-2">⟨</span> Login as User
+        {login.isError ? (
+          <p className="text-xs text-red" role="alert">
+            We cannot find the secret key
           </p>
+        ) : null}
+
+        <Link
+          to="/auth"
+          className="mt-3 text-center text-sm text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
+        >
+          ← Login as user
         </Link>
       </form>
     </div>
