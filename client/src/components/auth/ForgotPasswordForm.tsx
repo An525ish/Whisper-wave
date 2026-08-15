@@ -62,16 +62,22 @@ const ForgotPassword = ({ setIsForget }: ForgotPasswordProps) => {
           onSubmit={handleSubmit(onSubmit)}
           className="mt-6 flex flex-1 flex-col gap-4"
         >
-          <AuthField
-            type="email"
-            name="email"
-            label="Email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            register={register}
-            validate={validateEmail}
-            errors={errors}
-          />
+          <div>
+            <AuthField
+              type="email"
+              name="email"
+              label="Email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              register={register}
+              validate={validateEmail}
+              errors={errors}
+            />
+            <p className="auth-forgot__hint" role="note">
+              Use the inbox you signed up with — we’ll only whisper if it
+              matches an account.
+            </p>
+          </div>
 
           <div className="mt-auto flex flex-col gap-3 pt-2">
             <AuthSubmit pending={forgotPassword.isPending}>

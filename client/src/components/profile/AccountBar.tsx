@@ -57,12 +57,11 @@ const AccountBar = ({
 
   const handleLogout = async () => {
     try {
-      const res = await signOut.mutateAsync();
-      toast.success(res.message || 'Logged out');
+      await signOut.mutateAsync();
     } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Logout failed';
-      toast.error(message);
+      toast.error(
+        error instanceof Error ? error.message : 'Logout failed',
+      );
     }
   };
 
