@@ -16,12 +16,30 @@ export function useSignInMutation() {
   });
 }
 
-export function useSignUpMutation() {
+export function useStartSignUpMutation() {
+  return useMutation({
+    mutationFn: authApi.startSignUp,
+  });
+}
+
+export function useResendSignUpOtpMutation() {
+  return useMutation({
+    mutationFn: authApi.resendSignUpOtp,
+  });
+}
+
+export function useVerifySignUpOtpMutation() {
+  return useMutation({
+    mutationFn: authApi.verifySignUpOtp,
+  });
+}
+
+export function useCompleteSignUpMutation() {
   const setUser = useAuthStore((s) => s.setUser);
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: authApi.signUp,
+    mutationFn: authApi.completeSignUp,
     onSuccess: (res) => {
       setUser(res.data);
       queryClient.setQueryData(queryKeys.profile, res.data);
@@ -39,6 +57,18 @@ export function useSignOutMutation() {
       clear();
       queryClient.clear();
     },
+  });
+}
+
+export function useForgotPasswordMutation() {
+  return useMutation({
+    mutationFn: authApi.forgotPassword,
+  });
+}
+
+export function useResetPasswordMutation() {
+  return useMutation({
+    mutationFn: authApi.resetPassword,
   });
 }
 

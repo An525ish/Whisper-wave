@@ -1,4 +1,4 @@
-import avatar from '@/assets/avatar.png';
+import { AVATAR_FALLBACK } from '@/constants/app';
 import {
   useEffect,
   useState,
@@ -19,9 +19,11 @@ const Image = ({ src, alt, className, onError, ...props }: ImageProps) => {
     setFailed(false);
   }, [src]);
 
-  const imgSrc = !src || failed ? avatar : src;
+  const imgSrc = !src || failed ? AVATAR_FALLBACK : src;
 
   const handleError = (event: SyntheticEvent<HTMLImageElement>) => {
+    // Avoid retry loop if the fallback itself fails
+    if (event.currentTarget.src.includes(AVATAR_FALLBACK)) return;
     setFailed(true);
     onError?.(event);
   };

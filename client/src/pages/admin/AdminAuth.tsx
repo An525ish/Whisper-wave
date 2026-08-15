@@ -1,20 +1,15 @@
 import AdminLogin from '@/components/auth/AdminLoginForm';
+import AuthShell from '@/components/auth/AuthShell';
 
 export default function AdminAuth() {
-
-    return (
-        <div className="h-dvh">
-            <div className='flex items-center h-full text-center justify-center py-10'>
-                <div className='flex-1 grid place-items-center h-full'>
-                    {
-                        <AdminLogin />
-                    }
-                </div>
-                <div className='hidden md:block h-full w-px bg-border rotate-180'></div>
-                <div className='md:flex-1 lg:flex-2 md:block hidden font-bold text-[4rem] lg:text-[5rem]'>
-                    {'Hello Admin'}
-                </div>
-            </div>
-        </div>
-    )
+  return (
+    <AuthShell
+      headline="Keep the room in order."
+      subcopy="Signed-in ops only. Use your secret key to continue."
+      modeHint="Admin"
+      mode="admin"
+    >
+      <AdminLogin />
+    </AuthShell>
+  );
 }

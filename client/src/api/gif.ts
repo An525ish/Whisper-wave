@@ -13,14 +13,22 @@ export type GifItem = {
   kind: KlipyKind;
 };
 
-type GifListResponse = { success: boolean; data: GifItem[] };
+export type GifListResponse = {
+  success: boolean;
+  data: GifItem[];
+  page: number;
+  hasNext: boolean;
+};
 
-export const searchMedia = (q: string, kind: KlipyKind = 'gif', limit = 24) =>
-  api.get<GifListResponse>('/gif/search', { q, kind, limit });
+export const searchMedia = (
+  q: string,
+  kind: KlipyKind = 'gif',
+  page = 1,
+  limit = 24,
+) => api.get<GifListResponse>('/gif/search', { q, kind, page, limit });
 
-export const trendingMedia = (kind: KlipyKind = 'gif', limit = 24) =>
-  api.get<GifListResponse>('/gif/trending', { kind, limit });
-
-/** @deprecated aliases */
-export const searchGifs = (q: string, limit = 24) => searchMedia(q, 'gif', limit);
-export const trendingGifs = (limit = 24) => trendingMedia('gif', limit);
+export const trendingMedia = (
+  kind: KlipyKind = 'gif',
+  page = 1,
+  limit = 24,
+) => api.get<GifListResponse>('/gif/trending', { kind, page, limit });

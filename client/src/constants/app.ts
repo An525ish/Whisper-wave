@@ -12,3 +12,6 @@ export const TYPING_STALE_MS = 3500 as const;
 export const VIEWPORT_PADDING = 8 as const;
 export const RELOAD_KEY = 'ww:chunk-reload-at' as const;
 export const RELOAD_COOLDOWN_MS = 15_000 as const;
+
+/** Shared fallback when a user/group avatar is missing or fails to load. */
+export const AVATAR_FALLBACK = '/images/no-avatar.svg' as const;

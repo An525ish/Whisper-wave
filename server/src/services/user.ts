@@ -14,6 +14,7 @@ import {
   deleteFromCloudinary,
   uploadToCloudinary,
 } from '../utils/cloudinary.js';
+import { isDisposableEmail } from '../utils/disposableEmail.js';
 
 export const getProfile = async (
   userId: string
@@ -54,7 +55,20 @@ export const updateProfile = async (
   if (input.name) patch.name = input.name;
   if (input.username) patch.username = input.username;
   if (input.bio !== undefined) patch.bio = input.bio;
-  void input.email;
+  if (input.email) {
+    const email = input.email.toLowerCase().trim();
+    if (isDisposableEmail(email)) {
+      throw new AppError(
+        400,
+        'Temporary or disposable emails are not allowed. Use a real inbox.'
+      );
+    }
+    const existing = await userRepo.findByEmail(email);
+    if (existing && existing._id.toString() !== userId) {
+      throw new AppError(409, 'Email already in use');
+    }
+    patch.email = email;
+  }
 
   if (avatarFile) {
     const uploaded = await uploadToCloudinary([avatarFile]);

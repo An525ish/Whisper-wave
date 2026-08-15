@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import SuggestionListItem from '@/components/chat/list/SuggestionListItem';
 import { useNavigate } from 'react-router-dom';
 import AvatarSkeleton from '@/components/ui/skeletons/AvatarSkeleton';
-import defaultAvatar from '@/assets/avatar.png';
+import { AVATAR_FALLBACK } from '@/constants/app';
 import type { FriendsResponse, CreateGroupResult } from '@/types/chat';
 
 type CreateGroupPanelProps = {
@@ -125,7 +125,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
                 </div>
               ) : (
                 <img
-                  src={avatarPreview ?? defaultAvatar}
+                  src={avatarPreview ?? AVATAR_FALLBACK}
                   alt=""
                   className={`h-full w-full object-cover ${
                     avatarPreview ? '' : 'opacity-80'

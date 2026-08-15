@@ -1,41 +1,130 @@
-import InputField from '@/components/ui/InputField';
-import Button from '@/components/ui/Button';
-import { useForm } from 'react-hook-form';
+import AuthField from '@/components/auth/AuthField';
+import AuthSubmit from '@/components/auth/AuthSubmit';
+import AvatarInput from '@/components/ui/AvatarInput';
 import {
+  useCompleteSignUpMutation,
+  useResendSignUpOtpMutation,
+  useStartSignUpMutation,
+  useVerifySignUpOtpMutation,
+} from '@/hooks/auth';
+import type {
+  RegisterStep1Form,
+  RegisterStep2Form,
+  RegisterStep3Form,
+} from '@/types/auth';
+import {
+  validateEmail,
   validateFullname,
+  validateOtp,
   validatePassword,
   validateUsername,
 } from '@/utils/authValidators';
-import AvatarInput from '@/components/ui/AvatarInput';
-import { useState } from 'react';
-import { useSignUpMutation } from '@/hooks/auth';
+import {
+  clearSignupSession,
+  loadSignupSession,
+  saveSignupSession,
+} from '@/utils/signupSession';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-import type { RegisterForm } from '@/types/auth';
 
 type RegisterProps = {
   setIsLogin: (value: boolean) => void;
 };
 
+type Step = 1 | 2 | 3;
+
+const STEP_COPY: Record<
+  Step,
+  { title: string; blurb: string; cta: string }
+> = {
+  1: {
+    title: 'Start with your inbox',
+    blurb: 'We’ll send a code so dummy emails can’t join the room.',
+    cta: 'Send code',
+  },
+  2: {
+    title: 'Verify & pick a handle',
+    blurb: 'Enter the 6-digit code, then claim your username.',
+    cta: 'Verify & continue',
+  },
+  3: {
+    title: 'Show your face',
+    blurb: 'A name and photo — then you’re in.',
+    cta: 'Create account',
+  },
+};
+
 const Register = ({ setIsLogin }: RegisterProps) => {
+  const saved = loadSignupSession();
+  const [step, setStep] = useState<Step>(saved?.step ?? 1);
+  const [email, setEmail] = useState(saved?.email ?? '');
+  const [signupToken, setSignupToken] = useState(saved?.signupToken ?? '');
   const [avatar, setAvatar] = useState<File | null>(null);
-  const signUp = useSignUpMutation();
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<RegisterForm>({ mode: 'onChange' });
+  // Sync to sessionStorage whenever these values change
+  useEffect(() => {
+    saveSignupSession({ step, email, signupToken });
+  }, [step, email, signupToken]);
 
-  const onSubmit = async (data: RegisterForm) => {
+  const startSignUp = useStartSignUpMutation();
+  const resendOtp = useResendSignUpOtpMutation();
+  const verifyOtp = useVerifySignUpOtpMutation();
+  const completeSignUp = useCompleteSignUpMutation();
+
+  const step1 = useForm<RegisterStep1Form>({ mode: 'onChange' });
+  const step2 = useForm<RegisterStep2Form>({ mode: 'onChange' });
+  const step3 = useForm<RegisterStep3Form>({ mode: 'onChange' });
+
+  const pending =
+    startSignUp.isPending ||
+    verifyOtp.isPending ||
+    completeSignUp.isPending ||
+    resendOtp.isPending;
+
+  const onStep1 = async (data: RegisterStep1Form) => {
+    try {
+      const response = await startSignUp.mutateAsync(data);
+      setEmail(response.data.email);
+      setStep(2);
+      toast.success(response.message || 'Check your email for a code');
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Something went wrong',
+      );
+    }
+  };
+
+  const onStep2 = async (data: RegisterStep2Form) => {
+    try {
+      const response = await verifyOtp.mutateAsync({
+        email,
+        otp: data.otp,
+        username: data.username,
+      });
+      setSignupToken(response.data.signupToken);
+      setStep(3);
+      toast.success(response.message || 'Email verified');
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Something went wrong',
+      );
+    }
+  };
+
+  const onStep3 = async (data: RegisterStep3Form) => {
+    if (!avatar) {
+      toast.error('Please upload an avatar');
+      return;
+    }
     try {
       const formData = new FormData();
+      formData.append('signupToken', signupToken);
       formData.append('name', data.name);
-      formData.append('username', data.username);
-      formData.append('password', data.password);
-      if (avatar) formData.append('avatar', avatar);
+      formData.append('avatar', avatar);
 
-      const response = await signUp.mutateAsync(formData);
+      const response = await completeSignUp.mutateAsync(formData);
+      clearSignupSession();
       toast.success(response.message || 'Registered');
     } catch (error) {
       toast.error(
@@ -44,65 +133,184 @@ const Register = ({ setIsLogin }: RegisterProps) => {
     }
   };
 
+  const onResend = async () => {
+    try {
+      const response = await resendOtp.mutateAsync({ email });
+      toast.success(response.message || 'Code resent');
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Something went wrong',
+      );
+    }
+  };
+
+  const copy = STEP_COPY[step];
+
   return (
-    <div className="w-full">
-      <div className="flex justify-center">
-        <AvatarInput file={avatar} setFile={setAvatar} />
+    <div className="auth-face-body flex h-full flex-col text-left">
+      <div className="auth-signup-steps" aria-label={`Step ${step} of 3`}>
+        {([1, 2, 3] as const).map((n) => (
+          <span
+            key={n}
+            className={`auth-signup-steps__dot ${
+              n === step ? 'is-active' : n < step ? 'is-done' : ''
+            }`}
+          />
+        ))}
+        <span className="auth-signup-steps__label">Step {step} of 3</span>
       </div>
 
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="mx-auto my-6 flex w-full max-w-sm flex-col items-center gap-4 px-2 sm:my-8 sm:w-4/5 lg:w-3/5"
-      >
-        <InputField
-          type="text"
-          name="name"
-          placeholder="Fullname"
-          register={register}
-          validate={validateFullname}
-          errors={errors}
-        />
-        <InputField
-          type="text"
-          name="username"
-          placeholder="username"
-          register={register}
-          validate={validateUsername}
-          errors={errors}
-        />
-        <InputField
-          type="password"
-          name="password"
-          placeholder="Password"
-          register={register}
-          validate={validatePassword}
-          errors={errors}
-        />
-        <InputField
-          type="password"
-          name="confirmPassword"
-          placeholder="Confirm Password"
-          register={register}
-          validate={(value: string) => {
-            return value === watch('password') || 'Passwords do not match';
-          }}
-          errors={errors}
-        />
+      <h2 className="mt-4 font-display text-[1.7rem] leading-none tracking-tight text-white">
+        {copy.title}
+      </h2>
+      <p className="mt-2 text-sm leading-relaxed text-body-300">{copy.blurb}</p>
 
-        <Button type="submit" className="mt-4 w-full">
-          Register
-        </Button>
+      {step === 1 ? (
+        <form
+          onSubmit={step1.handleSubmit(onStep1)}
+          className="mt-5 flex flex-1 flex-col gap-3"
+        >
+          <AuthField
+            type="email"
+            name="email"
+            label="Email"
+            placeholder="you@example.com"
+            autoComplete="email"
+            register={step1.register}
+            validate={validateEmail}
+            errors={step1.formState.errors}
+          />
+          <AuthField
+            type="password"
+            name="password"
+            label="Password"
+            placeholder="Create a password"
+            autoComplete="new-password"
+            register={step1.register}
+            validate={validatePassword}
+            errors={step1.formState.errors}
+          />
+          <AuthField
+            type="password"
+            name="confirmPassword"
+            label="Confirm"
+            placeholder="Repeat password"
+            autoComplete="new-password"
+            register={step1.register}
+            validate={(value: string) =>
+              value === step1.watch('password') || 'Passwords do not match'
+            }
+            errors={step1.formState.errors}
+          />
 
-        <p className="text-base w-full mt-4">
-          Already have an account ?{' '}
-          <span
-            className=" text-green cursor-pointer"
-            onClick={() => setIsLogin(true)}
-          >
-            Sign In
-          </span>
-        </p>
-      </form>
+          <div className="mt-auto flex flex-col gap-3 pt-2">
+            <AuthSubmit pending={pending}>{copy.cta}</AuthSubmit>
+            <p className="text-center text-sm text-body-300">
+              Already have an account?{' '}
+              <button
+                type="button"
+                className="font-semibold text-green transition hover:brightness-110 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
+                onClick={() => setIsLogin(true)}
+              >
+                Sign in
+              </button>
+            </p>
+          </div>
+        </form>
+      ) : null}
+
+      {step === 2 ? (
+        <form
+          onSubmit={step2.handleSubmit(onStep2)}
+          className="mt-5 flex flex-1 flex-col gap-3"
+        >
+          <p className="rounded-xl border border-white/10 bg-black-dark/50 px-3 py-2 text-xs text-body-300">
+            Code sent to <span className="text-white">{email}</span>
+          </p>
+          <AuthField
+            type="text"
+            name="otp"
+            label="Verification code"
+            placeholder="6-digit code"
+            autoComplete="one-time-code"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            register={step2.register}
+            validate={validateOtp}
+            errors={step2.formState.errors}
+          />
+          <AuthField
+            type="text"
+            name="username"
+            label="Username"
+            placeholder="Handle"
+            autoComplete="username"
+            register={step2.register}
+            validate={validateUsername}
+            errors={step2.formState.errors}
+          />
+
+          <div className="mt-auto flex flex-col gap-3 pt-2">
+            <AuthSubmit pending={pending}>{copy.cta}</AuthSubmit>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <button
+                type="button"
+                className="text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
+                onClick={() => {
+                  clearSignupSession();
+                  setStep(1);
+                  setEmail('');
+                  setSignupToken('');
+                  step2.reset();
+                }}
+                disabled={pending}
+              >
+                ← Back
+              </button>
+              <button
+                type="button"
+                className="font-semibold text-green transition hover:brightness-110 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40 disabled:opacity-50"
+                onClick={() => void onResend()}
+                disabled={pending}
+              >
+                Resend code
+              </button>
+            </div>
+          </div>
+        </form>
+      ) : null}
+
+      {step === 3 ? (
+        <form
+          onSubmit={step3.handleSubmit(onStep3)}
+          className="mt-5 flex flex-1 flex-col gap-3"
+        >
+          <AvatarInput file={avatar} setFile={setAvatar} />
+          <AuthField
+            type="text"
+            name="name"
+            label="Full name"
+            placeholder="Your name"
+            autoComplete="name"
+            register={step3.register}
+            validate={validateFullname}
+            errors={step3.formState.errors}
+          />
+
+          <div className="mt-auto flex flex-col gap-3 pt-2">
+            <AuthSubmit pending={pending}>{copy.cta}</AuthSubmit>
+            <button
+              type="button"
+              className="text-center text-sm text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
+              onClick={() => setStep(2)}
+              disabled={pending}
+            >
+              ← Back
+            </button>
+          </div>
+        </form>
+      ) : null}
     </div>
   );
 };

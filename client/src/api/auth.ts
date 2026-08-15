@@ -11,7 +11,33 @@ export const updateProfile = (formData: FormData) =>
 export const signIn = (body: { username: string; password: string }) =>
   api.post<AuthDataResponse>('/auth/signin', body);
 
-export const signUp = (formData: FormData) =>
-  api.post<AuthDataResponse>('/auth/signup', formData);
+export const startSignUp = (body: {
+  email: string;
+  password: string;
+  confirmPassword: string;
+}) =>
+  api.post<ApiSuccess & { data: { email: string } }>('/auth/signup/start', body);
+
+export const resendSignUpOtp = (body: { email: string }) =>
+  api.post<ApiSuccess>('/auth/signup/resend', body);
+
+export const verifySignUpOtp = (body: {
+  email: string;
+  otp: string;
+  username: string;
+}) =>
+  api.post<ApiSuccess & { data: { signupToken: string } }>(
+    '/auth/signup/verify',
+    body
+  );
+
+export const completeSignUp = (formData: FormData) =>
+  api.post<AuthDataResponse>('/auth/signup/complete', formData);
 
 export const signOut = () => api.post<ApiSuccess>('/auth/signout');
+
+export const forgotPassword = (body: { email: string }) =>
+  api.post<ApiSuccess>('/auth/forgot-password', body);
+
+export const resetPassword = (body: { token: string; password: string }) =>
+  api.post<ApiSuccess>('/auth/reset-password', body);

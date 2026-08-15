@@ -6,6 +6,7 @@ import {
 } from 'react';
 import ThreeDotsIcon from '@/components/ui/icons/ThreeDots';
 import LeaveGroupIcon from '@/components/ui/icons/LeaveGroup';
+import { AVATAR_FALLBACK } from '@/constants/app';
 
 
 export const SidebarContext = createContext<SidebarContextValue>({
@@ -62,9 +63,9 @@ const Sidebar = ({ children }: SidebarProps) => {
 
         <div className="relative border-t border-border flex p-3">
           <img
-            src="https://ui-avatars.com/api/?background=c7d2fe&color=3730a3&bold=true"
+            src={AVATAR_FALLBACK}
             alt=""
-            className="w-10 h-10 rounded-md"
+            className="w-10 h-10 rounded-md object-cover"
           />
           <div
             className={`flex justify-between items-center overflow-hidden transition-all ${

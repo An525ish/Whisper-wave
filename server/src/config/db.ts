@@ -5,6 +5,7 @@ import { User } from '../models/user.js';
 import { Chat } from '../models/chat.js';
 import { Message } from '../models/message.js';
 import { Request } from '../models/request.js';
+import { PendingSignup } from '../models/pendingSignup.js';
 
 export const connectDb = async (): Promise<void> => {
   await mongoose.connect(env.DB_URI, { dbName: 'WhisperWave' });
@@ -15,7 +16,13 @@ export const connectDb = async (): Promise<void> => {
 const ensureIndexes = async (): Promise<void> => {
   await Promise.all([
     User.collection.createIndex({ username: 1 }, { unique: true }),
+    User.collection.createIndex({ email: 1 }, { unique: true, sparse: true }),
     User.collection.createIndex({ name: 'text' }),
+    PendingSignup.collection.createIndex({ email: 1 }, { unique: true }),
+    PendingSignup.collection.createIndex(
+      { expiresAt: 1 },
+      { expireAfterSeconds: 0 }
+    ),
     Chat.collection.createIndex({ members: 1, updatedAt: -1 }),
     Message.collection.createIndex({ chat: 1, createdAt: -1 }),
     Request.collection.createIndex(
