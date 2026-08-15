@@ -40,6 +40,23 @@ export const uploadToCloudinary = async (
   }
 };
 
+/** Upload a remote image URL directly to Cloudinary (used for OAuth avatars). */
+export const uploadUrlToCloudinary = async (
+  url: string
+): Promise<{ publicId: string; url: string }> =>
+  new Promise((resolve, reject) => {
+    cloudinary.uploader.upload(
+      url,
+      { resource_type: 'image', public_id: uuid() },
+      (error, result) => {
+        if (error || !result) {
+          return reject(error ?? new Error('Cloudinary URL upload failed'));
+        }
+        resolve({ publicId: result.public_id, url: result.secure_url });
+      }
+    );
+  });
+
 export const deleteFromCloudinary = async (publicIds: string[]): Promise<void> => {
   if (publicIds.length === 0) return;
 

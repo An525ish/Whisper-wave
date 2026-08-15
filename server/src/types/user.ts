@@ -11,6 +11,7 @@ export type IUserFields = {
   username: string;
   email?: string;
   password: string;
+  googleId?: string;
   avatar: UserAvatar;
   bio?: string;
   lastSeen?: Date;
@@ -63,6 +64,7 @@ export type CreateUserInput = {
   username: string;
   email: string;
   password: string;
+  googleId?: string;
   avatar: UserAvatar;
   bio?: string;
 };
@@ -96,6 +98,7 @@ export type UpdateUserPatch = Partial<{
   username: string;
   email: string;
   password: string;
+  googleId: string;
   bio: string;
   avatar: UserAvatar;
   lastSeen: Date;

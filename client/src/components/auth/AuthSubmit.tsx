@@ -17,7 +17,7 @@ const AuthSubmit = ({
   <button
     type={type}
     disabled={disabled || pending}
-    className={`auth-submit flex h-11 w-full items-center justify-center rounded-xl bg-gradient-green text-sm font-semibold tracking-wide text-white shadow-[0_10px_28px_rgba(1,195,109,0.28)] transition enabled:active:scale-[0.985] enabled:hover:brightness-110 disabled:opacity-50 ${className}`.trim()}
+    className={`auth-submit flex h-11 w-full items-center justify-center rounded-xl bg-gradient-green text-sm font-semibold tracking-wide text-white shadow-[0_8px_20px_rgba(0,0,0,0.35)] transition enabled:active:scale-[0.985] enabled:hover:brightness-110 disabled:opacity-50 ${className}`.trim()}
     {...props}
   >
     {pending ? (

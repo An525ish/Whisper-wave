@@ -1,6 +1,7 @@
 import AuthField from '@/components/auth/AuthField';
 import AuthSubmit from '@/components/auth/AuthSubmit';
 import AvatarInput from '@/components/ui/AvatarInput';
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import {
   useCompleteSignUpMutation,
   useResendSignUpOtpMutation,
@@ -40,7 +41,7 @@ const STEP_COPY: Record<
 > = {
   1: {
     title: 'Start with your inbox',
-    blurb: 'We’ll send a code so dummy emails can’t join the room.',
+    blurb: 'Verify your inbox first — then claim your quiet corner.',
     cta: 'Send code',
   },
   2: {
@@ -61,6 +62,8 @@ const Register = ({ setIsLogin }: RegisterProps) => {
   const [email, setEmail] = useState(saved?.email ?? '');
   const [signupToken, setSignupToken] = useState(saved?.signupToken ?? '');
   const [avatar, setAvatar] = useState<File | null>(null);
+  const [avatarError, setAvatarError] = useState('');
+  const [resendNote, setResendNote] = useState('');
 
   // Sync to sessionStorage whenever these values change
   useEffect(() => {
@@ -86,8 +89,9 @@ const Register = ({ setIsLogin }: RegisterProps) => {
     try {
       const response = await startSignUp.mutateAsync(data);
       setEmail(response.data.email);
+      setResendNote('');
+      // Step 2’s “Code sent to …” banner is the confirmation
       setStep(2);
-      toast.success(response.message || 'Check your email for a code');
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Something went wrong',
@@ -103,8 +107,9 @@ const Register = ({ setIsLogin }: RegisterProps) => {
         username: data.username,
       });
       setSignupToken(response.data.signupToken);
+      setResendNote('');
+      // Advancing to step 3 is the confirmation
       setStep(3);
-      toast.success(response.message || 'Email verified');
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Something went wrong',
@@ -114,18 +119,19 @@ const Register = ({ setIsLogin }: RegisterProps) => {
 
   const onStep3 = async (data: RegisterStep3Form) => {
     if (!avatar) {
-      toast.error('Please upload an avatar');
+      setAvatarError('Please upload an avatar');
       return;
     }
+    setAvatarError('');
     try {
       const formData = new FormData();
       formData.append('signupToken', signupToken);
       formData.append('name', data.name);
       formData.append('avatar', avatar);
 
-      const response = await completeSignUp.mutateAsync(formData);
+      await completeSignUp.mutateAsync(formData);
       clearSignupSession();
-      toast.success(response.message || 'Registered');
+      // Cookie + store + GuestOnly redirect — no toast
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Something went wrong',
@@ -136,8 +142,9 @@ const Register = ({ setIsLogin }: RegisterProps) => {
   const onResend = async () => {
     try {
       const response = await resendOtp.mutateAsync({ email });
-      toast.success(response.message || 'Code resent');
+      setResendNote(response.message || 'A new code is on its way.');
     } catch (error) {
+      setResendNote('');
       toast.error(
         error instanceof Error ? error.message : 'Something went wrong',
       );
@@ -205,6 +212,7 @@ const Register = ({ setIsLogin }: RegisterProps) => {
 
           <div className="mt-auto flex flex-col gap-3 pt-2">
             <AuthSubmit pending={pending}>{copy.cta}</AuthSubmit>
+            <GoogleSignInButton disabled={pending} />
             <p className="text-center text-sm text-body-300">
               Already have an account?{' '}
               <button
@@ -227,6 +235,11 @@ const Register = ({ setIsLogin }: RegisterProps) => {
           <p className="rounded-xl border border-white/10 bg-black-dark/50 px-3 py-2 text-xs text-body-300">
             Code sent to <span className="text-white">{email}</span>
           </p>
+          {resendNote ? (
+            <p className="text-xs text-green" role="status">
+              {resendNote}
+            </p>
+          ) : null}
           <AuthField
             type="text"
             name="otp"
@@ -262,6 +275,7 @@ const Register = ({ setIsLogin }: RegisterProps) => {
                   setStep(1);
                   setEmail('');
                   setSignupToken('');
+                  setResendNote('');
                   step2.reset();
                 }}
                 disabled={pending}
@@ -286,7 +300,18 @@ const Register = ({ setIsLogin }: RegisterProps) => {
           onSubmit={step3.handleSubmit(onStep3)}
           className="mt-5 flex flex-1 flex-col gap-3"
         >
-          <AvatarInput file={avatar} setFile={setAvatar} />
+          <AvatarInput
+            file={avatar}
+            setFile={(file) => {
+              setAvatar(file);
+              if (file) setAvatarError('');
+            }}
+          />
+          {avatarError ? (
+            <p className="text-xs text-red" role="alert">
+              {avatarError}
+            </p>
+          ) : null}
           <AuthField
             type="text"
             name="name"

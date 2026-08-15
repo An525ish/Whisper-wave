@@ -23,9 +23,8 @@ const ForgotPassword = ({ setIsForget }: ForgotPasswordProps) => {
 
   const onSubmit = async (data: ForgotPasswordForm) => {
     try {
-      const response = await forgotPassword.mutateAsync(data);
+      await forgotPassword.mutateAsync(data);
       setSent(true);
-      toast.success(response.message || 'Check your email');
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : 'Something went wrong',

@@ -1,46 +1,7 @@
-/** Common disposable / temporary mailbox providers. Not exhaustive — OTP is the real gate. */
-const DISPOSABLE_DOMAINS = new Set(
-  [
-    'mailinator.com',
-    'guerrillamail.com',
-    'guerrillamail.net',
-    'sharklasers.com',
-    'grr.la',
-    'guerrillamailblock.com',
-    'pokemail.net',
-    'spam4.me',
-    'tempmail.com',
-    'temp-mail.org',
-    'temp-mail.io',
-    'tmpmail.org',
-    'tmpmail.net',
-    '10minutemail.com',
-    '10minutemail.net',
-    'throwaway.email',
-    'yopmail.com',
-    'yopmail.fr',
-    'trashmail.com',
-    'trashmail.me',
-    'fakeinbox.com',
-    'maildrop.cc',
-    'dispostable.com',
-    'mailnesia.com',
-    'getnada.com',
-    'nada.email',
-    'emailondeck.com',
-    'mintemail.com',
-    'moakt.com',
-    'tempail.com',
-    'discard.email',
-    'mailcatch.com',
-    'mytemp.email',
-    'tmpeml.com',
-    'inboxkitten.com',
-    'mailnull.com',
-    'spamgourmet.com',
-    'mailinator.net',
-    'mailinator.org',
-  ].map((d) => d.toLowerCase())
+import { ALLOWED_EMAIL_DOMAINS } from '../constants/email.js';
+
+const allowedDomainSet = new Set<string>(
+  ALLOWED_EMAIL_DOMAINS.map((d) => d.toLowerCase())
 );
 
 export const getEmailDomain = (email: string): string => {
@@ -49,13 +10,16 @@ export const getEmailDomain = (email: string): string => {
   return email.slice(at + 1).toLowerCase().trim();
 };
 
-export const isDisposableEmail = (email: string): boolean => {
+/** True when the address uses an allowlisted provider. */
+export const isAllowedEmail = (email: string): boolean => {
   const domain = getEmailDomain(email);
-  if (!domain) return true;
-  if (DISPOSABLE_DOMAINS.has(domain)) return true;
-  // block obvious subdomains of known disposable hosts
-  for (const blocked of DISPOSABLE_DOMAINS) {
-    if (domain.endsWith(`.${blocked}`)) return true;
+  if (!domain) return false;
+  if (allowedDomainSet.has(domain)) return true;
+  for (const allowed of allowedDomainSet) {
+    if (domain.endsWith(`.${allowed}`)) return true;
   }
   return false;
 };
+
+/** True when the address is NOT on the allowlist (temp / unknown host). */
+export const isDisposableEmail = (email: string): boolean => !isAllowedEmail(email);

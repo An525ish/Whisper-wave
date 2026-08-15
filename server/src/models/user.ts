@@ -22,6 +22,7 @@ const userSchema = new Schema<IUser>(
       lowercase: true,
       trim: true,
     },
+    googleId: { type: String, unique: true, sparse: true, select: false },
     password: { type: String, required: true, select: false },
     avatar: { type: avatarSchema, required: true },
     bio: { type: String, maxlength: 70 },

@@ -60,6 +60,19 @@ export function useSignOutMutation() {
   });
 }
 
+export function useGoogleSignInMutation() {
+  const setUser = useAuthStore((s) => s.setUser);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: authApi.googleSignIn,
+    onSuccess: (res) => {
+      setUser(res.data);
+      queryClient.setQueryData(queryKeys.profile, res.data);
+    },
+  });
+}
+
 export function useForgotPasswordMutation() {
   return useMutation({
     mutationFn: authApi.forgotPassword,

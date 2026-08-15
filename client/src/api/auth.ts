@@ -41,3 +41,8 @@ export const forgotPassword = (body: { email: string }) =>
 
 export const resetPassword = (body: { token: string; password: string }) =>
   api.post<ApiSuccess>('/auth/reset-password', body);
+
+export const googleSignIn = (body: {
+  credential?: string;
+  accessToken?: string;
+}) => api.post<AuthDataResponse>('/auth/google', body);

@@ -65,6 +65,16 @@ export const resetPasswordSchema = z.object({
   password: passwordField,
 });
 
+export const googleSignInSchema = z
+  .object({
+    credential: z.string().trim().min(1).optional(),
+    accessToken: z.string().trim().min(1).optional(),
+  })
+  .refine((data) => Boolean(data.credential) || Boolean(data.accessToken), {
+    message: 'Google credential or access token is required',
+  });
+
+export type GoogleSignInInput = z.infer<typeof googleSignInSchema>;
 export type SignUpStartInput = z.infer<typeof signUpStartSchema>;
 export type SignUpVerifyInput = z.infer<typeof signUpVerifySchema>;
 export type SignUpResendInput = z.infer<typeof signUpResendSchema>;
