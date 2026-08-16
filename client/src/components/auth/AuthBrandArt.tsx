@@ -6,12 +6,14 @@ type AuthBrandArtProps = {
  * Quiet-circle stage with phone scene — brand mark lives with the wordmark, not here.
  */
 const AuthBrandArt = ({ mode = 'login' }: AuthBrandArtProps) => {
+  const isAdmin = mode === 'admin';
+
   return (
     <div className={`auth-stage auth-stage--${mode}`} aria-hidden>
       <div className="auth-stage__glow" />
 
       <img
-        src="/images/auth-wave-scene.svg"
+        src={isAdmin ? '/images/admin-console-scene.svg' : '/images/auth-wave-scene.svg'}
         alt=""
         className="auth-stage__phone"
         draggable={false}
@@ -44,10 +46,12 @@ const AuthBrandArt = ({ mode = 'login' }: AuthBrandArtProps) => {
       </div>
 
       <div className="auth-stage__chip auth-stage__chip--a">
-        <span className="auth-stage__chip-dot" />
-        quietly online
+        <span className={`auth-stage__chip-dot${isAdmin ? ' auth-stage__chip-dot--blue' : ''}`} />
+        {isAdmin ? 'secure access' : 'quietly online'}
       </div>
-      <div className="auth-stage__chip auth-stage__chip--b">new thread</div>
+      <div className="auth-stage__chip auth-stage__chip--b">
+        {isAdmin ? 'ops console' : 'new thread'}
+      </div>
     </div>
   );
 };

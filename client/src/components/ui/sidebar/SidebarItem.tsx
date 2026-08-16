@@ -1,59 +1,81 @@
-import { useContext, useState, type ComponentType } from 'react';
-import { SidebarContext } from '@/components/ui/sidebar/Sidebar';
+import type { ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
+import {
+  ICON_SLOT,
+  collapseLabelClass,
+} from '@/components/ui/sidebar/constants';
+import { useSidebar } from '@/components/ui/sidebar/context';
+import {
+  navIconClass,
+  navIconTileClass,
+  navRowClass,
+} from '@/components/ui/sidebar/itemStyles';
 import type { IconProps } from '@/types';
 
-type SidebarItemProps = {
-  Icon: ComponentType<IconProps>;
-  text: string;
+export type SidebarItemProps = {
+  to: string;
+  label: string;
+  icon: ComponentType<IconProps>;
   alert?: boolean;
 };
 
-const SidebarItem = ({ Icon, text, alert }: SidebarItemProps) => {
-  const { expanded } = useContext(SidebarContext);
-  const [active, setActive] = useState(false);
+const SidebarItem = ({
+  to,
+  label,
+  icon: Icon,
+  alert = false,
+}: SidebarItemProps) => {
+  const { expanded } = useSidebar();
 
   return (
-    <NavLink
-      to={`/admin/${text}`}
-      className={({ isActive }) => {
-        setActive(isActive);
-        return undefined;
-      }}
-    >
-      <li
-        className={`relative flex items-center p-3 my-1 font-medium rounded-md cursor-pointer transition-colors group ${
-          active
-            ? 'bg-gradient-background text-body'
-            : 'hover:bg-gradient-background text-body-700'
-        }`}
+    <li>
+      <NavLink
+        to={to}
+        title={!expanded ? label : undefined}
+        className={({ isActive }) => navRowClass({ expanded, isActive })}
       >
-        <Icon
-          className={`w-7 h-7 hover:fill-body-700 mr-2 ${active && 'fill-body'}`}
-        />
-        <span
-          className={`overflow-hidden capitalize transition-all ${
-            expanded ? 'w-52 ml-3' : 'w-0'
-          }`}
-        >
-          {text}
-        </span>
-        {alert && (
-          <div
-            className={`absolute right-2 w-2 h-2 rounded bg-red ${
-              expanded ? '' : 'top-2'
-            }`}
-          />
+        {({ isActive }) => (
+          <>
+            {isActive && expanded && (
+              <span
+                className="absolute inset-0 rounded-xl bg-gradient-idea-blue"
+                aria-hidden
+              />
+            )}
+            {isActive && expanded && (
+              <span
+                className="absolute left-0 top-1/2 z-20 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-blue"
+                aria-hidden
+              />
+            )}
+
+            <span className={`relative z-10 ${ICON_SLOT}`}>
+              <span className={navIconTileClass({ expanded, isActive })}>
+                <Icon className={navIconClass(isActive)} />
+              </span>
+            </span>
+
+            <span className={collapseLabelClass(expanded)}>{label}</span>
+
+            {alert && expanded && (
+              <span
+                className="relative z-10 ml-auto h-2 w-2 shrink-0 rounded-full bg-red"
+                aria-label="Notification"
+              />
+            )}
+
+            {!expanded && (
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-lg border border-border/60 bg-primary px-2.5 py-1.5 text-xs font-medium text-body opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+              >
+                {label}
+              </span>
+            )}
+          </>
         )}
-        {!expanded && (
-          <div
-            className={`absolute left-full capitalize rounded-md px-2 py-1 ml-6 bg-background-alt text-body-700 shadow-lg border border-border text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0 z-30`}
-          >
-            {text}
-          </div>
-        )}
-      </li>
-    </NavLink>
+      </NavLink>
+    </li>
   );
 };
 

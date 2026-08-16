@@ -68,14 +68,8 @@ const ChatListItem = ({
               : ''
         }`}
       >
-        <div className="relative">
-          <AvatarCard avatars={avatar} />
-          {!groupChat && isOnline ? (
-            <span
-              className="absolute bottom-0.5 right-1.5 h-3 w-3 rounded-full border-2 border-background bg-green md:bottom-1 md:right-2"
-              aria-hidden
-            />
-          ) : null}
+        <div className="relative overflow-visible">
+          <AvatarCard avatars={avatar} showOnline={!groupChat && isOnline} />
         </div>
 
         <div className="min-w-0 flex-1">

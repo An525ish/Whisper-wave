@@ -33,7 +33,8 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
   const avatarContent = (sizeClass: string, borderClass: string) => (
     <>
       <div className={`${sizeClass} overflow-hidden rounded-full`}>
-        <Image src={p.avatarSrc} className="h-full w-full object-cover" alt={p.name} />
+        {/* Largest profile slot is h-24 w-24 (96px). 192 = 2× for retina. */}
+        <Image src={p.avatarSrc} className="h-full w-full object-cover" alt={p.name} displayWidth={192} />
       </div>
       {p.canEdit ? (
         <>

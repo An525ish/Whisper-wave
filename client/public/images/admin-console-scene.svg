@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 320" fill="none" role="img" aria-hidden="true">
+  <defs>
+    <linearGradient id="ac-wave" x1="40" y1="180" x2="380" y2="240" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5698ff" stop-opacity="0.12"/>
+      <stop offset="0.5" stop-color="#5698ff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#01c36d" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="ac-panel" x1="118" y1="52" x2="302" y2="248" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#393046"/>
+      <stop offset="1" stop-color="#2a2136"/>
+    </linearGradient>
+    <linearGradient id="ac-screen" x1="130" y1="72" x2="290" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#211a2a"/>
+      <stop offset="1" stop-color="#1a1522"/>
+    </linearGradient>
+    <radialGradient id="ac-glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(210 150) rotate(90) scale(140 110)">
+      <stop stop-color="#5698ff" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#5698ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ac-shield" x1="300" y1="88" x2="340" y2="148" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5698ff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#01c36d" stop-opacity="0.85"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="210" cy="165" rx="150" ry="110" fill="url(#ac-glow)"/>
+
+  <path d="M28 248 C 90 220, 140 270, 210 248 S 330 210, 392 248" stroke="url(#ac-wave)" stroke-width="18" stroke-linecap="round" opacity="0.4"/>
+  <path d="M40 262 C 100 240, 150 278, 220 258 S 340 228, 380 264" stroke="#5698ff" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- monitor -->
+  <rect x="108" y="56" width="204" height="148" rx="16" fill="url(#ac-panel)" stroke="#ebecec" stroke-opacity="0.12"/>
+  <rect x="120" y="68" width="180" height="116" rx="10" fill="url(#ac-screen)" stroke="#5698ff" stroke-opacity="0.15"/>
+
+  <!-- top bar -->
+  <rect x="132" y="80" width="48" height="6" rx="3" fill="#5698ff" fill-opacity="0.55"/>
+  <rect x="132" y="92" width="72" height="4" rx="2" fill="#ebecec" fill-opacity="0.15"/>
+  <circle cx="282" cy="83" r="4" fill="#01c36d" fill-opacity="0.85"/>
+  <circle cx="270" cy="83" r="4" fill="#ebecec" fill-opacity="0.2"/>
+
+  <!-- chart bars -->
+  <rect x="140" y="148" width="14" height="28" rx="4" fill="#5698ff" fill-opacity="0.35"/>
+  <rect x="162" y="132" width="14" height="44" rx="4" fill="#5698ff" fill-opacity="0.55"/>
+  <rect x="184" y="140" width="14" height="36" rx="4" fill="#01c36d" fill-opacity="0.5"/>
+  <rect x="206" y="124" width="14" height="52" rx="4" fill="#01c36d" fill-opacity="0.75"/>
+  <rect x="228" y="136" width="14" height="40" rx="4" fill="#5698ff" fill-opacity="0.45"/>
+
+  <!-- line chart -->
+  <path d="M140 118 L162 108 L184 114 L206 98 L228 104 L250 92 L272 100" stroke="#01c36d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+  <circle cx="272" cy="100" r="3.5" fill="#01c36d"/>
+
+  <!-- side stat cards -->
+  <rect x="252" y="112" width="38" height="22" rx="6" fill="#2a2136" stroke="#ebecec" stroke-opacity="0.1"/>
+  <rect x="258" y="118" width="20" height="3" rx="1.5" fill="#5698ff" fill-opacity="0.6"/>
+  <rect x="258" y="125" width="14" height="3" rx="1.5" fill="#ebecec" fill-opacity="0.2"/>
+
+  <rect x="252" y="140" width="38" height="22" rx="6" fill="#2a2136" stroke="#01c36d" stroke-opacity="0.2"/>
+  <rect x="258" y="146" width="16" height="3" rx="1.5" fill="#01c36d" fill-opacity="0.65"/>
+  <rect x="258" y="153" width="22" height="3" rx="1.5" fill="#ebecec" fill-opacity="0.15"/>
+
+  <!-- stand -->
+  <path d="M178 204 H238 V214 H178 Z" fill="#393046"/>
+  <rect x="164" y="214" width="88" height="8" rx="4" fill="#2a2136" stroke="#ebecec" stroke-opacity="0.1"/>
+
+  <!-- shield lock -->
+  <path d="M320 98 C320 88 332 82 340 86 V108 C340 124 320 136 320 136 C320 136 300 124 300 108 V86 C308 82 320 88 320 98Z" fill="url(#ac-shield)" stroke="#ebecec" stroke-opacity="0.15"/>
+  <rect x="316" y="104" width="8" height="10" rx="2" fill="#211a2a"/>
+  <path d="M314 104 C314 100 316 98 320 98 C324 98 326 100 326 104" stroke="#211a2a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- floating nodes -->
+  <circle cx="88" cy="118" r="20" fill="#2a2136" stroke="#5698ff" stroke-opacity="0.4" stroke-width="1.5"/>
+  <circle cx="88" cy="118" r="7" fill="#5698ff" fill-opacity="0.85"/>
+
+  <circle cx="352" cy="178" r="16" fill="#2a2136" stroke="#01c36d" stroke-opacity="0.35" stroke-width="1.5"/>
+  <circle cx="352" cy="178" r="5" fill="#01c36d"/>
+
+  <circle cx="102" cy="198" r="12" fill="#2a2136" stroke="#ebecec" stroke-opacity="0.18"/>
+  <circle cx="102" cy="198" r="4" fill="#ebecec" fill-opacity="0.45"/>
+
+  <path d="M108 118 H120" stroke="#5698ff" stroke-opacity="0.35" stroke-dasharray="3 4"/>
+  <path d="M300 118 H308" stroke="#5698ff" stroke-opacity="0.3" stroke-dasharray="3 4"/>
+  <path d="M114 198 H120" stroke="#ebecec" stroke-opacity="0.18" stroke-dasharray="3 4"/>
+
+  <circle cx="210" cy="154" r="78" stroke="#5698ff" stroke-opacity="0.1" stroke-width="1"/>
+  <circle cx="210" cy="154" r="102" stroke="#5698ff" stroke-opacity="0.06" stroke-width="1"/>
+</svg>

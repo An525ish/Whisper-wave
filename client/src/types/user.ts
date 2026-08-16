@@ -38,7 +38,10 @@ export type AdminStats = {
   chats: number;
   onlineUsers: number;
   messages: number;
+  pendingRequests: number;
   newUsersSeries?: number[];
   messagesSeries?: number[];
+  groupsSeries?: number[];
+  requestsSeries?: number[];
   seriesLabels?: string[];
 };

@@ -56,6 +56,7 @@ messageSchema.index({ chat: 1, status: 1, createdAt: -1 });
 messageSchema.index({ chat: 1, sender: 1, createdAt: -1 });
 // markReadByUser updateMany: chat + sender≠ + createdAt range
 messageSchema.index({ chat: 1, createdAt: -1 });
+messageSchema.index({ createdAt: -1 });
 
 export const Message =
   (mongoose.models.Message as mongoose.Model<IMessage> | undefined) ||

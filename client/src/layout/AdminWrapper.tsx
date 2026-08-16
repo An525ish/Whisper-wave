@@ -1,57 +1,33 @@
-import ChatIcon from '@/components/ui/icons/Chat';
-import CreateGroupIcon from '@/components/ui/icons/CreateGroup';
-import DashboardIcon from '@/components/ui/icons/Dashboard';
-import MembersIcon from '@/components/ui/icons/Members';
+import { ADMIN_NAV_ITEMS } from '@/components/ui/sidebar/adminNavItems';
 import Sidebar from '@/components/ui/sidebar/Sidebar';
 import SidebarItem from '@/components/ui/sidebar/SidebarItem';
 import { Outlet } from 'react-router-dom';
 
-const sidebarItems = Object.freeze([
-    {
-        id: 'dashboard',
-        icon: DashboardIcon,
-        text: 'dashboard',
-        alert: false
-    },
-    {
-        id: 'users',
-        icon: MembersIcon,
-        text: 'users',
-        alert: false
-    },
-    {
-        id: 'groups',
-        icon: CreateGroupIcon,
-        text: 'groups',
-        alert: false
-    },
-    {
-        id: 'messages',
-        icon: ChatIcon,
-        text: 'messages',
-        alert: false
-    },
-]);
+const AdminWrapper = () => (
+  <div className="flex h-dvh overflow-hidden bg-background">
+    <Sidebar>
+      {ADMIN_NAV_ITEMS.map((item) => (
+        <SidebarItem
+          key={item.id}
+          to={item.to}
+          label={item.label}
+          icon={item.icon}
+        />
+      ))}
+    </Sidebar>
 
-const AdminWrapper = () => {
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="auth-ambience pointer-events-none absolute inset-0" aria-hidden>
+        <div className="auth-ambience__mesh opacity-15" />
+        <div className="auth-ambience__glow auth-ambience__glow--a opacity-60" />
+        <div className="auth-ambience__glow auth-ambience__glow--b opacity-80" />
+      </div>
 
-    return (
-        <div className="flex min-h-dvh">
-            <Sidebar>
-                {sidebarItems.map(item => (
-                    <SidebarItem
-                        key={item.id}
-                        Icon={item.icon}
-                        text={item.text}
-                        alert={item.alert}
-                    />
-                ))}
-            </Sidebar>
-            <main className="min-h-0 h-dvh w-full overflow-y-auto p-4 scrollbar-hide">
-                <Outlet />
-            </main>
-        </div>
-    );
-}
+      <main className="relative z-10 flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain px-6 py-6 scrollbar-hide lg:px-8 lg:py-7">
+        <Outlet />
+      </main>
+    </div>
+  </div>
+);
 
 export default AdminWrapper;

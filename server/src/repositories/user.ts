@@ -1,4 +1,4 @@
-import type { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { User } from '../models/user.js';
 import type { AdminUserListItem } from '../types/admin.js';
 import type {
@@ -7,6 +7,7 @@ import type {
   LeanUser,
   UpdateUserPatch,
   UserAuthRecord,
+  UserAvatar,
   UserNameAvatar,
   UserSearchRecord,
 } from '../types/user.js';
@@ -120,12 +121,93 @@ export const findExcludingIdsByName = async (
 
 export const countAll = async (): Promise<number> => User.countDocuments();
 
+const escapeRegex = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const adminUserFilter = (q?: string): Record<string, unknown> => {
+  const raw = q?.trim();
+  if (!raw) return {};
+
+  const contains = (term: string) => ({
+    $regex: escapeRegex(term),
+    $options: 'i',
+  });
+
+  // @handle — admins often paste usernames with the @ prefix
+  if (raw.startsWith('@')) {
+    const handle = raw.slice(1).trim();
+    if (!handle) return {};
+    const match = contains(handle);
+    return { $or: [{ username: match }, { name: match }, { email: match }] };
+  }
+
+  // email-shaped query (e.g. john@example.com)
+  if (raw.includes('@')) {
+    return { email: contains(raw) };
+  }
+
+  const match = contains(raw);
+  return { $or: [{ name: match }, { username: match }, { email: match }] };
+};
+
+export const countForAdmin = async (q?: string): Promise<number> =>
+  User.countDocuments(adminUserFilter(q));
+
+export const listForAdminPage = async ({
+  limit,
+  before,
+  q,
+}: {
+  limit: number;
+  before?: Date;
+  q?: string;
+}): Promise<AdminUserListItem[]> => {
+  const filter: Record<string, unknown> = { ...adminUserFilter(q) };
+  if (before) filter.createdAt = { $lt: before };
+
+  return User.find(filter)
+    .select('name username avatar email bio lastSeen createdAt')
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean<AdminUserListItem[]>();
+};
+
+export const findByIdForAdmin = async (
+  id: string
+): Promise<AdminUserListItem | null> => {
+  if (!Types.ObjectId.isValid(id)) return null;
+  return User.findById(id)
+    .select('name username avatar email bio lastSeen createdAt')
+    .lean<AdminUserListItem>();
+};
+
+/** @deprecated Use listForAdminPage */
 export const listForAdmin = async (): Promise<AdminUserListItem[]> =>
-  User.find()
+  listForAdminPage({ limit: 100 });
+
+export const listRecentSignupsForActivity = async ({
+  limit,
+  before,
+}: {
+  limit: number;
+  before?: Date;
+}): Promise<AdminUserListItem[]> => {
+  const filter: Record<string, unknown> = {};
+  if (before) filter.createdAt = { $lt: before };
+
+  return User.find(filter)
     .select('name username avatar createdAt')
     .sort({ createdAt: -1 })
-    .limit(100)
+    .limit(limit)
     .lean<AdminUserListItem[]>();
+};
+
+export const findManyByIdsNameAvatar = async (
+  ids: string[]
+): Promise<Array<{ _id: Types.ObjectId; name: string; username: string; avatar?: UserAvatar }>> =>
+  User.find({ _id: { $in: ids } })
+    .select('name username avatar')
+    .lean<Array<{ _id: Types.ObjectId; name: string; username: string; avatar?: UserAvatar }>>();
 
 export const countCreatedByDay = async (
   start: Date,
@@ -136,7 +218,11 @@ export const countCreatedByDay = async (
     {
       $group: {
         _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+          $dateToString: {
+            format: '%Y-%m-%d',
+            date: '$createdAt',
+            timezone: 'UTC',
+          },
         },
         count: { $sum: 1 },
       },

@@ -138,7 +138,7 @@ const MessageBubble = ({
       >
         {showAvatar ? (
           <div className="mb-0.5 h-7 w-7 shrink-0 overflow-hidden rounded-full ring-1 ring-white/10">
-            <Image src={avatarSrc} alt={displayName} className="h-full w-full object-cover" />
+            <Image src={avatarSrc} alt={displayName} className="h-full w-full object-cover" displayWidth={64} />
           </div>
         ) : null}
         <div
@@ -162,7 +162,7 @@ const MessageBubble = ({
     >
       {showAvatar ? (
         <div className="mb-0.5 h-7 w-7 shrink-0 overflow-hidden rounded-full bg-background-alt ring-1 ring-white/10">
-          <Image src={avatarSrc} alt={displayName} className="h-full w-full object-cover" />
+          <Image src={avatarSrc} alt={displayName} className="h-full w-full object-cover" displayWidth={64} />
         </div>
       ) : null}
 

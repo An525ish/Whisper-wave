@@ -13,6 +13,7 @@ export type { IconProps } from '@/types/icon';
 
 export type SidebarContextValue = {
   expanded: boolean;
+  toggle: () => void;
 };
 
 export type FriendSuggestion = Pick<User, '_id' | 'name'> & {

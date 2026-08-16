@@ -432,13 +432,179 @@ export const markReadByUser = async (
   );
 };
 
-export const listForAdmin = async () =>
-  Message.find()
+const adminMessageFilter = ({
+  status,
+  q,
+  senderId,
+}: {
+  status?: 'all' | 'sent' | 'failed';
+  q?: string;
+  senderId?: string;
+}): Record<string, unknown> => {
+  const filter: Record<string, unknown> = {};
+  if (status && status !== 'all') filter.status = status;
+  const term = q?.trim();
+  if (term) filter.content = { $regex: escapeRegex(term), $options: 'i' };
+  if (senderId) filter.sender = senderId;
+  return filter;
+};
+
+export const countForAdmin = async ({
+  status,
+  q,
+  senderId,
+}: {
+  status?: 'all' | 'sent' | 'failed';
+  q?: string;
+  senderId?: string;
+}): Promise<number> => Message.countDocuments(adminMessageFilter({ status, q, senderId }));
+
+export const listForAdminPage = async ({
+  limit,
+  before,
+  status,
+  q,
+  senderId,
+}: {
+  limit: number;
+  before?: Date;
+  status?: 'all' | 'sent' | 'failed';
+  q?: string;
+  senderId?: string;
+}) => {
+  const filter: Record<string, unknown> = { ...adminMessageFilter({ status, q, senderId }) };
+  if (before) filter.createdAt = { $lt: before };
+
+  return Message.find(filter)
     .sort({ createdAt: -1 })
-    .limit(50)
+    .limit(limit)
     .populate('sender', 'name username avatar')
     .populate('chat', 'name groupChat')
     .lean();
+};
+
+/** @deprecated Use listForAdminPage */
+export const listForAdmin = async () => listForAdminPage({ limit: 50 });
+
+/**
+ * fileType stored by upload middleware is 'media' (images/video/audio) or
+ * 'document'. GIFs from the Klip service are stored with their MIME type
+ * (e.g. 'image/gif'). Differentiate images vs videos by Cloudinary URL path.
+ */
+const adminAttachmentFilter = ({
+  q,
+  senderId,
+  kind,
+}: {
+  q?: string;
+  senderId?: string;
+  kind?: string;
+}): Record<string, unknown> => {
+  const filter: Record<string, unknown> = {};
+
+  if (kind === 'images') {
+    // fileType='media' + Cloudinary image path + not a GIF filename
+    filter.attachments = {
+      $elemMatch: {
+        fileType: 'media',
+        url: { $regex: /\/image\/upload\//i },
+        name: { $not: /\.gif$/i },
+      },
+    };
+  } else if (kind === 'videos') {
+    // fileType='media' + Cloudinary video path + not an audio extension
+    filter.attachments = {
+      $elemMatch: {
+        fileType: 'media',
+        url: { $regex: /\/video\/upload\//i },
+        name: { $not: /\.(mp3|wav|ogg|aac|m4a|flac|wma)$/i },
+      },
+    };
+  } else if (kind === 'gifs') {
+    // GIF MIME type (Klip) OR .gif filename (uploaded)
+    filter.attachments = {
+      $elemMatch: {
+        $or: [
+          { fileType: { $regex: /^image\/gif$/i } },
+          { name: { $regex: /\.gif$/i } },
+        ],
+      },
+    };
+  } else if (kind === 'docs') {
+    filter.attachments = { $elemMatch: { fileType: 'document' } };
+  } else if (kind === 'links') {
+    filter.content = { $regex: /https?:\/\//i };
+  } else {
+    // 'all' — any message with at least one attachment
+    filter['attachments.0'] = { $exists: true };
+  }
+
+  if (senderId) filter.sender = senderId;
+  const term = q?.trim();
+  if (term) {
+    if (kind === 'links') {
+      filter.content = { $regex: escapeRegex(term), $options: 'i' };
+    } else {
+      filter['attachments.name'] = { $regex: escapeRegex(term), $options: 'i' };
+    }
+  }
+  return filter;
+};
+
+export const countAttachmentsForAdmin = async ({
+  q,
+  senderId,
+  kind,
+}: {
+  q?: string;
+  senderId?: string;
+  kind?: string;
+}): Promise<number> =>
+  Message.countDocuments(adminAttachmentFilter({ q, senderId, kind }));
+
+export const listAttachmentsForAdmin = async ({
+  limit,
+  before,
+  q,
+  senderId,
+  kind,
+}: {
+  limit: number;
+  before?: Date;
+  q?: string;
+  senderId?: string;
+  kind?: string;
+}) => {
+  const filter: Record<string, unknown> = { ...adminAttachmentFilter({ q, senderId, kind }) };
+  if (before) filter.createdAt = { $lt: before };
+
+  return Message.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .select('attachments content sender chat createdAt')
+    .populate('sender', 'name username avatar')
+    .populate('chat', 'name groupChat')
+    .lean();
+};
+
+export const listRecentForActivity = async ({
+  limit,
+  before,
+}: {
+  limit: number;
+  before?: Date;
+}) => {
+  const filter: Record<string, unknown> = {};
+  if (before) filter.createdAt = { $lt: before };
+
+  return Message.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .select('content attachments status createdAt sender chat')
+    .populate('sender', 'name username avatar')
+    .populate('chat', 'name groupChat')
+    .lean();
+};
 
 export const countCreatedByDay = async (
   start: Date,
@@ -449,7 +615,11 @@ export const countCreatedByDay = async (
     {
       $group: {
         _id: {
-          $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+          $dateToString: {
+            format: '%Y-%m-%d',
+            date: '$createdAt',
+            timezone: 'UTC',
+          },
         },
         count: { $sum: 1 },
       },
