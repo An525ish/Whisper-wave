@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import AvatarSkeleton from '@/components/ui/skeletons/AvatarSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
@@ -24,6 +24,15 @@ const ChatList = ({
   const typingChatIds = usePresenceStore((s) => s.typingChatIds);
   const parentRef = useRef<HTMLDivElement | null>(null);
   const selfId = user?._id ? String(user._id) : '';
+  const prevFirstIdRef = useRef<string | undefined>(undefined);
+
+  // Scroll to top whenever the leading chat changes (new message reordered it).
+  useEffect(() => {
+    const firstId = chats[0]?._id;
+    if (!firstId || firstId === prevFirstIdRef.current) return;
+    prevFirstIdRef.current = firstId;
+    if (parentRef.current) parentRef.current.scrollTop = 0;
+  }, [chats]);
 
   const virtualizer = useVirtualizer({
     count: chats.length,
