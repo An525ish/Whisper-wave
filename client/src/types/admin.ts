@@ -106,7 +106,7 @@ export type AdminMessagesPage = {
   total?: number;
 };
 
-export type AdminActivityFilter = 'all' | 'messages' | 'signups';
+export type AdminActivityFilter = 'all' | 'messages' | 'signups' | 'admin-logs';
 
 export type TitleStat = {
   title: string;
@@ -219,4 +219,20 @@ export type DashboardCompositionSegment = {
   label: string;
   value: number;
   glow: string;
+};
+
+export type AdminImpersonationLogEntry = {
+  _id: string;
+  adminId: string;
+  targetUserId: string;
+  targetUsername: string;
+  targetName: string;
+  startedAt: string;
+};
+
+export type AdminImpersonationLogsPage = {
+  logs: AdminImpersonationLogEntry[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  total?: number;
 };

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth';
 
 export function useProfileQuery(enabled = true) {
   const setUser = useAuthStore((s) => s.setUser);
+  const setImpersonated = useAuthStore((s) => s.setImpersonated);
   const clear = useAuthStore((s) => s.clear);
 
   return useQuery({
@@ -14,6 +15,7 @@ export function useProfileQuery(enabled = true) {
       try {
         const res = await authApi.getProfile();
         setUser(res.user);
+        setImpersonated(res.isImpersonated ?? false);
         return res.user;
       } catch (error) {
         clear();

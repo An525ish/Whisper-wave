@@ -140,6 +140,11 @@ export const deleteGroup: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const markChatRead: RequestHandler = catchAsync(async (req, res) => {
+  // Ghost mode: never mark reads — would clear unread badges / send read receipts.
+  if (req.isImpersonated) {
+    res.status(200).json({ success: true, data: { chatId: param(req.params.chatId), lastReadAt: null, lastReadMessageId: null } });
+    return;
+  }
   const body = req.body as { lastReadMessageId?: string };
   const result = await chatService.markChatRead(
     req.userId!,
@@ -158,6 +163,11 @@ export const markChatRead: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const markAllChatsRead: RequestHandler = catchAsync(async (req, res) => {
+  // Ghost mode: no-op.
+  if (req.isImpersonated) {
+    res.status(200).json({ success: true, message: 'All chats marked as read', data: { marked: 0, lastReadAt: null } });
+    return;
+  }
   const result = await chatService.markAllChatsRead(req.userId!);
   flushNotifications(getIo(req), result.notifications);
   res.status(200).json({

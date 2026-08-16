@@ -72,6 +72,8 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
 }, ref) => {
   const socket = useSocket();
   const user = useAuthStore((s) => s.user);
+  const isImpersonated = useAuthStore((s) => s.isImpersonated);
+  const actAsUser = useAuthStore((s) => s.actAsUser);
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
 
@@ -200,6 +202,8 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   const handleSubmit = async () => {
     if (editingMessageId) { await saveEdit(); return; }
     if (!message.trim() && (!attachments || attachments.length === 0)) return;
+    // Ghost mode without "act as user" — block sends silently.
+    if (isImpersonated && !actAsUser) { toast.error('Sends are blocked in ghost mode — toggle "Act as user" in the banner.'); return; }
     if (isTyping) clearTypingState(true);
 
     if (!attachments || attachments.length === 0) {

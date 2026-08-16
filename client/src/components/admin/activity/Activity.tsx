@@ -1,7 +1,9 @@
 import ActivityFeed from './feed/ActivityFeed';
+import AdminLogsSection from './feed/AdminLogsSection';
 import ActivityHeader from './header/ActivityHeader';
 import ActivityStats from './stats/ActivityStats';
 import OnlinePanel from './presence/OnlinePanel';
+import ActivityFilterTabs from './feed/ActivityFilterTabs';
 import { useActivityPage } from '@/hooks/admin';
 
 const Activity = () => {
@@ -9,6 +11,7 @@ const Activity = () => {
     scrollRef,
     filter,
     setFilter,
+    isAdminLogsTab,
     presenceUpdatedAt,
     onlineUsers,
     onlineCount,
@@ -17,6 +20,12 @@ const Activity = () => {
     platformMessages,
     events,
     grouped,
+    impersonationLogs,
+    logsError,
+    logsHasNextPage,
+    logsFetchingNextPage,
+    logsFetchNextPage,
+    logsSentinelEnabled,
     refreshFeed,
     isInitialLoad,
     eventsError,
@@ -47,20 +56,44 @@ const Activity = () => {
           <OnlinePanel users={onlineUsers} count={onlineCount} extra={extraOnline} />
         </aside>
 
-        <ActivityFeed
-          scrollRef={scrollRef}
-          filter={filter}
-          onFilterChange={setFilter}
-          isInitialLoad={isInitialLoad}
-          eventsError={eventsError}
-          events={events}
-          grouped={grouped}
-          hasNextPage={Boolean(hasNextPage)}
-          isFetchingNextPage={isFetchingNextPage}
-          sentinelEnabled={sentinelEnabled}
-          onLoadMore={() => void fetchNextPage()}
-          onRetry={() => void refetchEvents()}
-        />
+        {isAdminLogsTab ? (
+          <section className="flex min-h-0 flex-1 flex-col lg:col-span-8">
+            <div className="shrink-0 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="font-display text-xl leading-none tracking-tight text-body">Admin logs</h2>
+                <p className="mt-1.5 text-sm text-body-300">All impersonation sessions</p>
+              </div>
+              <ActivityFilterTabs filter={filter} onChange={setFilter} />
+            </div>
+            <div className="mt-6 min-h-0 flex-1">
+              <AdminLogsSection
+                scrollRef={scrollRef}
+                logs={impersonationLogs}
+                isLoading={isInitialLoad}
+                isError={Boolean(logsError)}
+                hasNextPage={Boolean(logsHasNextPage)}
+                isFetchingNextPage={logsFetchingNextPage}
+                sentinelEnabled={logsSentinelEnabled}
+                onLoadMore={() => void logsFetchNextPage()}
+              />
+            </div>
+          </section>
+        ) : (
+          <ActivityFeed
+            scrollRef={scrollRef}
+            filter={filter}
+            onFilterChange={setFilter}
+            isInitialLoad={isInitialLoad}
+            eventsError={eventsError}
+            events={events}
+            grouped={grouped}
+            hasNextPage={Boolean(hasNextPage)}
+            isFetchingNextPage={isFetchingNextPage}
+            sentinelEnabled={sentinelEnabled}
+            onLoadMore={() => void fetchNextPage()}
+            onRetry={() => void refetchEvents()}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { SOCKET_EVENTS } from '@/constants/socket';
+import { useAuthStore } from '@/stores/auth';
 
 interface Params {
   chatId: string | undefined;
@@ -9,6 +10,7 @@ interface Params {
 }
 
 export function useTypingIndicator({ chatId, socket, memberIdsRef }: Params) {
+  const isImpersonated = useAuthStore((s) => s.isImpersonated);
   const [isTyping, setIsTyping] = useState(false);
   const isTypingRef = useRef(false);
   isTypingRef.current = isTyping;
@@ -17,16 +19,16 @@ export function useTypingIndicator({ chatId, socket, memberIdsRef }: Params) {
   const emitStopTyping = useCallback(() => {
     const id = chatId;
     const members = memberIdsRef.current;
-    if (!id || members.length === 0) return;
+    if (isImpersonated || !id || members.length === 0) return;
     socket.emit(SOCKET_EVENTS.STOP_TYPING, { members, chatId: id });
-  }, [chatId, memberIdsRef, socket]);
+  }, [chatId, isImpersonated, memberIdsRef, socket]);
 
   const emitStartTyping = useCallback(() => {
     const id = chatId;
     const members = memberIdsRef.current;
-    if (!id || members.length === 0) return;
+    if (isImpersonated || !id || members.length === 0) return;
     socket.emit(SOCKET_EVENTS.START_TYPING, { members, chatId: id });
-  }, [chatId, memberIdsRef, socket]);
+  }, [chatId, isImpersonated, memberIdsRef, socket]);
 
   const clearTypingState = useCallback(
     (notifyPeers: boolean) => {
@@ -49,7 +51,7 @@ export function useTypingIndicator({ chatId, socket, memberIdsRef }: Params) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      if (isTypingRef.current) {
+      if (isTypingRef.current && !isImpersonated) {
         const id = chatId;
         const members = memberIdsRef.current;
         if (id && members.length > 0) {

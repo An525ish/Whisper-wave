@@ -1,6 +1,6 @@
 import type { ApiSuccess, User } from '@/types';
 
-export type ProfileResponse = ApiSuccess & { user: User };
+export type ProfileResponse = ApiSuccess & { user: User; isImpersonated?: boolean };
 export type AuthDataResponse = ApiSuccess & { data: User };
 
 export type LoginForm = {

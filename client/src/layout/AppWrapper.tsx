@@ -4,7 +4,9 @@ import { SOCKET_EVENTS } from '@/constants/socket';
 import { useNotificationsStore } from '@/stores/notifications';
 import { usePresenceStore } from '@/stores/chat/presence';
 import { useProfileUiStore } from '@/stores/profile';
+import { useAuthStore } from '@/stores/auth';
 import Title from '@/components/ui/Title';
+import GhostBanner from '@/components/ui/GhostBanner';
 import ChatListPanel from '@/components/chat/list/ChatListPanel';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfilePanel from '@/components/profile/ProfilePanel';
@@ -180,9 +182,12 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
 
   useSocketEvent(socket, events as Parameters<typeof useSocketEvent>[1]);
 
+  const isImpersonated = useAuthStore((s) => s.isImpersonated);
+
   return (
     <>
       <Title />
+      {isImpersonated && <GhostBanner />}
 
       <main className="flex h-dvh min-h-0 gap-0 overflow-hidden p-0 pb-[env(safe-area-inset-bottom)] md:gap-2 md:px-3 md:pb-2 md:pt-1.5 lg:gap-3 lg:px-4 lg:pb-3 lg:pt-2">
         {/* Phone/tablet portrait: one pane. md+: list + chat. lg+: + profile. */}

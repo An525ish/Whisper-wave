@@ -62,3 +62,10 @@ export const adminAttachmentsQuerySchema = z.object({
 });
 
 export type AdminAttachmentsQuery = z.infer<typeof adminAttachmentsQuerySchema>;
+
+export const adminImpersonationLogsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  before: z.string().min(1).optional(),
+});
+
+export type AdminImpersonationLogsQuery = z.infer<typeof adminImpersonationLogsQuerySchema>;

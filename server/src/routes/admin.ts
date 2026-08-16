@@ -5,6 +5,7 @@ import {
   deleteUser,
   getActivityEvents,
   getActivityPresence,
+  getImpersonationLogs,
   getStats,
   getUser,
   impersonateUser,
@@ -23,6 +24,7 @@ import {
   adminActivityEventsQuerySchema,
   adminAttachmentsQuerySchema,
   adminIdParamSchema,
+  adminImpersonationLogsQuerySchema,
   adminLoginSchema,
   adminRemoveMemberParamSchema,
   adminUsersQuerySchema,
@@ -86,3 +88,9 @@ adminRouter.delete(
 );
 adminRouter.post('/impersonate/:id', requireAdmin, validate(adminIdParamSchema, 'params'), impersonateUser);
 adminRouter.post('/messages/:id/retry', requireAdmin, validate(adminIdParamSchema, 'params'), retryMessage);
+adminRouter.get(
+  '/impersonation-logs',
+  requireAdmin,
+  validate(adminImpersonationLogsQuerySchema, 'query'),
+  getImpersonationLogs
+);

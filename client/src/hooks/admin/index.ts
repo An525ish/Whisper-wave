@@ -253,6 +253,22 @@ export function useImpersonateMutation() {
   });
 }
 
+export function useAdminImpersonationLogsQuery(enabled = true) {
+  return useInfiniteQuery({
+    queryKey: ['adminImpersonationLogs'],
+    queryFn: ({ pageParam }) =>
+      adminApi.getImpersonationLogs({
+        limit: adminApi.IMPERSONATION_LOGS_PAGE_SIZE,
+        before: pageParam,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 export { useActivityPage } from '@/hooks/admin/useActivityPage';
 export { useAttachmentsPage } from '@/hooks/admin/useAttachmentsPage';
 export { useDashboardPage } from '@/hooks/admin/useDashboardPage';

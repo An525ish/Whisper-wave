@@ -23,9 +23,11 @@ import { AppError } from '../utils/AppError.js';
 import { buildLast7DayBuckets } from '../utils/statsBuckets.js';
 import {
   generateAdminToken,
-  generateToken,
+  generateImpersonationToken,
   verifyAdminToken,
 } from '../utils/token.js';
+import * as impersonationLogRepo from '../repositories/impersonationLog.js';
+import type { ImpersonationLogPage } from '../repositories/impersonationLog.js';
 import type { AdminLoginInput, AdminActivityEventsQuery, AdminUsersQuery, AdminGroupsQuery, AdminMessagesQuery, AdminAttachmentsQuery } from '../validators/admin.js';
 import {
   getOnlineUserIds,
@@ -291,10 +293,30 @@ export const removeGroupMember = async (
   await chatRepo.updateById(groupId, { members: nextMembers, admins: nextAdmins });
 };
 
-export const impersonateUser = async (userId: string): Promise<string> => {
+export const impersonateUser = async (
+  userId: string,
+  adminId: string
+): Promise<string> => {
   const user = await userRepo.findByIdLean(userId);
   if (!user) throw new AppError(404, 'User not found');
-  return generateToken(userId);
+
+  await impersonationLogRepo.create({
+    adminId: adminId ?? 'admin',
+    targetUserId: user._id,
+    targetUsername: user.username,
+    targetName: user.name,
+    startedAt: new Date(),
+  });
+
+  return generateImpersonationToken(userId, adminId);
+};
+
+export const getImpersonationLogs = async (
+  limit: number,
+  before?: string
+): Promise<ImpersonationLogPage> => {
+  const beforeDate = before ? new Date(before) : undefined;
+  return impersonationLogRepo.findPaginated(limit, beforeDate);
 };
 
 const ONLINE_AVATAR_LIMIT = 12;

@@ -26,12 +26,16 @@ export const helmetOptions: HelmetOptions = {
         'https://res.cloudinary.com',
         'https://img.logoipsum.com',
         'https://raw.githubusercontent.com',
+        // GitHub user avatars (e.g. users who linked a GitHub profile picture)
+        'https://avatars.githubusercontent.com',
         'https://www.google.com',
         'https://*.googleusercontent.com',
         // emoji-picker-react (facebook emoji sheet)
         'https://cdn.jsdelivr.net',
         // Klipy GIF / meme CDN
         'https://static.klipy.com',
+        // Faker.js seeded test-data avatars — dev/staging only
+        'https://cloudflare-ipfs.com',
       ],
       'media-src': [
         "'self'",

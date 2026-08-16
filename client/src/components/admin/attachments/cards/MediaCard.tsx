@@ -7,7 +7,6 @@ import {
   kindBadgeClass,
   kindLabel,
 } from '@/utils/admin/attachments';
-import { transformImage } from '@/utils/fileFormat';
 
 type MediaCardProps = {
   item: FlatItem;
@@ -16,7 +15,6 @@ type MediaCardProps = {
 
 const MediaCard = ({ item, onClick }: MediaCardProps) => {
   const { att, msg, rk } = item;
-  const thumbUrl = rk === 'image' ? transformImage(att.url, 400) : att.url;
   const sender = msg.sender;
   const displayName = sender?.name?.trim() || 'Unknown user';
   const username = sender?.username?.trim();
@@ -40,9 +38,10 @@ const MediaCard = ({ item, onClick }: MediaCardProps) => {
         />
       ) : (
         <Image
-          src={thumbUrl}
+          src={att.url}
           alt={fileName}
           displayWidth={400}
+          fallback="/icons/picture-icon.svg"
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:group-hover:scale-100"
         />
       )}

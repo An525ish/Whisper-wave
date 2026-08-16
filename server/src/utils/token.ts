@@ -5,11 +5,24 @@ import { AppError } from './AppError.js';
 
 export type TokenPayload = {
   id: string;
+  impersonated?: true;
+  /** Present only when impersonated is true */
+  adminId?: string;
 };
 
 export const generateToken = (id: string): string => {
   return jwt.sign({ id }, env.ACCESS_TOKEN_SECRET, {
     expiresIn: '15d',
+  } as jwt.SignOptions);
+};
+
+export const generateImpersonationToken = (
+  userId: string,
+  adminId: string
+): string => {
+  const payload: TokenPayload = { id: userId, impersonated: true, adminId };
+  return jwt.sign(payload, env.ACCESS_TOKEN_SECRET, {
+    expiresIn: '2h',
   } as jwt.SignOptions);
 };
 

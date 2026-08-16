@@ -66,11 +66,15 @@ export const registerSocketHandlers = (io: Server): void => {
     }
 
     const userId = user._id.toString();
-    setUserSocket(userId, socket.id);
-    logger.debug({ userId, socketId: socket.id }, 'User connected');
+    const ghostMode = socket.isImpersonated === true;
 
+    if (!ghostMode) {
+      setUserSocket(userId, socket.id);
+      socket.broadcast.emit(USER_ONLINE, { userId });
+    }
+
+    logger.debug({ userId, socketId: socket.id, ghostMode }, 'User connected');
     socket.emit(ONLINE_USERS, { userIds: getOnlineUserIds() });
-    socket.broadcast.emit(USER_ONLINE, { userId });
 
     socket.on(NEW_MESSAGE, async (payload: NewMessagePayload) => {
       try {
@@ -136,7 +140,7 @@ export const registerSocketHandlers = (io: Server): void => {
     });
 
     socket.on(START_TYPING, ({ members, chatId }: TypingPayload) => {
-      if (!chatId || !Array.isArray(members)) return;
+      if (ghostMode || !chatId || !Array.isArray(members)) return;
       // Cap recipients to guard against amplification; DB membership is validated
       // on NEW_MESSAGE — typing hints are low-value and per-keystroke so no DB call.
       const capped = members.slice(0, 50);
@@ -145,16 +149,20 @@ export const registerSocketHandlers = (io: Server): void => {
     });
 
     socket.on(STOP_TYPING, ({ members, chatId }: TypingPayload) => {
-      if (!chatId || !Array.isArray(members)) return;
+      if (ghostMode || !chatId || !Array.isArray(members)) return;
       const capped = members.slice(0, 50);
       const memberSocketIds = getMemberSockets(capped);
       socket.broadcast.to(memberSocketIds).emit(STOP_TYPING, { chatId });
     });
 
     socket.on('disconnect', () => {
-      removeUserSocket(userId, socket.id);
       messageLimiter.remove(socket.id);
-      logger.debug({ userId, socketId: socket.id }, 'User disconnected');
+      logger.debug({ userId, socketId: socket.id, ghostMode }, 'User disconnected');
+
+      // Ghost sessions leave no presence footprint — skip lastSeen + offline broadcast.
+      if (ghostMode) return;
+
+      removeUserSocket(userId, socket.id);
 
       // Only mark the user offline when every tab/device has disconnected.
       if (isUserOnline(userId)) return;
