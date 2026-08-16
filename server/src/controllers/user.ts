@@ -6,7 +6,11 @@ import { catchAsync } from '../utils/catchAsync.js';
 
 export const getProfile: RequestHandler = catchAsync(async (req, res) => {
   const user = await userService.getProfile(req.userId!);
-  res.status(200).json({ success: true, user });
+  res.status(200).json({
+    success: true,
+    user,
+    isImpersonated: req.isImpersonated ?? false,
+  });
 });
 
 export const updateProfile: RequestHandler = catchAsync(async (req, res) => {

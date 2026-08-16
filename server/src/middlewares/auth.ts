@@ -19,6 +19,10 @@ export const auth = (req: Request, _res: Response, next: NextFunction): void => 
   try {
     const payload = verifyToken(accessToken);
     req.userId = payload.id;
+    if (payload.impersonated) {
+      req.isImpersonated = true;
+      req.impersonatingAdminId = payload.adminId;
+    }
     next();
   } catch (error) {
     next(error);
@@ -42,8 +46,8 @@ export const socketAuth = async (
       return;
     }
 
-    const { id } = verifyToken(accessToken);
-    const user = await userRepo.findByIdLean(id);
+    const payload = verifyToken(accessToken);
+    const user = await userRepo.findByIdLean(payload.id);
 
     if (!user) {
       next(new AppError(401, 'No user found'));
@@ -51,6 +55,9 @@ export const socketAuth = async (
     }
 
     socket.user = user;
+    if (payload.impersonated) {
+      socket.isImpersonated = true;
+    }
     next();
   } catch (error) {
     next(error instanceof Error ? error : new Error('Socket auth failed'));

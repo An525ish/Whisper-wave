@@ -4,6 +4,7 @@ import { adminQueryKeys } from '@/hooks/admin/queryKeys';
 import {
   useAdminActivityEventsQuery,
   useAdminActivityPresenceQuery,
+  useAdminImpersonationLogsQuery,
   useAdminStatsQuery,
 } from '@/hooks/admin';
 import type { AdminActivityFilter } from '@/types/admin';
@@ -13,6 +14,8 @@ export function useActivityPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<AdminActivityFilter>('all');
+
+  const isAdminLogsTab = filter === 'admin-logs';
 
   const {
     data: presence,
@@ -29,7 +32,16 @@ export function useActivityPage() {
     fetchNextPage,
     refetch: refetchEvents,
     isRefetching,
-  } = useAdminActivityEventsQuery(filter);
+  } = useAdminActivityEventsQuery(filter, !isAdminLogsTab);
+
+  const {
+    data: logsData,
+    isLoading: logsLoading,
+    isError: logsError,
+    isFetchingNextPage: logsFetchingNextPage,
+    hasNextPage: logsHasNextPage,
+    fetchNextPage: logsFetchNextPage,
+  } = useAdminImpersonationLogsQuery(isAdminLogsTab);
 
   const { data: statsData } = useAdminStatsQuery();
 
@@ -46,18 +58,26 @@ export function useActivityPage() {
 
   const grouped = useMemo(() => groupActivityEvents(events), [events]);
 
+  const impersonationLogs = useMemo(
+    () => logsData?.pages.flatMap((page) => page.logs) ?? [],
+    [logsData],
+  );
+
   const refreshFeed = () => {
     void refetchEvents();
     void queryClient.invalidateQueries({ queryKey: adminQueryKeys.activityPresence });
+    void queryClient.invalidateQueries({ queryKey: ['adminImpersonationLogs'] });
   };
 
-  const isInitialLoad = presenceLoading || eventsLoading;
+  const isInitialLoad = presenceLoading || (isAdminLogsTab ? logsLoading : eventsLoading);
   const sentinelEnabled = !isInitialLoad && !eventsError && events.length > 0;
+  const logsSentinelEnabled = !isInitialLoad && !logsError && impersonationLogs.length > 0;
 
   return {
     scrollRef,
     filter,
     setFilter,
+    isAdminLogsTab,
     presenceUpdatedAt,
     onlineUsers,
     onlineCount,
@@ -66,6 +86,12 @@ export function useActivityPage() {
     platformMessages,
     events,
     grouped,
+    impersonationLogs,
+    logsError,
+    logsHasNextPage,
+    logsFetchingNextPage,
+    logsFetchNextPage,
+    logsSentinelEnabled,
     refreshFeed,
     isInitialLoad,
     eventsError,

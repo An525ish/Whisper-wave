@@ -18,22 +18,26 @@ type ImageProps = {
    * Leave undefined to pass the URL through unchanged (e.g. external URLs).
    */
   displayWidth?: number;
+  /** Override the broken-image fallback (default: avatar placeholder). Use
+   *  '/icons/picture-icon.svg' for image attachments. */
+  fallback?: string;
 } & Omit<ImgHTMLAttributes<HTMLImageElement>, 'src' | 'alt' | 'className'>;
 
-const Image = ({ src, alt, className, displayWidth, onError, onLoad, ...props }: ImageProps) => {
+const Image = ({ src, alt, className, displayWidth, fallback, onError, onLoad, ...props }: ImageProps) => {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const errorFallback = fallback ?? AVATAR_FALLBACK;
 
   useEffect(() => {
     setFailed(false);
     setLoaded(false);
   }, [src]);
 
-  const rawSrc = !src || failed ? AVATAR_FALLBACK : src;
+  const rawSrc = !src || failed ? errorFallback : src;
   const imgSrc = displayWidth ? transformImage(rawSrc, displayWidth) : rawSrc;
 
   const handleError = (event: SyntheticEvent<HTMLImageElement>) => {
-    if (event.currentTarget.src.includes(AVATAR_FALLBACK)) return;
+    if (event.currentTarget.src.includes(errorFallback)) return;
     setFailed(true);
     onError?.(event);
   };

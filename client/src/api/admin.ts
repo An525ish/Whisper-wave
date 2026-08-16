@@ -5,6 +5,7 @@ import type {
   AdminActivityFilter,
   AdminActivityPresence,
   AdminAttachmentsPage,
+  AdminImpersonationLogsPage,
   AttachmentKindFilter,
   AdminMeResponse,
   AdminUserRow,
@@ -120,4 +121,12 @@ export const getAdminAttachments = (params: {
     q: params.q,
     senderId: params.senderId,
     kind: params.kind ?? 'all',
+  });
+
+export const IMPERSONATION_LOGS_PAGE_SIZE = 20;
+
+export const getImpersonationLogs = (params: { limit?: number; before?: string }) =>
+  api.get<ApiSuccess & AdminImpersonationLogsPage>('/admin/impersonation-logs', {
+    limit: params.limit ?? IMPERSONATION_LOGS_PAGE_SIZE,
+    before: params.before,
   });

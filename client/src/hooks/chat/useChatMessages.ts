@@ -8,6 +8,7 @@ import { queryKeys } from '@/hooks/chat';
 import { useNotificationsStore } from '@/stores/notifications';
 import { formatChatDayLabel } from '@/utils/helpers';
 import { useInfiniteMessagesQuery, useMarkChatReadMutation } from '@/hooks/chat/useMessageQueries';
+import { useAuthStore } from '@/stores/auth';
 import type {
   ChatClearedPayload,
   ChatMessage,
@@ -40,6 +41,7 @@ export function useChatMessages({
   const queryClient = useQueryClient();
   const removeMessageNotification = useNotificationsStore((s) => s.removeMessageNotification);
   const markReadMutation = useMarkChatReadMutation();
+  const isImpersonated = useAuthStore((s) => s.isImpersonated);
 
   const {
     data: messagesData,
@@ -139,8 +141,9 @@ export function useChatMessages({
   const markCurrentChatRead = useCallback(() => {
     if (!chatId) return;
     removeMessageNotification({ chatId });
-    markReadMutation.mutate({ chatId });
-  }, [chatId, markReadMutation, removeMessageNotification]);
+    // Ghost mode: skip read marking — would clear unread badges and send read receipts.
+    if (!isImpersonated) markReadMutation.mutate({ chatId });
+  }, [chatId, isImpersonated, markReadMutation, removeMessageNotification]);
 
   // Reset all live state on chat switch
   useEffect(() => {
@@ -148,7 +151,7 @@ export function useChatMessages({
     setPeerLastReadAt(null);
     if (chatId) {
       removeMessageNotification({ chatId });
-      markReadMutation.mutate({ chatId });
+      if (!isImpersonated) markReadMutation.mutate({ chatId });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId]);

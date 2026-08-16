@@ -8,6 +8,7 @@ import type {
   AdminActivityEventsQuery,
   AdminAttachmentsQuery,
   AdminIdParam,
+  AdminImpersonationLogsQuery,
   AdminLoginInput,
   AdminRemoveMemberParam,
   AdminUsersQuery,
@@ -111,12 +112,18 @@ export const removeGroupMember: RequestHandler = catchAsync(async (req, res) => 
 
 export const impersonateUser: RequestHandler = catchAsync(async (req, res) => {
   const { id } = req.params as AdminIdParam;
-  const token = await adminService.impersonateUser(id);
+  const token = await adminService.impersonateUser(id, 'admin');
 
   res
     .status(200)
     .cookie(ACCESS_COOKIE, token, impersonateCookieOptions)
     .json({ success: true });
+});
+
+export const getImpersonationLogs: RequestHandler = catchAsync(async (req, res) => {
+  const query = (req as typeof req & { validatedQuery: AdminImpersonationLogsQuery }).validatedQuery;
+  const page = await adminService.getImpersonationLogs(query.limit, query.before);
+  res.status(200).json({ success: true, ...page });
 });
 
 export const getActivityPresence: RequestHandler = catchAsync(async (_req, res) => {

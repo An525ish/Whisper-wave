@@ -231,6 +231,9 @@ export const fileData: FileDataItem[] = [
 
 export const transformImage = (url = '', width = 100): string => {
   if (!url || !url.includes('/upload/')) return url;
+  // Idempotency guard: if the URL already has a Cloudinary transformation chain
+  // after /upload/, calling this again would double the params and cause timeouts.
+  if (/\/upload\/[a-z]/.test(url)) return url;
   // f_auto  → WebP/AVIF where supported (30–70% smaller than JPEG/PNG)
   // q_auto  → Cloudinary's perceptual quality optimiser
   // dpr_auto → serve 2x on retina without double the declared width
