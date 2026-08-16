@@ -37,3 +37,21 @@ export const PHOTO_FILTER_OPTIONS: PhotoFilterConfig[] = [
   { key: 'video', label: 'Videos', Icon: VideosIcon  },
   { key: 'audio', label: 'Audio',  Icon: AudiosIcon  },
 ];
+
+type EmptyProfileBioContext = {
+  showSelfProfile: boolean;
+  groupChat?: boolean;
+};
+
+export const emptyProfileBioCopy = ({
+  showSelfProfile,
+  groupChat,
+}: EmptyProfileBioContext): string => {
+  if (groupChat && !showSelfProfile) {
+    return 'No story yet — this group’s still finding its rhythm.';
+  }
+  if (showSelfProfile) {
+    return 'Still a whisper. Tap edit when you’re ready to make waves.';
+  }
+  return 'All mystery, no spoilers. They’re keeping it low-key.';
+};

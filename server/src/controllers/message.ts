@@ -9,6 +9,15 @@ import { param } from '../utils/http.js';
 const getIo = (req: { app: { get: (key: string) => unknown } }): Server | undefined =>
   req.app.get('io') as Server | undefined;
 
+export const getMessageContext: RequestHandler = catchAsync(async (req, res) => {
+  const result = await messageService.getMessageContext(
+    req.userId!,
+    param(req.params.chatId),
+    param(req.params.messageId)
+  );
+  res.status(200).json({ success: true, ...result });
+});
+
 export const getMessages: RequestHandler = catchAsync(async (req, res) => {
   const page = Number.parseInt(String(req.query.page ?? '1'), 10) || 1;
   const result = await messageService.getMessages(

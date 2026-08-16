@@ -32,6 +32,9 @@ export const searchMessages = (params: {
     senderId: params.senderId,
   });
 
+export const getMessageContext = (chatId: string, messageId: string) =>
+  api.get(`/message/context/${chatId}/${messageId}`);
+
 export const jumpToDate = (params: {
   chatId: string;
   dateFrom: string;
