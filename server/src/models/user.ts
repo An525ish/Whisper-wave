@@ -33,6 +33,17 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
+userSchema.index({ createdAt: -1 });
+userSchema.index({ name: 1 });
+userSchema.index({ email: 1 }, { sparse: true });
+userSchema.index(
+  { name: 'text', username: 'text', email: 'text' },
+  {
+    weights: { name: 10, username: 5, email: 3 },
+    name: 'admin_user_text',
+  }
+);
+
 export const User =
   (mongoose.models.User as mongoose.Model<IUser> | undefined) ||
   model<IUser>('User', userSchema);

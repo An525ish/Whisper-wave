@@ -66,6 +66,63 @@ export const fileFormat = (url = ''): FileFormatKind => {
   return extensionMap[fileExtension.toLowerCase()] ?? 'unknown';
 };
 
+/**
+ * Canonical attachment kind — superset of FileFormatKind for display logic.
+ * 'gif' is kept separate from 'image' so callers can skip Cloudinary transforms
+ * (which strip animation) and show a GIF badge.
+ */
+export type AttachmentKind = 'image' | 'video' | 'gif' | 'audio' | 'doc';
+
+/**
+ * Resolve the display kind of a stored attachment.
+ *
+ * Accepts either `fileType` (DB value: 'media' | 'document' | full MIME) or
+ * `type` (browser File.type MIME, used in optimistic/pending chat attachments)
+ * so this function works in both the admin panel and the chat UI.
+ *
+ * Detection order:
+ *  1. GIF: MIME 'image/gif' OR .gif extension (must precede generic image check)
+ *  2. Full MIME prefix (e.g. Klip-sourced attachments that store the real MIME)
+ *  3. Upload-middleware values: 'media' → differentiate by Cloudinary URL path
+ *     'document' → doc
+ *  4. Extension fallback via fileFormat()
+ */
+const AUDIO_EXT = /\.(mp3|wav|ogg|aac|m4a|flac|wma)$/i;
+
+export const resolveAttachmentKind = (att: {
+  fileType?: string;
+  type?: string;    // browser File.type (chat optimistic render)
+  url?: string;
+  name?: string;
+}): AttachmentKind => {
+  const ft = att.fileType ?? att.type ?? '';
+  const name = att.name ?? '';
+  const url = att.url ?? '';
+
+  // 1. GIF
+  if (/^image\/gif$/i.test(ft) || /\.gif$/i.test(name)) return 'gif';
+
+  // 2. Full MIME type (browser File.type or Klip-sourced fileType)
+  if (ft.startsWith('image/')) return 'image';
+  if (ft.startsWith('video/')) return 'video';
+  if (ft.startsWith('audio/')) return 'audio';
+
+  // 3. Upload-middleware stored values
+  if (ft === 'media') {
+    if (/\/image\/upload\//i.test(url)) return 'image';
+    if (/\/video\/upload\//i.test(url)) return AUDIO_EXT.test(name) ? 'audio' : 'video';
+    return 'doc';
+  }
+  if (ft === 'document') return 'doc';
+
+  // 4. Extension fallback
+  const fmt = fileFormat(name || url);
+  if (fmt === 'image') return 'image';
+  if (fmt === 'video') return 'video';
+  if (fmt === 'audio') return 'audio';
+  return 'doc';
+};
+
 export const getMediaKindFromFile = (file?: {
   url?: string;
   name?: string;
@@ -174,5 +231,9 @@ export const fileData: FileDataItem[] = [
 
 export const transformImage = (url = '', width = 100): string => {
   if (!url || !url.includes('/upload/')) return url;
-  return url.replace('/upload/', `/upload/dpr_auto/w_${width}/`);
+  // f_auto  → WebP/AVIF where supported (30–70% smaller than JPEG/PNG)
+  // q_auto  → Cloudinary's perceptual quality optimiser
+  // dpr_auto → serve 2x on retina without double the declared width
+  // w_{n}   → resize to the actual display slot
+  return url.replace('/upload/', `/upload/f_auto,q_auto,dpr_auto,w_${width}/`);
 };

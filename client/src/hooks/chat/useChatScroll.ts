@@ -40,7 +40,7 @@ export function useChatScroll({
   const virtualizer = useVirtualizer({
     count: timelineItems.length,
     getScrollElement: () => containerRef.current,
-    estimateSize: (index) => (timelineRef.current[index]?.kind === 'day' ? 44 : 88),
+    estimateSize: (index) => (timelineRef.current[index]?.kind === 'day' ? 44 : 120),
     overscan: 8,
     getItemKey: (index) => timelineItems[index]?.key ?? index,
   });
@@ -50,7 +50,7 @@ export function useChatScroll({
   // Remeasure when the timeline changes so row positions stay correct.
   useEffect(() => {
     virtualizerRef.current.measure();
-  }, [timelineItems.length, chatId]);
+  }, [chatId]);
 
   const scrollToBottom = useCallback((smooth = false) => {
     const count = timelineRef.current.length;

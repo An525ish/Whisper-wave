@@ -112,12 +112,16 @@ const AuthShell = ({
         </aside>
 
         <main className="relative flex items-start justify-center px-4 pb-6 pt-2 sm:px-6 sm:pb-8 md:items-center md:px-8 md:py-12 lg:pr-12 lg:pl-4">
-          <div className="auth-panel-wrap relative w-full max-w-105">
+          <div
+            className={`auth-panel-wrap relative w-full max-w-105${mode === 'admin' ? ' auth-panel-wrap--admin' : ''}`}
+          >
             <div className="auth-panel-orbit hidden md:block" aria-hidden />
-            <div className="auth-panel relative overflow-hidden">
+            <div
+              className={`auth-panel relative overflow-hidden${mode === 'admin' ? ' auth-panel--admin' : ''}`}
+            >
               <div className="auth-panel__sheen hidden md:block" aria-hidden />
               <div className="auth-panel__body relative z-1 flex flex-col px-5 pt-5 pb-3.5 sm:px-8 sm:pt-8 sm:pb-4">
-                {modeHint ? (
+                {modeHint && mode !== 'admin' ? (
                   <header className="auth-panel__mode">
                     <p className="auth-panel__mode-label">{modeHint}</p>
                   </header>

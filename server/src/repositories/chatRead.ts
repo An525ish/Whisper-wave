@@ -103,6 +103,10 @@ export const deleteByChatId = async (chatId: string): Promise<void> => {
   await ChatRead.deleteMany({ chat: chatId });
 };
 
+export const deleteByUserId = async (userId: string): Promise<void> => {
+  await ChatRead.deleteMany({ user: userId });
+};
+
 export const findPeerRead = async (
   chatId: string,
   peerUserId: string

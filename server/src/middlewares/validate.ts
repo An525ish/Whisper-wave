@@ -4,6 +4,8 @@ import { AppError } from '../utils/AppError.js';
 
 type RequestPart = 'body' | 'query' | 'params';
 
+export type ValidatedRequest<T> = Request & { validatedQuery: T };
+
 export const validate =
   (schema: ZodTypeAny, part: RequestPart = 'body') =>
   (req: Request, _res: Response, next: NextFunction): void => {
@@ -17,6 +19,11 @@ export const validate =
       return;
     }
 
-    (req as Request & Record<RequestPart, unknown>)[part] = result.data;
+    if (part === 'query') {
+      // Express 5 exposes req.query as read-only — stash parsed values separately.
+      (req as Request & { validatedQuery: unknown }).validatedQuery = result.data;
+    } else {
+      (req as Request & Record<RequestPart, unknown>)[part] = result.data;
+    }
     next();
   };

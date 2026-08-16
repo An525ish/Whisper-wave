@@ -117,10 +117,70 @@ export const countAll = async (): Promise<number> => Chat.countDocuments();
 export const countGroups = async (): Promise<number> =>
   Chat.countDocuments({ groupChat: true });
 
-export const listGroupsForAdmin = async () =>
-  Chat.find({ groupChat: true })
+export const countGroupsCreatedByDay = async (
+  start: Date,
+  end: Date
+): Promise<{ _id: string; count: number }[]> =>
+  Chat.aggregate<{ _id: string; count: number }>([
+    { $match: { groupChat: true, createdAt: { $gte: start, $lte: end } } },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: '%Y-%m-%d',
+            date: '$createdAt',
+            timezone: 'UTC',
+          },
+        },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+const escapeRegex = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const adminGroupFilter = (q?: string, memberId?: string): Record<string, unknown> => {
+  const filter: Record<string, unknown> = { groupChat: true };
+  const term = q?.trim();
+  if (term) filter.name = { $regex: escapeRegex(term), $options: 'i' };
+  if (memberId) filter.members = memberId;
+  return filter;
+};
+
+export const countGroupsForAdmin = async (q?: string, memberId?: string): Promise<number> =>
+  Chat.countDocuments(adminGroupFilter(q, memberId));
+
+export const listGroupsForAdminPage = async ({
+  limit,
+  before,
+  q,
+  memberId,
+}: {
+  limit: number;
+  before?: Date;
+  q?: string;
+  memberId?: string;
+}) => {
+  const filter: Record<string, unknown> = { ...adminGroupFilter(q, memberId) };
+  if (before) filter.createdAt = { $lt: before };
+
+  return Chat.find(filter)
     .sort({ createdAt: -1 })
-    .limit(50)
+    .limit(limit)
     .populate('creator', 'name username avatar')
     .populate('members', 'name username avatar')
     .lean();
+};
+
+/** @deprecated Use listGroupsForAdminPage */
+export const listGroupsForAdmin = async () =>
+  listGroupsForAdminPage({ limit: 50 });
+
+export const removeMemberFromAllGroups = async (userId: string): Promise<void> => {
+  await Chat.updateMany(
+    { groupChat: true, members: userId },
+    { $pull: { members: userId, admins: userId } },
+  );
+};

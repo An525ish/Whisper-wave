@@ -86,28 +86,42 @@ const appRoutes = [
           {
             path: 'dashboard',
             lazy: async () => {
-              const module = await import('@/components/admin/Dashboard');
+              const module = await import('@/components/admin/dashboard/Dashboard');
               return { Component: module.default };
             },
           },
           {
             path: 'users',
             lazy: async () => {
-              const module = await import('@/components/admin/Users');
+              const module = await import('@/components/admin/users/Users');
               return { Component: module.default };
             },
           },
           {
             path: 'messages',
             lazy: async () => {
-              const module = await import('@/components/admin/Messages');
+              const module = await import('@/components/admin/messages/Messages');
               return { Component: module.default };
             },
           },
           {
             path: 'groups',
             lazy: async () => {
-              const module = await import('@/components/admin/Groups');
+              const module = await import('@/components/admin/groups/Groups');
+              return { Component: module.default };
+            },
+          },
+          {
+            path: 'activity',
+            lazy: async () => {
+              const module = await import('@/components/admin/activity/Activity');
+              return { Component: module.default };
+            },
+          },
+          {
+            path: 'media',
+            lazy: async () => {
+              const module = await import('@/components/admin/attachments/Attachments');
               return { Component: module.default };
             },
           },

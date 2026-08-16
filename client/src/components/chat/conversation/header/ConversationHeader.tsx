@@ -49,7 +49,7 @@ const ConversationHeaderSkeleton = () => (
               className={`mx-1 h-11 w-11 shrink-0 rounded-full border-2 border-white/10 ${bone} md:mx-2 md:h-12 md:w-12`}
             />
             <div className="min-w-0 pr-2">
-              <div className={`h-[19px] w-28 rounded-md ${bone} md:h-5 md:w-36`} />
+              <div className={`h-4.75 w-28 rounded-md ${bone} md:h-5 md:w-36`} />
               <div className={`mt-1 h-3.5 w-16 rounded-md ${bone} md:h-4 md:w-24`} />
             </div>
           </div>
@@ -92,9 +92,7 @@ const ConversationHeader = ({
     useLeaveGroupMutation,
   );
 
-  useEffect(() => {
-    if (selectMode) setIsDotsMenu(false);
-  }, [selectMode]);
+  const dotsMenuOpen = isDotsMenu && !selectMode;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -115,12 +113,12 @@ const ConversationHeader = ({
   const { avatar, name, groupChat, myRole } = chatData;
   const canClearChat = !groupChat || myRole === 'creator';
   const avatarList = Array.isArray(avatar) ? avatar : avatar ? [avatar] : [];
+  const userId = user?._id ? String(user._id) : '';
 
   const peerIds = useMemo(() => {
     const ids = normalizeMemberIds(chatData.members);
-    const selfId = user?._id ? String(user._id) : '';
-    return ids.filter((id) => id !== selfId);
-  }, [chatData.members, user?._id]);
+    return ids.filter((id) => id !== userId);
+  }, [chatData.members, userId]);
 
   const peerId = peerIds[0];
 
@@ -211,14 +209,12 @@ const ConversationHeader = ({
                     : undefined
                 }
               >
-                <div className="relative shrink-0">
-                  <AvatarCard avatars={avatarList} avatarClassName="shadow-none" />
-                  {!groupChat && peerOnline ? (
-                    <span
-                      className="absolute bottom-0.5 right-1.5 h-3 w-3 rounded-full border-2 border-background bg-green md:bottom-1 md:right-2"
-                      aria-hidden
-                    />
-                  ) : null}
+                <div className="relative shrink-0 overflow-visible">
+                  <AvatarCard
+                    avatars={avatarList}
+                    avatarClassName="shadow-none"
+                    showOnline={!groupChat && peerOnline}
+                  />
                 </div>
                 <div className="min-w-0 pr-2">
                   <p className="truncate text-[15px] font-semibold leading-tight text-white md:text-base md:font-medium">
@@ -254,7 +250,7 @@ const ConversationHeader = ({
                 />
               ) : (
                 <DefaultActions
-                  isDotsMenu={isDotsMenu}
+                  isDotsMenu={dotsMenuOpen}
                   searchOpen={searchOpen}
                   buttonRef={buttonRef}
                   menuRef={menuRef}

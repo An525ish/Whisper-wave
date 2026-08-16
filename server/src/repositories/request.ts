@@ -41,6 +41,10 @@ export const deleteById = async (id: string): Promise<boolean> => {
   return Boolean(result);
 };
 
+export const deleteByUser = async (userId: string): Promise<void> => {
+  await Request.deleteMany({ $or: [{ sender: userId }, { receiver: userId }] });
+};
+
 export const findByReceiverWithSender = async (
   receiverId: string
 ): Promise<RequestWithSender[]> =>
@@ -52,3 +56,27 @@ export const findBySender = async (
   senderId: string
 ): Promise<RequestLean[]> =>
   Request.find({ sender: senderId }).lean<RequestLean[]>();
+
+export const countPending = async (): Promise<number> =>
+  Request.countDocuments({ status: 'pending' });
+
+export const countCreatedByDay = async (
+  start: Date,
+  end: Date
+): Promise<{ _id: string; count: number }[]> =>
+  Request.aggregate<{ _id: string; count: number }>([
+    { $match: { createdAt: { $gte: start, $lte: end } } },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: '%Y-%m-%d',
+            date: '$createdAt',
+            timezone: 'UTC',
+          },
+        },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
