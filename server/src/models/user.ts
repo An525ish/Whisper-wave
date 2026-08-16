@@ -35,7 +35,6 @@ const userSchema = new Schema<IUser>(
 
 userSchema.index({ createdAt: -1 });
 userSchema.index({ name: 1 });
-userSchema.index({ email: 1 }, { sparse: true });
 userSchema.index(
   { name: 'text', username: 'text', email: 'text' },
   {
