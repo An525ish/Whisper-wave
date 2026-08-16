@@ -322,6 +322,17 @@ export const searchInChat = async (
     .lean<MessageRecord[]>();
 };
 
+/** Count messages in a chat that are newer than the given timestamp (used to compute page number). */
+export const countNewerThan = async (
+  chatId: string,
+  createdAt: Date
+): Promise<number> =>
+  Message.countDocuments({
+    chat: chatId,
+    status: { $ne: 'failed' },
+    createdAt: { $gt: createdAt },
+  });
+
 /** First message on/after date — lean `_id`/`createdAt` only (jump-to-date). */
 export const findFirstOnOrAfter = async (
   chatId: string,

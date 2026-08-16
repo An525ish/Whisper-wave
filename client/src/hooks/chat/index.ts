@@ -14,3 +14,4 @@ export * from './useProfileQuery';
 export * from './useTypingIndicator';
 export * from './queryKeys';
 export * from './useGifHooks';
+export * from './useMessageJump';

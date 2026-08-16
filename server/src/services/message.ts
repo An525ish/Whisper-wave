@@ -85,6 +85,28 @@ export const getMessages = async (
   };
 };
 
+const MESSAGE_PAGE_SIZE = 20;
+
+export const getMessageContext = async (
+  userId: string,
+  chatId: string,
+  messageId: string
+): Promise<{ data: MessageListItem[]; page: number; totalPages: number }> => {
+  const msg = await messageRepo.findByIdLean(messageId);
+  if (!msg || msg.chat.toString() !== chatId) {
+    throw new AppError(404, 'Message not found');
+  }
+
+  const [newerCount, totalMessages] = await Promise.all([
+    messageRepo.countNewerThan(chatId, msg.createdAt),
+    messageRepo.countByChat(chatId),
+  ]);
+
+  const page = Math.floor(newerCount / MESSAGE_PAGE_SIZE) + 1;
+  const result = await getMessages(userId, chatId, page);
+  return { data: result.data, page, totalPages: result.totalPages };
+};
+
 export const sendAttachments = async (
   userId: string,
   chatId: string,

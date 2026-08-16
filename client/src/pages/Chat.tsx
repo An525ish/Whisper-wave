@@ -6,6 +6,7 @@ import OlderMessagesLoader from '@/components/chat/conversation/OlderMessagesLoa
 import AddMemberDialog from '@/components/chat/dialogs/AddMemberDialog';
 import ProfileSheet from '@/components/profile/ProfileSheet';
 import { useMediaQuery } from '@/hooks/shared/useMediaQuery';
+import { useMessageJump } from '@/hooks/chat';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -32,6 +33,7 @@ const Chat = () => {
   const focusClearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const { ensureMessageLoaded } = useMessageJump(chatId);
 
   useEffect(() => {
     return () => {
@@ -67,18 +69,26 @@ const Chat = () => {
         setHighlightQuery('');
         return;
       }
-      setFocusMessageId(messageId);
-      setHighlightQuery(query);
-      if (options?.closeSearch) {
-        setSearchOpen(false);
-        focusClearTimerRef.current = setTimeout(() => {
-          setFocusMessageId((prev) => (prev === messageId ? null : prev));
-          setHighlightQuery('');
-          focusClearTimerRef.current = null;
-        }, 1800);
-      }
+
+      void (async () => {
+        try {
+          await ensureMessageLoaded(messageId);
+        } catch {
+          // Context fetch failed — useChatScroll's page-chase acts as fallback
+        }
+        setFocusMessageId(messageId);
+        setHighlightQuery(query);
+        if (options?.closeSearch) {
+          setSearchOpen(false);
+          focusClearTimerRef.current = setTimeout(() => {
+            setFocusMessageId((prev) => (prev === messageId ? null : prev));
+            setHighlightQuery('');
+            focusClearTimerRef.current = null;
+          }, 1800);
+        }
+      })();
     },
-    [],
+    [ensureMessageLoaded],
   );
 
   const handleSearchClose = useCallback(() => {

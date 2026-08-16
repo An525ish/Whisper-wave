@@ -28,6 +28,7 @@ import type {
 import { isOutgoingMessageRead } from '@/utils/chat';
 import DoubleChevronDown from '@/components/ui/icons/DoubleChevronDown';
 import ReplyComposerBar from '@/components/chat/conversation/composer/ReplyBar';
+import ChatDayLabel from '@/components/chat/conversation/ChatDayLabel';
 
 export type ConversationPanelHandle = {
   clearChat: () => void;
@@ -133,7 +134,10 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     onDeletingSelectedChange,
   });
 
-  const { containerRef, virtualizer, showScrollToBottom, scrollToBottom, highlightedMessageId } = useChatScroll({
+  const {
+    containerRef, virtualizer, showScrollToBottom, scrollToBottom,
+    highlightedMessageId, stickyDayHeader, isDateHeaderScrolling,
+  } = useChatScroll({
     chatId, timelineItems, timelineRef, hasNextPage, isFetchingNextPage, fetchNextPage,
     focusMessageId, searchOpen, liveMessagesLength: liveMessages.length, historyMessagesLength: historyMessages.length,
   });
@@ -315,10 +319,21 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
                   const entry = timelineItems[item.index];
                   if (!entry) return null;
                   if (entry.kind === 'day') {
+                    const hideInlineDay =
+                      isDateHeaderScrolling
+                      && stickyDayHeader?.dayIndex === item.index;
                     return (
-                      <div key={entry.key} data-index={item.index} ref={virtualizer.measureElement}
-                        className="absolute left-0 flex w-full justify-center px-4 pb-3 pt-2" style={{ transform: `translateY(${item.start}px)` }}>
-                        <time className={`rounded-md px-2.5 py-1 font-display text-[12px] leading-none tracking-[0.03em] ${entry.label === 'Today' ? 'bg-green-light text-green' : 'bg-body/8 text-body-700'}`}>{entry.label}</time>
+                      <div
+                        key={entry.key}
+                        data-index={item.index}
+                        ref={virtualizer.measureElement}
+                        className={`absolute left-0 flex w-full justify-center px-4 pb-3 pt-2 transition-opacity duration-150 ${
+                          hideInlineDay ? 'pointer-events-none opacity-0' : 'opacity-100'
+                        }`}
+                        style={{ transform: `translateY(${item.start}px)` }}
+                        aria-hidden={hideInlineDay}
+                      >
+                        <ChatDayLabel label={entry.label} />
                       </div>
                     );
                   }
@@ -352,6 +367,14 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
             </>
           )}
         </div>
+        {stickyDayHeader && isDateHeaderScrolling && !msgLoading ? (
+          <div
+            className="pointer-events-none absolute inset-x-0 top-23 z-10 flex justify-center transition-opacity duration-200 md:top-28"
+            style={{ transform: `translateY(${stickyDayHeader.pushY}px)` }}
+          >
+            <ChatDayLabel label={stickyDayHeader.label} />
+          </div>
+        ) : null}
         {showScrollToBottom ? (
           <button type="button" onClick={() => scrollToBottom(true)} aria-label="Scroll to latest messages"
             className={`absolute right-3 z-20 grid h-10 w-10 place-items-center rounded-full border border-border/80 bg-primary/95 text-body shadow-[0_6px_20px_rgba(0,0,0,0.35)] transition hover:border-green/40 hover:bg-background-alt hover:text-green md:right-4 ${attachments.length > 0 ? 'bottom-20 md:bottom-24' : 'bottom-[max(0.75rem,env(safe-area-inset-bottom))] md:bottom-4'}`}>

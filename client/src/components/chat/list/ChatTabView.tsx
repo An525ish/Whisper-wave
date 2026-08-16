@@ -11,7 +11,10 @@ import { useNotificationsStore } from '@/stores/notifications';
 import GridAllIcon from '@/components/ui/icons/GridAll';
 import ChatIcon from '@/components/ui/icons/Chat';
 import MembersIcon from '@/components/ui/icons/Members';
-import type { ChatRow, ChatsResponse } from '@/types/chat';
+import type { ChatRow, ChatsResponse, NewMessagePayload } from '@/types/chat';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/hooks/chat';
+import { useAuthStore } from '@/stores/auth';
 
 const tabsData = Object.freeze({
   0: {
@@ -41,6 +44,8 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
     (s) => s.syncMessageNotificationsFromServer,
   );
   const socket = useSocket();
+  const queryClient = useQueryClient();
+  const userId = useAuthStore((s) => s.user?._id);
 
   const filteredChats = (chatList: ChatRow[] | undefined) => {
     return chatList?.filter((chat) =>
@@ -86,8 +91,40 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
     refetch();
   }, [refetch]);
 
+  // Instantly patch lastMessage in the cache when any new message arrives —
+  // avoids the full /get-my-chats round-trip for both sender and recipient.
+  const newMessageChatListPatch = useCallback(
+    (...args: unknown[]) => {
+      const res = args[0] as NewMessagePayload;
+      if (!res.chatId || !res.message) return;
+      queryClient.setQueryData<ChatsResponse>(queryKeys.chats, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.map((chat) =>
+            chat._id !== res.chatId
+              ? chat
+              : {
+                  ...chat,
+                  lastMessage: {
+                    content: res.message.content,
+                    createdAt: res.message.createdAt,
+                    sender: res.message.sender
+                      ? { _id: String(res.message.sender._id), name: res.message.sender.name }
+                      : undefined,
+                    isRead: String(res.message.sender?._id) === String(userId),
+                  },
+                }
+          ),
+        };
+      });
+    },
+    [queryClient, userId],
+  );
+
   const events = {
     [SOCKET_EVENTS.REFETCH_CHATS]: refetchChatListener,
+    [SOCKET_EVENTS.NEW_MESSAGE]: newMessageChatListPatch,
   };
 
   useSocketEvent(socket, events);

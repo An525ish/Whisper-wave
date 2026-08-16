@@ -1,4 +1,5 @@
 import PencilIcon from '@/components/ui/icons/Pencil'
+import { emptyProfileBioCopy } from '@/constants/profileContent'
 
 type ProfileNameBlockProps = {
   name?: string
@@ -100,6 +101,8 @@ export const ProfileBioSection = ({
   isSaving, groupChat, setBioDraft, startBioEdit, cancelBioEdit, saveBio,
 }: ProfileBioSectionProps) => {
   const bioWidthClass = 'w-[78%] max-w-72 sm:max-w-78 md:w-[72%] md:max-w-70'
+  const trimmedBio = bio?.trim()
+  const emptyBioCopy = emptyProfileBioCopy({ showSelfProfile, groupChat })
   return (
     <div className="mt-4 flex min-h-22 w-full flex-col items-center px-3 pb-2 text-center sm:min-h-26 sm:px-4">
       <div className="flex w-fit items-center gap-1.5 border-0 border-b full-border px-6 pb-1 sm:px-8">
@@ -151,8 +154,12 @@ export const ProfileBioSection = ({
           </div>
         </div>
       ) : (
-        <p className={`mt-2 wrap-break-word text-sm leading-relaxed ${bioWidthClass}`}>
-          {bio?.trim() || 'No bio available'}
+        <p
+          className={`mt-2 wrap-break-word text-sm italic leading-relaxed ${bioWidthClass} ${
+            trimmedBio ? 'text-body-300/80' : 'text-body-300/55'
+          }`}
+        >
+          {trimmedBio || emptyBioCopy}
         </p>
       )}
     </div>
