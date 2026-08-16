@@ -97,7 +97,7 @@ export const getMessageContext = async (
     throw new AppError(404, 'Message not found');
   }
 
-  const [newerCount, totalMessages] = await Promise.all([
+  const [newerCount] = await Promise.all([
     messageRepo.countNewerThan(chatId, msg.createdAt),
     messageRepo.countByChat(chatId),
   ]);
