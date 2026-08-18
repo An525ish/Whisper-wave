@@ -15,3 +15,6 @@ export const RELOAD_COOLDOWN_MS = 15_000 as const;
 
 /** Shared fallback when a user/group avatar is missing or fails to load. */
 export const AVATAR_FALLBACK = '/icons/no-dp.svg' as const;
+
+/** Shown while an avatar URL is loading. */
+export const AVATAR_LOADING = '/icons/avatar-loading.svg' as const;

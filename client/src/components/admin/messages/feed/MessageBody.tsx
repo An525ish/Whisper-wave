@@ -1,5 +1,5 @@
 import type { AdminMessageRow } from '@/types/admin';
-import { isImageAttachment } from '@/utils/admin/messages';
+import { isImageAttachment, isVideoAttachment } from '@/utils/admin/messages';
 import AttachmentChip from './AttachmentChip';
 
 type MessageBodyProps = {
@@ -20,7 +20,11 @@ const MessageBody = ({ msg, onImageOpen }: MessageBodyProps) => {
             <AttachmentChip
               key={att.publicId ?? att.url ?? index}
               att={att}
-              onImageClick={isImageAttachment(att) ? () => onImageOpen(index) : undefined}
+              onImageClick={
+                isImageAttachment(att) || isVideoAttachment(att)
+                  ? () => onImageOpen(index)
+                  : undefined
+              }
             />
           ))}
         </div>
