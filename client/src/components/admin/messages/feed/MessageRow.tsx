@@ -8,6 +8,7 @@ import type { AdminMessageRow } from '@/types/admin';
 import {
   formatMessageSent,
   isImageAttachment,
+  isVideoAttachment,
   messageRelativeTime,
 } from '@/utils/admin/messages';
 import MessageBody from './MessageBody';
@@ -25,11 +26,14 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
   const isFailed = msg.status === 'failed';
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
-  const imageFiles = useMemo(
+  const mediaFiles = useMemo(
     () =>
       (msg.attachments ?? [])
-        .filter(isImageAttachment)
-        .filter((attachment) => Boolean(attachment.url))
+        .filter(
+          (attachment) =>
+            (isImageAttachment(attachment) || isVideoAttachment(attachment))
+            && Boolean(attachment.url),
+        )
         .map((attachment, index) => ({
           _id: `${msg._id}-att-${index}`,
           url: attachment.url!,
@@ -42,7 +46,7 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
   const handleImageOpen = (chipIndex: number) => {
     const attachment = (msg.attachments ?? [])[chipIndex];
     if (!attachment?.url) return;
-    const viewerIdx = imageFiles.findIndex((file) => file.url === attachment.url);
+    const viewerIdx = mediaFiles.findIndex((file) => file.url === attachment.url);
     if (viewerIdx >= 0) setViewerIndex(viewerIdx);
   };
 
@@ -135,9 +139,9 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
         </div>
       </article>
 
-      {viewerIndex !== null && imageFiles.length > 0 && (
+      {viewerIndex !== null && mediaFiles.length > 0 && (
         <ImageViewer
-          mediaFiles={imageFiles}
+          mediaFiles={mediaFiles}
           initialIndex={viewerIndex}
           onClose={() => setViewerIndex(null)}
         />

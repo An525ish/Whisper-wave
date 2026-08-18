@@ -6,6 +6,17 @@ export const MEDIA_FALLBACK_ICONS = {
   video: '/icons/video-icon.svg',
 } as const;
 
+/** Shown when media failed to load after retries. */
+export const MEDIA_FAILED_ILLUSTRATIONS = {
+  image: '/icons/media-error-image.svg',
+  video: '/icons/media-error-video.svg',
+} as const;
+
+/** @deprecated Use MEDIA_FAILED_ILLUSTRATIONS[kind] */
+export const MEDIA_FAILED_ILLUSTRATION = MEDIA_FAILED_ILLUSTRATIONS.image;
+
+export type MediaPlaceholderVariant = 'loading' | 'retrying' | 'failed';
+
 export type RetryableMediaKind = keyof typeof MEDIA_FALLBACK_ICONS;
 
 type UseRetryableMediaSrcOptions = {

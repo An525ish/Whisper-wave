@@ -18,6 +18,7 @@ type RetryableMediaImageProps = {
   transformWidth?: number;
   className?: string;
   fallbackIconClassName?: string;
+  failedIllustrationClassName?: string;
   wrapperClassName?: string;
   style?: CSSProperties;
 } & Omit<
@@ -32,6 +33,7 @@ export const RetryableMediaImage = ({
   transformWidth,
   className = '',
   fallbackIconClassName = 'h-12 w-12',
+  failedIllustrationClassName,
   wrapperClassName = '',
   style,
   ...props
@@ -57,9 +59,10 @@ export const RetryableMediaImage = ({
     return (
       <MediaPlaceholder
         kind={kind}
-        shimmer={isRetrying}
+        variant={isRetrying ? 'retrying' : 'failed'}
         className={[wrapperClassName, className].filter(Boolean).join(' ')}
         iconClassName={fallbackIconClassName}
+        failedIllustrationClassName={failedIllustrationClassName}
         style={style}
         aria-label={alt || 'Media unavailable'}
       />
@@ -71,9 +74,10 @@ export const RetryableMediaImage = ({
       <>
         <MediaPlaceholder
           kind={kind}
-          shimmer
+          variant="loading"
           className={wrapperClassName || className}
           iconClassName={fallbackIconClassName}
+        failedIllustrationClassName={failedIllustrationClassName}
           style={style}
           aria-label={alt ? `Loading ${alt}` : 'Loading media'}
         />
@@ -109,6 +113,7 @@ type RetryableMediaVideoProps = {
   url: string;
   className?: string;
   fallbackIconClassName?: string;
+  failedIllustrationClassName?: string;
   wrapperClassName?: string;
   autoPlay?: boolean;
 } & Omit<
@@ -120,6 +125,7 @@ export const RetryableMediaVideo = ({
   url,
   className = '',
   fallbackIconClassName = 'h-12 w-12',
+  failedIllustrationClassName,
   wrapperClassName = '',
   autoPlay = false,
   muted = true,
@@ -151,9 +157,10 @@ export const RetryableMediaVideo = ({
     return (
       <MediaPlaceholder
         kind="video"
-        shimmer={isRetrying}
+        variant={isRetrying ? 'retrying' : 'failed'}
         className={mergedClass}
         iconClassName={fallbackIconClassName}
+        failedIllustrationClassName={failedIllustrationClassName}
         aria-label="Video unavailable"
       />
     );
@@ -164,9 +171,10 @@ export const RetryableMediaVideo = ({
       <>
         <MediaPlaceholder
           kind="video"
-          shimmer
+          variant="loading"
           className={wrapperClassName || className}
           iconClassName={fallbackIconClassName}
+        failedIllustrationClassName={failedIllustrationClassName}
           aria-label="Loading video"
         />
         <video

@@ -1,12 +1,20 @@
 import Image from '@/components/ui/Image';
 import CopyButton from '@/components/ui/CopyButton';
 import PlayIcon from '@/components/ui/icons/Play';
+import {
+  RetryableMediaImage,
+  RetryableMediaVideo,
+} from '@/components/ui/media/RetryableMedia';
 import type { FlatItem } from '@/types/admin';
 import {
   formatMediaDate,
   kindBadgeClass,
   kindLabel,
 } from '@/utils/admin/attachments';
+import {
+  ADMIN_MEDIA_GRID_FAILED_ILLUSTRATION,
+  ADMIN_MEDIA_GRID_LOADING_ICON,
+} from '@/constants/admin/attachments';
 
 type MediaCardProps = {
   item: FlatItem;
@@ -22,6 +30,9 @@ const MediaCard = ({ item, onClick }: MediaCardProps) => {
   const typeLabel = kindLabel(rk);
   const sentAt = formatMediaDate(msg.createdAt);
 
+  const mediaClass =
+    'h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:group-hover:scale-100';
+
   return (
     <button
       type="button"
@@ -29,20 +40,25 @@ const MediaCard = ({ item, onClick }: MediaCardProps) => {
       className="group relative aspect-square w-full overflow-hidden rounded-xl bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue/50"
     >
       {rk === 'video' ? (
-        <video
-          src={att.url}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:group-hover:scale-100"
+        <RetryableMediaVideo
+          url={att.url}
+          className={mediaClass}
+          wrapperClassName="h-full w-full"
+          fallbackIconClassName={ADMIN_MEDIA_GRID_LOADING_ICON}
+          failedIllustrationClassName={ADMIN_MEDIA_GRID_FAILED_ILLUSTRATION}
           preload="metadata"
           muted
           playsInline
         />
       ) : (
-        <Image
-          src={att.url}
+        <RetryableMediaImage
+          url={att.url}
           alt={fileName}
-          displayWidth={400}
-          fallback="/icons/picture-icon.svg"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03] motion-reduce:group-hover:scale-100"
+          transformWidth={400}
+          className={mediaClass}
+          wrapperClassName="h-full w-full"
+          fallbackIconClassName={ADMIN_MEDIA_GRID_LOADING_ICON}
+          failedIllustrationClassName={ADMIN_MEDIA_GRID_FAILED_ILLUSTRATION}
         />
       )}
 

@@ -1,7 +1,6 @@
-import { AVATAR_FALLBACK } from '@/constants/app';
+import { AVATAR_FALLBACK, AVATAR_LOADING } from '@/constants/app';
 import { transformImage } from '@/utils/fileFormat';
 import {
-  useEffect,
   useState,
   type ImgHTMLAttributes,
   type SyntheticEvent,
@@ -26,15 +25,20 @@ type ImageProps = {
 const Image = ({ src, alt, className, displayWidth, fallback, onError, onLoad, ...props }: ImageProps) => {
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [prevSrc, setPrevSrc] = useState(src);
   const errorFallback = fallback ?? AVATAR_FALLBACK;
+  const isAvatarMode = errorFallback === AVATAR_FALLBACK;
 
-  useEffect(() => {
+  if (src !== prevSrc) {
+    setPrevSrc(src);
     setFailed(false);
     setLoaded(false);
-  }, [src]);
+  }
 
   const rawSrc = !src || failed ? errorFallback : src;
   const imgSrc = displayWidth ? transformImage(rawSrc, displayWidth) : rawSrc;
+  const showAvatarLoading = isAvatarMode && Boolean(src) && !failed && !loaded;
+  const imgVisible = !isAvatarMode || loaded || failed || !src;
 
   const handleError = (event: SyntheticEvent<HTMLImageElement>) => {
     if (event.currentTarget.src.includes(errorFallback)) return;
@@ -47,7 +51,7 @@ const Image = ({ src, alt, className, displayWidth, fallback, onError, onLoad, .
     onLoad?.(event);
   };
 
-  return (
+  const img = (
     <img
       {...props}
       src={imgSrc}
@@ -56,8 +60,27 @@ const Image = ({ src, alt, className, displayWidth, fallback, onError, onLoad, .
       decoding="async"
       onError={handleError}
       onLoad={handleLoad}
-      className={`object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'} ${className ?? ''}`}
+      className={`object-cover transition-opacity duration-300 ${
+        imgVisible ? 'opacity-100' : 'opacity-0'
+      } ${isAvatarMode ? 'relative z-1 h-full w-full' : ''} ${className ?? ''}`}
     />
+  );
+
+  if (!isAvatarMode) return img;
+
+  return (
+    <span className={`relative inline-block overflow-hidden ${className ?? ''}`}>
+      {showAvatarLoading ? (
+        <span className="absolute inset-0 bg-border/15" aria-hidden aria-busy>
+          <img
+            src={AVATAR_LOADING}
+            alt=""
+            className="h-full w-full object-cover animate-pulse motion-reduce:animate-none"
+          />
+        </span>
+      ) : null}
+      {img}
+    </span>
   );
 };
 

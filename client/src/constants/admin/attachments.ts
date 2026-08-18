@@ -14,3 +14,11 @@ export const ATTACHMENT_KIND_TABS: { id: AttachmentKindFilter; label: string }[]
 
 export const ATTACHMENT_LIST_CARD_CLASS =
   'group relative flex flex-col overflow-hidden rounded-2xl border border-border/45 bg-primary/15 p-3.5 transition duration-200 hover:border-blue/30 hover:bg-primary/28 hover:shadow-[0_10px_28px_rgba(0,0,0,0.14)]';
+
+/** Media grid cards (Attachments) — 3× prior h-10 / h-14 placeholders. */
+export const ADMIN_MEDIA_GRID_LOADING_ICON = 'h-30 w-30';
+export const ADMIN_MEDIA_GRID_FAILED_ILLUSTRATION = 'h-[10.5rem] w-[10.5rem] opacity-45';
+
+/** Message attachment chips — 3× prior h-8 / h-14 placeholders. */
+export const ADMIN_MEDIA_CHIP_LOADING_ICON = 'h-24 w-24';
+export const ADMIN_MEDIA_CHIP_FAILED_ILLUSTRATION = 'h-[6rem] w-[6rem] opacity-45';
