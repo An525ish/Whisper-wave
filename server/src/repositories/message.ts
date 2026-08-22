@@ -42,7 +42,7 @@ export const updateById = async (
   id: string | Types.ObjectId,
   patch: UpdateMessagePatch
 ): Promise<MessageRecord | null> =>
-  Message.findByIdAndUpdate(id, { $set: patch }, { new: true }).lean<MessageRecord>();
+  Message.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<MessageRecord>();
 
 export const findByIdLean = async (
   id: string
@@ -75,7 +75,7 @@ export const softDeleteById = async (
   Message.findByIdAndUpdate(
     id,
     { $set: { isDeleted: true, content: undefined, attachments: [] } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean<MessageRecord>();
 
 export const softDeleteManyByIds = async (

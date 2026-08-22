@@ -31,7 +31,7 @@ export const upsertByEmail = async (
         lastResendAt: 1,
       },
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
   ).lean<PendingSignupRecord>();
 
   if (!doc) {
@@ -50,7 +50,7 @@ export const updateByEmail = async (
   email: string,
   patch: PendingSignupPatch
 ): Promise<PendingSignupRecord | null> =>
-  PendingSignup.findOneAndUpdate(byEmail(email), { $set: patch }, { new: true }).lean<PendingSignupRecord>();
+  PendingSignup.findOneAndUpdate(byEmail(email), { $set: patch }, { returnDocument: 'after' }).lean<PendingSignupRecord>();
 
 export const incrementOtpAttempts = async (
   email: string
@@ -58,7 +58,7 @@ export const incrementOtpAttempts = async (
   PendingSignup.findOneAndUpdate(
     byEmail(email),
     { $inc: { otpAttempts: 1 } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean<PendingSignupRecord>();
 
 export const findBySignupTokenHash = async (

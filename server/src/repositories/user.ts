@@ -103,7 +103,7 @@ export const updateById = async (
   id: string,
   patch: UpdateUserPatch
 ): Promise<LeanUser | null> =>
-  User.findByIdAndUpdate(id, { $set: patch }, { new: true }).lean<LeanUser>();
+  User.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<LeanUser>();
 
 export const deleteById = async (id: string): Promise<boolean> => {
   const result = await User.findByIdAndDelete(id);
