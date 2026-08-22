@@ -1,4 +1,5 @@
 import { createServer } from 'http';
+import { setDefaultResultOrder } from 'dns';
 import mongoose from 'mongoose';
 import { createApp } from './app.js';
 import { configureCloudinary } from './config/cloudinary.js';
@@ -7,6 +8,9 @@ import { env } from './config/env.js';
 import { createSocketServer } from './socket/index.js';
 import { logger } from './utils/logger.js';
 
+// Render (and many cloud providers) block outbound IPv6; force IPv4 to
+// prevent Node choosing the AAAA record for smtp.gmail.com. (can be removed on paid plans)
+setDefaultResultOrder('ipv4first');
 configureCloudinary();
 
 const app = createApp();
