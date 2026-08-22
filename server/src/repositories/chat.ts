@@ -84,7 +84,7 @@ export const updateById = async (
   id: string,
   patch: UpdateChatPatch
 ): Promise<ChatLean | null> =>
-  Chat.findByIdAndUpdate(id, { $set: patch }, { new: true }).lean<ChatLean>();
+  Chat.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<ChatLean>();
 
 export const updateLastMessage = async (
   id: string,
