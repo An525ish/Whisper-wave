@@ -1,5 +1,6 @@
 import AuthField from '@/components/auth/AuthField';
 import AuthSubmit from '@/components/auth/AuthSubmit';
+import OtpInput from '@/components/auth/OtpInput';
 import AvatarInput from '@/components/ui/AvatarInput';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import {
@@ -15,6 +16,7 @@ import type {
 } from '@/types/auth';
 import {
   validateEmail,
+  validateConfirmPassword,
   validateFullname,
   validateOtp,
   validatePassword,
@@ -26,7 +28,7 @@ import {
   saveSignupSession,
 } from '@/utils/signupSession';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
 type RegisterProps = {
@@ -76,7 +78,10 @@ const Register = ({ setIsLogin }: RegisterProps) => {
   const completeSignUp = useCompleteSignUpMutation();
 
   const step1 = useForm<RegisterStep1Form>({ mode: 'onChange' });
-  const step2 = useForm<RegisterStep2Form>({ mode: 'onChange' });
+  const step2 = useForm<RegisterStep2Form>({
+    mode: 'onChange',
+    defaultValues: { otp: '', username: '' },
+  });
   const step3 = useForm<RegisterStep3Form>({ mode: 'onChange' });
 
   const pending =
@@ -204,9 +209,7 @@ const Register = ({ setIsLogin }: RegisterProps) => {
             placeholder="Repeat password"
             autoComplete="new-password"
             register={step1.register}
-            validate={(value: string) =>
-              value === step1.watch('password') || 'Passwords do not match'
-            }
+            validate={validateConfirmPassword}
             errors={step1.formState.errors}
           />
 
@@ -232,40 +235,63 @@ const Register = ({ setIsLogin }: RegisterProps) => {
           onSubmit={step2.handleSubmit(onStep2)}
           className="mt-5 flex flex-1 flex-col gap-3"
         >
-          <p className="rounded-xl border border-white/10 bg-black-dark/50 px-3 py-2 text-xs text-body-300">
-            Code sent to <span className="text-white">{email}</span>
-          </p>
+          <div className="auth-code-banner">
+            <span className="auth-code-banner__icon" aria-hidden>
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M4 7.5h16a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 17V9A1.5 1.5 0 0 1 4 7.5Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="m4 8 8 5.5L20 8"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+            <div className="auth-code-banner__body">
+              <p className="auth-code-banner__eyebrow">Code sent to</p>
+              <p className="auth-code-banner__email">{email}</p>
+            </div>
+            <p className="auth-code-banner__aside">Inbox · 10 min</p>
+          </div>
           {resendNote ? (
             <p className="text-xs text-green" role="status">
               {resendNote}
             </p>
           ) : null}
-          <AuthField
-            type="text"
+          <Controller
             name="otp"
-            label="Verification code"
-            placeholder="6-digit code"
-            autoComplete="one-time-code"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={6}
-            register={step2.register}
-            validate={validateOtp}
-            errors={step2.formState.errors}
+            control={step2.control}
+            rules={{ validate: validateOtp }}
+            render={({ field, fieldState }) => (
+              <OtpInput
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                disabled={pending}
+                error={fieldState.error?.message}
+              />
+            )}
           />
           <AuthField
             type="text"
             name="username"
             label="Username"
-            placeholder="Handle"
+            placeholder="your_handle"
             autoComplete="username"
             register={step2.register}
             validate={validateUsername}
             errors={step2.formState.errors}
           />
 
-          <div className="mt-auto flex flex-col gap-3 pt-2">
-            <AuthSubmit pending={pending}>{copy.cta}</AuthSubmit>
+          <div className="mt-auto flex flex-col gap-3 pt-2 pb-4">
+            <AuthSubmit pending={pending} className="mb-2">
+              {copy.cta}
+            </AuthSubmit>
             <div className="flex items-center justify-between gap-3 text-sm">
               <button
                 type="button"
@@ -323,8 +349,10 @@ const Register = ({ setIsLogin }: RegisterProps) => {
             errors={step3.formState.errors}
           />
 
-          <div className="mt-auto flex flex-col gap-3 pt-2">
-            <AuthSubmit pending={pending}>{copy.cta}</AuthSubmit>
+          <div className="mt-auto flex flex-col gap-3 pt-2 pb-4">
+            <AuthSubmit pending={pending} className="mb-2">
+              {copy.cta}
+            </AuthSubmit>
             <button
               type="button"
               className="text-center text-sm text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"

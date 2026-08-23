@@ -6,6 +6,19 @@ type AvatarInputProps = {
   setFile: (file: File | null) => void;
 };
 
+const CameraIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" aria-hidden>
+    <path
+      d="M4 8.5h2.2l1.1-1.8h5.4L14 8.5H16.5A1.5 1.5 0 0 1 18 10v7.5A1.5 1.5 0 0 1 16.5 19h-9A1.5 1.5 0 0 1 6 17.5V10a1.5 1.5 0 0 1 1.5-1.5"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="12" cy="13.5" r="2.4" stroke="currentColor" strokeWidth="1.6" />
+  </svg>
+);
+
 const AvatarInput = ({ setFile }: AvatarInputProps) => {
   const [preview, setPreview] = useState<string>(AVATAR_FALLBACK);
 
@@ -23,14 +36,13 @@ const AvatarInput = ({ setFile }: AvatarInputProps) => {
   };
 
   return (
-    <div className="flex items-center gap-3.5 rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
-      <label
-        htmlFor="auth-avatar"
-        className="group relative inline-flex h-[3.25rem] w-[3.25rem] shrink-0 cursor-pointer overflow-hidden rounded-full ring-2 ring-green/30 transition hover:ring-green/60 focus-within:ring-2 focus-within:ring-green/50"
-      >
-        <img src={preview} alt="" className="h-full w-full object-cover" />
-        <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[9px] font-semibold uppercase tracking-wider text-white opacity-0 transition group-hover:opacity-100">
-          Edit
+    <div className="auth-avatar-upload">
+      <label htmlFor="auth-avatar" className="auth-avatar-upload__trigger">
+        <span className="auth-avatar-upload__ring" aria-hidden />
+        <img src={preview} alt="" className="auth-avatar-upload__image" />
+        <span className="auth-avatar-upload__overlay">
+          <CameraIcon />
+          <span className="auth-avatar-upload__overlay-label">Upload photo</span>
         </span>
         <input
           id="auth-avatar"
@@ -40,10 +52,7 @@ const AvatarInput = ({ setFile }: AvatarInputProps) => {
           className="sr-only"
         />
       </label>
-      <div className="min-w-0 text-left">
-        <p className="text-sm font-medium text-white">Profile photo</p>
-        <p className="text-xs text-body-300">Optional — tap to upload</p>
-      </div>
+      <p className="auth-avatar-upload__hint">Add a face to your quiet corner</p>
     </div>
   );
 };

@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-const emailField = z.string().trim().email('Invalid email address').max(254);
+import { emailField } from './fields.js';
 
 const usernameField = z
   .string()

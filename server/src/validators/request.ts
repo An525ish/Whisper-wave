@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { emailField } from './fields.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id');
 
@@ -21,7 +22,7 @@ export const updateProfileSchema = z
       .max(30)
       .regex(/^[a-zA-Z0-9_]+$/)
       .optional(),
-    email: z.string().email().optional(),
+    email: emailField.optional(),
     oldPassword: z.string().min(6).optional(),
     newPassword: z.string().min(6).optional(),
     bio: z.string().max(70).optional(),

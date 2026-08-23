@@ -1,5 +1,5 @@
 import type { Server } from 'socket.io';
-import type { RealtimeNotify } from '../types/chat.js';
+import type { RealtimeNotify } from '../../types/chat.js';
 
 /**
  * In-memory presence. Each user can have multiple sockets (multiple tabs/devices).

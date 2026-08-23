@@ -1,20 +1,10 @@
 import { compare, hash } from 'bcrypt';
-import * as chatRepo from '../repositories/chat.js';
-import * as requestRepo from '../repositories/request.js';
-import * as userRepo from '../repositories/user.js';
-import type {
-  PublicUser,
-  SearchUserResult,
-  UpdateProfileInput,
-  UpdateUserPatch,
-} from '../types/index.js';
-import type { UploadableFile } from '../types/message.js';
-import { AppError } from '../utils/AppError.js';
-import {
-  deleteFromCloudinary,
-  uploadToCloudinary,
-} from '../utils/cloudinary.js';
-import { isAllowedEmail } from '../utils/disposableEmail.js';
+import * as userRepo from '../../repositories/user.js';
+import type { PublicUser, UpdateProfileInput, UpdateUserPatch } from '../../types/index.js';
+import type { UploadableFile } from '../../types/message.js';
+import { AppError } from '../../utils/AppError.js';
+import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary.js';
+import { isAllowedEmail } from '../../utils/disposableEmail.js';
 
 export const getProfile = async (
   userId: string
@@ -101,26 +91,4 @@ export const deleteProfile = async (userId: string): Promise<void> => {
   if (!deleted) {
     throw new AppError(404, 'User not found');
   }
-};
-
-export const searchUsers = async (
-  userId: string,
-  name: string
-): Promise<SearchUserResult[]> => {
-  const myChats = await chatRepo.findDirectChatsForMember(userId);
-  const myChatsMembers = myChats.flatMap(({ members }) => members);
-
-  const [allOtherMembers, myRequests] = await Promise.all([
-    userRepo.findExcludingIdsByName([...myChatsMembers, userId], name),
-    requestRepo.findBySender(userId),
-  ]);
-
-  const receiverIds = myRequests.map((request) => request.receiver.toString());
-
-  return allOtherMembers.map(({ _id, name: userName, avatar }) => ({
-    _id,
-    name: userName,
-    avatar: avatar.url,
-    isRequested: receiverIds.includes(_id.toString()),
-  }));
 };

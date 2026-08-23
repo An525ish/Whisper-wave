@@ -27,7 +27,7 @@ export const passwordSchema = z
 export const emailSchema = z
   .string()
   .min(1, 'Email is required')
-  .email('Invalid email address');
+  .pipe(z.email({ error: 'Invalid email address' }));
 
 export const otpSchema = z
   .string()
@@ -38,6 +38,10 @@ export const adminSecretSchema = z
   .string()
   .min(1, 'Secret key is required')
   .min(8, 'Secret key must be at least 8 characters');
+
+export const confirmPasswordSchema = z
+  .string()
+  .min(1, 'Password is required');
 
 export const signInSchema = z.object({
   username: usernameSchema,
@@ -58,9 +62,24 @@ const zodField =
     return result.error.issues[0]?.message ?? 'Invalid value';
   };
 
+/** Like `zodField`, but also checks value matches another form field (RHF `formValues`). */
+const zodConfirmField =
+  (schema: z.ZodTypeAny, matchKey: string) =>
+  (value: unknown, formValues: Record<string, unknown>): true | string => {
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      return result.error.issues[0]?.message ?? 'Invalid value';
+    }
+    if (value !== formValues[matchKey]) {
+      return 'Passwords do not match';
+    }
+    return true;
+  };
+
 export const validateUsername = zodField(usernameSchema);
 export const validateFullname = zodField(fullnameSchema);
 export const validatePassword = zodField(passwordSchema);
 export const validateEmail = zodField(emailSchema);
 export const validateOtp = zodField(otpSchema);
 export const validateAdminSecret = zodField(adminSecretSchema);
+export const validateConfirmPassword = zodConfirmField(confirmPasswordSchema,'password');
