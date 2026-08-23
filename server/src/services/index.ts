@@ -1,9 +1,9 @@
-export * as authService from './auth.js';
-export * as adminService from './admin.js';
-export * as userService from './user.js';
-export * as chatService from './chat.js';
-export * as messageService from './message.js';
-export * as friendRequestService from './friendRequest.js';
+export * as authService from './auth/index.js';
+export * as adminService from './admin/index.js';
+export * as userService from './user/index.js';
+export * as chatService from './chat/index.js';
+export * as messageService from './message/index.js';
+export * as friendRequestService from './friendRequest/index.js';
 export {
   emitToMembers,
   flushNotifications,
@@ -13,4 +13,4 @@ export {
   isUserOnline,
   removeUserSocket,
   setUserSocket,
-} from './presence.js';
+} from './presence/index.js';

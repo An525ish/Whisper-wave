@@ -3,7 +3,7 @@ import AuthShell from '@/components/auth/AuthShell';
 import AuthSubmit from '@/components/auth/AuthSubmit';
 import { useResetPasswordMutation } from '@/hooks/auth';
 import type { ResetPasswordForm } from '@/types/auth';
-import { validatePassword } from '@/utils/authValidators';
+import { validateConfirmPassword, validatePassword } from '@/utils/authValidators';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -20,7 +20,6 @@ export default function ResetPassword() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<ResetPasswordForm>({ mode: 'onChange' });
 
@@ -87,9 +86,7 @@ export default function ResetPassword() {
               placeholder="Repeat password"
               autoComplete="new-password"
               register={register}
-              validate={(value: string) =>
-                value === watch('password') || 'Passwords do not match'
-              }
+              validate={validateConfirmPassword}
               errors={errors}
             />
 
