@@ -20,15 +20,17 @@ let _transporter: Transporter | null = null;
 
 const getTransporter = (): Transporter => {
   if (_transporter) return _transporter;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   _transporter = nodemailer.createTransport({
     host: env.SMTP_HOST,
     port: env.SMTP_PORT,
     secure: env.SMTP_PORT === 465,
+    family: 4, // force IPv4 — Render free tier has no outbound IPv6
     auth: {
       user: env.SMTP_USER,
       pass: env.SMTP_PASS,
     },
-  });
+  } as any);
   return _transporter;
 };
 
