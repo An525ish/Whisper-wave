@@ -61,12 +61,17 @@ export function useAdminStatsQuery(enabled = true) {
   });
 }
 
-export function useAdminUsersQuery(search = '', enabled = true) {
+export function useAdminUsersQuery(
+  search = '',
+  signupMethod: 'all' | 'google' | 'email' = 'all',
+  enabled = true,
+) {
   return useInfiniteQuery({
-    queryKey: queryKeys.users(search),
+    queryKey: queryKeys.users(search, signupMethod),
     queryFn: ({ pageParam }) =>
       adminApi.getAdminUsers({
         q: search || undefined,
+        signupMethod,
         limit: adminApi.USERS_PAGE_SIZE,
         before: pageParam,
       }),

@@ -3,6 +3,7 @@ import AuthSubmit from '@/components/auth/AuthSubmit';
 import { useAdminLoginMutation } from '@/hooks/admin';
 import type { AdminLoginForm } from '@/types/auth';
 import { validateAdminSecret } from '@/utils/authValidators';
+import { toErrorMessage } from '@/utils/helpers';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
@@ -88,9 +89,7 @@ const AdminLogin = () => {
       await login.mutateAsync(data.secretkey);
       navigate('/admin/dashboard', { replace: true });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Invalid secret key',
-      );
+      toast.error(toErrorMessage(error, 'Invalid secret key'));
     }
   };
 
@@ -164,13 +163,11 @@ const AdminLogin = () => {
           Enter dashboard
         </AuthSubmit>
 
-        {login.isError ? (
+        {login.isError && (
           <p className="text-xs text-red" role="alert">
-            {login.error instanceof Error
-              ? login.error.message
-              : 'Login failed. Check your secret key and that the API is reachable.'}
+            {toErrorMessage(login.error, 'Login failed. Check your secret key and that the API is reachable.')}
           </p>
-        ) : null}
+        )}
 
         <p className="flex items-center justify-center gap-1.5 text-center text-[10px] text-body-300/55">
           <svg className="h-3 w-3 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden>

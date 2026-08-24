@@ -107,7 +107,8 @@ export type UpdateUserPatch = Partial<{
 }>;
 
 export type AuthResult = {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
   message: string;
   user: PublicUser & Record<string, unknown>;
 };

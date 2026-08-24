@@ -1,46 +1,53 @@
-import AuthField from '@/components/auth/AuthField';
-import AuthSubmit from '@/components/auth/AuthSubmit';
-import OtpInput from '@/components/auth/OtpInput';
-import AvatarInput from '@/components/ui/AvatarInput';
-import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
+import RegisterEditUsername from '@/components/auth/RegisterEditUsername';
+import RegisterStep1 from '@/components/auth/RegisterStep1';
+import RegisterStep2 from '@/components/auth/RegisterStep2';
+import RegisterStep3 from '@/components/auth/RegisterStep3';
 import {
   useCompleteSignUpMutation,
   useResendSignUpOtpMutation,
   useStartSignUpMutation,
+  useUpdateSignupUsernameMutation,
   useVerifySignUpOtpMutation,
 } from '@/hooks/auth';
 import type {
+  RegisterEditUsernameForm,
   RegisterStep1Form,
   RegisterStep2Form,
   RegisterStep3Form,
 } from '@/types/auth';
-import {
-  validateEmail,
-  validateConfirmPassword,
-  validateFullname,
-  validateOtp,
-  validatePassword,
-  validateUsername,
-} from '@/utils/authValidators';
+import { toErrorMessage } from '@/utils/helpers';
 import {
   clearSignupSession,
   loadSignupSession,
   saveSignupSession,
 } from '@/utils/signupSession';
 import { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
-type RegisterProps = {
+type RegisterFormProps = {
   setIsLogin: (value: boolean) => void;
 };
 
-type Step = 1 | 2 | 3;
+/**
+ * Wizard steps:
+ *   1            — email + password
+ *   2            — OTP + pick username
+ *   'edit-username' — change username without re-verifying (requires signupToken)
+ *   3            — name + optional avatar → create account
+ *
+ * Navigation rules:
+ *   Step 1 → 2   normal forward
+ *   Step 2 ← 1   "Back" before any OTP is verified → clear session, restart
+ *   Step 2 → 3   OTP verified, signupToken issued
+ *   Step 3 → 'edit-username'  already verified; change username via PATCH, no OTP
+ *   'edit-username' → 3   save username, go forward
+ *   'edit-username' ← (never deeper)  can only go forward (back to step 3)
+ */
+type Step = 1 | 2 | 'edit-username' | 3;
 
-const STEP_COPY: Record<
-  Step,
-  { title: string; blurb: string; cta: string }
-> = {
+const TOTAL_VISIBLE_STEPS = 3;
+
+const STEP_COPY: Record<Step, { title: string; blurb: string; cta: string }> = {
   1: {
     title: 'Start with your inbox',
     blurb: 'Verify your inbox first — then claim your quiet corner.',
@@ -51,125 +58,171 @@ const STEP_COPY: Record<
     blurb: 'Enter the 6-digit code, then claim your username.',
     cta: 'Verify & continue',
   },
+  'edit-username': {
+    title: 'Change your handle',
+    blurb: 'Your email is already verified — just update the username.',
+    cta: 'Save & continue',
+  },
   3: {
-    title: 'Show your face',
-    blurb: 'A name and photo — then you’re in.',
+    title: 'Almost there',
+    blurb: 'Add your name — a photo is optional, you can change it later.',
     cta: 'Create account',
   },
 };
 
-const Register = ({ setIsLogin }: RegisterProps) => {
+/** Maps the internal step to the visible dot index (1–3). */
+const visibleStep = (s: Step): number => (s === 'edit-username' ? 2 : (s as number));
+
+const Register = ({ setIsLogin }: RegisterFormProps) => {
   const saved = loadSignupSession();
   const [step, setStep] = useState<Step>(saved?.step ?? 1);
   const [email, setEmail] = useState(saved?.email ?? '');
   const [signupToken, setSignupToken] = useState(saved?.signupToken ?? '');
-  const [avatar, setAvatar] = useState<File | null>(null);
-  const [avatarError, setAvatarError] = useState('');
-  const [resendNote, setResendNote] = useState('');
-
-  // Sync to sessionStorage whenever these values change
-  useEffect(() => {
-    saveSignupSession({ step, email, signupToken });
-  }, [step, email, signupToken]);
+  const [username, setUsername] = useState(saved?.username ?? '');
+  const [otpResent, setOtpResent] = useState(false);
 
   const startSignUp = useStartSignUpMutation();
   const resendOtp = useResendSignUpOtpMutation();
   const verifyOtp = useVerifySignUpOtpMutation();
+  const updateUsername = useUpdateSignupUsernameMutation();
   const completeSignUp = useCompleteSignUpMutation();
-
-  const step1 = useForm<RegisterStep1Form>({ mode: 'onChange' });
-  const step2 = useForm<RegisterStep2Form>({
-    mode: 'onChange',
-    defaultValues: { otp: '', username: '' },
-  });
-  const step3 = useForm<RegisterStep3Form>({ mode: 'onChange' });
 
   const pending =
     startSignUp.isPending ||
     verifyOtp.isPending ||
+    updateUsername.isPending ||
     completeSignUp.isPending ||
     resendOtp.isPending;
 
+  // Persist wizard state — 'edit-username' collapses back to step 3 on reload
+  // (no need to re-enter username edit if user refreshes; they land on step 3)
+  useEffect(() => {
+    const persistedStep = step === 'edit-username' ? 3 : step;
+    saveSignupSession({ step: persistedStep, email, signupToken, username });
+  }, [step, email, signupToken, username]);
+
+  // Auto-clear the "fresh code sent" banner after 8 s
+  useEffect(() => {
+    if (!otpResent) return;
+    const timer = window.setTimeout(() => setOtpResent(false), 8000);
+    return () => window.clearTimeout(timer);
+  }, [otpResent]);
+
+  // ── Step handlers ─────────────────────────────────────────────────────────
+
   const onStep1 = async (data: RegisterStep1Form) => {
     try {
-      const response = await startSignUp.mutateAsync(data);
-      setEmail(response.data.email);
-      setResendNote('');
-      // Step 2’s “Code sent to …” banner is the confirmation
+      const { data: { email: confirmedEmail } } = await startSignUp.mutateAsync(data);
+      setEmail(confirmedEmail);
+      setOtpResent(false);
       setStep(2);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong',
-      );
+      toast.error(toErrorMessage(error));
     }
   };
 
-  const onStep2 = async (data: RegisterStep2Form) => {
+  const onStep2 = async ({ otp, username: chosenUsername }: RegisterStep2Form) => {
     try {
-      const response = await verifyOtp.mutateAsync({
+      const { data: { signupToken: token } } = await verifyOtp.mutateAsync({
         email,
-        otp: data.otp,
-        username: data.username,
+        otp,
+        username: chosenUsername,
       });
-      setSignupToken(response.data.signupToken);
-      setResendNote('');
-      // Advancing to step 3 is the confirmation
+      setSignupToken(token);
+      setUsername(chosenUsername);
+      setOtpResent(false);
       setStep(3);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong',
-      );
+      toast.error(toErrorMessage(error));
     }
   };
 
-  const onStep3 = async (data: RegisterStep3Form) => {
-    if (!avatar) {
-      setAvatarError('Please upload an avatar');
-      return;
+  const onEditUsername = async ({ username: newUsername }: RegisterEditUsernameForm) => {
+    try {
+      await updateUsername.mutateAsync({ signupToken, username: newUsername });
+      setUsername(newUsername);
+      setStep(3);
+    } catch (error) {
+      toast.error(toErrorMessage(error));
     }
-    setAvatarError('');
+  };
+
+  const onStep3 = async ({ name }: RegisterStep3Form, avatar: File | null) => {
     try {
       const formData = new FormData();
       formData.append('signupToken', signupToken);
-      formData.append('name', data.name);
-      formData.append('avatar', avatar);
-
+      formData.append('name', name);
+      if (avatar) formData.append('avatar', avatar);
       await completeSignUp.mutateAsync(formData);
       clearSignupSession();
-      // Cookie + store + GuestOnly redirect — no toast
+      // Cookie + store + GuestOnly redirect — no toast needed
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong',
-      );
+      toast.error(toErrorMessage(error));
     }
   };
 
   const onResend = async () => {
     try {
-      const response = await resendOtp.mutateAsync({ email });
-      setResendNote(response.message || 'A new code is on its way.');
+      await resendOtp.mutateAsync({ email });
+      setOtpResent(true);
     } catch (error) {
-      setResendNote('');
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong',
-      );
+      toast.error(toErrorMessage(error));
     }
   };
 
+  // ── Navigation ────────────────────────────────────────────────────────────
+
+  /**
+   * Full restart: clears session + all state.
+   * Used when back is pressed before OTP is verified (step 2 without a token).
+   */
+  const restartSignup = () => {
+    clearSignupSession();
+    setStep(1);
+    setEmail('');
+    setSignupToken('');
+    setUsername('');
+    setOtpResent(false);
+  };
+
+  /**
+   * Back from step 2:
+   * - If OTP is already verified (signupToken exists) the user shouldn't be on
+   *   step 2 at all — this is a guard; send them to step 3.
+   * - Otherwise clear and restart from step 1 (no partial state to preserve).
+   */
+  const onBackFromStep2 = () => {
+    if (signupToken) {
+      setStep(3);
+    } else {
+      restartSignup();
+    }
+  };
+
+  /**
+   * Back from step 3:
+   * - User is verified. Show the lightweight "edit username" screen instead of
+   *   sending them back through OTP.
+   */
+  const onBackFromStep3 = () => setStep('edit-username');
+
   const copy = STEP_COPY[step];
+  const dotIndex = visibleStep(step);
 
   return (
     <div className="auth-face-body flex h-full flex-col text-left">
-      <div className="auth-signup-steps" aria-label={`Step ${step} of 3`}>
+      <div className="auth-signup-steps" aria-label={`Step ${dotIndex} of ${TOTAL_VISIBLE_STEPS}`}>
         {([1, 2, 3] as const).map((n) => (
           <span
             key={n}
             className={`auth-signup-steps__dot ${
-              n === step ? 'is-active' : n < step ? 'is-done' : ''
+              n === dotIndex ? 'is-active' : n < dotIndex ? 'is-done' : ''
             }`}
           />
         ))}
-        <span className="auth-signup-steps__label">Step {step} of 3</span>
+        <span className="auth-signup-steps__label">
+          Step {dotIndex} of {TOTAL_VISIBLE_STEPS}
+        </span>
       </div>
 
       <h2 className="mt-4 font-display text-[1.7rem] leading-none tracking-tight text-white">
@@ -177,193 +230,42 @@ const Register = ({ setIsLogin }: RegisterProps) => {
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-body-300">{copy.blurb}</p>
 
-      {step === 1 ? (
-        <form
-          onSubmit={step1.handleSubmit(onStep1)}
-          className="mt-5 flex flex-1 flex-col gap-3"
-        >
-          <AuthField
-            type="email"
-            name="email"
-            label="Email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            register={step1.register}
-            validate={validateEmail}
-            errors={step1.formState.errors}
-          />
-          <AuthField
-            type="password"
-            name="password"
-            label="Password"
-            placeholder="Create a password"
-            autoComplete="new-password"
-            register={step1.register}
-            validate={validatePassword}
-            errors={step1.formState.errors}
-          />
-          <AuthField
-            type="password"
-            name="confirmPassword"
-            label="Confirm"
-            placeholder="Repeat password"
-            autoComplete="new-password"
-            register={step1.register}
-            validate={validateConfirmPassword}
-            errors={step1.formState.errors}
-          />
-
-          <div className="mt-auto flex flex-col gap-3 pt-2">
-            <AuthSubmit pending={pending}>{copy.cta}</AuthSubmit>
-            <GoogleSignInButton disabled={pending} />
-            <p className="text-center text-sm text-body-300">
-              Already have an account?{' '}
-              <button
-                type="button"
-                className="font-semibold text-green transition hover:brightness-110 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
-                onClick={() => setIsLogin(true)}
-              >
-                Sign in
-              </button>
-            </p>
-          </div>
-        </form>
-      ) : null}
-
-      {step === 2 ? (
-        <form
-          onSubmit={step2.handleSubmit(onStep2)}
-          className="mt-5 flex flex-1 flex-col gap-3"
-        >
-          <div className="auth-code-banner">
-            <span className="auth-code-banner__icon" aria-hidden>
-              <svg viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M4 7.5h16a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 17V9A1.5 1.5 0 0 1 4 7.5Z"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                />
-                <path
-                  d="m4 8 8 5.5L20 8"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-            <div className="auth-code-banner__body">
-              <p className="auth-code-banner__eyebrow">Code sent to</p>
-              <p className="auth-code-banner__email">{email}</p>
-            </div>
-            <p className="auth-code-banner__aside">Inbox · 10 min</p>
-          </div>
-          {resendNote ? (
-            <p className="text-xs text-green" role="status">
-              {resendNote}
-            </p>
-          ) : null}
-          <Controller
-            name="otp"
-            control={step2.control}
-            rules={{ validate: validateOtp }}
-            render={({ field, fieldState }) => (
-              <OtpInput
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                disabled={pending}
-                error={fieldState.error?.message}
-              />
-            )}
-          />
-          <AuthField
-            type="text"
-            name="username"
-            label="Username"
-            placeholder="your_handle"
-            autoComplete="username"
-            register={step2.register}
-            validate={validateUsername}
-            errors={step2.formState.errors}
-          />
-
-          <div className="mt-auto flex flex-col gap-3 pt-2 pb-4">
-            <AuthSubmit pending={pending} className="mb-2">
-              {copy.cta}
-            </AuthSubmit>
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <button
-                type="button"
-                className="text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
-                onClick={() => {
-                  clearSignupSession();
-                  setStep(1);
-                  setEmail('');
-                  setSignupToken('');
-                  setResendNote('');
-                  step2.reset();
-                }}
-                disabled={pending}
-              >
-                ← Back
-              </button>
-              <button
-                type="button"
-                className="font-semibold text-green transition hover:brightness-110 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40 disabled:opacity-50"
-                onClick={() => void onResend()}
-                disabled={pending}
-              >
-                Resend code
-              </button>
-            </div>
-          </div>
-        </form>
-      ) : null}
-
-      {step === 3 ? (
-        <form
-          onSubmit={step3.handleSubmit(onStep3)}
-          className="mt-5 flex flex-1 flex-col gap-3"
-        >
-          <AvatarInput
-            file={avatar}
-            setFile={(file) => {
-              setAvatar(file);
-              if (file) setAvatarError('');
-            }}
-          />
-          {avatarError ? (
-            <p className="text-xs text-red" role="alert">
-              {avatarError}
-            </p>
-          ) : null}
-          <AuthField
-            type="text"
-            name="name"
-            label="Full name"
-            placeholder="Your name"
-            autoComplete="name"
-            register={step3.register}
-            validate={validateFullname}
-            errors={step3.formState.errors}
-          />
-
-          <div className="mt-auto flex flex-col gap-3 pt-2 pb-4">
-            <AuthSubmit pending={pending} className="mb-2">
-              {copy.cta}
-            </AuthSubmit>
-            <button
-              type="button"
-              className="text-center text-sm text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
-              onClick={() => setStep(2)}
-              disabled={pending}
-            >
-              ← Back
-            </button>
-          </div>
-        </form>
-      ) : null}
+      {step === 1 && (
+        <RegisterStep1
+          pending={pending}
+          onSubmit={onStep1}
+          onSwitchToLogin={() => setIsLogin(true)}
+          cta={copy.cta}
+        />
+      )}
+      {step === 2 && (
+        <RegisterStep2
+          email={email}
+          otpResent={otpResent}
+          pending={pending}
+          onSubmit={onStep2}
+          onResend={onResend}
+          onBack={onBackFromStep2}
+          cta={copy.cta}
+        />
+      )}
+      {step === 'edit-username' && (
+        <RegisterEditUsername
+          currentUsername={username}
+          pending={pending}
+          onSubmit={onEditUsername}
+          onBack={() => setStep(3)}
+          cta={copy.cta}
+        />
+      )}
+      {step === 3 && (
+        <RegisterStep3
+          pending={pending}
+          onSubmit={onStep3}
+          onBack={onBackFromStep3}
+          cta={copy.cta}
+        />
+      )}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import AuthSubmit from '@/components/auth/AuthSubmit';
 import { useResetPasswordMutation } from '@/hooks/auth';
 import type { ResetPasswordForm } from '@/types/auth';
 import { validateConfirmPassword, validatePassword } from '@/utils/authValidators';
+import { toErrorMessage } from '@/utils/helpers';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -33,9 +34,7 @@ export default function ResetPassword() {
       });
       navigate('/auth', { replace: true });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong',
-      );
+      toast.error(toErrorMessage(error));
     }
   };
 

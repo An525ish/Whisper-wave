@@ -14,6 +14,8 @@ export type AdminStats = {
   pendingRequests: number;
   /** Last 7 days — newest last */
   newUsersSeries: number[];
+  googleUsersSeries: number[];
+  emailUsersSeries: number[];
   messagesSeries: number[];
   groupsSeries: number[];
   requestsSeries: number[];
@@ -29,6 +31,7 @@ export type AdminUserListItem = {
   bio?: string;
   lastSeen?: Date;
   createdAt: Date;
+  isGoogleUser?: boolean;
 };
 
 export type AdminUsersPage = {

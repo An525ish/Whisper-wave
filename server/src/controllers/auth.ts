@@ -1,8 +1,11 @@
 import type { RequestHandler } from 'express';
-import { cookieOptions } from '../config/cors.js';
+import { accessCookieOptions, refreshCookieOptions } from '../config/cors.js';
 import { authService } from '../services/index.js';
+import * as refreshTokenRepo from '../repositories/refreshToken.js';
+import * as userRepo from '../repositories/user.js';
 import type { UploadableFile } from '../types/message.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import { sha256 } from '../services/auth/shared.js';
 import type {
   ForgotPasswordInput,
   GoogleSignInInput,
@@ -11,6 +14,7 @@ import type {
   SignUpCompleteInput,
   SignUpResendInput,
   SignUpStartInput,
+  SignUpUpdateUsernameInput,
   SignUpVerifyInput,
 } from '../validators/auth.js';
 
@@ -47,6 +51,13 @@ export const verifySignUpOtp: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+export const updateSignupUsername: RequestHandler = catchAsync(async (req, res) => {
+  const result = await authService.updateSignupUsername(
+    req.body as SignUpUpdateUsernameInput
+  );
+  res.status(200).json({ success: true, message: result.message });
+});
+
 export const completeSignUp: RequestHandler = catchAsync(async (req, res) => {
   const result = await authService.completeSignUp(
     req.body as SignUpCompleteInput,
@@ -55,7 +66,8 @@ export const completeSignUp: RequestHandler = catchAsync(async (req, res) => {
 
   res
     .status(201)
-    .cookie('accessToken', result.token, cookieOptions)
+    .cookie('accessToken', result.accessToken, accessCookieOptions)
+    .cookie('refreshToken', result.refreshToken, refreshCookieOptions)
     .json({
       success: true,
       message: result.message,
@@ -68,7 +80,8 @@ export const signIn: RequestHandler = catchAsync(async (req, res) => {
 
   res
     .status(200)
-    .cookie('accessToken', result.token, cookieOptions)
+    .cookie('accessToken', result.accessToken, accessCookieOptions)
+    .cookie('refreshToken', result.refreshToken, refreshCookieOptions)
     .json({
       success: true,
       message: result.message,
@@ -76,14 +89,34 @@ export const signIn: RequestHandler = catchAsync(async (req, res) => {
     });
 });
 
-export const signOut: RequestHandler = catchAsync(async (_req, res) => {
+export const refreshToken: RequestHandler = catchAsync(async (req, res) => {
+  const raw = (req.cookies as { refreshToken?: string } | undefined)?.refreshToken;
+  if (!raw) {
+    res.status(401).json({ success: false, message: 'No refresh token' });
+    return;
+  }
+
+  const result = await authService.refreshAccessToken(raw);
+
   res
     .status(200)
-    .clearCookie('accessToken', cookieOptions)
-    .json({
-      success: true,
-      message: 'User Logged out successfully',
-    });
+    .cookie('accessToken', result.accessToken, accessCookieOptions)
+    .cookie('refreshToken', result.refreshToken, refreshCookieOptions)
+    .json({ success: true });
+});
+
+export const signOut: RequestHandler = catchAsync(async (req, res) => {
+  const raw = (req.cookies as { refreshToken?: string } | undefined)?.refreshToken;
+  if (raw) {
+    // Best-effort — don't fail sign-out if token is already expired/missing
+    await refreshTokenRepo.deleteByHash(sha256(raw)).catch(() => undefined);
+  }
+
+  res
+    .status(200)
+    .clearCookie('accessToken', accessCookieOptions)
+    .clearCookie('refreshToken', { ...refreshCookieOptions, maxAge: 0 })
+    .json({ success: true, message: 'User Logged out successfully' });
 });
 
 export const forgotPassword: RequestHandler = catchAsync(async (req, res) => {
@@ -108,6 +141,16 @@ export const resetPassword: RequestHandler = catchAsync(async (req, res) => {
   });
 });
 
+export const checkUsernameAvailability: RequestHandler = catchAsync(async (req, res) => {
+  const username = String((req.query as { username?: string }).username ?? '').trim();
+  if (!username || !/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+    res.status(400).json({ success: false, message: 'Invalid username format' });
+    return;
+  }
+  const taken = await userRepo.existsByUsername(username);
+  res.status(200).json({ success: true, data: { available: !taken } });
+});
+
 export const googleSignIn: RequestHandler = catchAsync(async (req, res) => {
   const result = await authService.googleSignIn(
     req.body as GoogleSignInInput
@@ -115,7 +158,8 @@ export const googleSignIn: RequestHandler = catchAsync(async (req, res) => {
 
   res
     .status(200)
-    .cookie('accessToken', result.token, cookieOptions)
+    .cookie('accessToken', result.accessToken, accessCookieOptions)
+    .cookie('refreshToken', result.refreshToken, refreshCookieOptions)
     .json({
       success: true,
       message: result.message,

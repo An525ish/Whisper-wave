@@ -32,16 +32,3 @@ export type RequestNotification = {
   [key: string]: unknown;
 };
 
-export type AdminStats = {
-  users: number;
-  groups: number;
-  chats: number;
-  onlineUsers: number;
-  messages: number;
-  pendingRequests: number;
-  newUsersSeries?: number[];
-  messagesSeries?: number[];
-  groupsSeries?: number[];
-  requestsSeries?: number[];
-  seriesLabels?: string[];
-};

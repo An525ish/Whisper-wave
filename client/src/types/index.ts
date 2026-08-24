@@ -7,7 +7,6 @@ export type {
   ApiSuccess,
   MessageNotification,
   RequestNotification,
-  AdminStats,
 } from '@/types/user';
 export type { IconProps } from '@/types/icon';
 

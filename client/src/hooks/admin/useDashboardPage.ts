@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useAdminStatsQuery } from '@/hooks/admin';
-import type { AdminStats } from '@/types';
+import type { AdminStats } from '@/types/admin';
 import type { DashboardMetric } from '@/types/admin';
 import {
   buildCompositionSegments,
@@ -17,6 +17,8 @@ export function useDashboardPage() {
 
   const seriesLabels = stats?.seriesLabels ?? [];
   const newUsersSeries = stats?.newUsersSeries ?? [];
+  const googleUsersSeries = stats?.googleUsersSeries ?? [];
+  const emailUsersSeries = stats?.emailUsersSeries ?? [];
   const messagesSeries = stats?.messagesSeries ?? [];
   const groupsSeries = stats?.groupsSeries ?? [];
   const requestsSeries = stats?.requestsSeries ?? [];
@@ -77,6 +79,8 @@ export function useDashboardPage() {
     metrics,
     seriesLabels,
     newUsersSeries,
+    googleUsersSeries,
+    emailUsersSeries,
     messagesSeries,
     groupsSeries,
     requestsSeries,

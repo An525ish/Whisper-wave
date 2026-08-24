@@ -16,6 +16,8 @@ const Users = () => {
     searchText,
     setSearchText,
     querySearch,
+    signupMethod,
+    setSignupMethod,
     selectedUserId,
     setSelectedUserId,
     users,
@@ -49,6 +51,8 @@ const Users = () => {
           querySearch={querySearch}
           searchText={searchText}
           showMinSearchHint={showMinSearchHint}
+          signupMethod={signupMethod}
+          onSignupMethodChange={setSignupMethod}
           onClearSearch={() => setSearchText('')}
         />
 

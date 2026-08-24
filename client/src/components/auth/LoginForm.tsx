@@ -4,6 +4,7 @@ import AuthSubmit from '@/components/auth/AuthSubmit';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { useSignInMutation } from '@/hooks/auth';
 import type { LoginForm } from '@/types/auth';
+import { toErrorMessage } from '@/utils/helpers';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 
@@ -31,9 +32,7 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
     try {
       await signIn.mutateAsync(data);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong',
-      );
+      toast.error(toErrorMessage(error));
     }
   };
 

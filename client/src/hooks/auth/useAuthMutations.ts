@@ -34,6 +34,12 @@ export function useVerifySignUpOtpMutation() {
   });
 }
 
+export function useUpdateSignupUsernameMutation() {
+  return useMutation({
+    mutationFn: authApi.updateSignupUsername,
+  });
+}
+
 export function useCompleteSignUpMutation() {
   const setUser = useAuthStore((s) => s.setUser);
   const queryClient = useQueryClient();

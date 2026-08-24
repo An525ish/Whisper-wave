@@ -9,18 +9,23 @@ import {
 } from '../presence/index.js';
 
 export const getStats = async (): Promise<AdminStats> => {
-  const [users, groups, chats, messages, pendingRequests, newUsers, messageSeries, groupsBuckets, requestsBuckets] =
-    await Promise.all([
-      userRepo.countAll(),
-      chatRepo.countGroups(),
-      chatRepo.countAll(),
-      messageRepo.countAll(),
-      requestRepo.countPending(),
-      buildLast7DayBuckets(userRepo.countCreatedByDay),
-      buildLast7DayBuckets(messageRepo.countCreatedByDay),
-      buildLast7DayBuckets(chatRepo.countGroupsCreatedByDay),
-      buildLast7DayBuckets(requestRepo.countCreatedByDay),
-    ]);
+  const [
+    users, groups, chats, messages, pendingRequests,
+    newUsers, googleUsers, emailUsers,
+    messageSeries, groupsBuckets, requestsBuckets,
+  ] = await Promise.all([
+    userRepo.countAll(),
+    chatRepo.countGroups(),
+    chatRepo.countAll(),
+    messageRepo.countAll(),
+    requestRepo.countPending(),
+    buildLast7DayBuckets(userRepo.countCreatedByDay),
+    buildLast7DayBuckets(userRepo.countGoogleCreatedByDay),
+    buildLast7DayBuckets(userRepo.countEmailCreatedByDay),
+    buildLast7DayBuckets(messageRepo.countCreatedByDay),
+    buildLast7DayBuckets(chatRepo.countGroupsCreatedByDay),
+    buildLast7DayBuckets(requestRepo.countCreatedByDay),
+  ]);
 
   return {
     users,
@@ -31,6 +36,8 @@ export const getStats = async (): Promise<AdminStats> => {
     onlineUsers: getPresenceSize(),
     seriesLabels: newUsers.labels,
     newUsersSeries: newUsers.values,
+    googleUsersSeries: googleUsers.values,
+    emailUsersSeries: emailUsers.values,
     messagesSeries: messageSeries.values,
     groupsSeries: groupsBuckets.values,
     requestsSeries: requestsBuckets.values,

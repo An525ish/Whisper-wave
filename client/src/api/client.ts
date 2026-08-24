@@ -39,42 +39,74 @@ function buildUrl(
   return url.toString();
 }
 
+function parseBody(body: unknown): BodyInit | null | undefined {
+  if (body instanceof FormData || typeof body === 'string' || body == null) {
+    return body as BodyInit | null;
+  }
+  return JSON.stringify(body);
+}
+
+async function parseResponse(response: Response): Promise<unknown> {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json')) return response.json();
+  return null;
+}
+
+function extractMessage(payload: unknown): string {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    'message' in payload &&
+    typeof (payload as { message: unknown }).message === 'string'
+  ) {
+    return (payload as { message: string }).message;
+  }
+  return 'Request failed';
+}
+
+/** Attempt a silent token refresh. Returns true if successful. */
+async function tryRefresh(): Promise<boolean> {
+  try {
+    const res = await fetch(buildUrl('/auth/refresh'), {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function request<T>(
   endpoint: string,
   options: RequestOptions = {},
+  isRetry = false,
 ): Promise<T> {
   const { method = 'GET', body, headers, params } = options;
 
-  const isFormData =
-    typeof FormData !== 'undefined' && body instanceof FormData;
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
 
   const response = await fetch(buildUrl(endpoint, params), {
     method,
     credentials: 'include',
     headers: isFormData
       ? headers
-      : {
-          'Content-Type': 'application/json',
-          ...headers,
-        },
+      : { 'Content-Type': 'application/json', ...headers },
     body,
   });
 
-  let payload: unknown = null;
-  const contentType = response.headers.get('content-type') ?? '';
-  if (contentType.includes('application/json')) {
-    payload = await response.json();
-  }
+  const payload = await parseResponse(response);
 
   if (!response.ok) {
-    const message =
-      payload &&
-      typeof payload === 'object' &&
-      'message' in payload &&
-      typeof (payload as { message: unknown }).message === 'string'
-        ? (payload as { message: string }).message
-        : 'Request failed';
-    throw new ApiError(message, response.status, payload);
+    // On first 401, silently try to refresh the access token then retry once.
+    if (response.status === 401 && !isRetry) {
+      const refreshed = await tryRefresh();
+      if (refreshed) {
+        return request<T>(endpoint, options, true);
+      }
+    }
+
+    throw new ApiError(extractMessage(payload), response.status, payload);
   }
 
   return payload as T;
@@ -84,17 +116,10 @@ export const api = {
   get: <T>(endpoint: string, params?: RequestOptions['params']) =>
     request<T>(endpoint, { method: 'GET', params }),
 
-  post: <T>(
-    endpoint: string,
-    body?: unknown,
-    headers?: HeadersInit,
-  ) =>
+  post: <T>(endpoint: string, body?: unknown, headers?: HeadersInit) =>
     request<T>(endpoint, {
       method: 'POST',
-      body:
-        body instanceof FormData || typeof body === 'string' || body == null
-          ? (body as BodyInit | null)
-          : JSON.stringify(body),
+      body: parseBody(body),
       headers,
     }),
 

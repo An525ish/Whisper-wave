@@ -13,11 +13,12 @@ export const listUsers = async (input: AdminUsersQuery): Promise<AdminUsersPage>
   const limit = input.limit;
   const fetchLimit = limit + 1;
   const q = input.q?.trim() || undefined;
+  const signupMethod = input.signupMethod === 'all' ? undefined : input.signupMethod;
   const isFirstPage = !before;
 
   const [rows, total] = await Promise.all([
-    userRepo.listForAdminPage({ limit: fetchLimit, before, q }),
-    isFirstPage ? userRepo.countForAdmin(q) : Promise.resolve(undefined),
+    userRepo.listForAdminPage({ limit: fetchLimit, before, q, signupMethod }),
+    isFirstPage ? userRepo.countForAdminFiltered(q, input.signupMethod) : Promise.resolve(undefined),
   ]);
 
   const users = rows.slice(0, limit);

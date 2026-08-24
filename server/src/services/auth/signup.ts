@@ -7,8 +7,8 @@ import type { UploadableFile } from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.js';
 import { sendMail } from '../../utils/mail.js';
-import { generateToken } from '../../utils/token.js';
 import {
+  DEFAULT_USER_AVATAR,
   MAX_OTP_ATTEMPTS,
   PENDING_TTL_MS,
   RESEND_COOLDOWN_MS,
@@ -18,11 +18,13 @@ import type {
   SignUpCompleteInput,
   SignUpResendInput,
   SignUpStartInput,
+  SignUpUpdateUsernameInput,
   SignUpVerifyInput,
 } from '../../validators/auth.js';
 import {
   assertAcceptableEmail,
   assertMailReady,
+  issueAuthTokens,
   issueOtp,
   normalizeEmail,
   sha256,
@@ -32,7 +34,7 @@ import {
 const sendSignupOtpMail = async (email: string, otp: string): Promise<void> => {
   await sendMail({
     to: email,
-    subject: 'Your Whisper Wave verification code',
+    subject: 'Verification Code',
     text: `Your verification code is ${otp}. It expires in 10 minutes.\n\nIf you didn’t start signup, ignore this email.`,
     html: `
       <p>Your Whisper Wave verification code:</p>
@@ -157,14 +159,35 @@ export const verifySignUpOtp = async (
   };
 };
 
+export const updateSignupUsername = async (
+  input: SignUpUpdateUsernameInput
+): Promise<{ message: string }> => {
+  const pending = await pendingSignupRepo.findBySignupTokenHash(
+    sha256(input.signupToken)
+  );
+
+  if (!pending?.emailVerifiedAt) {
+    throw new AppError(400, 'Signup session invalid or expired. Verify your email again.');
+  }
+
+  if (pending.username === input.username) {
+    return { message: 'Username unchanged.' };
+  }
+
+  const taken = await userRepo.findByUsername(input.username);
+  if (taken) {
+    throw new AppError(409, 'Username already taken');
+  }
+
+  await pendingSignupRepo.updateByEmail(pending.email, { username: input.username });
+
+  return { message: 'Username updated.' };
+};
+
 export const completeSignUp = async (
   input: SignUpCompleteInput,
   avatarFile?: UploadableFile
 ): Promise<AuthResult> => {
-  if (!avatarFile) {
-    throw new AppError(400, 'Please upload an avatar');
-  }
-
   const pending = await pendingSignupRepo.findBySignupTokenHash(
     sha256(input.signupToken)
   );
@@ -191,9 +214,16 @@ export const completeSignUp = async (
     throw new AppError(409, 'Email already in use');
   }
 
-  const uploadedAvatar = await uploadToCloudinary([avatarFile]);
-  if (!uploadedAvatar.length) {
-    throw new AppError(400, 'Failed to upload avatar');
+  let avatar: { publicId: string; url: string } = { ...DEFAULT_USER_AVATAR };
+  if (avatarFile) {
+    const uploadedAvatar = await uploadToCloudinary([avatarFile]);
+    if (!uploadedAvatar.length) {
+      throw new AppError(400, 'Failed to upload avatar');
+    }
+    avatar = {
+      publicId: uploadedAvatar[0].publicId,
+      url: uploadedAvatar[0].url,
+    };
   }
 
   const user = await userRepo.create({
@@ -201,17 +231,17 @@ export const completeSignUp = async (
     username: pending.username,
     email,
     password: pending.passwordHash,
-    avatar: {
-      publicId: uploadedAvatar[0].publicId,
-      url: uploadedAvatar[0].url,
-    },
+    avatar,
     bio: input.bio,
   });
 
   await pendingSignupRepo.deleteById(pending._id.toString());
 
+  const { accessToken, refreshToken } = await issueAuthTokens(user._id.toString());
+
   return {
-    token: generateToken(user._id.toString()),
+    accessToken,
+    refreshToken,
     message: 'Registered successfully',
     user: toPublicUser(user),
   };

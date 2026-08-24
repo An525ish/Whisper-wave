@@ -39,6 +39,8 @@ export type AdminStats = {
   onlineUsers: number;
   pendingRequests: number;
   newUsersSeries: number[];
+  googleUsersSeries: number[];
+  emailUsersSeries: number[];
   messagesSeries: number[];
   groupsSeries: number[];
   requestsSeries: number[];
@@ -124,7 +126,10 @@ export type AdminUserRow = {
   email?: string;
   lastSeen?: string;
   createdAt?: string;
+  isGoogleUser?: boolean;
 };
+
+export type SignupMethodFilter = 'all' | 'google' | 'email';
 
 export type UserFilterOption = Pick<AdminUserRow, '_id' | 'name' | 'username'> & {
   avatarUrl?: string;

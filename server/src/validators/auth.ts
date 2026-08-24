@@ -44,6 +44,11 @@ export const signUpResendSchema = z.object({
   email: emailField,
 });
 
+export const signUpUpdateUsernameSchema = z.object({
+  signupToken: z.string().trim().min(1, 'Signup session is required'),
+  username: usernameField,
+});
+
 export const signUpCompleteSchema = z.object({
   signupToken: z.string().trim().min(1, 'Signup session is required'),
   name: z.string().trim().min(1, 'Name is required').max(50),
@@ -77,6 +82,7 @@ export type GoogleSignInInput = z.infer<typeof googleSignInSchema>;
 export type SignUpStartInput = z.infer<typeof signUpStartSchema>;
 export type SignUpVerifyInput = z.infer<typeof signUpVerifySchema>;
 export type SignUpResendInput = z.infer<typeof signUpResendSchema>;
+export type SignUpUpdateUsernameInput = z.infer<typeof signUpUpdateUsernameSchema>;
 export type SignUpCompleteInput = z.infer<typeof signUpCompleteSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
