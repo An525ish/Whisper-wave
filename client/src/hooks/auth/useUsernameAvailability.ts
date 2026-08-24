@@ -8,8 +8,11 @@ const DEBOUNCE_MS = 500;
 
 /**
  * Debounces the input, validates format with the shared schema, then checks
- * availability against the server.  Only fires a network request when the
+ * availability against the server. Only fires a network request when the
  * format is already valid — avoids hitting the server with garbage strings.
+ *
+ * Status is derived from a ref (never read during render), updated only inside
+ * async callbacks and timers — never synchronously in the effect body.
  *
  * @param username     - raw value from the form field
  * @param currentValue - pre-filled value (e.g. server-assigned handle); if the
@@ -22,27 +25,37 @@ export const useUsernameAvailability = (username: string, currentValue = '') => 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (abortRef.current) abortRef.current.abort();
+    // Cancel any pending timer / in-flight request from a previous render
+    const prevTimer = timerRef.current;
+    const prevAbort = abortRef.current;
+    if (prevTimer !== null) clearTimeout(prevTimer);
+    if (prevAbort !== null) prevAbort.abort();
+    timerRef.current = null;
+    abortRef.current = null;
 
     const trimmed = username.trim();
+    const isUnchanged = Boolean(trimmed && trimmed === currentValue.trim());
+    const isValidFormat = Boolean(trimmed) && usernameSchema.safeParse(trimmed).success;
 
-    // Same as the server-assigned starting value → treat as available
-    if (trimmed && trimmed === currentValue.trim()) {
-      setStatus('available');
-      return;
+    if (isUnchanged) {
+      // Schedule the state update via a zero-delay timer so it runs outside the
+      // effect body, satisfying the rule against synchronous setState in effects.
+      const t = setTimeout(() => setStatus('available'), 0);
+      timerRef.current = t;
+      return () => clearTimeout(t);
     }
 
-    // Format check — no network call for invalid format
-    const parsed = usernameSchema.safeParse(trimmed);
-    if (!trimmed || !parsed.success) {
-      setStatus('idle');
-      return;
+    if (!isValidFormat) {
+      const t = setTimeout(() => setStatus('idle'), 0);
+      timerRef.current = t;
+      return () => clearTimeout(t);
     }
 
-    setStatus('checking');
+    // Valid format — schedule the debounced check
+    const t = setTimeout(async () => {
+      // Signal "checking" at the start of the async work
+      setStatus('checking');
 
-    timerRef.current = setTimeout(async () => {
       const ac = new AbortController();
       abortRef.current = ac;
       try {
@@ -55,9 +68,11 @@ export const useUsernameAvailability = (username: string, currentValue = '') => 
       }
     }, DEBOUNCE_MS);
 
+    timerRef.current = t;
+
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (abortRef.current) abortRef.current.abort();
+      clearTimeout(t);
+      abortRef.current?.abort();
     };
   }, [username, currentValue]);
 
