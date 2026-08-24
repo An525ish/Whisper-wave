@@ -4,14 +4,17 @@ import {
   Outlet,
   type RouteObject,
 } from 'react-router-dom';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { SocketProvider } from '@/socket/SocketProvider';
 import { useAuthStore } from '@/stores/auth';
 import { useAdminStore } from '@/stores/admin';
-import type { ReactNode } from 'react';
 import AdminWrapper from '@/layout/AdminWrapper';
 import AppLoader from '@/components/ui/loader/AppLoader';
 import { useAdminMeQuery } from '@/hooks/admin';
 import RouteError from '@/app/RouteError';
+
+const Landing = lazy(() => import('@/pages/Landing'));
+const Home = lazy(() => import('@/pages/Home'));
 
 function ProtectedRoutes({
   allow,
@@ -40,6 +43,22 @@ function GuestOnly() {
   return <ProtectedRoutes allow={!user} redirect="/" />;
 }
 
+/** Guests see the landing page. Signed-in users see the chat home. */
+function RootIndex() {
+  const user = useAuthStore((s) => s.user);
+  return (
+    <Suspense fallback={<AppLoader />}>
+      {user ? (
+        <SocketProvider>
+          <Home />
+        </SocketProvider>
+      ) : (
+        <Landing />
+      )}
+    </Suspense>
+  );
+}
+
 /** Probe admin cookie only under /admin — not on every app boot. */
 function AdminBootstrap() {
   const { isLoading } = useAdminMeQuery();
@@ -64,6 +83,10 @@ function AdminAuthed() {
 }
 
 const appRoutes = [
+  {
+    path: '/landing',
+    element: <Navigate to="/" replace />,
+  },
   {
     path: '/admin',
     element: <AdminBootstrap />,
@@ -151,21 +174,22 @@ const appRoutes = [
   },
   {
     path: '/',
-    element: <AuthedLayout />,
     children: [
       {
-        path: '/',
-        lazy: async () => {
-          const module = await import('@/pages/Home');
-          return { Component: module.default };
-        },
+        index: true,
+        element: <RootIndex />,
       },
       {
-        path: 'chat/:chatId',
-        lazy: async () => {
-          const module = await import('@/pages/Chat');
-          return { Component: module.default };
-        },
+        element: <AuthedLayout />,
+        children: [
+          {
+            path: 'chat/:chatId',
+            lazy: async () => {
+              const module = await import('@/pages/Chat');
+              return { Component: module.default };
+            },
+          },
+        ],
       },
     ],
   },
