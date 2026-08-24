@@ -166,3 +166,7 @@ export const normalizeMediaAttachments = (
 
 export const getInitial = (label: string): string =>
   (label.trim()[0] || '?').toUpperCase();
+
+/** Converts any caught value into a human-readable message for toast/UI. */
+export const toErrorMessage = (error: unknown, fallback = 'Something went wrong'): string =>
+  error instanceof Error ? error.message : fallback;

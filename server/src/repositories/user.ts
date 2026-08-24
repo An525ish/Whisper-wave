@@ -19,6 +19,9 @@ export const findByUsername = async (
   username: string
 ): Promise<LeanUser | null> => User.findOne({ username }).lean<LeanUser>();
 
+export const existsByUsername = async (username: string): Promise<boolean> =>
+  User.exists({ username: username.toLowerCase().trim() }).then(Boolean);
+
 export const findByUsernameWithPassword = async (
   username: string
 ): Promise<UserAuthRecord | null> =>
@@ -157,19 +160,38 @@ export const listForAdminPage = async ({
   limit,
   before,
   q,
+  signupMethod,
 }: {
   limit: number;
   before?: Date;
   q?: string;
+  signupMethod?: 'all' | 'google' | 'email';
 }): Promise<AdminUserListItem[]> => {
   const filter: Record<string, unknown> = { ...adminUserFilter(q) };
   if (before) filter.createdAt = { $lt: before };
+  if (signupMethod === 'google') filter.googleId = { $exists: true };
+  if (signupMethod === 'email') filter.googleId = { $exists: false };
 
-  return User.find(filter)
-    .select('name username avatar email bio lastSeen createdAt')
+  const rows = await User.find(filter)
+    .select('name username avatar email bio lastSeen createdAt googleId')
     .sort({ createdAt: -1 })
     .limit(limit)
-    .lean<AdminUserListItem[]>();
+    .lean<(AdminUserListItem & { googleId?: string })[]>();
+
+  return rows.map(({ googleId, ...rest }) => ({
+    ...rest,
+    isGoogleUser: Boolean(googleId),
+  }));
+};
+
+export const countForAdminFiltered = async (
+  q?: string,
+  signupMethod?: 'all' | 'google' | 'email',
+): Promise<number> => {
+  const filter: Record<string, unknown> = { ...adminUserFilter(q) };
+  if (signupMethod === 'google') filter.googleId = { $exists: true };
+  if (signupMethod === 'email') filter.googleId = { $exists: false };
+  return User.countDocuments(filter);
 };
 
 export const findByIdForAdmin = async (
@@ -217,13 +239,37 @@ export const countCreatedByDay = async (
     { $match: { createdAt: { $gte: start, $lte: end } } },
     {
       $group: {
-        _id: {
-          $dateToString: {
-            format: '%Y-%m-%d',
-            date: '$createdAt',
-            timezone: 'UTC',
-          },
-        },
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+export const countGoogleCreatedByDay = async (
+  start: Date,
+  end: Date
+): Promise<DayCount[]> =>
+  User.aggregate<DayCount>([
+    { $match: { createdAt: { $gte: start, $lte: end }, googleId: { $exists: true } } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+export const countEmailCreatedByDay = async (
+  start: Date,
+  end: Date
+): Promise<DayCount[]> =>
+  User.aggregate<DayCount>([
+    { $match: { createdAt: { $gte: start, $lte: end }, googleId: { $exists: false } } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'UTC' } },
         count: { $sum: 1 },
       },
     },

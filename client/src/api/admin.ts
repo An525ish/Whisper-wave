@@ -1,5 +1,6 @@
 import { api } from '@/api/client';
-import type { AdminStats, ApiSuccess } from '@/types';
+import type { ApiSuccess } from '@/types';
+import type { AdminStats } from '@/types/admin';
 import type {
   AdminActivityEventsPage,
   AdminActivityFilter,
@@ -31,11 +32,13 @@ export const getAdminUsers = (params: {
   limit?: number;
   before?: string;
   q?: string;
+  signupMethod?: 'all' | 'google' | 'email';
 }) =>
   api.get<ApiSuccess & AdminUsersPage>('/admin/users', {
     limit: params.limit ?? USERS_PAGE_SIZE,
     before: params.before,
     q: params.q,
+    signupMethod: params.signupMethod ?? 'all',
   });
 
 export const getAdminUser = (id: string) =>

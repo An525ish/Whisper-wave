@@ -1,5 +1,5 @@
 import { DASHBOARD_COMPOSITION_GLOWS } from '@/constants/admin/dashboard';
-import type { AdminStats } from '@/types';
+import type { AdminStats } from '@/types/admin';
 import type { DashboardCompositionSegment } from '@/types/admin';
 
 export const sumSeries = (values: number[]): number =>

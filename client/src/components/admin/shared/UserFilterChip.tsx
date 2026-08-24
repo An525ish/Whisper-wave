@@ -24,7 +24,7 @@ const UserFilterChip = ({ value, onChange, label = 'Sender', popoverAlign = 'lef
   }, [inputText]);
 
   const active = debouncedSearch.length >= 2;
-  const { data, isFetching } = useAdminUsersQuery(active ? debouncedSearch : '', active);
+  const { data, isFetching } = useAdminUsersQuery(active ? debouncedSearch : '', 'all', active);
 
   const options: UserFilterOption[] = (data?.pages ?? []).flatMap((page) =>
     page.users.map((u) => ({

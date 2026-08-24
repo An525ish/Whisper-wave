@@ -1,11 +1,13 @@
 import { createHash, randomInt } from 'node:crypto';
 import type { Types } from 'mongoose';
-import type { PublicUser } from '../../types/user.js';
+import type { AuthResult, PublicUser } from '../../types/user.js';
 import { AppError } from '../../utils/AppError.js';
 import { isAllowedEmail } from '../../utils/disposableEmail.js';
 import { isMailConfigured } from '../../utils/mail.js';
 import { isProd } from '../../config/env.js';
 import { OTP_TTL_MS } from '../../constants/auth.js';
+import * as refreshTokenRepo from '../../repositories/refreshToken.js';
+import { generateAccessToken, generateRefreshToken, REFRESH_TOKEN_TTL_MS } from '../../utils/token.js';
 
 export const sha256 = (value: string): string =>
   createHash('sha256').update(value).digest('hex');
@@ -55,3 +57,18 @@ export const issueOtp = (): { otp: string; otpHash: string; otpExpiresAt: Date }
 
 export const normalizeEmail = (email: string): string =>
   email.toLowerCase().trim();
+
+/**
+ * Issues an access token (JWT, 15 min) and a refresh token (opaque random,
+ * 7 days stored hashed in DB). Returns both raw strings — callers set them as
+ * separate httpOnly cookies.
+ */
+export const issueAuthTokens = async (
+  userId: string
+): Promise<Pick<AuthResult, 'accessToken' | 'refreshToken'>> => {
+  const accessToken = generateAccessToken(userId);
+  const refreshToken = generateRefreshToken();
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+  await refreshTokenRepo.create(userId, sha256(refreshToken), expiresAt);
+  return { accessToken, refreshToken };
+};

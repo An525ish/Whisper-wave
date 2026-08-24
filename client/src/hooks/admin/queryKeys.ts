@@ -1,7 +1,7 @@
 export const adminQueryKeys = {
   me: ['adminMe'] as const,
   stats: ['adminStats'] as const,
-  users: (q: string) => ['adminUsers', 'list', q] as const,
+  users: (q: string, signupMethod = 'all') => ['adminUsers', 'list', q, signupMethod] as const,
   userDetail: (id: string) => ['adminUsers', 'detail', id] as const,
   messages: (status: string, q: string, senderId = '') => ['adminMessages', 'list', status, q, senderId] as const,
   groups: (q: string, memberId = '') => ['adminGroups', 'list', q, memberId] as const,

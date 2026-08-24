@@ -1,8 +1,9 @@
 import { useGoogleLogin } from '@react-oauth/google';
 import { useGoogleSignInMutation } from '@/hooks/auth';
+import { toErrorMessage } from '@/utils/helpers';
 import toast from 'react-hot-toast';
 
-type Props = {
+type GoogleSignInButtonProps = {
   disabled?: boolean;
 };
 
@@ -37,7 +38,7 @@ const GoogleMark = ({ className = '' }: { className?: string }) => (
  * Uses GIS popup access-token flow; server verifies via Google userinfo.
  * Hidden when VITE_GOOGLE_CLIENT_ID is unset (no OAuth provider mounted).
  */
-const GoogleSignInButtonInner = ({ disabled }: Props) => {
+const GoogleSignInButtonInner = ({ disabled }: GoogleSignInButtonProps) => {
   const googleSignIn = useGoogleSignInMutation();
   const busy = disabled || googleSignIn.isPending;
 
@@ -52,9 +53,7 @@ const GoogleSignInButtonInner = ({ disabled }: Props) => {
           accessToken: tokenResponse.access_token,
         });
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : 'Google sign-in failed.',
-        );
+        toast.error(toErrorMessage(error, 'Google sign-in failed.'));
       }
     },
     onError: () => {
@@ -94,7 +93,7 @@ const GoogleSignInButtonInner = ({ disabled }: Props) => {
   );
 };
 
-const GoogleSignInButton = (props: Props) => {
+const GoogleSignInButton = (props: GoogleSignInButtonProps) => {
   if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) return null;
   return <GoogleSignInButtonInner {...props} />;
 };

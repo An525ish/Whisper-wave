@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ADMIN_MIN_SEARCH_LEN } from '@/constants/admin/users';
 import { SEARCH_DEBOUNCE_MS } from '@/constants/app';
 import { useAdminStatsQuery, useAdminUsersQuery } from '@/hooks/admin';
+import type { SignupMethodFilter } from '@/types/admin';
 import { sumSeries } from '@/utils/admin/dashboard';
 
 export function useUsersPage() {
@@ -9,6 +10,7 @@ export function useUsersPage() {
   const [searchText, setSearchText] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [signupMethod, setSignupMethod] = useState<SignupMethodFilter>('all');
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -29,7 +31,7 @@ export function useUsersPage() {
     fetchNextPage,
     isError,
     refetch,
-  } = useAdminUsersQuery(querySearch);
+  } = useAdminUsersQuery(querySearch, signupMethod);
 
   const users = useMemo(
     () => data?.pages.flatMap((page) => page.users) ?? [],
@@ -58,6 +60,8 @@ export function useUsersPage() {
     searchText,
     setSearchText,
     querySearch,
+    signupMethod,
+    setSignupMethod,
     selectedUserId,
     setSelectedUserId,
     users,

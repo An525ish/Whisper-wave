@@ -30,6 +30,7 @@ export const adminUsersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   before: z.string().min(1).optional(),
   q: z.string().max(120).optional(),
+  signupMethod: z.enum(['all', 'google', 'email']).default('all'),
 });
 
 export type AdminUsersQuery = z.infer<typeof adminUsersQuerySchema>;

@@ -5,10 +5,10 @@ import * as userRepo from '../../repositories/user.js';
 import type { AuthResult } from '../../types/user.js';
 import { AppError } from '../../utils/AppError.js';
 import { uploadUrlToCloudinary } from '../../utils/cloudinary.js';
-import { generateToken } from '../../utils/token.js';
 import { env } from '../../config/env.js';
+import { DEFAULT_USER_AVATAR } from '../../constants/auth.js';
 import type { GoogleSignInInput } from '../../validators/auth.js';
-import { assertAcceptableEmail, normalizeEmail, toPublicUser } from './shared.js';
+import { assertAcceptableEmail, issueAuthTokens, normalizeEmail, toPublicUser } from './shared.js';
 
 const googleClient = new OAuth2Client();
 
@@ -106,8 +106,10 @@ export const googleSignIn = async (
 
   const existingByGoogle = await userRepo.findByGoogleId(googleId);
   if (existingByGoogle) {
+    const { accessToken, refreshToken } = await issueAuthTokens(existingByGoogle._id.toString());
     return {
-      token: generateToken(existingByGoogle._id.toString()),
+      accessToken,
+      refreshToken,
       message: `Welcome back, ${existingByGoogle.name}`,
       user: toPublicUser(existingByGoogle),
     };
@@ -116,8 +118,10 @@ export const googleSignIn = async (
   const existingByEmail = await userRepo.findByEmail(normalizedEmail);
   if (existingByEmail) {
     await userRepo.updateById(existingByEmail._id.toString(), { googleId });
+    const { accessToken, refreshToken } = await issueAuthTokens(existingByEmail._id.toString());
     return {
-      token: generateToken(existingByEmail._id.toString()),
+      accessToken,
+      refreshToken,
       message: `Welcome back, ${existingByEmail.name}`,
       user: toPublicUser(existingByEmail),
     };
@@ -129,9 +133,9 @@ export const googleSignIn = async (
   try {
     avatar = picture
       ? await uploadUrlToCloudinary(picture)
-      : { publicId: 'no-avatar', url: '/images/no-avatar.svg' };
+      : { ...DEFAULT_USER_AVATAR };
   } catch {
-    avatar = { publicId: 'no-avatar', url: '/images/no-avatar.svg' };
+    avatar = { ...DEFAULT_USER_AVATAR };
   }
 
   const username = await deriveUsername(name);
@@ -146,8 +150,10 @@ export const googleSignIn = async (
     avatar,
   });
 
+  const { accessToken, refreshToken } = await issueAuthTokens(newUser._id.toString());
   return {
-    token: generateToken(newUser._id.toString()),
+    accessToken,
+    refreshToken,
     message: `Welcome to Whisper Wave, ${newUser.name}`,
     user: toPublicUser(newUser),
   };

@@ -3,6 +3,7 @@ import AuthSubmit from '@/components/auth/AuthSubmit';
 import { useForgotPasswordMutation } from '@/hooks/auth';
 import type { ForgotPasswordForm } from '@/types/auth';
 import { validateEmail } from '@/utils/authValidators';
+import { toErrorMessage } from '@/utils/helpers';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -26,9 +27,7 @@ const ForgotPassword = ({ setIsForget }: ForgotPasswordProps) => {
       await forgotPassword.mutateAsync(data);
       setSent(true);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong',
-      );
+      toast.error(toErrorMessage(error));
     }
   };
 

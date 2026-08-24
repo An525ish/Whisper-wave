@@ -1628,7 +1628,7 @@
 
 .auth-code-banner {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.85rem;
   padding: 0.85rem 1rem;
   border-radius: 1rem;
@@ -1685,6 +1685,41 @@
   font-size: 0.6875rem;
   line-height: 1.35;
   color: rgba(235, 236, 236, 0.45);
+}
+
+.auth-code-banner.is-resent {
+  border-color: rgba(1, 195, 109, 0.42);
+  box-shadow: 0 0 0 1px rgba(1, 195, 109, 0.08);
+  animation: auth-code-banner-resent 0.55s ease;
+}
+
+.auth-code-banner.is-resent .auth-code-banner__icon {
+  background: rgba(1, 195, 109, 0.22);
+}
+
+.auth-code-banner.is-resent .auth-code-banner__eyebrow {
+  color: var(--color-green);
+}
+
+.auth-code-banner.is-resent .auth-code-banner__aside {
+  color: var(--color-green);
+}
+
+@keyframes auth-code-banner-resent {
+  0% {
+    transform: scale(0.985);
+    opacity: 0.72;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-code-banner.is-resent {
+    animation: none;
+  }
 }
 
 .auth-otp-field {
@@ -1966,5 +2001,77 @@
 
   .auth-submit:enabled:hover::after {
     transform: none;
+  }
+}
+
+/* Admin / dashboard chart hover card */
+.chart-tip {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  min-width: 9.5rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(22 18 28 / 0.92);
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 14px));
+  transition: opacity 0.12s ease;
+}
+
+.chart-tip.is-on {
+  opacity: 1;
+}
+
+.chart-tip__day {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(235 236 236 / 0.45);
+}
+
+.chart-tip__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.chart-tip__row {
+  display: grid;
+  grid-template-columns: 0.5rem 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chart-tip__swatch {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+}
+
+.chart-tip__name {
+  font-size: 0.75rem;
+  color: rgb(235 236 236 / 0.7);
+}
+
+.chart-tip__val {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #ebecec;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-tip {
+    transition: none;
   }
 }

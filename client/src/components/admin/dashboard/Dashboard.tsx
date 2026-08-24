@@ -11,6 +11,8 @@ const Dashboard = () => {
     metrics,
     seriesLabels,
     newUsersSeries,
+    googleUsersSeries,
+    emailUsersSeries,
     messagesSeries,
     groupsSeries,
     requestsSeries,
@@ -41,6 +43,8 @@ const Dashboard = () => {
         <GrowthChartSection
           seriesLabels={seriesLabels}
           newUsersSeries={newUsersSeries}
+          googleUsersSeries={googleUsersSeries}
+          emailUsersSeries={emailUsersSeries}
           weekUsers={weekUsers}
         />
         <MessageVolumeSection

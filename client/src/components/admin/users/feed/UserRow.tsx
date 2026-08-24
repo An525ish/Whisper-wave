@@ -26,6 +26,11 @@ const UserRow = ({ user, onOpen }: UserRowProps) => (
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span className="text-sm font-semibold text-body">{user.name ?? '—'}</span>
         <span className="text-xs text-body-300/55">@{user.username ?? '—'}</span>
+        {user.isGoogleUser && (
+          <span className="inline-flex items-center rounded-full border border-blue/25 bg-blue/8 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-blue">
+            Google
+          </span>
+        )}
       </div>
       <p className="mt-0.5 line-clamp-1 text-xs text-body-300/50">{userRowSubtitle(user)}</p>
     </div>

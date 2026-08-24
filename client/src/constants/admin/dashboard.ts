@@ -8,5 +8,5 @@ export const DASHBOARD_COMPOSITION_GLOWS = {
   users: '#8A56E2',
   groups: '#FF9933',
   dmChats: '#D4AA5A',
-  messages: '#F472B6',
+  messages: '#3EC9E6',
 } as const;

@@ -40,3 +40,29 @@ export const searchLimiter = rateLimit({
   legacyHeaders: false,
   message: jsonMessage('Too many search requests, please try again later'),
 });
+
+/**
+ * Username update during signup (PATCH /signup/username):
+ * 10 req / 15 min per IP — tight enough to prevent username enumeration
+ * but lenient enough for a real user trying a few alternatives.
+ */
+export const signupUsernameLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonMessage('Too many username attempts, please try again later'),
+});
+
+/**
+ * Username availability check (GET /auth/username/check):
+ * 30 req / 15 min per IP — debounced on the client so real users rarely
+ * hit this, but tight enough to prevent bulk enumeration.
+ */
+export const usernameCheckLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonMessage('Too many username checks, please try again later'),
+});
