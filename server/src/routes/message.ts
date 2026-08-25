@@ -23,6 +23,10 @@ import {
   deleteManyMessagesSchema,
   editMessageSchema,
   forwardMessagesSchema,
+  getMessagesQuerySchema,
+  jumpToDateQuerySchema,
+  listActiveDatesQuerySchema,
+  searchMessagesQuerySchema,
   sendAttachmentsSchema,
   sendGifSchema,
 } from '../validators/message.js';
@@ -31,11 +35,30 @@ export const messageRouter = Router();
 
 messageRouter.use(auth);
 
-messageRouter.get('/get-messages/:chatId', getMessages);
+messageRouter.get(
+  '/get-messages/:chatId',
+  validate(getMessagesQuerySchema, 'query'),
+  getMessages
+);
 messageRouter.get('/context/:chatId/:messageId', getMessageContext);
-messageRouter.get('/search/:chatId', searchLimiter, searchMessages);
-messageRouter.get('/jump-date/:chatId', searchLimiter, jumpToDate);
-messageRouter.get('/active-dates/:chatId', searchLimiter, listActiveDates);
+messageRouter.get(
+  '/search/:chatId',
+  searchLimiter,
+  validate(searchMessagesQuerySchema, 'query'),
+  searchMessages
+);
+messageRouter.get(
+  '/jump-date/:chatId',
+  searchLimiter,
+  validate(jumpToDateQuerySchema, 'query'),
+  jumpToDate
+);
+messageRouter.get(
+  '/active-dates/:chatId',
+  searchLimiter,
+  validate(listActiveDatesQuerySchema, 'query'),
+  listActiveDates
+);
 messageRouter.post(
   '/forward/:targetChatId',
   validate(forwardMessagesSchema),

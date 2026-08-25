@@ -51,6 +51,16 @@ export const chatIdParamSchema = z.object({
   chatId: objectId,
 });
 
+export const getChatDetailsQuerySchema = z.object({
+  id: objectId,
+  populate: z
+    .string()
+    .optional()
+    .transform((value) => value === 'true'),
+});
+
 export const markChatReadSchema = z.object({
   lastReadMessageId: objectId.optional(),
 });
+
+export type GetChatDetailsQuery = z.infer<typeof getChatDetailsQuerySchema>;

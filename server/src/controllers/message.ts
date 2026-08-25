@@ -1,8 +1,15 @@
 import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
+import type { ValidatedRequest } from '../middlewares/validate.js';
 import { flushNotifications, messageService } from '../services/index.js';
 import type { UploadableFile } from '../types/message.js';
 import { sendGifSchema } from '../validators/message.js';
+import type {
+  GetMessagesQuery,
+  JumpToDateQuery,
+  ListActiveDatesQuery,
+  SearchMessagesQuery,
+} from '../validators/message.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { param } from '../utils/http.js';
 
@@ -19,7 +26,7 @@ export const getMessageContext: RequestHandler = catchAsync(async (req, res) => 
 });
 
 export const getMessages: RequestHandler = catchAsync(async (req, res) => {
-  const page = Number.parseInt(String(req.query.page ?? '1'), 10) || 1;
+  const { page } = (req as ValidatedRequest<GetMessagesQuery>).validatedQuery;
   const result = await messageService.getMessages(
     req.userId!,
     param(req.params.chatId),
@@ -36,29 +43,14 @@ export const getMessages: RequestHandler = catchAsync(async (req, res) => {
 
 export const searchMessages: RequestHandler = catchAsync(async (req, res) => {
   const chatId = param(req.params.chatId);
-  const q = typeof req.query.q === 'string' ? req.query.q : '';
-  const scopeRaw = typeof req.query.scope === 'string' ? req.query.scope : 'all';
-  const fromRaw = typeof req.query.from === 'string' ? req.query.from : 'anyone';
-  const dateFrom =
-    typeof req.query.dateFrom === 'string' ? req.query.dateFrom : undefined;
-  const dateTo =
-    typeof req.query.dateTo === 'string' ? req.query.dateTo : undefined;
-  const senderId =
-    typeof req.query.senderId === 'string' ? req.query.senderId : undefined;
+  const query = (req as ValidatedRequest<SearchMessagesQuery>).validatedQuery;
 
-  const scope =
-    scopeRaw === 'text' || scopeRaw === 'media' || scopeRaw === 'links'
-      ? scopeRaw
-      : 'all';
-  const from =
-    fromRaw === 'me' || fromRaw === 'others' ? fromRaw : 'anyone';
-
-  const result = await messageService.searchMessages(req.userId!, chatId, q, {
-    scope,
-    from,
-    senderId,
-    dateFrom,
-    dateTo,
+  const result = await messageService.searchMessages(req.userId!, chatId, query.q, {
+    scope: query.scope,
+    from: query.from,
+    senderId: query.senderId,
+    dateFrom: query.dateFrom,
+    dateTo: query.dateTo,
   });
 
   res.status(200).json({
@@ -70,15 +62,7 @@ export const searchMessages: RequestHandler = catchAsync(async (req, res) => {
 
 export const jumpToDate: RequestHandler = catchAsync(async (req, res) => {
   const chatId = param(req.params.chatId);
-  const dateFrom =
-    typeof req.query.dateFrom === 'string' ? req.query.dateFrom : '';
-  const dateTo =
-    typeof req.query.dateTo === 'string' ? req.query.dateTo : undefined;
-
-  if (!dateFrom) {
-    res.status(400).json({ success: false, message: 'dateFrom is required' });
-    return;
-  }
+  const { dateFrom, dateTo } = (req as ValidatedRequest<JumpToDateQuery>).validatedQuery;
 
   const data = await messageService.jumpToDate(
     req.userId!,
@@ -95,29 +79,15 @@ export const jumpToDate: RequestHandler = catchAsync(async (req, res) => {
 
 export const listActiveDates: RequestHandler = catchAsync(async (req, res) => {
   const chatId = param(req.params.chatId);
-  const dateFrom =
-    typeof req.query.dateFrom === 'string' ? req.query.dateFrom : '';
-  const dateTo =
-    typeof req.query.dateTo === 'string' ? req.query.dateTo : '';
-  const timeZone =
-    typeof req.query.tz === 'string' && req.query.tz
-      ? req.query.tz
-      : 'UTC';
-
-  if (!dateFrom || !dateTo) {
-    res.status(400).json({
-      success: false,
-      message: 'dateFrom and dateTo are required',
-    });
-    return;
-  }
+  const { dateFrom, dateTo, tz } = (req as ValidatedRequest<ListActiveDatesQuery>)
+    .validatedQuery;
 
   const result = await messageService.listActiveDates(
     req.userId!,
     chatId,
     dateFrom,
     dateTo,
-    timeZone
+    tz
   );
 
   res.status(200).json({

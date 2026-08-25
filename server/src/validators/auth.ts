@@ -1,24 +1,5 @@
 import { z } from 'zod';
-import { emailField } from './fields.js';
-
-const usernameField = z
-  .string()
-  .trim()
-  .min(3, 'Username must be at least 3 characters')
-  .max(30)
-  .regex(
-    /^[a-zA-Z0-9_]+$/,
-    'Username can only contain letters, numbers, and underscores'
-  );
-
-const passwordField = z
-  .string()
-  .min(8, 'Password must be at least 8 characters')
-  .max(100)
-  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-  .regex(/[0-9]/, 'Password must contain at least one number')
-  .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character');
+import { emailField, passwordField, usernameField } from './fields.js';
 
 export const signUpStartSchema = z
   .object({
@@ -69,14 +50,13 @@ export const resetPasswordSchema = z.object({
   password: passwordField,
 });
 
-export const googleSignInSchema = z
-  .object({
-    credential: z.string().trim().min(1).optional(),
-    accessToken: z.string().trim().min(1).optional(),
-  })
-  .refine((data) => Boolean(data.credential) || Boolean(data.accessToken), {
-    message: 'Google credential or access token is required',
-  });
+export const googleSignInSchema = z.object({
+  accessToken: z.string().trim().min(1),
+});
+
+export const usernameCheckQuerySchema = z.object({
+  username: usernameField,
+});
 
 export type GoogleSignInInput = z.infer<typeof googleSignInSchema>;
 export type SignUpStartInput = z.infer<typeof signUpStartSchema>;
@@ -87,3 +67,4 @@ export type SignUpCompleteInput = z.infer<typeof signUpCompleteSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type UsernameCheckQuery = z.infer<typeof usernameCheckQuerySchema>;

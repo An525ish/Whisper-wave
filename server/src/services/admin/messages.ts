@@ -2,6 +2,7 @@ import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
 import type { AdminMessagesPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
+import { trimOptional } from '../../utils/normalize.js';
 import type { AdminMessagesQuery } from '../../validators/admin.js';
 import { parseBeforeCursor } from './shared.js';
 
@@ -10,7 +11,7 @@ export const listMessages = async (input: AdminMessagesQuery): Promise<AdminMess
   const limit = input.limit;
   const fetchLimit = limit + 1;
   const status = input.status;
-  const q = input.q?.trim() || undefined;
+  const q = trimOptional(input.q);
   const senderId = input.senderId || undefined;
   const isFirstPage = !before;
 

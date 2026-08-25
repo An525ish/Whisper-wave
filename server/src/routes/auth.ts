@@ -31,17 +31,35 @@ import {
   signUpStartSchema,
   signUpUpdateUsernameSchema,
   signUpVerifySchema,
+  usernameCheckQuerySchema,
 } from '../validators/auth.js';
 
 export const authRouter = Router();
 
 authRouter.use(authLimiter);
 
-authRouter.get('/username/check', usernameCheckLimiter, checkUsernameAvailability);
-authRouter.post('/signup/start', emailLimiter, validate(signUpStartSchema), startSignUp);
-authRouter.post('/signup/resend', emailLimiter, validate(signUpResendSchema), resendSignUpOtp);
+authRouter.get(
+  '/username/check', 
+  usernameCheckLimiter, 
+  validate(usernameCheckQuerySchema, 'query'), 
+  checkUsernameAvailability
+);
+authRouter.post('/signup/start', 
+  emailLimiter, 
+  validate(signUpStartSchema), 
+  startSignUp
+);
+authRouter.post('/signup/resend', 
+  emailLimiter, 
+  validate(signUpResendSchema), 
+  resendSignUpOtp
+);
 authRouter.post('/signup/verify', validate(signUpVerifySchema), verifySignUpOtp);
-authRouter.patch('/signup/username', signupUsernameLimiter, validate(signUpUpdateUsernameSchema), updateSignupUsername);
+authRouter.patch('/signup/username', 
+  signupUsernameLimiter, 
+  validate(signUpUpdateUsernameSchema), 
+  updateSignupUsername
+);
 authRouter.post(
   '/signup/complete',
   avatarUpload,

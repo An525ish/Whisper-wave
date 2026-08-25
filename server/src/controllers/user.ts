@@ -1,8 +1,10 @@
 import type { RequestHandler } from 'express';
+import type { ValidatedRequest } from '../middlewares/validate.js';
 import { userService } from '../services/index.js';
 import type { UpdateProfileInput } from '../types/user.js';
 import type { UploadableFile } from '../types/message.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import type { SearchUserQuery } from '../validators/request.js';
 
 export const getProfile: RequestHandler = catchAsync(async (req, res) => {
   const user = await userService.getProfile(req.userId!);
@@ -35,7 +37,7 @@ export const deleteProfile: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const searchUser: RequestHandler = catchAsync(async (req, res) => {
-  const name = typeof req.query.name === 'string' ? req.query.name : '';
+  const { name } = (req as ValidatedRequest<SearchUserQuery>).validatedQuery;
   const data = await userService.searchUsers(req.userId!, name);
   res.status(200).json({ success: true, data });
 });

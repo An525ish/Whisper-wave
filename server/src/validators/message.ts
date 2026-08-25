@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const objectId = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id');
+
 export const sendAttachmentsSchema = z.object({
   chatId: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid chat id'),
   content: z.string().max(2000).optional(),
@@ -11,6 +13,26 @@ export const sendAttachmentsSchema = z.object({
 
 export const getMessagesQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
+});
+
+export const searchMessagesQuerySchema = z.object({
+  q: z.string().default(''),
+  scope: z.enum(['all', 'text', 'media', 'links']).default('all'),
+  from: z.enum(['anyone', 'me', 'others']).default('anyone'),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  senderId: objectId.optional(),
+});
+
+export const jumpToDateQuerySchema = z.object({
+  dateFrom: z.string().min(1, 'dateFrom is required'),
+  dateTo: z.string().optional(),
+});
+
+export const listActiveDatesQuerySchema = z.object({
+  dateFrom: z.string().min(1, 'dateFrom is required'),
+  dateTo: z.string().min(1, 'dateTo is required'),
+  tz: z.string().default('UTC'),
 });
 
 export const messageIdParamSchema = z.object({
@@ -59,3 +81,8 @@ export const forwardMessagesSchema = z.object({
     .min(1)
     .max(50),
 });
+
+export type GetMessagesQuery = z.infer<typeof getMessagesQuerySchema>;
+export type SearchMessagesQuery = z.infer<typeof searchMessagesQuerySchema>;
+export type JumpToDateQuery = z.infer<typeof jumpToDateQuerySchema>;
+export type ListActiveDatesQuery = z.infer<typeof listActiveDatesQuerySchema>;

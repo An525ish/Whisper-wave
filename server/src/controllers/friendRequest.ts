@@ -1,7 +1,9 @@
 import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
+import type { ValidatedRequest } from '../middlewares/validate.js';
 import { flushNotifications, friendRequestService } from '../services/index.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import type { GetMyFriendsQuery } from '../validators/request.js';
 
 const getIo = (req: { app: { get: (key: string) => unknown } }): Server | undefined =>
   req.app.get('io') as Server | undefined;
@@ -44,8 +46,7 @@ export const getNotifications: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const getMyfriends: RequestHandler = catchAsync(async (req, res) => {
-  const chatId =
-    typeof req.query.chatId === 'string' ? req.query.chatId : undefined;
+  const { chatId } = (req as ValidatedRequest<GetMyFriendsQuery>).validatedQuery;
   const data = await friendRequestService.getMyFriends(req.userId!, chatId);
   res.status(200).json({ success: true, data });
 });

@@ -2,6 +2,7 @@ import { OAuth2Client } from 'google-auth-library';
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { env, isProd } from '../config/env.js';
+import { toBase64Url } from './helper.js';
 import { logger } from './logger.js';
 
 type SendMailInput = {
@@ -20,9 +21,6 @@ const isGmailApiConfigured = (): boolean =>
 export const isMailConfigured = (): boolean =>
   isGmailApiConfigured() ||
   (Boolean(env.SMTP_HOST) && Boolean(env.SMTP_USER) && Boolean(env.SMTP_PASS));
-
-export const getClientBaseUrl = (): string =>
-  env.CLIENT_URL || 'http://localhost:5173';
 
 let _gmailClient: OAuth2Client | null = null;
 let _smtpTransporter: Transporter | null = null;
@@ -75,13 +73,6 @@ const buildRawMime = (
     `--${boundary}--`,
   ].join('\r\n');
 };
-
-const toBase64Url = (raw: string): string =>
-  Buffer.from(raw)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
 
 const sendViaGmailApi = async (
   from: string,

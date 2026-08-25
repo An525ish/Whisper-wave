@@ -70,9 +70,8 @@ export const updateGroupDetails = async (
   if (input.name !== undefined) patch.name = input.name;
   if (input.bio !== undefined) patch.bio = input.bio;
 
-  if (avatarFile) {
-    patch.avatar = await uploadAvatarOrThrow(avatarFile);
-  }
+  const avatar = avatarFile ? await uploadAvatarOrThrow(avatarFile) : undefined;
+  if (avatar) patch.avatar = avatar;
 
   if (Object.keys(patch).length === 0) {
     throw new AppError(400, 'No group details to update');

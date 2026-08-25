@@ -7,8 +7,7 @@ import type {
   PopulatedMember,
 } from '../../types/chat.js';
 import type { UploadableFile } from '../../types/message.js';
-import { AppError } from '../../utils/AppError.js';
-import { uploadToCloudinary } from '../../utils/cloudinary.js';
+import { uploadAvatarFromFile } from '../../utils/avatar.js';
 
 export const URL_IN_TEXT =
   /https?:\/\/[^\s<>"'`{}|\\^[\]]+/gi;
@@ -112,13 +111,4 @@ export const resolveGroupAvatarUrls = (
 
 export const uploadAvatarOrThrow = async (
   avatarFile: UploadableFile
-): Promise<ChatAvatar> => {
-  const uploaded = await uploadToCloudinary([avatarFile]);
-  if (!uploaded.length) {
-    throw new AppError(400, 'Failed to upload avatar');
-  }
-  return {
-    publicId: uploaded[0].publicId,
-    url: uploaded[0].url,
-  };
-};
+): Promise<ChatAvatar> => uploadAvatarFromFile(avatarFile);

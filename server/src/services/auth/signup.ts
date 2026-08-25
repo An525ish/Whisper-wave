@@ -5,10 +5,9 @@ import * as userRepo from '../../repositories/user.js';
 import type { AuthResult } from '../../types/user.js';
 import type { UploadableFile } from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
-import { uploadToCloudinary } from '../../utils/cloudinary.js';
 import { sendMail } from '../../utils/mail.js';
+import { resolveSignupAvatar } from '../../utils/avatar.js';
 import {
-  DEFAULT_USER_AVATAR,
   MAX_OTP_ATTEMPTS,
   PENDING_TTL_MS,
   RESEND_COOLDOWN_MS,
@@ -21,14 +20,13 @@ import type {
   SignUpUpdateUsernameInput,
   SignUpVerifyInput,
 } from '../../validators/auth.js';
+import { normalizeEmail } from '../../utils/normalize.js';
 import {
   assertAcceptableEmail,
   assertMailReady,
-  issueAuthTokens,
+  issueAuthResult,
   issueOtp,
-  normalizeEmail,
   sha256,
-  toPublicUser,
 } from './shared.js';
 
 const sendSignupOtpMail = async (email: string, otp: string): Promise<void> => {
@@ -202,9 +200,10 @@ export const completeSignUp = async (
   const email = pending.email;
   assertAcceptableEmail(email);
 
-  const [userExist, emailExist] = await Promise.all([
+  const [userExist, emailExist, avatar] = await Promise.all([
     userRepo.findByUsername(pending.username),
     userRepo.findByEmail(email),
+    resolveSignupAvatar(avatarFile),
   ]);
 
   if (userExist) {
@@ -212,18 +211,6 @@ export const completeSignUp = async (
   }
   if (emailExist) {
     throw new AppError(409, 'Email already in use');
-  }
-
-  let avatar: { publicId: string; url: string } = { ...DEFAULT_USER_AVATAR };
-  if (avatarFile) {
-    const uploadedAvatar = await uploadToCloudinary([avatarFile]);
-    if (!uploadedAvatar.length) {
-      throw new AppError(400, 'Failed to upload avatar');
-    }
-    avatar = {
-      publicId: uploadedAvatar[0].publicId,
-      url: uploadedAvatar[0].url,
-    };
   }
 
   const user = await userRepo.create({
@@ -237,12 +224,5 @@ export const completeSignUp = async (
 
   await pendingSignupRepo.deleteById(pending._id.toString());
 
-  const { accessToken, refreshToken } = await issueAuthTokens(user._id.toString());
-
-  return {
-    accessToken,
-    refreshToken,
-    message: 'Registered successfully',
-    user: toPublicUser(user),
-  };
+  return issueAuthResult(user, 'Registered successfully');
 };

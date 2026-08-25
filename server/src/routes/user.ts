@@ -6,14 +6,14 @@ import {
   updateProfile,
 } from '../controllers/user.js';
 import { auth, avatarUpload, searchLimiter, validate } from '../middlewares/index.js';
-import { updateProfileSchema } from '../validators/request.js';
+import { searchUserQuerySchema, updateProfileSchema } from '../validators/request.js';
 
 export const userRouter = Router();
 
 userRouter.use(auth);
 
 userRouter.get('/get-profile', getProfile);
-userRouter.get('/search-user', searchLimiter, searchUser);
+userRouter.get('/search-user', searchLimiter, validate(searchUserQuerySchema, 'query'), searchUser);
 userRouter.put(
   '/update-profile',
   avatarUpload,

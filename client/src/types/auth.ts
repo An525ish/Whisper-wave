@@ -61,8 +61,7 @@ export type UpdateSignupUsernameBody = {
 };
 
 export type GoogleSignInBody = {
-  credential?: string;
-  accessToken?: string;
+  accessToken: string;
 };
 
 // --- API response data shapes ---

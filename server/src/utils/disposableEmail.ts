@@ -1,4 +1,5 @@
 import { ALLOWED_EMAIL_DOMAINS } from '../constants/email.js';
+import { trim } from './normalize.js';
 
 const allowedDomainSet = new Set<string>(
   ALLOWED_EMAIL_DOMAINS.map((d) => d.toLowerCase())
@@ -7,7 +8,7 @@ const allowedDomainSet = new Set<string>(
 export const getEmailDomain = (email: string): string => {
   const at = email.lastIndexOf('@');
   if (at < 0) return '';
-  return email.slice(at + 1).toLowerCase().trim();
+  return trim(email.slice(at + 1).toLowerCase());
 };
 
 /** True when the address uses an allowlisted provider. */

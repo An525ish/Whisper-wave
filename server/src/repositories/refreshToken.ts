@@ -11,6 +11,13 @@ export const create = async (
 export const findByHash = async (tokenHash: string) =>
   RefreshToken.findOne({ tokenHash, expiresAt: { $gt: new Date() } }).lean();
 
+/** Atomically validate + delete — only one refresh request can claim a token. */
+export const claimByHash = async (tokenHash: string) =>
+  RefreshToken.findOneAndDelete({
+    tokenHash,
+    expiresAt: { $gt: new Date() },
+  }).lean();
+
 export const deleteByHash = async (tokenHash: string): Promise<void> => {
   await RefreshToken.deleteOne({ tokenHash });
 };

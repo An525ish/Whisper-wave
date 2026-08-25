@@ -1,33 +1,14 @@
-import { randomBytes, randomInt } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { hash } from 'bcrypt';
-import { OAuth2Client } from 'google-auth-library';
 import * as userRepo from '../../repositories/user.js';
-import type { AuthResult } from '../../types/user.js';
+import type { AuthResult, LeanUser } from '../../types/user.js';
 import { AppError } from '../../utils/AppError.js';
-import { uploadUrlToCloudinary } from '../../utils/cloudinary.js';
+import { deriveUsername } from '../../utils/helper.js';
+import { resolveOAuthAvatar } from '../../utils/avatar.js';
 import { env } from '../../config/env.js';
-import { DEFAULT_USER_AVATAR } from '../../constants/auth.js';
 import type { GoogleSignInInput } from '../../validators/auth.js';
-import { assertAcceptableEmail, issueAuthTokens, normalizeEmail, toPublicUser } from './shared.js';
-
-const googleClient = new OAuth2Client();
-
-const deriveUsername = async (displayName: string): Promise<string> => {
-  const base = displayName
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '')
-    .slice(0, 20) || 'user';
-
-  for (let attempt = 0; attempt < 6; attempt++) {
-    const candidate = attempt === 0 ? base : `${base}_${randomInt(1000, 9999)}`;
-    const taken = await userRepo.findByUsername(candidate);
-    if (!taken) return candidate;
-  }
-
-  return `${base}_${Date.now().toString(36)}`;
-};
+import { normalizeEmail } from '../../utils/normalize.js';
+import { assertAcceptableEmail, issueAuthResult } from './shared.js';
 
 type GoogleIdentity = {
   googleId: string;
@@ -36,52 +17,53 @@ type GoogleIdentity = {
   picture?: string;
 };
 
-const resolveGoogleIdentity = async (
-  input: GoogleSignInInput
-): Promise<GoogleIdentity> => {
-  if (input.credential) {
-    let ticket;
-    try {
-      ticket = await googleClient.verifyIdToken({
-        idToken: input.credential,
-        audience: env.GOOGLE_CLIENT_ID,
-      });
-    } catch {
-      throw new AppError(401, 'Invalid Google credential. Please try again.');
-    }
+type GoogleTokenInfo = { aud?: string };
 
-    const payload = ticket.getPayload();
-    if (!payload?.sub || !payload.email || !payload.email_verified) {
-      throw new AppError(401, 'Google account does not have a verified email.');
-    }
+type GoogleUserInfo = {
+  sub?: string;
+  email?: string;
+  email_verified?: boolean | string;
+  name?: string;
+  picture?: string;
+};
 
-    return {
-      googleId: payload.sub,
-      email: payload.email,
-      name: payload.name || 'Whisper User',
-      picture: payload.picture,
-    };
+const isGoogleEmailVerified = (value: boolean | string | undefined): boolean =>
+  value === true || value === 'true';
+
+const assertAccessTokenAudience = async (accessToken: string): Promise<void> => {
+  const url = `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(accessToken)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new AppError(401, 'Invalid Google token. Please try again.');
   }
 
+  const { aud } = (await res.json()) as GoogleTokenInfo;
+  if (aud !== env.GOOGLE_CLIENT_ID) {
+    throw new AppError(401, 'Google token was not issued for this application.');
+  }
+};
+
+const fetchGoogleUserInfo = async (accessToken: string): Promise<GoogleUserInfo> => {
+  const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) {
+    throw new AppError(401, 'Invalid Google token. Please try again.');
+  }
+  return res.json() as Promise<GoogleUserInfo>;
+};
+
+const resolveGoogleIdentity = async ({
+  accessToken,
+}: GoogleSignInInput): Promise<GoogleIdentity> => {
   try {
-    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${input.accessToken}` },
-    });
-    if (!res.ok) {
-      throw new AppError(401, 'Invalid Google token. Please try again.');
-    }
-    const profile = (await res.json()) as {
-      sub?: string;
-      email?: string;
-      email_verified?: boolean | string;
-      name?: string;
-      picture?: string;
-    };
-    const verified =
-      profile.email_verified === true || profile.email_verified === 'true';
-    if (!profile.sub || !profile.email || !verified) {
+    await assertAccessTokenAudience(accessToken);
+    const profile = await fetchGoogleUserInfo(accessToken);
+
+    if (!profile.sub || !profile.email || !isGoogleEmailVerified(profile.email_verified)) {
       throw new AppError(401, 'Google account does not have a verified email.');
     }
+
     return {
       googleId: profile.sub,
       email: profile.email,
@@ -94,6 +76,17 @@ const resolveGoogleIdentity = async (
   }
 };
 
+const linkGoogleAccount = async (
+  googleId: string,
+  email: string
+): Promise<LeanUser | null> => {
+  const user = await userRepo.findByEmail(email);
+  if (!user) return null;
+
+  await userRepo.updateById(user._id.toString(), { googleId });
+  return user;
+};
+
 export const googleSignIn = async (
   input: GoogleSignInInput
 ): Promise<AuthResult> => {
@@ -104,57 +97,30 @@ export const googleSignIn = async (
   const { googleId, email, name, picture } = await resolveGoogleIdentity(input);
   const normalizedEmail = normalizeEmail(email);
 
-  const existingByGoogle = await userRepo.findByGoogleId(googleId);
-  if (existingByGoogle) {
-    const { accessToken, refreshToken } = await issueAuthTokens(existingByGoogle._id.toString());
-    return {
-      accessToken,
-      refreshToken,
-      message: `Welcome back, ${existingByGoogle.name}`,
-      user: toPublicUser(existingByGoogle),
-    };
-  }
+  const existingUser =
+    (await userRepo.findByGoogleId(googleId)) ??
+    (await linkGoogleAccount(googleId, normalizedEmail));
 
-  const existingByEmail = await userRepo.findByEmail(normalizedEmail);
-  if (existingByEmail) {
-    await userRepo.updateById(existingByEmail._id.toString(), { googleId });
-    const { accessToken, refreshToken } = await issueAuthTokens(existingByEmail._id.toString());
-    return {
-      accessToken,
-      refreshToken,
-      message: `Welcome back, ${existingByEmail.name}`,
-      user: toPublicUser(existingByEmail),
-    };
+  if (existingUser) {
+    return issueAuthResult(existingUser, `Welcome back, ${existingUser.name}`);
   }
 
   assertAcceptableEmail(normalizedEmail);
 
-  let avatar: { publicId: string; url: string };
-  try {
-    avatar = picture
-      ? await uploadUrlToCloudinary(picture)
-      : { ...DEFAULT_USER_AVATAR };
-  } catch {
-    avatar = { ...DEFAULT_USER_AVATAR };
-  }
-
-  const username = await deriveUsername(name);
-  const randomPassword = await hash(randomBytes(32).toString('hex'), 10);
+  const [username, password, avatar] = await Promise.all([
+    deriveUsername(name),
+    hash(randomBytes(32).toString('hex'), 10),
+    resolveOAuthAvatar(picture),
+  ]);
 
   const newUser = await userRepo.create({
     name,
     username,
     email: normalizedEmail,
-    password: randomPassword,
+    password,
     googleId,
     avatar,
   });
 
-  const { accessToken, refreshToken } = await issueAuthTokens(newUser._id.toString());
-  return {
-    accessToken,
-    refreshToken,
-    message: `Welcome to Whisper Wave, ${newUser.name}`,
-    user: toPublicUser(newUser),
-  };
+  return issueAuthResult(newUser, `Welcome to Whisper Wave, ${newUser.name}`);
 };

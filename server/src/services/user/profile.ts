@@ -3,7 +3,9 @@ import * as userRepo from '../../repositories/user.js';
 import type { PublicUser, UpdateProfileInput, UpdateUserPatch } from '../../types/index.js';
 import type { UploadableFile } from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
-import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary.js';
+import { uploadAvatarFromFile } from '../../utils/avatar.js';
+import { deleteFromCloudinary } from '../../utils/cloudinary.js';
+import { normalizeEmail } from '../../utils/normalize.js';
 import { isAllowedEmail } from '../../utils/disposableEmail.js';
 
 export const getProfile = async (
@@ -46,7 +48,7 @@ export const updateProfile = async (
   if (input.username) patch.username = input.username;
   if (input.bio !== undefined) patch.bio = input.bio;
   if (input.email) {
-    const email = input.email.toLowerCase().trim();
+    const email = normalizeEmail(input.email);
     if (!isAllowedEmail(email)) {
       throw new AppError(
         400,
@@ -61,14 +63,7 @@ export const updateProfile = async (
   }
 
   if (avatarFile) {
-    const uploaded = await uploadToCloudinary([avatarFile]);
-    if (!uploaded.length) {
-      throw new AppError(400, 'Failed to upload avatar');
-    }
-    patch.avatar = {
-      publicId: uploaded[0].publicId,
-      url: uploaded[0].url,
-    };
+    patch.avatar = await uploadAvatarFromFile(avatarFile);
   } else if (input.avatar) {
     patch.avatar = input.avatar;
   }
