@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
 import { accessCookieOptions, refreshCookieOptions } from '../config/cors.js';
+import type { ValidatedRequest } from '../middlewares/validate.js';
 import { authService } from '../services/index.js';
 import * as refreshTokenRepo from '../repositories/refreshToken.js';
 import * as userRepo from '../repositories/user.js';
@@ -16,6 +17,7 @@ import type {
   SignUpStartInput,
   SignUpUpdateUsernameInput,
   SignUpVerifyInput,
+  UsernameCheckQuery,
 } from '../validators/auth.js';
 
 export const startSignUp: RequestHandler = catchAsync(async (req, res) => {
@@ -90,13 +92,13 @@ export const signIn: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const refreshToken: RequestHandler = catchAsync(async (req, res) => {
-  const raw = (req.cookies as { refreshToken?: string } | undefined)?.refreshToken;
-  if (!raw) {
+  const cookieRefreshToken = (req.cookies as { refreshToken?: string } | undefined)?.refreshToken;
+  if (!cookieRefreshToken) {
     res.status(401).json({ success: false, message: 'No refresh token' });
     return;
   }
 
-  const result = await authService.refreshAccessToken(raw);
+  const result = await authService.refreshAccessToken(cookieRefreshToken);
 
   res
     .status(200)
@@ -106,10 +108,10 @@ export const refreshToken: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const signOut: RequestHandler = catchAsync(async (req, res) => {
-  const raw = (req.cookies as { refreshToken?: string } | undefined)?.refreshToken;
-  if (raw) {
+  const cookieRefreshToken = (req.cookies as { refreshToken?: string } | undefined)?.refreshToken;
+  if (cookieRefreshToken) {
     // Best-effort — don't fail sign-out if token is already expired/missing
-    await refreshTokenRepo.deleteByHash(sha256(raw)).catch(() => undefined);
+    await refreshTokenRepo.deleteByHash(sha256(cookieRefreshToken)).catch(() => undefined);
   }
 
   res
@@ -142,11 +144,7 @@ export const resetPassword: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const checkUsernameAvailability: RequestHandler = catchAsync(async (req, res) => {
-  const username = String((req.query as { username?: string }).username ?? '').trim();
-  if (!username || !/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
-    res.status(400).json({ success: false, message: 'Invalid username format' });
-    return;
-  }
+  const { username } = (req as ValidatedRequest<UsernameCheckQuery>).validatedQuery;
   const taken = await userRepo.existsByUsername(username);
   res.status(200).json({ success: true, data: { available: !taken } });
 });

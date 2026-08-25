@@ -55,9 +55,6 @@ export const issueOtp = (): { otp: string; otpHash: string; otpExpiresAt: Date }
   };
 };
 
-export const normalizeEmail = (email: string): string =>
-  email.toLowerCase().trim();
-
 /**
  * Issues an access token (JWT, 15 min) and a refresh token (opaque random,
  * 7 days stored hashed in DB). Returns both raw strings — callers set them as
@@ -71,4 +68,15 @@ export const issueAuthTokens = async (
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
   await refreshTokenRepo.create(userId, sha256(refreshToken), expiresAt);
   return { accessToken, refreshToken };
+};
+
+type AuthSessionUser = Parameters<typeof toPublicUser>[0];
+
+/** Issues tokens and returns the standard auth payload (cookies + JSON user). */
+export const issueAuthResult = async (
+  user: AuthSessionUser,
+  message: string
+): Promise<AuthResult> => {
+  const { accessToken, refreshToken } = await issueAuthTokens(user._id.toString());
+  return { accessToken, refreshToken, message, user: toPublicUser(user) };
 };

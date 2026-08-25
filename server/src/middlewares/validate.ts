@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { ZodTypeAny } from 'zod';
+import type { ZodType } from 'zod';
 import { AppError } from '../utils/AppError.js';
 
 type RequestPart = 'body' | 'query' | 'params';
@@ -7,7 +7,7 @@ type RequestPart = 'body' | 'query' | 'params';
 export type ValidatedRequest<T> = Request & { validatedQuery: T };
 
 export const validate =
-  (schema: ZodTypeAny, part: RequestPart = 'body') =>
+  (schema: ZodType, part: RequestPart = 'body') =>
   (req: Request, _res: Response, next: NextFunction): void => {
     const result = schema.safeParse(req[part]);
 

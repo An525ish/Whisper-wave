@@ -1,4 +1,5 @@
 import { AppError } from '../utils/AppError.js';
+import { normalizeEmail } from '../utils/normalize.js';
 import { PendingSignup } from '../models/pendingSignup.js';
 import type {
   CreatePendingSignupInput,
@@ -7,7 +8,7 @@ import type {
 } from '../types/pendingSignup.js';
 
 const byEmail = (email: string) => ({
-  email: email.toLowerCase().trim(),
+  email: normalizeEmail(email),
 });
 
 export const upsertByEmail = async (

@@ -1,13 +1,14 @@
 import * as messageRepo from '../../repositories/message.js';
 import type { AdminAttachmentsPage } from '../../types/admin.js';
 import type { AdminAttachmentsQuery } from '../../validators/admin.js';
+import { trimOptional } from '../../utils/normalize.js';
 import { parseBeforeCursor } from './shared.js';
 
 export const listAttachments = async (input: AdminAttachmentsQuery): Promise<AdminAttachmentsPage> => {
   const before = parseBeforeCursor(input.before);
   const limit = input.limit;
   const fetchLimit = limit + 1;
-  const q = input.q?.trim() || undefined;
+  const q = trimOptional(input.q);
   const senderId = input.senderId || undefined;
   const kind = input.kind || 'all';
   const isFirstPage = !before;

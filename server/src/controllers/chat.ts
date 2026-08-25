@@ -1,10 +1,12 @@
 import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
+import type { ValidatedRequest } from '../middlewares/validate.js';
 import { chatService, flushNotifications } from '../services/index.js';
 import type { UploadableFile } from '../types/message.js';
-import { AppError } from '../utils/AppError.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { param } from '../utils/http.js';
+import type { GetChatDetailsQuery } from '../validators/chat.js';
+import type { PageQuery } from '../validators/fields.js';
 
 const getIo = (req: { app: { get: (key: string) => unknown } }): Server | undefined =>
   req.app.get('io') as Server | undefined;
@@ -44,7 +46,7 @@ export const updateGroupDetails: RequestHandler = catchAsync(async (req, res) =>
 });
 
 export const getMyChats: RequestHandler = catchAsync(async (req, res) => {
-  const page = Number.parseInt(String(req.query.page ?? '1'), 10) || 1;
+  const { page } = (req as ValidatedRequest<PageQuery>).validatedQuery;
   const result = await chatService.getMyChats(req.userId!, page);
   res.status(200).json({
     success: true,
@@ -63,14 +65,9 @@ export const findChats: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const getChatDetails: RequestHandler = catchAsync(async (req, res) => {
-  const chatId = typeof req.query.id === 'string' ? req.query.id : undefined;
-  if (!chatId) throw new AppError(400, 'Chat ID is required');
+  const { id, populate } = (req as ValidatedRequest<GetChatDetailsQuery>).validatedQuery;
 
-  const data = await chatService.getChatDetails(
-    req.userId!,
-    chatId,
-    req.query.populate === 'true'
-  );
+  const data = await chatService.getChatDetails(req.userId!, id, populate);
   res.status(200).json({ success: true, data });
 });
 
