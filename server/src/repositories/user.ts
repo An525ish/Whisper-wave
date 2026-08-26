@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { User } from '../models/user.js';
+import { normalizeEmail } from '../utils/normalize.js';
 import type { AdminUserListItem } from '../types/admin.js';
 import type {
   CreateUserInput,
@@ -30,7 +31,7 @@ export const findByUsernameWithPassword = async (
 export const findByEmail = async (
   email: string
 ): Promise<LeanUser | null> =>
-  User.findOne({ email: email.toLowerCase().trim() }).lean<LeanUser>();
+  User.findOne({ email: normalizeEmail(email) }).lean<LeanUser>();
 
 export const findByGoogleId = async (
   googleId: string

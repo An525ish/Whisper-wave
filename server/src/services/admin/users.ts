@@ -5,6 +5,7 @@ import * as requestRepo from '../../repositories/request.js';
 import * as userRepo from '../../repositories/user.js';
 import type { AdminUserListItem, AdminUsersPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
+import { trimOptional } from '../../utils/normalize.js';
 import type { AdminUsersQuery } from '../../validators/admin.js';
 import { parseBeforeCursor } from './shared.js';
 
@@ -12,7 +13,7 @@ export const listUsers = async (input: AdminUsersQuery): Promise<AdminUsersPage>
   const before = input.before ? parseBeforeCursor(input.before) : undefined;
   const limit = input.limit;
   const fetchLimit = limit + 1;
-  const q = input.q?.trim() || undefined;
+  const q = trimOptional(input.q);
   const signupMethod = input.signupMethod === 'all' ? undefined : input.signupMethod;
   const isFirstPage = !before;
 

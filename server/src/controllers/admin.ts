@@ -1,7 +1,7 @@
 import type { CookieOptions, RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import { getMemberSockets } from '../services/index.js';
-import { cookieOptions } from '../config/cors.js';
+import { accessCookieOptions } from '../config/cors.js';
 import { adminService } from '../services/index.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import type {
@@ -20,12 +20,12 @@ const ADMIN_COOKIE = 'adminToken';
 const ACCESS_COOKIE = 'accessToken';
 
 const adminCookieOptions: CookieOptions = {
-  ...cookieOptions,
+  ...accessCookieOptions,
   maxAge: 1000 * 60 * 60 * 8,
 };
 
 const impersonateCookieOptions: CookieOptions = {
-  ...cookieOptions,
+  ...accessCookieOptions,
   maxAge: 1000 * 60 * 60 * 2,
 };
 

@@ -7,7 +7,7 @@ import { env, isProd } from './env.js';
  * SameSite: 'none' in prod so cross-origin XHR with credentials works.
  */
 export const accessCookieOptions: CookieOptions = {
-  maxAge: 15 * 60 * 1000,
+  maxAge: 15 * 60 * 1000, // 15 minutes
   sameSite: isProd ? 'none' : 'lax',
   httpOnly: true,
   secure: isProd,
@@ -20,15 +20,12 @@ export const accessCookieOptions: CookieOptions = {
  * path: '/api/auth/refresh' scopes it to that single endpoint.
  */
 export const refreshCookieOptions: CookieOptions = {
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   sameSite: isProd ? 'strict' : 'lax',
   httpOnly: true,
   secure: isProd,
   path: '/api/auth/refresh',
 };
-
-/** @deprecated Use accessCookieOptions. Kept so existing imports don't break. */
-export const cookieOptions = accessCookieOptions;
 
 export const corsOptions: CorsOptions = {
   origin: [

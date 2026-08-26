@@ -8,6 +8,7 @@ import {
 import { auth, validate } from '../middlewares/index.js';
 import {
   handleRequestSchema,
+  getMyFriendsQuerySchema,
   sendRequestSchema,
 } from '../validators/request.js';
 
@@ -16,7 +17,11 @@ export const friendRequestRouter = Router();
 friendRequestRouter.use(auth);
 
 friendRequestRouter.get('/get-notifications', getNotifications);
-friendRequestRouter.get('/get-my-friends', getMyfriends);
+friendRequestRouter.get(
+  '/get-my-friends',
+  validate(getMyFriendsQuerySchema, 'query'),
+  getMyfriends
+);
 friendRequestRouter.post('/send-request', validate(sendRequestSchema), sendRequest);
 friendRequestRouter.put(
   '/handle-request',
