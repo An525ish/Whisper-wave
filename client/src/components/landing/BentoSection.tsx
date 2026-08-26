@@ -1,229 +1,284 @@
 import { useScrollReveal } from '@/hooks/landing/useScrollReveal';
+import { cn } from '@/utils/cn';
 
-/* ─────────────────────────────────────────────────────────────
-   Tile 1 — Zero Profile (tall left tile)
-   ───────────────────────────────────────────────────────────── */
-const ZeroProfileTile = () => (
-  <div className="bento-tile bento-tile--zero-profile">
-    <div className="bento-tile__inner">
-      <div className="bento-tile__tag">zero profile</div>
+/**
+ * Section 3 — "Why Whisper Wave": a deliberately asymmetric bento that carries
+ * the same colour journey as the loop above — violet (anonymity) on the left,
+ * the reserved spark green (connection) on the right, with the ephemerality +
+ * safety story stacked between them and the premium strip beneath. Two tall
+ * glass pillars frame two stacked middle tiles, then a full-width Spark Pass
+ * teaser. All tiles share one frosted material so the grid reads as a system,
+ * not five stray cards; boldness stays in the palette, not in scattered motion.
+ *
+ * A single IntersectionObserver on the grid drives a gentle staggered reveal;
+ * everything degrades to fully-visible + still under `prefers-reduced-motion`.
+ */
 
-      {/* SVG — ghost silhouette with strikethrough data labels */}
-      <div className="bento-tile__illustration" aria-hidden>
-        <svg viewBox="0 0 160 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Ghost body */}
-          <ellipse cx="80" cy="52" rx="28" ry="28" fill="rgba(1,195,109,0.08)" stroke="rgba(1,195,109,0.25)" strokeWidth="1.2" />
-          <rect x="52" y="52" width="56" height="42" rx="0" fill="rgba(1,195,109,0.06)" />
-          <path d="M52 52 L52 82 Q56 94 64 88 Q72 82 80 88 Q88 82 96 88 Q104 94 108 82 L108 52" fill="rgba(1,195,109,0.07)" stroke="rgba(1,195,109,0.2)" strokeWidth="1.2" />
-          {/* Face — just two dots */}
-          <circle cx="71" cy="50" r="3.5" fill="rgba(1,195,109,0.35)" />
-          <circle cx="89" cy="50" r="3.5" fill="rgba(1,195,109,0.35)" />
+/* ── Shared frosted tile shell ───────────────────────────────────────────
+   Glass material + iridescent rim + a small hover lift, plus a stagger-in
+   reveal gated by the section observer. `translate` (hover) and `transform`
+   (the pop keyframe) are separate CSS properties in Tailwind v4, so they
+   compose without fighting each other. */
+type TileProps = {
+  visible: boolean;
+  delay?: number;
+  className?: string;
+  children: React.ReactNode;
+};
 
-          {/* Crossed-out data labels floating around */}
-          <rect x="4" y="16" width="50" height="14" rx="7" fill="rgba(53,47,61,0.9)" stroke="rgba(53,47,61,1)" strokeWidth="1" />
-          <text x="29" y="26" textAnchor="middle" fontSize="7.5" fill="rgba(235,236,236,0.3)" fontFamily="DM Sans, sans-serif">real name</text>
-          <line x1="6" y1="23" x2="52" y2="23" stroke="rgba(255,88,99,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-
-          <rect x="108" y="10" width="44" height="14" rx="7" fill="rgba(53,47,61,0.9)" stroke="rgba(53,47,61,1)" strokeWidth="1" />
-          <text x="130" y="20" textAnchor="middle" fontSize="7.5" fill="rgba(235,236,236,0.3)" fontFamily="DM Sans, sans-serif">photo</text>
-          <line x1="110" y1="17" x2="150" y2="17" stroke="rgba(255,88,99,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-
-          <rect x="4" y="102" width="60" height="14" rx="7" fill="rgba(53,47,61,0.9)" stroke="rgba(53,47,61,1)" strokeWidth="1" />
-          <text x="34" y="112" textAnchor="middle" fontSize="7.5" fill="rgba(235,236,236,0.3)" fontFamily="DM Sans, sans-serif">phone number</text>
-          <line x1="6" y1="109" x2="62" y2="109" stroke="rgba(255,88,99,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-
-          <rect x="96" y="106" width="60" height="14" rx="7" fill="rgba(53,47,61,0.9)" stroke="rgba(53,47,61,1)" strokeWidth="1" />
-          <text x="126" y="116" textAnchor="middle" fontSize="7.5" fill="rgba(235,236,236,0.3)" fontFamily="DM Sans, sans-serif">social account</text>
-          <line x1="98" y1="113" x2="154" y2="113" stroke="rgba(255,88,99,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      </div>
-
-      <h3 className="bento-tile__headline">No login.<br />No photo.<br />No algorithm.</h3>
-      <p className="bento-tile__body">
-        Just a name you made up 30 seconds ago and a vibe tag. That's your entire identity here.
-      </p>
-    </div>
+const Tile = ({ visible, delay = 0, className, children }: TileProps) => (
+  <div
+    style={{ animationDelay: `${delay}ms` }}
+    className={cn(
+      'lw-glass lw-rim relative flex flex-col overflow-hidden rounded-[24px] p-6 min-[960px]:p-7',
+      'transition-[translate] duration-300 ease-out hover:-translate-y-1',
+      visible ? 'motion-safe:animate-lw-pop' : 'opacity-0 motion-reduce:opacity-100',
+      className,
+    )}
+  >
+    {children}
   </div>
 );
 
-/* ─────────────────────────────────────────────────────────────
-   Tile 2 — Gone If You Skip (dissolve tile)
-   ───────────────────────────────────────────────────────────── */
-const DISSOLVE_WORDS = ['They', 'vanish.', 'Real', 'stakes.', 'Pure', 'magic.', 'No', 'second', 'chances.', 'Just', 'this', 'moment.'];
-
-const GoneTile = () => (
-  <div className="bento-tile bento-tile--gone">
-    <div className="bento-tile__inner">
-      <div className="bento-tile__tag">skip = gone forever</div>
-
-      {/* SVG — figure walking away, dissolving at the edges */}
-      <div className="bento-tile__illustration bento-tile__illustration--gone" aria-hidden>
-        <svg viewBox="0 0 180 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Fading trail of dots */}
-          {[0,1,2,3,4,5,6,7].map((i) => (
-            <circle
-              key={i}
-              cx={20 + i * 18}
-              cy={40}
-              r={3 - i * 0.25}
-              fill={`rgba(235,236,236,${0.35 - i * 0.04})`}
-            />
-          ))}
-          {/* Arrow pointing right — walking away */}
-          <path d="M148 40 L162 40 M155 33 L162 40 L155 47" stroke="rgba(235,236,236,0.18)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          {/* Ghost silhouette dissolving */}
-          <circle cx="125" cy="28" r="10" fill="rgba(235,236,236,0.06)" stroke="rgba(235,236,236,0.12)" strokeWidth="1" strokeDasharray="3 3" />
-          <path d="M115 38 Q115 55 118 58 Q121 62 125 59 Q129 62 132 58 Q135 55 135 38 Z" fill="rgba(235,236,236,0.04)" stroke="rgba(235,236,236,0.1)" strokeWidth="1" strokeDasharray="3 3" />
-        </svg>
-      </div>
-
-      {/* The dissolving text — words with staggered opacity animation */}
-      <p className="bento-tile__dissolve-text" aria-label="They vanish. Real stakes. Pure magic. No second chances. Just this moment.">
-        {DISSOLVE_WORDS.map((word, i) => (
-          <span
-            key={i}
-            className="bento-tile__dissolve-word"
-            style={{ animationDelay: `${i * 0.22}s` }}
-          >
-            {word}{' '}
-          </span>
-        ))}
-      </p>
-    </div>
-  </div>
+/* Mono kicker sitting at the top of each tile. */
+const Tag = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <span
+    className={cn(
+      'font-lw-mono text-[0.66rem] uppercase tracking-[0.18em] text-lw-text-faint',
+      className,
+    )}
+  >
+    {children}
+  </span>
 );
 
-/* ─────────────────────────────────────────────────────────────
-   Tile 3 — Real Connections (narrow tall tile)
-   ───────────────────────────────────────────────────────────── */
-const ConnectionsTile = () => (
-  <div className="bento-tile bento-tile--connections">
-    <div className="bento-tile__inner">
-      <div className="bento-tile__tag">real connections</div>
-
-      {/* SVG — two orbs linked by a persistent line */}
-      <div className="bento-tile__illustration" aria-hidden>
-        <svg viewBox="0 0 140 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Link line */}
-          <line x1="42" y1="55" x2="98" y2="55" stroke="rgba(1,195,109,0.4)" strokeWidth="1.5" strokeDasharray="0" />
-          {/* Left orb */}
-          <circle cx="35" cy="55" r="20" fill="rgba(1,195,109,0.1)" stroke="rgba(1,195,109,0.3)" strokeWidth="1.2" />
-          <text x="35" y="59" textAnchor="middle" fontSize="14">👤</text>
-          {/* Right orb */}
-          <circle cx="105" cy="55" r="20" fill="rgba(86,152,255,0.1)" stroke="rgba(86,152,255,0.25)" strokeWidth="1.2" />
-          <text x="105" y="59" textAnchor="middle" fontSize="14">👤</text>
-          {/* Spark badge center */}
-          <circle cx="70" cy="55" r="10" fill="rgba(1,195,109,0.15)" stroke="rgba(1,195,109,0.4)" strokeWidth="1" />
-          <text x="70" y="59" textAnchor="middle" fontSize="9">✦</text>
-          {/* "DM unlocked" label */}
-          <rect x="24" y="82" width="92" height="16" rx="8" fill="rgba(1,195,109,0.1)" stroke="rgba(1,195,109,0.25)" strokeWidth="1" />
-          <text x="70" y="93" textAnchor="middle" fontSize="8" fill="rgba(1,195,109,0.75)" fontFamily="DM Sans, sans-serif">DM unlocked forever</text>
-        </svg>
-      </div>
-
-      <h3 className="bento-tile__headline">Mutual spark →<br />real DM.</h3>
-      <p className="bento-tile__body">
-        Anonymous session becomes a permanent connection. Their real account, your real DM.
-      </p>
-    </div>
-  </div>
+/* Anonymous identity tile — reused from the loop's visual vocabulary. */
+const Monogram = ({ tone, children }: { tone: 'violet' | 'teal'; children: React.ReactNode }) => (
+  <span
+    className={cn(
+      'grid size-10 place-items-center rounded-xl font-lw-mono text-sm font-bold',
+      tone === 'violet'
+        ? 'bg-lw-violet/15 text-lw-violet-2 shadow-[0_0_0_1px_rgba(139,107,255,0.3)]'
+        : 'bg-lw-teal/15 text-lw-teal-2 shadow-[0_0_0_1px_rgba(53,224,200,0.3)]',
+    )}
+  >
+    {children}
+  </span>
 );
 
-/* ─────────────────────────────────────────────────────────────
-   Tile 4 — Safe Exit (wide accent banner)
-   ───────────────────────────────────────────────────────────── */
-const SafeExitTile = () => (
-  <div className="bento-tile bento-tile--safe-exit">
-    <div className="bento-tile__inner bento-tile__inner--row">
-      {/* SVG illustration */}
-      <div className="bento-tile__illustration bento-tile__illustration--safe" aria-hidden>
-        <svg viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Exit door shape */}
-          <rect x="20" y="15" width="40" height="54" rx="4" fill="rgba(1,195,109,0.06)" stroke="rgba(1,195,109,0.3)" strokeWidth="1.2" />
-          <rect x="24" y="19" width="32" height="46" rx="3" fill="rgba(26,21,32,0.6)" stroke="rgba(1,195,109,0.15)" strokeWidth="0.8" />
-          {/* Door handle */}
-          <circle cx="50" cy="42" r="2.5" fill="rgba(1,195,109,0.5)" />
-          {/* Arrow exiting */}
-          <path d="M68 42 L80 42 M75 36 L80 42 L75 48" stroke="rgba(1,195,109,0.6)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          {/* Shield badge */}
-          <path d="M8 58 L8 68 Q8 73 13 75 Q18 73 18 68 L18 58 L13 55 Z" fill="rgba(1,195,109,0.12)" stroke="rgba(1,195,109,0.35)" strokeWidth="1" />
-          <text x="13" y="68" textAnchor="middle" fontSize="8" fill="rgba(1,195,109,0.7)">✓</text>
-        </svg>
-      </div>
+/* ── Tile 1 · Zero profile (violet, tall left pillar) ────────────────────── */
+const NON_IDENTITY = ['real name', 'photo', 'phone number', 'socials'] as const;
 
-      <div className="bento-tile__safe-text">
-        <div className="bento-tile__tag bento-tile__tag--light">built-in safety</div>
-        <h3 className="bento-tile__headline bento-tile__headline--lg">Safe Exit. Always.</h3>
-        <p className="bento-tile__body">
-          One tap. You're out instantly. No message sent. No trace left. We built this first, before any other feature.
+const ZeroProfileTile = ({ visible }: { visible: boolean }) => (
+  <Tile
+    visible={visible}
+    delay={0}
+    className="min-[960px]:col-start-1 min-[960px]:row-start-1 min-[960px]:row-span-2"
+  >
+    <Tag className="text-lw-violet-2/80">zero profile</Tag>
+
+    {/* Everything you DON'T hand over — struck-through identity chips */}
+    <div className="mt-6 flex flex-wrap gap-2" aria-hidden>
+      {NON_IDENTITY.map((label) => (
+        <span
+          key={label}
+          className="relative inline-flex items-center rounded-full border border-lw-line bg-white-pure/[0.03] px-3 py-1.5 font-lw-mono text-[0.72rem] leading-none text-lw-text-faint"
+        >
+          {label}
+          <span className="absolute inset-x-2.5 top-1/2 h-px -translate-y-1/2 bg-lw-violet/60" />
+        </span>
+      ))}
+    </div>
+
+    <div className="mt-auto pt-8">
+      <h3 className="font-lw-display text-[clamp(1.5rem,2.6vw,2rem)] font-medium leading-[1.12] tracking-[-0.02em] text-lw-text">
+        No login.
+        <br />
+        No photo.
+        <br />
+        No algorithm.
+      </h3>
+      <p className="mt-3 text-[0.95rem] leading-[1.6] text-lw-text-dim">
+        Just a name you made up thirty seconds ago and a vibe tag. That&apos;s your entire identity here.
+      </p>
+    </div>
+  </Tile>
+);
+
+/* ── Tile 2 · Gone forever (ephemeral, middle top) ───────────────────────── */
+const DISSOLVE = ['They', 'vanish.', 'Real', 'stakes.', 'Pure', 'magic.', 'No', 'second', 'chances.', 'Just', 'this', 'moment.'] as const;
+const DISSOLVE_BRIGHT = new Set([1, 5, 11]); // the three payoff words
+
+const GoneTile = ({ visible }: { visible: boolean }) => (
+  <Tile visible={visible} delay={80} className="min-[960px]:col-start-2 min-[960px]:row-start-1">
+    <Tag>skip = gone forever</Tag>
+    <p
+      className="mt-5 font-lw-display text-[clamp(1.35rem,2.4vw,1.85rem)] font-medium leading-[1.32] tracking-[-0.01em]"
+      aria-label="They vanish. Real stakes. Pure magic. No second chances. Just this moment."
+    >
+      {DISSOLVE.map((word, i) => (
+        <span
+          key={i}
+          aria-hidden
+          style={{ animationDelay: `${320 + i * 110}ms` }}
+          className={cn(
+            'inline-block',
+            DISSOLVE_BRIGHT.has(i) ? 'text-lw-text' : 'text-lw-text-dim',
+            visible ? 'motion-safe:animate-lw-fade' : 'opacity-0 motion-reduce:opacity-100',
+          )}
+        >
+          {word}&nbsp;
+        </span>
+      ))}
+    </p>
+  </Tile>
+);
+
+/* ── Tile 3 · Real connections (spark green, tall right pillar) ──────────── */
+const ConnectionsTile = ({ visible }: { visible: boolean }) => (
+  <Tile
+    visible={visible}
+    delay={160}
+    className="min-[960px]:col-start-3 min-[960px]:row-start-1 min-[960px]:row-span-2"
+  >
+    <Tag className="text-lw-spark/80">real connections</Tag>
+
+    {/* two anonymous identities → the mutual spark → a real DM */}
+    <div className="mt-7 flex flex-col items-center gap-3" aria-hidden>
+      <div className="flex items-center gap-3">
+        <Monogram tone="violet">M</Monogram>
+        <span className="grid size-9 place-items-center rounded-full border border-lw-spark/40 bg-lw-spark/[0.12] text-sm text-lw-spark [filter:drop-shadow(0_0_8px_var(--lw-spark-glow))]">
+          ✦
+        </span>
+        <Monogram tone="teal">B</Monogram>
+      </div>
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-lw-spark/30 bg-lw-spark/10 px-3 py-1 font-lw-mono text-[0.62rem] uppercase tracking-[0.12em] text-lw-spark">
+        DM unlocked
+      </span>
+    </div>
+
+    <div className="mt-auto pt-8">
+      <h3 className="font-lw-display text-[clamp(1.5rem,2.6vw,2rem)] font-medium leading-[1.12] tracking-[-0.02em] text-lw-text">
+        Mutual spark →
+        <br />
+        real DM.
+      </h3>
+      <p className="mt-3 text-[0.95rem] leading-[1.6] text-lw-text-dim">
+        Your anonymous session becomes a permanent connection — their real account, your real DM.
+      </p>
+    </div>
+  </Tile>
+);
+
+/* ── Tile 4 · Safe Exit (teal, middle bottom) ────────────────────────────── */
+const SafeExitTile = ({ visible }: { visible: boolean }) => (
+  <Tile visible={visible} delay={120} className="min-[960px]:col-start-2 min-[960px]:row-start-2">
+    <div className="flex items-start gap-5">
+      <span
+        className="mt-0.5 grid size-12 shrink-0 place-items-center rounded-2xl border border-lw-teal/30 bg-lw-teal/10 text-lw-teal-2"
+        aria-hidden
+      >
+        <svg viewBox="0 0 24 24" fill="none" className="size-6">
+          <path
+            d="M14 4h3.5A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5H14"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M10.5 12H3m0 0 3.6-3.6M3 12l3.6 3.6"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <div>
+        <Tag className="text-lw-teal-2/80">built-in safety</Tag>
+        <h3 className="mt-2 font-lw-display text-[clamp(1.35rem,2.4vw,1.8rem)] font-medium tracking-[-0.02em] text-lw-text">
+          Safe Exit. Always.
+        </h3>
+        <p className="mt-2 text-[0.95rem] leading-[1.6] text-lw-text-dim">
+          One tap and you&apos;re out — instantly. No message sent, no trace left. We built this first, before anything else.
         </p>
       </div>
     </div>
-  </div>
+  </Tile>
 );
 
-/* ─────────────────────────────────────────────────────────────
-   Tile 5 — Spark Pass teaser strip (full-width bottom)
-   ───────────────────────────────────────────────────────────── */
-const SparkPassTeaser = () => (
-  <div className="bento-tile bento-tile--spark-teaser">
-    <div className="bento-tile__inner bento-tile__inner--row bento-tile__inner--between">
-      <div className="bento-tile__spark-left">
-        <span className="bento-tile__spark-glyph">✦</span>
+/* ── Tile 5 · Spark Pass teaser (iridescent premium, full-width strip) ───── */
+const SparkPassTeaser = ({ visible }: { visible: boolean }) => (
+  <Tile
+    visible={visible}
+    delay={200}
+    className="min-[720px]:col-span-2 min-[960px]:col-span-3 min-[960px]:row-start-3"
+  >
+    <div className="flex flex-col items-start justify-between gap-5 min-[720px]:flex-row min-[720px]:items-center">
+      <div className="flex items-center gap-4">
+        <span
+          className="grid size-11 shrink-0 place-items-center rounded-2xl border border-white-pure/15 bg-white-pure/[0.05] text-lg"
+          aria-hidden
+        >
+          <span className="lw-iri">✦</span>
+        </span>
         <div>
-          <p className="bento-tile__spark-label">Spark Pass</p>
-          <p className="bento-tile__body bento-tile__body--sm">
+          <p className="font-lw-display text-[1.15rem] font-medium tracking-[-0.01em]">
+            <span className="lw-iri">Spark Pass</span>
+          </p>
+          <p className="mt-0.5 font-lw-mono text-[0.72rem] tracking-[0.02em] text-lw-text-dim">
             Gender filters · Priority queue · Voice notes · Re-find credits
           </p>
         </div>
       </div>
-      <p className="bento-tile__spark-cta">coming soon →</p>
+      <span className="shrink-0 font-lw-mono text-[0.72rem] uppercase tracking-[0.16em] text-lw-text-faint">
+        coming soon →
+      </span>
     </div>
-  </div>
+  </Tile>
 );
 
-/* ─────────────────────────────────────────────────────────────
-   Full Bento Section
-   ───────────────────────────────────────────────────────────── */
+/* ── Section ──────────────────────────────────────────────────────────────── */
 const BentoSection = () => {
-  const { ref, isVisible } = useScrollReveal<HTMLDivElement>(0.1);
+  const { ref, isVisible } = useScrollReveal<HTMLDivElement>(0.12);
 
   return (
     <section
-      ref={ref}
-      className={`bento-section${isVisible ? ' bento-section--visible' : ''}`}
       aria-label="Why Whisper Wave"
+      className="relative isolate overflow-hidden bg-background px-[clamp(16px,4vw,40px)] py-[clamp(72px,12vh,140px)] font-lw-body text-lw-text"
     >
-      <div className="bento-section__inner">
-        {/* Header */}
-        <div className="bento-section__header">
-          <p className="bento-section__eyebrow">built different</p>
-          <h2 className="bento-section__title font-display">Why Whisper Wave.</h2>
-        </div>
+      {/* Hairline seam from the section above */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-lw-line)_30%,rgba(139,107,255,0.35)_50%,var(--color-lw-line)_70%,transparent)]" />
 
-        {/* Grid */}
-        <div className="bento-grid">
-          {/* Row 1: Zero Profile (tall) + Gone tile */}
-          <div className="bento-grid__cell bento-grid__cell--zero-profile">
-            <ZeroProfileTile />
-          </div>
-          <div className="bento-grid__cell bento-grid__cell--gone">
-            <GoneTile />
-          </div>
+      {/* Ambient glow — violet upper-left, teal lower-right (the journey again) */}
+      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+        <div className="absolute left-[12%] top-[8%] size-[40vw] max-w-[560px] rounded-full opacity-40 mix-blend-screen blur-[90px] bg-[radial-gradient(circle,rgba(139,107,255,0.4),transparent_64%)]" />
+        <div className="absolute bottom-[4%] right-[8%] size-[36vw] max-w-[520px] rounded-full opacity-30 mix-blend-screen blur-[90px] bg-[radial-gradient(circle,rgba(53,224,200,0.32),transparent_66%)]" />
+      </div>
 
-          {/* Row 2: Connections + Safe Exit */}
-          <div className="bento-grid__cell bento-grid__cell--connections">
-            <ConnectionsTile />
-          </div>
-          <div className="bento-grid__cell bento-grid__cell--safe-exit">
-            <SafeExitTile />
-          </div>
+      <header className="relative mx-auto mb-[clamp(36px,6vh,64px)] max-w-[1180px]">
+        <p className="flex items-center gap-3 font-lw-mono text-[0.72rem] uppercase tracking-[0.22em] text-lw-text-faint">
+          <span className="h-px w-8 bg-lw-line" />
+          built different
+        </p>
+        <h2 className="mt-4 font-lw-display text-[clamp(2.1rem,5vw,3.4rem)] font-medium leading-[1.05] tracking-[-0.02em] text-lw-text">
+          Why Whisper Wave.
+        </h2>
+        <p className="mt-3 max-w-[52ch] text-[clamp(0.95rem,1.6vw,1.08rem)] leading-relaxed text-lw-text-dim">
+          No profiles to perform, no feed to scroll, no score to chase. Every choice here protects one thing — a real moment between two strangers.
+        </p>
+      </header>
 
-          {/* Row 3: Spark Pass full width */}
-          <div className="bento-grid__cell bento-grid__cell--spark-teaser">
-            <SparkPassTeaser />
-          </div>
-        </div>
+      <div
+        ref={ref}
+        className="relative mx-auto grid max-w-[1180px] gap-4 min-[720px]:grid-cols-2 min-[960px]:grid-cols-[1fr_1.4fr_1fr]"
+      >
+        <ZeroProfileTile visible={isVisible} />
+        <GoneTile visible={isVisible} />
+        <ConnectionsTile visible={isVisible} />
+        <SafeExitTile visible={isVisible} />
+        <SparkPassTeaser visible={isVisible} />
       </div>
     </section>
   );
