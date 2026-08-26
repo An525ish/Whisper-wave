@@ -1,7 +1,7 @@
 /** UTC day keys — must match $dateToString timezone in countCreatedByDay aggregations */
 export const STATS_BUCKET_TZ = 'UTC';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000; // 1 day
 
 export const buildLast7DayBuckets = async (
   countByDay: (start: Date, end: Date) => Promise<{ _id: string; count: number }[]>,

@@ -20,18 +20,24 @@ import {
   chatIdParamSchema,
   createGroupSchema,
   findChatsSchema,
+  getChatDetailsQuerySchema,
   markChatReadSchema,
   removeMemberSchema,
   setMemberAdminSchema,
   updateGroupSchema,
 } from '../validators/chat.js';
+import { pageQuerySchema } from '../validators/fields.js';
 
 export const chatRouter = Router();
 
 chatRouter.use(auth);
 
-chatRouter.get('/get-my-chats', getMyChats);
-chatRouter.get('/get-chat-details', getChatDetails);
+chatRouter.get('/get-my-chats', validate(pageQuerySchema, 'query'), getMyChats);
+chatRouter.get(
+  '/get-chat-details',
+  validate(getChatDetailsQuerySchema, 'query'),
+  getChatDetails
+);
 chatRouter.get('/get-media/:chatId', validate(chatIdParamSchema, 'params'), getMedia);
 chatRouter.post(
   '/create-group',

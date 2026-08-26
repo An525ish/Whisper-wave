@@ -3,6 +3,7 @@ import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
 import type { AdminGroupsPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
+import { trimOptional } from '../../utils/normalize.js';
 import type { AdminGroupsQuery } from '../../validators/admin.js';
 import { parseBeforeCursor } from './shared.js';
 
@@ -10,7 +11,7 @@ export const listGroups = async (input: AdminGroupsQuery): Promise<AdminGroupsPa
   const before = parseBeforeCursor(input.before);
   const limit = input.limit;
   const fetchLimit = limit + 1;
-  const q = input.q?.trim() || undefined;
+  const q = trimOptional(input.q);
   const memberId = input.memberId || undefined;
   const isFirstPage = !before;
 
