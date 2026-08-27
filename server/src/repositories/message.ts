@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { Message } from '../models/message.js';
+import { Chat } from '../models/chat.js';
 import type {
   CreateMessageInput,
   MessageRecord,
@@ -637,3 +638,28 @@ export const countCreatedByDay = async (
     },
     { $sort: { _id: 1 } },
   ]);
+
+type ReceiptUser = { _id: string; name: string; avatar?: { url?: string } };
+
+export const findReceipts = async (
+  messageId: string,
+  requesterId: string
+): Promise<{ readers: ReceiptUser[]; isMember: boolean }> => {
+  const msg = await Message.findById(messageId)
+    .select('sender chat readBy')
+    .populate<{ readBy: ReceiptUser[] }>('readBy', 'name avatar')
+    .lean();
+
+  if (!msg) return { readers: [], isMember: false };
+
+  // Verify the requester is either the sender or in the same chat.
+  const chatMembers = await Chat.findById(msg.chat).select('members').lean();
+  const isMember = chatMembers?.members.some(
+    (m) => m.toString() === requesterId,
+  ) ?? false;
+
+  const readers = (msg.readBy as unknown as ReceiptUser[])
+    .filter((u) => u._id.toString() !== msg.sender.toString());
+
+  return { readers, isMember };
+};

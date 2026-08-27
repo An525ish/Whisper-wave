@@ -33,6 +33,8 @@ export type MessageBubbleProps = {
   showReadReceipt?: boolean;
   isRead?: boolean;
   editedAt?: string;
+  /** Center the bubble (e.g. message-info preview) instead of chat-thread alignment */
+  centered?: boolean;
   onFileAction: (e: MouseEvent, attachment: ChatAttachment) => Promise<void> | void;
   onDownload: (attachment: ChatAttachment) => Promise<void> | void;
 };
@@ -76,6 +78,7 @@ const MessageBubble = ({
   showReadReceipt,
   isRead,
   editedAt,
+  centered = false,
   onFileAction,
   onDownload,
 }: MessageBubbleProps) => {
@@ -156,8 +159,12 @@ const MessageBubble = ({
 
   return (
     <div
-      className={`flex max-w-[min(100%,22rem)] items-end gap-2 ${
-        sameSender ? 'ml-auto flex-row-reverse' : 'mr-auto'
+      className={`flex w-fit max-w-[min(100%,22rem)] items-end gap-2 ${
+        centered
+          ? `mx-auto ${sameSender ? 'flex-row-reverse' : ''}`
+          : sameSender
+            ? 'ml-auto flex-row-reverse'
+            : 'mr-auto'
       }`}
     >
       {showAvatar ? (

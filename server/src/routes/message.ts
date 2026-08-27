@@ -6,6 +6,7 @@ import {
   editMessage,
   forwardMessages,
   getMessageContext,
+  getMessageReceipts,
   getMessages,
   jumpToDate,
   listActiveDates,
@@ -83,3 +84,4 @@ messageRouter.patch(
   editMessage
 );
 messageRouter.delete('/:messageId', deleteMessage);
+messageRouter.get('/receipts/:messageId', getMessageReceipts);

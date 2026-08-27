@@ -11,8 +11,8 @@ import {
 } from '../constants/socket-events.js';
 import * as userRepo from '../repositories/user.js';
 import {
+  getChatPeerIds,
   getMemberSockets,
-  getOnlineUserIds,
   isUserOnline,
   messageService,
   removeUserSocket,
@@ -57,7 +57,7 @@ const makeSocketRateLimiter = (maxEvents: number, windowMs: number) => {
 const messageLimiter = makeSocketRateLimiter(30, 10_000);
 
 export const registerSocketHandlers = (io: Server): void => {
-  io.on('connection', (socket: Socket) => {
+  io.on('connection', async (socket: Socket) => {
     const user = socket.user;
 
     if (!user) {
@@ -68,13 +68,19 @@ export const registerSocketHandlers = (io: Server): void => {
     const userId = user._id.toString();
     const ghostMode = socket.isImpersonated === true;
 
+    const peerIds = ghostMode ? [] : await getChatPeerIds(userId);
+    const peerSockets = getMemberSockets(peerIds);
+
     if (!ghostMode) {
       setUserSocket(userId, socket.id);
-      socket.broadcast.emit(USER_ONLINE, { userId });
+      if (peerSockets.length) {
+        io.to(peerSockets).emit(USER_ONLINE, { userId });
+      }
     }
 
     logger.debug({ userId, socketId: socket.id, ghostMode }, 'User connected');
-    socket.emit(ONLINE_USERS, { userIds: getOnlineUserIds() });
+    const onlinePeerIds = peerIds.filter(id => getMemberSockets([id]).length > 0);
+    socket.emit(ONLINE_USERS, { userIds: onlinePeerIds });
 
     socket.on(NEW_MESSAGE, async (payload: NewMessagePayload) => {
       try {
@@ -170,12 +176,16 @@ export const registerSocketHandlers = (io: Server): void => {
       void (async () => {
         try {
           const lastSeen = await userRepo.updateLastSeen(userId);
-          socket.broadcast.emit(USER_OFFLINE, {
-            userId,
-            lastSeen: lastSeen.toISOString(),
-          });
+          if (peerSockets.length) {
+            io.to(peerSockets).emit(USER_OFFLINE, {
+              userId,
+              lastSeen: lastSeen.toISOString(),
+            });
+          }
         } catch (error) {
-          socket.broadcast.emit(USER_OFFLINE, { userId });
+          if (peerSockets.length) {
+            io.to(peerSockets).emit(USER_OFFLINE, { userId });
+          }
           logger.error({ err: error, userId }, 'Failed to persist lastSeen');
         }
       })();

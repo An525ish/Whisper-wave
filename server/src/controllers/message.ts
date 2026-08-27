@@ -2,6 +2,7 @@ import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import type { ValidatedRequest } from '../middlewares/validate.js';
 import { flushNotifications, messageService } from '../services/index.js';
+import * as messageRepo from '../repositories/message.js';
 import type { UploadableFile } from '../types/message.js';
 import { sendGifSchema } from '../validators/message.js';
 import type {
@@ -204,7 +205,7 @@ export const clearChatMessages: RequestHandler = catchAsync(async (req, res) => 
 });
 
 export const forwardMessages: RequestHandler = catchAsync(async (req, res) => {
-  const targetChatId = param(req.params.targetChatId);
+  const targetChatId = param(req, 'targetChatId');
   const { sourceChatId, messageIds } = req.body as {
     sourceChatId: string;
     messageIds: string[];
@@ -221,4 +222,15 @@ export const forwardMessages: RequestHandler = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
   });
+});
+
+export const getMessageReceipts: RequestHandler = catchAsync(async (req, res) => {
+  const messageId = param(req.params.messageId);
+  const userId = req.userId!;
+  const { readers, isMember } = await messageRepo.findReceipts(messageId, userId);
+  if (!isMember) {
+    res.status(403).json({ success: false, message: 'Forbidden' });
+    return;
+  }
+  res.status(200).json({ success: true, data: readers });
 });

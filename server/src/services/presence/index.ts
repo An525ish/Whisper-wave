@@ -1,5 +1,6 @@
 import type { Server } from 'socket.io';
 import type { RealtimeNotify } from '../../types/chat.js';
+import * as chatRepo from '../../repositories/chat.js';
 
 /**
  * In-memory presence. Each user can have multiple sockets (multiple tabs/devices).
@@ -43,6 +44,22 @@ export const getMemberSockets = (
 export const getPresenceSize = (): number => userSocketIds.size;
 
 export const getOnlineUserIds = (): string[] => [...userSocketIds.keys()];
+
+/**
+ * Returns the unique peer IDs the user shares a chat with.
+ * Used to scope USER_ONLINE / USER_OFFLINE broadcasts — no global fan-out.
+ */
+export const getChatPeerIds = async (userId: string): Promise<string[]> => {
+  const chats = await chatRepo.findDirectChatsForMember(userId);
+  const peers = new Set<string>();
+  for (const chat of chats) {
+    for (const memberId of chat.members) {
+      const id = memberId.toString();
+      if (id !== userId) peers.add(id);
+    }
+  }
+  return [...peers];
+};
 
 export const emitToMembers = (
   io: Server | undefined,

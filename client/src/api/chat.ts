@@ -132,3 +132,6 @@ export const setMemberAdmin = (
 
 export const leaveGroup = (chatId: string) =>
   api.delete(`/chat/leave-group/${chatId}`);
+
+export const getMessageReceipts = (messageId: string) =>
+  api.get(`/message/receipts/${messageId}`);
