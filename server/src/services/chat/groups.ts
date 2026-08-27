@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { REFETCH_CHATS } from '../../constants/socket-events.js';
+import { GROUP_MAX_MEMBERS } from '../../constants/chat.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as chatReadRepo from '../../repositories/chatRead.js';
 import * as messageRepo from '../../repositories/message.js';
@@ -104,6 +105,10 @@ export const addMembers = async (
 
   const existingMembers = new Set(chat.members.map((m) => m.toString()));
   for (const member of members) existingMembers.add(member.toString());
+
+  if (existingMembers.size > GROUP_MAX_MEMBERS) {
+    throw new AppError(400, `Group cannot exceed ${GROUP_MAX_MEMBERS} members`);
+  }
 
   const nextMembers = Array.from(existingMembers).map(
     (id) => new Types.ObjectId(id)

@@ -6,6 +6,7 @@ import {
   NEW_MESSAGE_ALERT,
   REFETCH_CHATS,
 } from '../../constants/socket-events.js';
+import { MESSAGE_EDIT_WINDOW_MS } from '../../constants/chat.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
 import type { LastMessageType, RealtimeNotify } from '../../types/index.js';
@@ -41,6 +42,11 @@ export const editMessage = async (
 
   if ((existing.attachments?.length ?? 0) > 0) {
     throw new AppError(400, 'Only text messages can be edited');
+  }
+
+  const ageMs = Date.now() - new Date(existing.createdAt).getTime();
+  if (ageMs > MESSAGE_EDIT_WINDOW_MS) {
+    throw new AppError(400, 'Messages can only be edited within 15 minutes of sending');
   }
 
   const updated = await messageRepo.updateById(messageId, {

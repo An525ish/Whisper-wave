@@ -28,7 +28,7 @@ const GroupMembersList = ({ creator, members }: GroupMembersListProps) => {
   return (
     <section className="mx-3 mt-1 flex flex-col gap-3 rounded-2xl bg-primary/40 px-3.5 py-3.5 ring-1 ring-border/50 sm:grid sm:grid-cols-[6.5rem_1px_1fr] sm:items-center sm:gap-x-4">
       <div className="flex flex-col items-center gap-2">
-        <div className="relative">
+        <div className="relative z-10">
           <AvatarRing tone="green" className="h-19 w-19">
             <Image
               src={creator?.avatar}
@@ -36,7 +36,7 @@ const GroupMembersList = ({ creator, members }: GroupMembersListProps) => {
               className="h-full w-full rounded-full object-cover bg-background-alt"
             />
           </AvatarRing>
-          <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-black-dark px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-gold ring-1 ring-gold/55">
+          <span className="absolute -bottom-0.5 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded bg-black-dark px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-gold ring-1 ring-gold/55">
             Creator
           </span>
         </div>

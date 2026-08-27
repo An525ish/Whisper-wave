@@ -26,6 +26,7 @@ type ChatBoxProps = {
   searchHighlight?: boolean;
   isDeleted?: boolean;
   editedAt?: string;
+  centered?: boolean;
 };
 
 const resolveAttachmentKind = (
@@ -57,6 +58,7 @@ const MessageRow = ({
   searchHighlight = false,
   isDeleted = false,
   editedAt,
+  centered = false,
 }: ChatBoxProps) => {
   const { chatId } = useParams();
   const { content, sender, attachments = [], createdAt, replyTo } = chatData;
@@ -199,6 +201,7 @@ const MessageRow = ({
         showReadReceipt={showReadReceipt}
         isRead={isRead}
         editedAt={editedAt}
+        centered={centered}
         onFileAction={handleFileAction}
         onDownload={downloadAttachment}
       />

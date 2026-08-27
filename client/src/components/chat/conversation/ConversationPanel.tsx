@@ -1,6 +1,6 @@
 import {
   forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
-  type ChangeEvent, type KeyboardEvent,
+  type ChangeEvent, type KeyboardEvent, type TouchEvent,
 } from 'react';
 import useErrors from '@/hooks/shared/useError';
 import { useSocket } from '@/socket/SocketProvider';
@@ -11,6 +11,8 @@ import {
 } from '@/hooks/chat';
 import ContextMenu from '@/components/ui/context-menu/ContextMenu';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
+import MessageReceiptDialog from '@/components/chat/message/MessageReceiptDialog';
+import SwipeToReply from '@/components/chat/message/SwipeToReply';
 import CloseIcon from '@/components/ui/icons/Close';
 import CheckboxIcon from '@/components/ui/icons/Checkbox';
 import { useAuthStore } from '@/stores/auth';
@@ -114,14 +116,16 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
 
   const {
     editingMessageId, isEditing, cancelEdit, saveEdit,
-    replyingTo, clearReply,
+    replyingTo, clearReply, startReply,
     forwardOpen, setForwardOpen, forwardMessageIds, setForwardMessageIds,
     openForwardDialog, handleForwardToChat, forwardIsPending,
-    copyMessagesByIds, openMessageContextMenu, menuState, hideContextMenu,
+    copyMessagesByIds, openMessageContextMenu, openMessageContextMenuFromTouch,
+    menuState, hideContextMenu,
     confirmClearOpen, setConfirmClearOpen, confirmDelete, setConfirmDelete,
     deletableSelectedIds, canInteractMessage, editIsPending,
+    receiptMessage, setReceiptMessage,
   } = useMessageActions({
-    chatId, user, canModerateGroup, canClearChat, allMessages,
+    chatId, user, canModerateGroup, canClearChat, isGroupChat, allMessages,
     selectedIds, setSelectedIds, onSelectModeChange, applyUpdatedMessage, invalidateMessages,
     setLiveMessages, clearTypingState, message, setMessage, setAttachments,
     onEditingChange,
@@ -183,6 +187,26 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
         peerLastReadAt,
       }),
     [isGroupChat, memberIds, peerLastReadAt, user?._id],
+  );
+
+  // Long-press handler factory — one stable timer ref, used across all messages
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressMovedRef = useRef(false);
+
+  const longPressHandlers = useCallback(
+    (msg: ChatMessage) => ({
+      onTouchStart: (e: TouchEvent) => {
+        e.preventDefault();
+        longPressMovedRef.current = false;
+        longPressTimerRef.current = setTimeout(() => {
+          if (!longPressMovedRef.current) openMessageContextMenuFromTouch(e, msg);
+        }, 500);
+      },
+      onTouchEnd: () => { if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); },
+      onTouchMove: () => { longPressMovedRef.current = true; if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); },
+      onTouchCancel: () => { if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); },
+    }),
+    [openMessageContextMenuFromTouch],
   );
 
   const handleMessageChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -350,15 +374,22 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
                             <CheckboxIcon className="h-5 w-5" checked={isSelected} />
                           </button>
                         ) : null}
-                        <div className="w-fit max-w-full rounded-2xl" onContextMenu={(e) => openMessageContextMenu(e, msg)}
-                          onClick={() => { if (selectable) toggleSelected(msg._id); }}
-                          role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
-                          onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(msg._id); } } : undefined}>
-                          <ChatBox chatData={msg} isGroupChat={isGroupChat} showReadReceipt={sameSender}
-                            isRead={isMessageRead(msg)} searchHighlight={msg._id === highlightedMessageId}
-                            highlightQuery={msg._id === highlightedMessageId && highlightQuery ? highlightQuery : undefined}
-                            isDeleted={Boolean(msg.isDeleted)} editedAt={msg.editedAt} />
-                        </div>
+                        <SwipeToReply
+                          side={sameSender ? 'end' : 'start'}
+                          disabled={!canInteractMessage(msg) || selectMode}
+                          onReply={() => startReply(msg)}
+                        >
+                          <div className="w-fit max-w-full rounded-2xl" onContextMenu={(e) => openMessageContextMenu(e, msg)}
+                            onClick={() => { if (selectable) toggleSelected(msg._id); }}
+                            role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
+                            {...longPressHandlers(msg)}
+                            onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(msg._id); } } : undefined}>
+                            <ChatBox chatData={msg} isGroupChat={isGroupChat} showReadReceipt={sameSender}
+                              isRead={isMessageRead(msg)} searchHighlight={msg._id === highlightedMessageId}
+                              highlightQuery={msg._id === highlightedMessageId && highlightQuery ? highlightQuery : undefined}
+                              isDeleted={Boolean(msg.isDeleted)} editedAt={msg.editedAt} />
+                          </div>
+                        </SwipeToReply>
                       </div>
                     </div>
                   );
@@ -435,6 +466,14 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
             else void deleteSelectedMessages();
             setConfirmDelete(null);
           }} />
+      ) : null}
+
+      {receiptMessage ? (
+        <MessageReceiptDialog
+          message={receiptMessage}
+          isGroupChat={isGroupChat}
+          onClose={() => setReceiptMessage(null)}
+        />
       ) : null}
     </div>
   );

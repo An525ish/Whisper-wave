@@ -7,8 +7,8 @@ export * as friendRequestService from './friendRequest/index.js';
 export {
   emitToMembers,
   flushNotifications,
+  getChatPeerIds,
   getMemberSockets,
-  getOnlineUserIds,
   getPresenceSize,
   isUserOnline,
   removeUserSocket,

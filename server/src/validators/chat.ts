@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { GROUP_MAX_MEMBERS } from '../constants/chat.js';
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid id');
 
@@ -13,7 +14,9 @@ export const createGroupSchema = z.object({
       }
     }
     return value;
-  }, z.array(objectId).min(2, 'At least 3 members are required (including you)')),
+  }, z.array(objectId)
+    .min(2, 'At least 3 members are required (including you)')
+    .max(GROUP_MAX_MEMBERS - 1, `A group can have at most ${GROUP_MAX_MEMBERS} members (including you)`)),
   bio: z.string().trim().max(70).optional(),
 });
 

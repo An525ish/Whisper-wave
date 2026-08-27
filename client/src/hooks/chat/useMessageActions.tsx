@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import type { MouseEvent } from 'react';
+import type { MouseEvent, TouchEvent } from 'react';
 import useContextMenu from '@/hooks/shared/useContextMenu';
 import { isValidMessageId } from '@/utils/helpers';
 import {
@@ -14,6 +14,7 @@ import ForwardIcon from '@/components/ui/icons/Forward';
 import CopyIcon from '@/components/ui/icons/Copy';
 import SelectMessagesIcon from '@/components/ui/icons/SelectMessages';
 import TrashIcon from '@/components/ui/icons/Trash';
+import ReadReceipt from '@/components/ui/icons/ReadReceipt';
 import type { Avatar } from '@/types';
 import type { ChatMessage } from '@/types/chat';
 import { useEditMessageMutation, useForwardMessagesMutation } from '@/hooks/chat/useMessageMutations';
@@ -23,6 +24,7 @@ interface Params {
   user: { _id?: string; name?: string; avatar?: unknown } | null;
   canModerateGroup: boolean;
   canClearChat: boolean;
+  isGroupChat?: boolean;
   allMessages: ChatMessage[];
   selectedIds: Set<string>;
   setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
@@ -42,6 +44,7 @@ export function useMessageActions({
   user,
   canModerateGroup,
   allMessages,
+  isGroupChat,
   selectedIds,
   setSelectedIds,
   onSelectModeChange,
@@ -62,6 +65,7 @@ export function useMessageActions({
   const [forwardOpen, setForwardOpen] = useState(false);
   const [forwardMessageIds, setForwardMessageIds] = useState<string[]>([]);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const [receiptMessage, setReceiptMessage] = useState<ChatMessage | null>(null);
 
   const isEditing = Boolean(editingMessageId);
 
@@ -92,7 +96,9 @@ export function useMessageActions({
     (msg: ChatMessage) =>
       canManageMessage(msg) &&
       Boolean(msg.content?.trim()) &&
-      (msg.attachments?.length ?? 0) === 0,
+      (msg.attachments?.length ?? 0) === 0 &&
+      // Mirror server-side 15-min window so the option disappears client-side too
+      (msg.createdAt ? Date.now() - new Date(msg.createdAt).getTime() < 15 * 60 * 1000 : false),
     [canManageMessage],
   );
 
@@ -211,25 +217,49 @@ export function useMessageActions({
   );
 
   // Context menu
-  const openMessageContextMenu = useCallback(
-    (e: MouseEvent, msg: ChatMessage) => {
-      if (isEditing || !canInteractMessage(msg)) return;
-      e.preventDefault();
-      e.stopPropagation();
+  const buildMenuOptions = useCallback(
+    (msg: ChatMessage) => {
       const isOwn = canManageMessage(msg);
       const canDelete = canDeleteMessage(msg);
-      const options = [
+      return [
         { icon: <ReplyIcon className="h-4 w-4" />, label: 'Reply', onClick: () => startReply(msg) },
         { icon: <CopyIcon className="h-4 w-4" />, label: 'Copy', onClick: () => void copyMessagesByIds([msg._id]) },
         { icon: <ForwardIcon className="h-4 w-4" />, label: 'Forward', onClick: () => openForwardDialog([msg._id]) },
         ...(isOwn && canEditMessage(msg) ? [{ icon: <PencilIcon className="h-4 w-4" />, label: 'Edit', onClick: () => startEditMessage(msg) }] : []),
         ...(canDelete ? [{ icon: <TrashIcon className="h-4 w-4" />, label: 'Delete', onClick: () => setConfirmDelete({ type: 'one', messageId: msg._id }) }] : []),
         { icon: <SelectMessagesIcon className="h-4 w-4" />, label: 'Select', onClick: () => { onSelectModeChange?.(true); setSelectedIds(new Set([msg._id])); } },
+        // Read by: own messages always; moderators/creator can view receipts for any message
+        ...((isOwn || canModerateGroup) && isGroupChat ? [{ icon: <ReadReceipt read className="h-4 w-4" />, label: 'Read by', onClick: () => setReceiptMessage(msg) }] : []),
       ];
-      showContextMenu({ x: e.clientX, y: e.clientY }, options);
     },
-    [canDeleteMessage, canEditMessage, canInteractMessage, canManageMessage, copyMessagesByIds,
-      isEditing, onSelectModeChange, openForwardDialog, setSelectedIds, showContextMenu, startEditMessage, startReply],
+    [canDeleteMessage, canEditMessage, canManageMessage, canModerateGroup, copyMessagesByIds, isGroupChat,
+      onSelectModeChange, openForwardDialog, setSelectedIds, startEditMessage, startReply],
+  );
+
+  const openMenuAt = useCallback(
+    (pos: { x: number; y: number }, msg: ChatMessage) => {
+      if (isEditing || !canInteractMessage(msg)) return;
+      showContextMenu(pos, buildMenuOptions(msg));
+    },
+    [buildMenuOptions, canInteractMessage, isEditing, showContextMenu],
+  );
+
+  const openMessageContextMenu = useCallback(
+    (e: MouseEvent, msg: ChatMessage) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openMenuAt({ x: e.clientX, y: e.clientY }, msg);
+    },
+    [openMenuAt],
+  );
+
+  const openMessageContextMenuFromTouch = useCallback(
+    (e: TouchEvent, msg: ChatMessage) => {
+      const touch = e.changedTouches[0] ?? e.touches[0];
+      if (!touch) return;
+      openMenuAt({ x: touch.clientX, y: touch.clientY }, msg);
+    },
+    [openMenuAt],
   );
 
   // External ref so delete actions can set confirmDelete
@@ -258,9 +288,11 @@ export function useMessageActions({
     replyingTo, startReply, clearReply,
     forwardOpen, setForwardOpen, forwardMessageIds, setForwardMessageIds,
     openForwardDialog, handleForwardToChat, forwardIsPending: forwardMutation.isPending,
-    copyMessagesByIds, openMessageContextMenu, menuState, hideContextMenu,
+    copyMessagesByIds, openMessageContextMenu, openMessageContextMenuFromTouch,
+    menuState, hideContextMenu,
     confirmClearOpen, setConfirmClearOpen, confirmDelete, setConfirmDelete,
     deletableSelectedIds, canDeleteMessage, canInteractMessage,
     editIsPending: editMessageMutation.isPending,
+    receiptMessage, setReceiptMessage,
   };
 }
