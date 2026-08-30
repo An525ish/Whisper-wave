@@ -67,7 +67,8 @@ export type SearchMessagesOptions = {
 export type SendAttachmentsInput = {
   userId: string;
   chatId: string;
-  files: UploadableFile[];
+  /** Pre-verified attachments already uploaded directly to Cloudinary by the client. */
+  attachments: import('./upload.js').CommitAttachment[];
   content?: string;
   replyToMessageId?: string;
 };
@@ -262,12 +263,6 @@ export type IMessageFields = {
   updatedAt: Date;
 };
 
-export type CloudinaryUploadResult = {
-  publicId: string;
-  url: string;
-  name: string;
-  fileType: string;
-};
 
 export type MessageListItem = {
   chat: string;

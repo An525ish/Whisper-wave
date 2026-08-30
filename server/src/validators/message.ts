@@ -9,6 +9,16 @@ export const sendAttachmentsSchema = z.object({
     .string()
     .regex(/^[a-f\d]{24}$/i, 'Invalid message id')
     .optional(),
+  attachments: z
+    .array(
+      z.object({
+        publicId: z.string().min(1).max(512),
+        originalName: z.string().min(1).max(255),
+        mimeType: z.string().min(1).max(127),
+      }),
+    )
+    .min(1)
+    .max(5),
 });
 
 export const getMessagesQuerySchema = z.object({

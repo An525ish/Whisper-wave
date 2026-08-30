@@ -157,26 +157,5 @@ export const avatarUpload = (
   });
 };
 
-export const attachmentsUpload = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  multerUpload.array('files')(req, res, async (err) => {
-    if (err) {
-      next(err);
-      return;
-    }
-
-    try {
-      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-        req.files = (await Promise.all(
-          req.files.map((file) => compressFile(file))
-        )) as Express.Multer.File[];
-      }
-      next();
-    } catch (error) {
-      next(error);
-    }
-  });
-};
+// attachmentsUpload removed — message attachments now use direct client-to-Cloudinary
+// upload (see services/upload/index.ts and routes/upload.ts).

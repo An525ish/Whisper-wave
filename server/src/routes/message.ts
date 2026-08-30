@@ -15,7 +15,6 @@ import {
   sendGif,
 } from '../controllers/message.js';
 import {
-  attachmentsUpload,
   auth,
   searchLimiter,
   validate,
@@ -67,7 +66,6 @@ messageRouter.post(
 );
 messageRouter.post(
   '/send-attachments',
-  attachmentsUpload,
   validate(sendAttachmentsSchema),
   sendAttachments
 );

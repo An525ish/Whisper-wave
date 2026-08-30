@@ -1,17 +1,33 @@
+import { v4 as uuid } from 'uuid';
+import { cloudinary } from '../config/cloudinary.js';
 import { DEFAULT_USER_AVATAR } from '../constants/auth.js';
 import type { UploadableFile } from '../types/message.js';
 import type { UserAvatar } from '../types/user.js';
 import { AppError } from './AppError.js';
-import { uploadToCloudinary, uploadUrlToCloudinary } from './cloudinary.js';
+import { uploadUrlToCloudinary } from './cloudinary.js';
+import { getBase64 } from './helper.js';
+
+/** Upload a single avatar file to Cloudinary (server-side, multer buffer). */
+const uploadAvatarFileToCloudinary = (file: UploadableFile): Promise<UserAvatar> =>
+  new Promise((resolve, reject) => {
+    cloudinary.uploader.upload(
+      getBase64(file),
+      { resource_type: 'image', public_id: `ww/avatars/${uuid()}` },
+      (error, result) => {
+        if (error || !result) return reject(error ?? new Error('Avatar upload failed'));
+        resolve({ publicId: result.public_id, url: result.secure_url });
+      },
+    );
+  });
 
 export const uploadAvatarFromFile = async (
   avatarFile: UploadableFile
 ): Promise<UserAvatar> => {
-  const uploaded = await uploadToCloudinary([avatarFile]);
-  if (!uploaded.length) {
+  try {
+    return await uploadAvatarFileToCloudinary(avatarFile);
+  } catch {
     throw new AppError(400, 'Failed to upload avatar');
   }
-  return { publicId: uploaded[0].publicId, url: uploaded[0].url };
 };
 
 /** Signup step 3 — uploaded file or default placeholder. */

@@ -6,9 +6,10 @@ import useErrors from '@/hooks/shared/useError';
 import { useSocket } from '@/socket/SocketProvider';
 import {
   useChatDetailsQuery, useChatMessages, useChatScroll, useDeleteActions,
-  useMessageActions, useMessageSelection, useSendAttachmentsMutation,
+  useMessageActions, useMessageSelection,
   useSendGifMutation, useTypingIndicator,
 } from '@/hooks/chat';
+import { useAttachmentUpload } from '@/hooks/chat/useAttachmentUpload';
 import ContextMenu from '@/components/ui/context-menu/ContextMenu';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
 import MessageReceiptDialog from '@/components/chat/message/MessageReceiptDialog';
@@ -27,6 +28,7 @@ import useAsyncMutation from '@/hooks/shared/useAsyncMutation';
 import type {
   ChatDetailsResponse, ChatMessage, MessageReplyTo, SendAttachmentsResult,
 } from '@/types/chat';
+
 import { isOutgoingMessageRead } from '@/utils/chat';
 import DoubleChevronDown from '@/components/ui/icons/DoubleChevronDown';
 import ReplyComposerBar from '@/components/chat/conversation/composer/ReplyBar';
@@ -173,7 +175,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     },
   }), [canClearChat, copyMessagesByIds, deletableSelectedIds.length, openForwardDialog, selectedIds, setConfirmClearOpen, setConfirmDelete]);
 
-  const [sendAttachments] = useAsyncMutation(useSendAttachmentsMutation);
+  const attachmentUpload = useAttachmentUpload();
   const { mutate: sendGifMutation } = useSendGifMutation();
 
   const isMessageRead = useCallback(
@@ -250,12 +252,13 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     const tempAttachments = attachments.map((f) => ({ tempUrl: URL.createObjectURL(f), name: f.name, type: f.type, size: f.size, uploading: true }));
     setLiveMessages((prev) => [...prev, { _id: tempId, content: message, sender: { _id: user?._id ?? '', name: user?.name ?? '', avatar: user?.avatar as Avatar | undefined }, attachments: tempAttachments, createdAt: new Date().toISOString(), isUploading: true, replyTo: replySnapshot }]);
     setMessage(''); setAttachments([]); clearReply();
-    const formData = new FormData();
-    formData.append('chatId', chatId ?? ''); formData.append('content', message);
-    if (replyToMessageId) formData.append('replyToMessageId', replyToMessageId);
-    attachments.forEach((f) => formData.append('files', f));
     try {
-      const result = (await sendAttachments('', formData)) as SendAttachmentsResult | null;
+      const result = (await attachmentUpload.upload({
+        chatId: chatId ?? '',
+        files: attachments,
+        content: message,
+        replyToMessageId,
+      })) as SendAttachmentsResult | null;
       if (!result) { setLiveMessages((prev) => prev.filter((m) => m._id !== tempId)); return; }
       const payload = (result.data ?? result) as ChatMessage;
       setLiveMessages((prev) => prev.map((m) => m._id === tempId

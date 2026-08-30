@@ -3,6 +3,7 @@ export * as adminService from './admin/index.js';
 export * as userService from './user/index.js';
 export * as chatService from './chat/index.js';
 export * as messageService from './message/index.js';
+export * as uploadService from './upload/index.js';
 export * as friendRequestService from './friendRequest/index.js';
 export {
   emitToMembers,
