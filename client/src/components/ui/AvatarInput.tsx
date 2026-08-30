@@ -22,9 +22,12 @@ const CameraIcon = () => (
 const AvatarInput = ({ setFile }: AvatarInputProps) => {
   const [preview, setPreview] = useState<string>(AVATAR_FALLBACK);
 
+  const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const next = event.target.files?.[0];
     if (!next) return;
+    if (!ALLOWED_TYPES.has(next.type)) return; // server enforces this; skip silently (accept attr already filters picker)
     setFile(next);
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -47,7 +50,7 @@ const AvatarInput = ({ setFile }: AvatarInputProps) => {
         <input
           id="auth-avatar"
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={handleChange}
           className="sr-only"
         />

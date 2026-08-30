@@ -3,7 +3,7 @@ import type { Server } from 'socket.io';
 import type { ValidatedRequest } from '../middlewares/validate.js';
 import { flushNotifications, messageService } from '../services/index.js';
 import * as messageRepo from '../repositories/message.js';
-import type { UploadableFile } from '../types/message.js';
+import type { CommitAttachment } from '../types/upload.js';
 import { sendGifSchema } from '../validators/message.js';
 import type {
   GetMessagesQuery,
@@ -104,16 +104,16 @@ export const listActiveDates: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const sendAttachments: RequestHandler = catchAsync(async (req, res) => {
-  const { chatId, content, replyToMessageId } = req.body as {
+  const { chatId, content, replyToMessageId, attachments } = req.body as {
     chatId: string;
     content?: string;
     replyToMessageId?: string;
+    attachments: CommitAttachment[];
   };
-  const files = (req.files as UploadableFile[] | undefined) ?? [];
   const result = await messageService.sendAttachments({
     userId: req.userId!,
     chatId,
-    files,
+    attachments,
     content,
     replyToMessageId,
   });

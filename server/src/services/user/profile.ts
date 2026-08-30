@@ -4,7 +4,7 @@ import type { PublicUser, UpdateProfileInput, UpdateUserPatch } from '../../type
 import type { UploadableFile } from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
 import { uploadAvatarFromFile } from '../../utils/avatar.js';
-import { deleteFromCloudinary } from '../../utils/cloudinary.js';
+import { deleteFromR2 } from '../../utils/storage.js';
 import { normalizeEmail } from '../../utils/normalize.js';
 import { isAllowedEmail } from '../../utils/disposableEmail.js';
 
@@ -75,7 +75,7 @@ export const updateProfile = async (
   await userRepo.updateById(userId, patch);
 
   if (avatarFile && user.avatar?.publicId) {
-    await deleteFromCloudinary([user.avatar.publicId]);
+    await deleteFromR2(user.avatar.publicId);
   }
 
   return getProfile(userId);

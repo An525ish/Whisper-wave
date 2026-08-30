@@ -5,13 +5,10 @@ import { queryKeys } from '@/hooks/chat';
 export function useSendAttachmentsMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: chatApi.sendAttachments,
+    mutationFn: chatApi.commitAttachments,
     onSuccess: (_data, variables) => {
-      const chatId = variables.get('chatId');
-      if (typeof chatId === 'string') {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.media(chatId) });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.messages(chatId) });
-      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.media(variables.chatId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.messages(variables.chatId) });
     },
   });
 }

@@ -103,7 +103,6 @@ export type {
   ForwardMessagesInput,
   IMessageFields,
   UploadableFile,
-  CloudinaryUploadResult,
   MessageListItem,
   CreateMessageInput,
   MessageRecord,

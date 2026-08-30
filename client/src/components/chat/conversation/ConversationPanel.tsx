@@ -2,13 +2,15 @@ import {
   forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
   type ChangeEvent, type KeyboardEvent, type TouchEvent,
 } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import useErrors from '@/hooks/shared/useError';
 import { useSocket } from '@/socket/SocketProvider';
 import {
   useChatDetailsQuery, useChatMessages, useChatScroll, useDeleteActions,
-  useMessageActions, useMessageSelection, useSendAttachmentsMutation,
-  useSendGifMutation, useTypingIndicator,
+  useMessageActions, useMessageSelection,
+  useSendGifMutation, useTypingIndicator, queryKeys,
 } from '@/hooks/chat';
+import { useAttachmentUpload } from '@/hooks/chat/useAttachmentUpload';
 import ContextMenu from '@/components/ui/context-menu/ContextMenu';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
 import MessageReceiptDialog from '@/components/chat/message/MessageReceiptDialog';
@@ -23,9 +25,8 @@ import { isValidMessageId, normalizeMemberIds } from '@/utils/helpers';
 import ChatBox from '@/components/chat/message/MessageRow';
 import ChatInput from '@/components/chat/conversation/composer/ChatInput';
 import ForwardDialog from '@/components/chat/dialogs/ForwardDialog';
-import useAsyncMutation from '@/hooks/shared/useAsyncMutation';
 import type {
-  ChatDetailsResponse, ChatMessage, MessageReplyTo, SendAttachmentsResult,
+  ChatDetailsResponse, ChatMessage, MessageReplyTo,
 } from '@/types/chat';
 import { isOutgoingMessageRead } from '@/utils/chat';
 import DoubleChevronDown from '@/components/ui/icons/DoubleChevronDown';
@@ -173,7 +174,8 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     },
   }), [canClearChat, copyMessagesByIds, deletableSelectedIds.length, openForwardDialog, selectedIds, setConfirmClearOpen, setConfirmDelete]);
 
-  const [sendAttachments] = useAsyncMutation(useSendAttachmentsMutation);
+  const queryClient = useQueryClient();
+  const attachmentUpload = useAttachmentUpload();
   const { mutate: sendGifMutation } = useSendGifMutation();
 
   const isMessageRead = useCallback(
@@ -247,22 +249,60 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     const replySnapshot = replyingTo ? buildReplySnapshot(replyingTo) : undefined;
     const replyToMessageId = replyingTo && isValidMessageId(replyingTo._id) ? replyingTo._id : undefined;
     const tempId = String(Date.now());
-    const tempAttachments = attachments.map((f) => ({ tempUrl: URL.createObjectURL(f), name: f.name, type: f.type, size: f.size, uploading: true }));
-    setLiveMessages((prev) => [...prev, { _id: tempId, content: message, sender: { _id: user?._id ?? '', name: user?.name ?? '', avatar: user?.avatar as Avatar | undefined }, attachments: tempAttachments, createdAt: new Date().toISOString(), isUploading: true, replyTo: replySnapshot }]);
+    const tempAttachments = attachments.map((f) => ({
+      tempUrl: URL.createObjectURL(f),
+      name: f.name,
+      type: f.type,
+      size: f.size,
+      uploading: true,
+    }));
+    setLiveMessages((prev) => [
+      ...prev,
+      {
+        _id: tempId,
+        content: message,
+        sender: { _id: user?._id ?? '', name: user?.name ?? '', avatar: user?.avatar as Avatar | undefined },
+        attachments: tempAttachments,
+        createdAt: new Date().toISOString(),
+        isUploading: true,
+        replyTo: replySnapshot,
+      },
+    ]);
+    const filesToUpload = [...attachments];
     setMessage(''); setAttachments([]); clearReply();
-    const formData = new FormData();
-    formData.append('chatId', chatId ?? ''); formData.append('content', message);
-    if (replyToMessageId) formData.append('replyToMessageId', replyToMessageId);
-    attachments.forEach((f) => formData.append('files', f));
     try {
-      const result = (await sendAttachments('', formData)) as SendAttachmentsResult | null;
+      const result = await attachmentUpload.upload({
+        chatId: chatId ?? '',
+        files: filesToUpload,
+        content: message,
+        replyToMessageId,
+      });
       if (!result) { setLiveMessages((prev) => prev.filter((m) => m._id !== tempId)); return; }
-      const payload = (result.data ?? result) as ChatMessage;
-      setLiveMessages((prev) => prev.map((m) => m._id === tempId
-        ? { ...payload, attachments: (payload.attachments ?? []).map((att, i) => ({ ...att, tempUrl: tempAttachments[i]?.tempUrl, uploading: false })) }
-        : m));
+      const payload = ((result as { data?: ChatMessage }).data ?? result) as ChatMessage;
+      setLiveMessages((prev) =>
+        prev.map((m) =>
+          m._id === tempId
+            ? {
+                ...payload,
+                attachments: (payload.attachments ?? []).map((att, i) => ({
+                  ...att,
+                  tempUrl: tempAttachments[i]?.tempUrl,
+                  uploading: false,
+                })),
+              }
+            : m,
+        ),
+      );
+      // Invalidate so the media tab and message history reflect the new attachment
+      void queryClient.invalidateQueries({ queryKey: queryKeys.messages(chatId ?? '') });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.media(chatId ?? '') });
+      attachmentUpload.reset();
       scrollToBottom();
-    } catch { toast.error('Failed to send attachments'); setLiveMessages((prev) => prev.filter((m) => m._id !== tempId)); }
+    } catch {
+      toast.error('Failed to send attachments');
+      setLiveMessages((prev) => prev.filter((m) => m._id !== tempId));
+      attachmentUpload.reset();
+    }
   };
 
   const handleGifSelect = useCallback(

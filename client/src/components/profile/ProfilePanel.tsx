@@ -55,7 +55,7 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
               <circle cx="12" cy="13.5" r="2.4" stroke="currentColor" strokeWidth="1.6" />
             </svg>
           </button>
-          <input ref={p.avatarInputRef} id={p.avatarInputId} type="file" accept="image/*" className="hidden" onChange={p.handleAvatarChange} />
+          <input ref={p.avatarInputRef} id={p.avatarInputId} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={p.handleAvatarChange} />
         </>
       ) : null}
     </>
