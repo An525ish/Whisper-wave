@@ -33,7 +33,6 @@ const scaleToFit = (
  */
 const uploadAvatarBufferToR2 = async (
   buffer: Buffer,
-  originalMimeType: string,
 ): Promise<UserAvatar> => {
   let compressedBuffer: Buffer;
 
@@ -70,7 +69,7 @@ const uploadAvatarBufferToR2 = async (
 /** Upload an avatar file (from multer buffer) to R2 via Jimp compression. */
 export const uploadAvatarFromFile = async (avatarFile: UploadableFile): Promise<UserAvatar> => {
   try {
-    return await uploadAvatarBufferToR2(avatarFile.buffer, avatarFile.mimetype);
+    return await uploadAvatarBufferToR2(avatarFile.buffer);
   } catch (err) {
     if (err instanceof AppError) throw err;
     logger.error({ err }, 'Avatar file upload to R2 failed');
@@ -98,9 +97,8 @@ export const resolveOAuthAvatar = async (pictureUrl?: string): Promise<UserAvata
 
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const mimeType = response.headers.get('content-type') ?? 'image/jpeg';
 
-    return await uploadAvatarBufferToR2(buffer, mimeType);
+    return await uploadAvatarBufferToR2(buffer);
   } catch (err) {
     logger.warn({ err, pictureUrl }, 'OAuth avatar fetch/upload failed — using default');
     return { ...DEFAULT_USER_AVATAR };
