@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import type { ValidatedRequest } from '../middlewares/validate.js';
-import { chatService, flushNotifications } from '../services/index.js';
+import { chatService, flushNotifications, joinUsersToChatRoom, leaveUsersFromChatRoom } from '../services/index.js';
 import type { UploadableFile } from '../types/message.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { param } from '../utils/http.js';
@@ -17,11 +17,13 @@ export const createGroupChat: RequestHandler = catchAsync(async (req, res) => {
     members: string[];
     bio?: string;
   };
-  const result = await chatService.createGroupChat(
-    req.userId!,
-    { name, members, bio },
-    req.file as UploadableFile | undefined
-  );
+  const result = await chatService.createGroupChat({
+    userId: req.userId!,
+    input: { name, members, bio },
+    avatarFile: req.file as UploadableFile | undefined,
+  });
+  const chatId = String(result.chat._id);
+  await joinUsersToChatRoom(getIo(req)!, chatId, result.chat.members);
   flushNotifications(getIo(req), result.notifications);
   res.status(201).json({
     success: true,
@@ -32,12 +34,12 @@ export const createGroupChat: RequestHandler = catchAsync(async (req, res) => {
 
 export const updateGroupDetails: RequestHandler = catchAsync(async (req, res) => {
   const { name, bio } = req.body as { name?: string; bio?: string };
-  const result = await chatService.updateGroupDetails(
-    req.userId!,
-    param(req.params.chatId),
-    { name, bio },
-    req.file as UploadableFile | undefined
-  );
+  const result = await chatService.updateGroupDetails({
+    userId: req.userId!,
+    chatId: param(req.params.chatId),
+    input: { name, bio },
+    avatarFile: req.file as UploadableFile | undefined,
+  });
   flushNotifications(getIo(req), result.notifications);
   res.status(200).json({
     success: true,
@@ -47,7 +49,10 @@ export const updateGroupDetails: RequestHandler = catchAsync(async (req, res) =>
 
 export const getMyChats: RequestHandler = catchAsync(async (req, res) => {
   const { page } = (req as ValidatedRequest<PageQuery>).validatedQuery;
-  const result = await chatService.getMyChats(req.userId!, page);
+  const result = await chatService.getMyChats({
+    userId: req.userId!,
+    page,
+  });
   res.status(200).json({
     success: true,
     data: result.data,
@@ -60,24 +65,34 @@ export const findChats: RequestHandler = catchAsync(async (req, res) => {
     userIds: string[];
     notifications: Array<{ chatId: string; count: number }>;
   };
-  const data = await chatService.findChats(req.userId!, userIds, notifications);
+  const data = await chatService.findChats({
+    userId: req.userId!,
+    userIds,
+    notifications,
+  });
   res.status(200).json({ success: true, data });
 });
 
 export const getChatDetails: RequestHandler = catchAsync(async (req, res) => {
   const { id, populate } = (req as ValidatedRequest<GetChatDetailsQuery>).validatedQuery;
 
-  const data = await chatService.getChatDetails(req.userId!, id, populate);
+  const data = await chatService.getChatDetails({
+    userId: req.userId!,
+    chatId: id,
+    populate,
+  });
   res.status(200).json({ success: true, data });
 });
 
 export const addMembers: RequestHandler = catchAsync(async (req, res) => {
   const { members } = req.body as { members: string[] };
-  const result = await chatService.addMembers(
-    req.userId!,
-    param(req.params.chatId),
-    members
-  );
+  const chatId = param(req.params.chatId);
+  const result = await chatService.addMembers({
+    userId: req.userId!,
+    chatId,
+    members,
+  });
+  await joinUsersToChatRoom(getIo(req)!, chatId, members);
   flushNotifications(getIo(req), result.notifications);
   res.status(200).json({
     success: true,
@@ -88,12 +103,14 @@ export const addMembers: RequestHandler = catchAsync(async (req, res) => {
 
 export const removeMember: RequestHandler = catchAsync(async (req, res) => {
   const { memberToBeRemoved } = req.body as { memberToBeRemoved: string };
-  const result = await chatService.removeMember(
-    req.userId!,
-    param(req.params.chatId),
-    memberToBeRemoved
-  );
+  const chatId = param(req.params.chatId);
+  const result = await chatService.removeMember({
+    userId: req.userId!,
+    chatId,
+    memberToBeRemoved,
+  });
   flushNotifications(getIo(req), result.notifications);
+  await leaveUsersFromChatRoom(getIo(req)!, chatId, [memberToBeRemoved]);
   res.status(200).json({
     success: true,
     message: 'Members removed successfully',
@@ -105,12 +122,12 @@ export const setMemberAdmin: RequestHandler = catchAsync(async (req, res) => {
     memberId: string;
     makeAdmin: boolean;
   };
-  const result = await chatService.setMemberAdmin(
-    req.userId!,
-    param(req.params.chatId),
+  const result = await chatService.setMemberAdmin({
+    userId: req.userId!,
+    chatId: param(req.params.chatId),
     memberId,
-    makeAdmin
-  );
+    makeAdmin,
+  });
   flushNotifications(getIo(req), result.notifications);
   res.status(200).json({
     success: true,
@@ -119,20 +136,27 @@ export const setMemberAdmin: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const leaveGroup: RequestHandler = catchAsync(async (req, res) => {
-  const result = await chatService.leaveGroup(
-    req.userId!,
-    param(req.params.chatId)
-  );
+  const chatId = param(req.params.chatId);
+  const result = await chatService.leaveGroup({
+    userId: req.userId!,
+    chatId,
+  });
   flushNotifications(getIo(req), result.notifications);
+  await leaveUsersFromChatRoom(getIo(req)!, chatId, [req.userId!]);
   res.status(200).json({ success: true, message: result.message });
 });
 
 export const deleteGroup: RequestHandler = catchAsync(async (req, res) => {
-  const result = await chatService.deleteGroup(
-    req.userId!,
-    param(req.params.chatId)
-  );
-  flushNotifications(getIo(req), result.notifications);
+  const chatId = param(req.params.chatId);
+  const result = await chatService.deleteGroup({
+    userId: req.userId!,
+    chatId,
+  });
+  const io = getIo(req);
+  if (io && result.memberIds?.length) {
+    await leaveUsersFromChatRoom(io, chatId, result.memberIds);
+  }
+  flushNotifications(io, result.notifications);
   res.status(200).json({ success: true, message: result.message });
 });
 
@@ -143,11 +167,11 @@ export const markChatRead: RequestHandler = catchAsync(async (req, res) => {
     return;
   }
   const body = req.body as { lastReadMessageId?: string };
-  const result = await chatService.markChatRead(
-    req.userId!,
-    param(req.params.chatId),
-    body.lastReadMessageId
-  );
+  const result = await chatService.markChatRead({
+    userId: req.userId!,
+    chatId: param(req.params.chatId),
+    lastReadMessageId: body.lastReadMessageId,
+  });
   flushNotifications(getIo(req), result.notifications);
   res.status(200).json({
     success: true,
@@ -165,7 +189,7 @@ export const markAllChatsRead: RequestHandler = catchAsync(async (req, res) => {
     res.status(200).json({ success: true, message: 'All chats marked as read', data: { marked: 0, lastReadAt: null } });
     return;
   }
-  const result = await chatService.markAllChatsRead(req.userId!);
+  const result = await chatService.markAllChatsRead({ userId: req.userId! });
   flushNotifications(getIo(req), result.notifications);
   res.status(200).json({
     success: true,
@@ -178,6 +202,9 @@ export const markAllChatsRead: RequestHandler = catchAsync(async (req, res) => {
 });
 
 export const getMedia: RequestHandler = catchAsync(async (req, res) => {
-  const data = await chatService.getMedia(req.userId!, param(req.params.chatId));
+  const data = await chatService.getMedia({
+    userId: req.userId!,
+    chatId: param(req.params.chatId),
+  });
   res.json({ success: true, data });
 });

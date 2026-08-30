@@ -5,11 +5,18 @@ import * as chatRepo from '../../repositories/chat.js';
 import * as chatReadRepo from '../../repositories/chatRead.js';
 import * as messageRepo from '../../repositories/message.js';
 import type {
+  AddGroupMembersInput,
   ChatAvatar,
-  RealtimeNotify,
-  UpdateGroupDetailsInput,
+  ChatMutationMessageResult,
+  ChatMutationResult,
+  CreateGroupChatServiceInput,
+  DeleteGroupInput,
+  LeaveGroupInput,
+  RealtimeNotificationsResult,
+  RemoveGroupMemberInput,
+  SetGroupMemberAdminInput,
+  UpdateGroupDetailsServiceInput,
 } from '../../types/chat.js';
-import type { UploadableFile } from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
 import { deleteFromCloudinary } from '../../utils/cloudinary.js';
 import {
@@ -20,11 +27,10 @@ import {
 import { uploadAvatarOrThrow } from './shared.js';
 
 export const createGroupChat = async (
-  userId: string,
-  input: { name: string; members: string[]; bio?: string },
-  avatarFile?: UploadableFile
-): Promise<{ chat: unknown; notifications: RealtimeNotify[] }> => {
-  const allMembers = [...input.members, userId];
+  input: CreateGroupChatServiceInput
+): Promise<ChatMutationResult> => {
+  const { userId, input: group, avatarFile } = input;
+  const allMembers = [...group.members, userId];
   let avatar: ChatAvatar | undefined;
 
   if (avatarFile) {
@@ -32,8 +38,8 @@ export const createGroupChat = async (
   }
 
   const chat = await chatRepo.create({
-    name: input.name,
-    bio: input.bio,
+    name: group.name,
+    bio: group.bio,
     avatar,
     groupChat: true,
     creator: userId,
@@ -44,16 +50,20 @@ export const createGroupChat = async (
 
   return {
     chat,
-    notifications: [{ event: REFETCH_CHATS, members: allMembers }],
+    notifications: [
+      {
+        event: REFETCH_CHATS,
+        chatId: String(chat._id),
+        data: { chatId: String(chat._id) },
+      },
+    ],
   };
 };
 
 export const updateGroupDetails = async (
-  userId: string,
-  chatId: string,
-  input: UpdateGroupDetailsInput,
-  avatarFile?: UploadableFile
-): Promise<{ notifications: RealtimeNotify[] }> => {
+  input: UpdateGroupDetailsServiceInput
+): Promise<RealtimeNotificationsResult> => {
+  const { userId, chatId, input: details, avatarFile } = input;
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
   if (!chat.groupChat) {
@@ -68,8 +78,8 @@ export const updateGroupDetails = async (
     avatar?: ChatAvatar;
   } = {};
 
-  if (input.name !== undefined) patch.name = input.name;
-  if (input.bio !== undefined) patch.bio = input.bio;
+  if (details.name !== undefined) patch.name = details.name;
+  if (details.bio !== undefined) patch.bio = details.bio;
 
   const avatar = avatarFile ? await uploadAvatarOrThrow(avatarFile) : undefined;
   if (avatar) patch.avatar = avatar;
@@ -78,7 +88,7 @@ export const updateGroupDetails = async (
     throw new AppError(400, 'No group details to update');
   }
 
-  const updated = await chatRepo.updateById(chatId, patch);
+  await chatRepo.updateById(chatId, patch);
 
   if (avatarFile && chat.avatar?.publicId) {
     await deleteFromCloudinary([chat.avatar.publicId]);
@@ -86,16 +96,15 @@ export const updateGroupDetails = async (
 
   return {
     notifications: [
-      { event: REFETCH_CHATS, members: updated?.members ?? chat.members },
+      { event: REFETCH_CHATS, chatId, data: { chatId } },
     ],
   };
 };
 
 export const addMembers = async (
-  userId: string,
-  chatId: string,
-  members: string[]
-): Promise<{ chat: unknown; notifications: RealtimeNotify[] }> => {
+  input: AddGroupMembersInput
+): Promise<ChatMutationResult> => {
+  const { userId, chatId, members } = input;
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
   if (!chat.groupChat) {
@@ -123,18 +132,17 @@ export const addMembers = async (
   }
 
   return {
-    chat: updated,
+    chat: updated ?? chat,
     notifications: [
-      { event: REFETCH_CHATS, members: updated?.members ?? nextMembers },
+      { event: REFETCH_CHATS, chatId, data: { chatId } },
     ],
   };
 };
 
 export const removeMember = async (
-  userId: string,
-  chatId: string,
-  memberToBeRemoved: string
-): Promise<{ notifications: RealtimeNotify[] }> => {
+  input: RemoveGroupMemberInput
+): Promise<RealtimeNotificationsResult> => {
+  const { userId, chatId, memberToBeRemoved } = input;
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
   if (!chat.groupChat) {
@@ -155,20 +163,15 @@ export const removeMember = async (
 
   return {
     notifications: [
-      {
-        event: REFETCH_CHATS,
-        members: [...nextMembers, memberToBeRemoved],
-      },
+      { event: REFETCH_CHATS, chatId, data: { chatId } },
     ],
   };
 };
 
 export const setMemberAdmin = async (
-  userId: string,
-  chatId: string,
-  memberId: string,
-  makeAdmin: boolean
-): Promise<{ notifications: RealtimeNotify[] }> => {
+  input: SetGroupMemberAdminInput
+): Promise<RealtimeNotificationsResult> => {
+  const { userId, chatId, memberId, makeAdmin } = input;
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
   if (!chat.groupChat) {
@@ -195,14 +198,14 @@ export const setMemberAdmin = async (
   });
 
   return {
-    notifications: [{ event: REFETCH_CHATS, members: chat.members }],
+    notifications: [{ event: REFETCH_CHATS, chatId, data: { chatId } }],
   };
 };
 
 export const leaveGroup = async (
-  userId: string,
-  chatId: string
-): Promise<{ message: string; notifications: RealtimeNotify[] }> => {
+  input: LeaveGroupInput
+): Promise<ChatMutationMessageResult> => {
+  const { userId, chatId } = input;
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(400, 'No chat found');
 
@@ -245,20 +248,20 @@ export const leaveGroup = async (
   await chatRepo.updateById(chatId, patch);
   return {
     message,
-    notifications: [{ event: REFETCH_CHATS, members: remainingMembers }],
+    notifications: [{ event: REFETCH_CHATS, chatId, data: { chatId } }],
   };
 };
 
 export const deleteGroup = async (
-  userId: string,
-  chatId: string
-): Promise<{ message: string; notifications: RealtimeNotify[] }> => {
+  input: DeleteGroupInput
+): Promise<ChatMutationMessageResult> => {
+  const { userId, chatId } = input;
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
   assertCreator(userId, chat);
 
-  const members = [...chat.members];
   const name = chat.name;
+  const memberIds = chat.members.map(String);
 
   await Promise.all([
     chatRepo.deleteById(chatId),
@@ -268,6 +271,7 @@ export const deleteGroup = async (
 
   return {
     message: `${name} deleted successfully`,
-    notifications: [{ event: REFETCH_CHATS, members }],
+    memberIds,
+    notifications: [{ event: REFETCH_CHATS, chatId, data: { chatId } }],
   };
 };

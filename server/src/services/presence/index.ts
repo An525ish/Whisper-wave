@@ -1,5 +1,6 @@
 import type { Server } from 'socket.io';
-import type { RealtimeNotify } from '../../types/chat.js';
+import { chatRoom } from '../../utils/helper.js';
+import type { JoinedChat, RealtimeNotify } from '../../types/chat.js';
 import * as chatRepo from '../../repositories/chat.js';
 
 /**
@@ -45,20 +46,42 @@ export const getPresenceSize = (): number => userSocketIds.size;
 
 export const getOnlineUserIds = (): string[] => [...userSocketIds.keys()];
 
-/**
- * Returns the unique peer IDs the user shares a chat with.
- * Used to scope USER_ONLINE / USER_OFFLINE broadcasts — no global fan-out.
- */
-export const getChatPeerIds = async (userId: string): Promise<string[]> => {
-  const chats = await chatRepo.findDirectChatsForMember(userId);
-  const peers = new Set<string>();
-  for (const chat of chats) {
+export const loadJoinedChatsForConnect = async (
+  userId: string
+): Promise<JoinedChat[]> => chatRepo.findJoinedChatsForConnect(userId);
+
+/** DM partner user IDs from joined chats (no extra DB round-trip). */
+export const getDmPartnerUserIds = (
+  joinedChats: JoinedChat[],
+  userId: string
+): string[] => {
+  const dmPartnerUserIds: string[] = [];
+  for (const chat of joinedChats) {
+    if (chat.groupChat) continue;
     for (const memberId of chat.members) {
       const id = memberId.toString();
-      if (id !== userId) peers.add(id);
+      if (id !== userId) dmPartnerUserIds.push(id);
     }
   }
-  return [...peers];
+  return dmPartnerUserIds;
+};
+
+/** Which of the given users are online — user IDs and their socket IDs in one pass. */
+export const resolveOnlinePresence = (
+  userIds: Array<string | { toString(): string }>
+): { onlineUserIds: string[]; onlineSocketIds: string[] } => {
+  const onlineUserIds: string[] = [];
+  const onlineSocketIds: string[] = [];
+
+  for (const memberId of userIds) {
+    const id = memberId.toString();
+    const sockets = userSocketIds.get(id);
+    if (!sockets?.size) continue;
+    onlineUserIds.push(id);
+    onlineSocketIds.push(...sockets);
+  }
+
+  return { onlineUserIds, onlineSocketIds };
 };
 
 export const emitToMembers = (
@@ -79,7 +102,23 @@ export const flushNotifications = (
   io: Server | undefined,
   notifications: RealtimeNotify[]
 ): void => {
-  for (const notification of notifications) {
-    emitToMembers(io, notification.event, notification.members, notification.data);
+  if (!io) return;
+
+  for (const { event, chatId, members, excludeUserId, data } of notifications) {
+    if (chatId) {
+      if (excludeUserId) {
+        const excludeSockets = [...(userSocketIds.get(excludeUserId) ?? [])];
+        const emitter = excludeSockets.length
+          ? io.to(chatRoom(chatId)).except(excludeSockets)
+          : io.to(chatRoom(chatId));
+        emitter.emit(event, data);
+      } else {
+        io.to(chatRoom(chatId)).emit(event, data);
+      }
+      continue;
+    }
+    if (members?.length) {
+      emitToMembers(io, event, members, data);
+    }
   }
 };

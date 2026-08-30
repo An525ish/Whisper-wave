@@ -6,11 +6,15 @@ import * as messageRepo from '../../repositories/message.js';
 import type {
   ChatAvatar,
   ChatLastMessage,
-  ChatListItem,
-  ChatNotificationInput,
   FindChatItem,
+  FindChatsInput,
+  GetChatDetailsInput,
+  GetMyChatsInput,
+  MarkAllChatsReadInput,
   MarkAllChatsReadResult,
+  MarkChatReadInput,
   MarkChatReadResult,
+  PaginatedChatsResult,
   PopulatedMember,
   RealtimeNotify,
 } from '../../types/chat.js';
@@ -19,9 +23,9 @@ import { getGroupRole } from '../../utils/groupRole.js';
 import { resolveGroupAvatarUrls, toListLastMessage } from './shared.js';
 
 export const getMyChats = async (
-  userId: string,
-  page: number
-): Promise<{ data: ChatListItem[]; totalPages: number }> => {
+  input: GetMyChatsInput
+): Promise<PaginatedChatsResult> => {
+  const { userId, page } = input;
   const resultPerPage = 20;
 
   const [chats, totalChats] = await Promise.all([
@@ -94,10 +98,9 @@ export const getMyChats = async (
 };
 
 export const findChats = async (
-  userId: string,
-  userIds: string[],
-  _notifications: ChatNotificationInput[]
+  input: FindChatsInput
 ): Promise<FindChatItem[]> => {
+  const { userId, userIds } = input;
   const chats = await chatRepo.findByIdsForMemberPopulated(userId, userIds);
   const chatIds = chats.map((c) => c._id);
   const reads = await chatReadRepo.findByUserAndChats(userId, chatIds);
@@ -130,10 +133,9 @@ export const findChats = async (
 };
 
 export const markChatRead = async (
-  userId: string,
-  chatId: string,
-  lastReadMessageId?: string
+  input: MarkChatReadInput
 ): Promise<MarkChatReadResult> => {
+  const { userId, chatId, lastReadMessageId } = input;
   const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(404, 'Chat not found');
 
@@ -163,10 +165,6 @@ export const markChatRead = async (
     messageRepo.markReadByUser(chatId, userId, lastReadAt),
   ]);
 
-  const otherMembers = chat.members.filter(
-    (member) => member.toString() !== userId.toString()
-  );
-
   return {
     chatId,
     lastReadAt,
@@ -174,7 +172,7 @@ export const markChatRead = async (
     notifications: [
       {
         event: CHAT_READ,
-        members: otherMembers,
+        chatId,
         data: {
           chatId,
           userId,
@@ -187,9 +185,10 @@ export const markChatRead = async (
 };
 
 export const markAllChatsRead = async (
-  userId: string
+  input: MarkAllChatsReadInput
 ): Promise<MarkAllChatsReadResult> => {
-  const chats = await chatRepo.findMembershipsForMember(userId);
+  const { userId } = input;
+  const chats = await chatRepo.findUserChatsWithLastMessage(userId);
   const lastReadAt = new Date();
 
   if (chats.length === 0) {
@@ -212,9 +211,7 @@ export const markAllChatsRead = async (
 
   const notifications: RealtimeNotify[] = chats.map((chat) => ({
     event: CHAT_READ,
-    members: chat.members.filter(
-      (member) => member.toString() !== userId.toString()
-    ),
+    chatId: chat._id.toString(),
     data: {
       chatId: chat._id.toString(),
       userId,
@@ -233,10 +230,9 @@ export const markAllChatsRead = async (
 };
 
 export const getChatDetails = async (
-  userId: string,
-  chatId: string,
-  shouldPopulate: boolean
+  input: GetChatDetailsInput
 ): Promise<Record<string, unknown>> => {
+  const { userId, chatId, populate: shouldPopulate } = input;
   let chat: Record<string, unknown> | null = null;
 
   if (shouldPopulate) {

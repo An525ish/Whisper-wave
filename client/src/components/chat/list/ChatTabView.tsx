@@ -99,23 +99,28 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
       if (!res.chatId || !res.message) return;
       queryClient.setQueryData<ChatsResponse>(queryKeys.chats, (old) => {
         if (!old?.data) return old;
+        const next = old.data.map((chat) =>
+          chat._id !== res.chatId
+            ? chat
+            : {
+                ...chat,
+                lastMessage: {
+                  content: res.message.content,
+                  createdAt: res.message.createdAt,
+                  sender: res.message.sender
+                    ? { _id: String(res.message.sender._id), name: res.message.sender.name }
+                    : undefined,
+                  isRead: String(res.message.sender?._id) === String(userId),
+                },
+              },
+        );
         return {
           ...old,
-          data: old.data.map((chat) =>
-            chat._id !== res.chatId
-              ? chat
-              : {
-                  ...chat,
-                  lastMessage: {
-                    content: res.message.content,
-                    createdAt: res.message.createdAt,
-                    sender: res.message.sender
-                      ? { _id: String(res.message.sender._id), name: res.message.sender.name }
-                      : undefined,
-                    isRead: String(res.message.sender?._id) === String(userId),
-                  },
-                }
-          ),
+          data: [...next].sort((a, b) => {
+            const aTime = a.lastMessage?.createdAt ? Date.parse(a.lastMessage.createdAt) : 0;
+            const bTime = b.lastMessage?.createdAt ? Date.parse(b.lastMessage.createdAt) : 0;
+            return bTime - aTime;
+          }),
         };
       });
     },

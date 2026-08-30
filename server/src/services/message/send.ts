@@ -1,16 +1,23 @@
 import {
   NEW_ATTACHMENT,
+  NEW_MESSAGE,
   NEW_MESSAGE_ALERT,
   REFETCH_CHATS,
 } from '../../constants/socket-events.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
 import * as userRepo from '../../repositories/user.js';
-import type { LastMessageType, RealtimeNotify, UploadableFile } from '../../types/index.js';
-import type { MessageReplyTo } from '../../types/message.js';
+import type { LastMessageType } from '../../types/index.js';
+import type {
+  PersistTextMessageInput,
+  PersistTextMessageResult,
+  SendAttachmentsInput,
+  SendGifInput,
+  SendMessageResult,
+} from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
 import { uploadToCloudinary } from '../../utils/cloudinary.js';
-import { buildReplySnapshot } from './shared.js';
+import { buildReplySnapshot, formatMessageForClient } from './shared.js';
 
 const mimeFromKlipyUrl = (url: string, fallback = 'image/gif') => {
   try {
@@ -26,12 +33,10 @@ const mimeFromKlipyUrl = (url: string, fallback = 'image/gif') => {
 };
 
 export const sendAttachments = async (
-  userId: string,
-  chatId: string,
-  files: UploadableFile[],
-  content?: string,
-  replyToMessageId?: string
-): Promise<{ data: unknown; notifications: RealtimeNotify[] }> => {
+  input: SendAttachmentsInput
+): Promise<SendMessageResult> => {
+  const { userId, chatId, files, content, replyToMessageId } = input;
+
   if (files.length === 0) {
     throw new AppError(400, 'Send at least one file');
   }
@@ -84,9 +89,12 @@ export const sendAttachments = async (
       createdAt: message.createdAt,
     });
 
+    const record = saved ?? message;
+    const formatted = await formatMessageForClient(record);
+
     return {
       data: {
-        ...(saved ?? message),
+        ...record,
         sender: {
           _id: userId,
           name: user.name,
@@ -94,13 +102,10 @@ export const sendAttachments = async (
         },
       },
       notifications: [
-        {
-          event: NEW_MESSAGE_ALERT,
-          members: chat.members.filter((m) => m.toString() !== userId),
-          data: { chatId },
-        },
-        { event: NEW_ATTACHMENT, members: chat.members, data: { chatId } },
-        { event: REFETCH_CHATS, members: chat.members, data: { chatId } },
+        { event: NEW_MESSAGE, chatId, data: { chatId, message: formatted } },
+        { event: NEW_MESSAGE_ALERT, chatId, excludeUserId: userId, data: { chatId } },
+        { event: NEW_ATTACHMENT, chatId, data: { chatId } },
+        { event: REFETCH_CHATS, chatId, data: { chatId } },
       ],
     };
   } catch {
@@ -113,16 +118,11 @@ export const sendAttachments = async (
   }
 };
 
-export const sendGif = async (
-  userId: string,
-  chatId: string,
-  gifId: string,
-  gifUrl: string,
-  gifTitle: string,
-  replyToMessageId?: string,
-  mimeType?: string,
-  kind: 'gif' | 'meme' = 'gif'
-): Promise<{ data: unknown; notifications: RealtimeNotify[] }> => {
+export const sendGif = async (input: SendGifInput): Promise<SendMessageResult> => {
+  const {
+    userId, chatId, gifId, gifUrl, gifTitle, replyToMessageId, mimeType, kind = 'gif'
+  } = input;
+
   const [user, chat] = await Promise.all([
     userRepo.findByIdNameAvatar(userId),
     chatRepo.findByIdLean(chatId),
@@ -167,41 +167,29 @@ export const sendGif = async (
     createdAt: message.createdAt,
   });
 
+  const formatted = await formatMessageForClient(message);
+
   return {
     data: {
       ...message,
       sender: { _id: userId, name: user.name, avatar: user.avatar.url },
     },
     notifications: [
-      {
-        event: NEW_MESSAGE_ALERT,
-        members: chat.members.filter((m) => m.toString() !== userId),
-        data: { chatId },
-      },
-      { event: NEW_ATTACHMENT, members: chat.members, data: { chatId } },
-      { event: REFETCH_CHATS, members: chat.members, data: { chatId } },
+      { event: NEW_MESSAGE, chatId, data: { chatId, message: formatted } },
+      { event: NEW_MESSAGE_ALERT, chatId, excludeUserId: userId, data: { chatId } },
+      { event: NEW_ATTACHMENT, chatId, data: { chatId } },
+      { event: REFETCH_CHATS, chatId, data: { chatId } },
     ],
   };
 };
 
 /** Persist a realtime text message after membership is validated.
  *  Returns the canonical DB members list so the socket handler never
- *  fans-out based on a client-supplied (potentially spoofed) array. */
-export const persistTextMessage = async (input: {
-  userId: string;
-  chatId: string;
-  content: string;
-  replyToMessageId?: string;
-}): Promise<
-  | {
-      ok: true;
-      messageId: string;
-      createdAt: string;
-      memberIds: string[];
-      replyTo?: MessageReplyTo;
-    }
-  | { ok: false }
-> => {
+ *  fans-out based on a client-supplied (potentially spoofed) array. 
+ */
+export const persistTextMessage = async (
+  input: PersistTextMessageInput
+): Promise<PersistTextMessageResult> => {
   const chat = await chatRepo.findByIdMembers(input.chatId);
   if (!chat) return { ok: false };
 
@@ -233,7 +221,6 @@ export const persistTextMessage = async (input: {
     ok: true,
     messageId: String(newMessage._id),
     createdAt: new Date(newMessage.createdAt).toISOString(),
-    memberIds: chat.members.map((m) => m.toString()),
     replyTo,
   };
 };

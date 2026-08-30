@@ -1,11 +1,11 @@
 import * as chatRepo from '../../repositories/chat.js';
-import type { FriendSummary } from '../../types/index.js';
+import type { FriendSummary, GetMyFriendsInput } from '../../types/index.js';
 import { AppError } from '../../utils/AppError.js';
 
 export const getMyFriends = async (
-  userId: string,
-  chatId?: string
+  input: GetMyFriendsInput
 ): Promise<FriendSummary[]> => {
+  const { userId, chatId } = input;
   const chats = await chatRepo.findDirectChatsPopulated(userId);
 
   const friends = chats.flatMap(({ members }) => {
