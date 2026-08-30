@@ -19,5 +19,6 @@ export {
 export {
   assertChatMember,
   buildReplySnapshot,
+  serializeReplyToClient,
   MESSAGE_PAGE_SIZE,
 } from './shared.js';

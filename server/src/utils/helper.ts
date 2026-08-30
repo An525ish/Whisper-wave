@@ -7,6 +7,9 @@ export type { UploadableFile } from '../types/message.js';
 export const getClientBaseUrl = (): string =>
   env.CLIENT_URL || 'http://localhost:5173';
 
+/** Socket.IO room name for a connected chat. */
+export const chatRoom = (chatId: string): string => `chat:${chatId}`;
+
 export const getBase64 = (file: {
   mimetype: string;
   buffer: Buffer;

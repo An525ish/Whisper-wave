@@ -91,8 +91,6 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     () => normalizeMemberIds((chatDetails as ChatDetailsResponse | undefined)?.data?.members),
     [chatDetails],
   );
-  const memberIdsRef = useRef(memberIds);
-  memberIdsRef.current = memberIds;
 
   const { selectedIds, setSelectedIds, toggleSelected } = useMessageSelection({ selectMode });
 
@@ -112,7 +110,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   });
 
   const { isTyping, setIsTyping, isTypingRef, timeoutRef, clearTypingState, emitStartTyping, emitStopTyping } =
-    useTypingIndicator({ chatId, socket, memberIdsRef });
+    useTypingIndicator({ chatId, socket });
 
   const {
     editingMessageId, isEditing, cancelEdit, saveEdit,
@@ -212,7 +210,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   const handleMessageChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
     setMessage(next);
-    if (isEditing || !chatId || memberIdsRef.current.length === 0) return;
+    if (isEditing || !chatId) return;
     if (!next.trim()) { clearTypingState(true); return; }
     if (!isTypingRef.current) { setIsTyping(true); emitStartTyping(); }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -236,13 +234,13 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
 
     if (!attachments || attachments.length === 0) {
       const trimmed = message.trim();
-      if (!trimmed || !chatId || memberIds.length === 0) { if (!trimmed) return; toast.error('Unable to send message right now'); return; }
+      if (!trimmed || !chatId) { if (!trimmed) return; toast.error('Unable to send message right now'); return; }
       const replySnapshot = replyingTo ? buildReplySnapshot(replyingTo) : undefined;
       const replyToMessageId = replyingTo && isValidMessageId(replyingTo._id) ? replyingTo._id : undefined;
       const pendingId = `pending-${Date.now()}`;
       setLiveMessages((prev) => [...prev, { _id: pendingId, content: trimmed, sender: { _id: user?._id ?? '', name: user?.name ?? '', avatar: user?.avatar as Avatar | undefined }, createdAt: new Date().toISOString(), replyTo: replySnapshot }]);
       setMessage(''); clearReply();
-      socket.emit('NEW_MESSAGE', { message: trimmed, chatId, members: memberIds, replyToMessageId });
+      socket.emit('NEW_MESSAGE', { message: trimmed, chatId, replyToMessageId });
       scrollToBottom(); return;
     }
 

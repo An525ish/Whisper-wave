@@ -9,8 +9,17 @@ import {
 import { MESSAGE_EDIT_WINDOW_MS } from '../../constants/chat.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
-import type { LastMessageType, RealtimeNotify } from '../../types/index.js';
-import type { MessageRecord } from '../../types/message.js';
+import type {
+  ClearChatMessagesInput,
+  DeleteManyMessagesInput,
+  DeleteMessageInput,
+  DeleteMessagesResult,
+  EditMessageInput,
+  EditMessageResult,
+  ForwardMessagesInput,
+  MessageRecord,
+} from '../../types/message.js';
+import type { LastMessageType, RealtimeNotify, RealtimeNotificationsResult } from '../../types/chat.js';
 import { AppError } from '../../utils/AppError.js';
 import {
   assertCreator,
@@ -24,10 +33,9 @@ import {
 } from './shared.js';
 
 export const editMessage = async (
-  userId: string,
-  messageId: string,
-  content: string
-): Promise<{ data: Awaited<ReturnType<typeof formatMessageForClient>>; notifications: RealtimeNotify[] }> => {
+  input: EditMessageInput
+): Promise<EditMessageResult> => {
+  const { userId, messageId, content } = input;
   const trimmed = content.trim();
   if (!trimmed) throw new AppError(400, 'Message cannot be empty');
 
@@ -67,7 +75,6 @@ export const editMessage = async (
     });
   }
 
-  const chat = await chatRepo.findByIdMembers(chatId);
   const data = await formatMessageForClient(updated);
 
   return {
@@ -75,18 +82,18 @@ export const editMessage = async (
     notifications: [
       {
         event: MESSAGE_UPDATED,
-        members: chat?.members ?? [],
+        chatId,
         data: { chatId, message: data },
       },
-      { event: REFETCH_CHATS, members: chat?.members ?? [], data: { chatId } },
+      { event: REFETCH_CHATS, chatId, data: { chatId } },
     ],
   };
 };
 
 export const deleteMessage = async (
-  userId: string,
-  messageId: string
-): Promise<{ messageIds: string[]; notifications: RealtimeNotify[] }> => {
+  input: DeleteMessageInput
+): Promise<DeleteMessagesResult> => {
+  const { userId, messageId } = input;
   const existing = await messageRepo.findByIdLean(messageId);
   if (!existing || existing.isDeleted) {
     throw new AppError(404, 'Message not found');
@@ -119,19 +126,18 @@ export const deleteMessage = async (
     notifications: [
       {
         event: MESSAGES_DELETED,
-        members: chat.members,
+        chatId,
         data: { chatId, messageIds },
       },
-      { event: REFETCH_CHATS, members: chat.members, data: { chatId } },
+      { event: REFETCH_CHATS, chatId, data: { chatId } },
     ],
   };
 };
 
 export const deleteManyMessages = async (
-  userId: string,
-  chatId: string,
-  messageIds: string[]
-): Promise<{ messageIds: string[]; notifications: RealtimeNotify[] }> => {
+  input: DeleteManyMessagesInput
+): Promise<DeleteMessagesResult> => {
+  const { userId, chatId, messageIds } = input;
   const chat = await getChatMembersOrThrow(userId, chatId);
   const canModerate =
     Boolean(chat.groupChat) && isGroupModerator(userId, chat);
@@ -151,18 +157,18 @@ export const deleteManyMessages = async (
     notifications: [
       {
         event: MESSAGES_DELETED,
-        members: chat.members,
+        chatId,
         data: { chatId, messageIds: deletedIds },
       },
-      { event: REFETCH_CHATS, members: chat.members, data: { chatId } },
+      { event: REFETCH_CHATS, chatId, data: { chatId } },
     ],
   };
 };
 
 export const clearChatMessages = async (
-  userId: string,
-  chatId: string
-): Promise<{ notifications: RealtimeNotify[] }> => {
+  input: ClearChatMessagesInput
+): Promise<RealtimeNotificationsResult> => {
+  const { userId, chatId } = input;
   const chat = await getChatMembersOrThrow(userId, chatId);
 
   if (chat.groupChat) {
@@ -176,26 +182,24 @@ export const clearChatMessages = async (
     notifications: [
       {
         event: CHAT_CLEARED,
-        members: chat.members,
+        chatId,
         data: { chatId },
       },
-      { event: REFETCH_CHATS, members: chat.members, data: { chatId } },
+      { event: REFETCH_CHATS, chatId, data: { chatId } },
     ],
   };
 };
 
 export const forwardMessages = async (
-  userId: string,
-  sourceChatId: string,
-  targetChatId: string,
-  messageIds: string[]
-): Promise<{ notifications: RealtimeNotify[] }> => {
+  input: ForwardMessagesInput
+): Promise<RealtimeNotificationsResult> => {
+  const { userId, sourceChatId, targetChatId, messageIds } = input;
   if (sourceChatId === targetChatId) {
     throw new AppError(400, 'Cannot forward to the same chat');
   }
 
   await getChatMembersOrThrow(userId, sourceChatId);
-  const targetChat = await getChatMembersOrThrow(userId, targetChatId);
+  await getChatMembersOrThrow(userId, targetChatId);
 
   const messages = await messageRepo.findByIdsInChat(sourceChatId, messageIds);
   if (messages.length === 0) {
@@ -243,19 +247,14 @@ export const forwardMessages = async (
     const formatted = await formatMessageForClient(created);
     notifications.push({
       event: NEW_MESSAGE,
-      members: targetChat.members,
+      chatId: targetChatId,
       data: { chatId: targetChatId, message: formatted },
     });
   }
 
   notifications.push({
     event: NEW_MESSAGE_ALERT,
-    members: targetChat.members.filter((m) => m.toString() !== userId),
-    data: { chatId: targetChatId },
-  });
-  notifications.push({
-    event: REFETCH_CHATS,
-    members: targetChat.members,
+    chatId: targetChatId,
     data: { chatId: targetChatId },
   });
 

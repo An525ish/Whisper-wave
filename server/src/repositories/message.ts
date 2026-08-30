@@ -3,6 +3,8 @@ import { Message } from '../models/message.js';
 import { Chat } from '../models/chat.js';
 import type {
   CreateMessageInput,
+  FindReceiptsResult,
+  MessageReceiptUser,
   MessageRecord,
   UpdateMessagePatch,
 } from '../types/message.js';
@@ -639,15 +641,13 @@ export const countCreatedByDay = async (
     { $sort: { _id: 1 } },
   ]);
 
-type ReceiptUser = { _id: string; name: string; avatar?: { url?: string } };
-
 export const findReceipts = async (
   messageId: string,
   requesterId: string
-): Promise<{ readers: ReceiptUser[]; isMember: boolean }> => {
+): Promise<FindReceiptsResult> => {
   const msg = await Message.findById(messageId)
     .select('sender chat readBy')
-    .populate<{ readBy: ReceiptUser[] }>('readBy', 'name avatar')
+    .populate<{ readBy: MessageReceiptUser[] }>('readBy', 'name avatar')
     .lean();
 
   if (!msg) return { readers: [], isMember: false };
@@ -658,7 +658,7 @@ export const findReceipts = async (
     (m) => m.toString() === requesterId,
   ) ?? false;
 
-  const readers = (msg.readBy as unknown as ReceiptUser[])
+  const readers = (msg.readBy as unknown as MessageReceiptUser[])
     .filter((u) => u._id.toString() !== msg.sender.toString());
 
   return { readers, isMember };

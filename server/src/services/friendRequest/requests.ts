@@ -3,13 +3,19 @@ import { NEW_REQUEST } from '../../constants/socket-events.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as chatReadRepo from '../../repositories/chatRead.js';
 import * as requestRepo from '../../repositories/request.js';
-import type { NotificationItem, RealtimeNotify } from '../../types/index.js';
+import type {
+  HandleFriendRequestInput,
+  HandleFriendRequestResult,
+  NotificationItem,
+  RealtimeNotificationsResult,
+  SendFriendRequestInput,
+} from '../../types/index.js';
 import { AppError } from '../../utils/AppError.js';
 
 export const sendRequest = async (
-  userId: string,
-  receiverId: string
-): Promise<{ notifications: RealtimeNotify[] }> => {
+  input: SendFriendRequestInput
+): Promise<RealtimeNotificationsResult> => {
+  const { userId, receiverId } = input;
   if (receiverId === userId) {
     throw new AppError(400, 'Request can not be send to own self');
   }
@@ -28,10 +34,9 @@ export const sendRequest = async (
 };
 
 export const handleRequest = async (
-  userId: string,
-  requestId: string,
-  accept: boolean
-): Promise<{ message: string; data?: { senderId: Types.ObjectId } }> => {
+  input: HandleFriendRequestInput
+): Promise<HandleFriendRequestResult> => {
+  const { userId, requestId, accept } = input;
   const request = await requestRepo.findByIdWithParties(requestId);
 
   if (!request) throw new AppError(404, 'No request found');
@@ -62,7 +67,7 @@ export const handleRequest = async (
 
   return {
     message: 'Request accepted',
-    data: { senderId },
+    data: { senderId, chatId: String(chat._id) },
   };
 };
 
