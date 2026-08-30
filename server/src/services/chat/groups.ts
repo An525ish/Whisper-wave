@@ -18,7 +18,7 @@ import type {
   UpdateGroupDetailsServiceInput,
 } from '../../types/chat.js';
 import { AppError } from '../../utils/AppError.js';
-import { deleteFromCloudinary } from '../../utils/cloudinary.js';
+import { deleteFromR2 } from '../../utils/storage.js';
 import {
   assertCanRemoveMember,
   assertCreator,
@@ -91,7 +91,7 @@ export const updateGroupDetails = async (
   await chatRepo.updateById(chatId, patch);
 
   if (avatarFile && chat.avatar?.publicId) {
-    await deleteFromCloudinary([chat.avatar.publicId]);
+    await deleteFromR2(chat.avatar.publicId);
   }
 
   return {

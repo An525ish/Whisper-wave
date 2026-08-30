@@ -282,7 +282,8 @@ export const useProfilePanel = (
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file || !canEdit) return
-    if (!file.type.startsWith('image/')) { toast.error('Please choose an image file'); return }
+    const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+    if (!ALLOWED_AVATAR_TYPES.has(file.type)) { toast.error('Avatar must be a JPEG, PNG, WebP, or GIF'); return }
     if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview)
     const previewUrl = URL.createObjectURL(file)
     setAvatarPreview(previewUrl)

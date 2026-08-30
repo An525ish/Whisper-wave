@@ -109,13 +109,16 @@ export const resolveAttachmentKind = (att: {
 
   // 3. Upload-middleware stored values
   if (ft === 'media') {
+    // Cloudinary URLs carry /image/upload/ or /video/upload/ in the path.
+    // R2/ImageKit URLs don't — fall through to extension detection instead of
+    // wrongly returning 'doc'.
     if (/\/image\/upload\//i.test(url)) return 'image';
     if (/\/video\/upload\//i.test(url)) return AUDIO_EXT.test(name) ? 'audio' : 'video';
-    return 'doc';
+    // Not Cloudinary — resolve by file extension below
   }
   if (ft === 'document') return 'doc';
 
-  // 4. Extension fallback
+  // 4. Extension fallback (also handles ft === 'media' with R2/ImageKit URLs)
   const fmt = fileFormat(name || url);
   if (fmt === 'image') return 'image';
   if (fmt === 'video') return 'video';
@@ -131,7 +134,7 @@ export const getMediaKindFromFile = (file?: {
   if (!file?.url) return 'image';
 
   const url = file.url.toLowerCase();
-  if (url.includes('/video/upload/')) return 'video';
+  if (url.includes('/video/upload/')) return 'video'; // Cloudinary legacy
 
   const fromName = fileFormat(file.name);
   if (fromName === 'video' || fromName === 'audio' || fromName === 'image') {
@@ -230,13 +233,20 @@ export const fileData: FileDataItem[] = [
 ];
 
 export const transformImage = (url = '', width = 100): string => {
-  if (!url || !url.includes('/upload/')) return url;
-  // Idempotency guard: if the URL already has a Cloudinary transformation chain
-  // after /upload/, calling this again would double the params and cause timeouts.
-  if (/\/upload\/[a-z]/.test(url)) return url;
-  // f_auto  → WebP/AVIF where supported (30–70% smaller than JPEG/PNG)
-  // q_auto  → Cloudinary's perceptual quality optimiser
-  // dpr_auto → serve 2x on retina without double the declared width
-  // w_{n}   → resize to the actual display slot
+  if (!url) return url;
+
+  // ── ImageKit ─────────────────────────────────────────────────────────────
+  // ImageKit transformation via query string: ?tr=w-{n},f-auto,q-80
+  // Only apply to image/* types; audio/doc URLs pass through unchanged.
+  // Idempotency: skip if a `tr=` param is already present.
+  if (url.includes('ik.imagekit.io')) {
+    if (url.includes('tr=')) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}tr=w-${width},f-auto,q-80`;
+  }
+
+  // ── Cloudinary (legacy) ───────────────────────────────────────────────────
+  if (!url.includes('/upload/')) return url;
+  if (/\/upload\/[a-z]/.test(url)) return url; // already transformed
   return url.replace('/upload/', `/upload/f_auto,q_auto,dpr_auto,w_${width}/`);
 };

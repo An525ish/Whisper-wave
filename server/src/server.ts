@@ -1,13 +1,10 @@
 import { createServer } from 'http';
 import mongoose from 'mongoose';
 import { createApp } from './app.js';
-import { configureCloudinary } from './config/cloudinary.js';
 import { connectDb } from './config/db.js';
 import { env } from './config/env.js';
 import { createSocketServer } from './socket/index.js';
 import { logger } from './utils/logger.js';
-
-configureCloudinary();
 
 const app = createApp();
 const httpServer = createServer(app);

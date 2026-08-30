@@ -79,7 +79,14 @@ export const sendFriendRequest = (receiverId: unknown) =>
 export const handleFriendRequest = (body: unknown) =>
   api.put('/friend-request/handle-request', body);
 
-export const sendAttachments = (body: FormData) =>
+export type CommitAttachmentsBody = {
+  chatId: string;
+  content?: string;
+  replyToMessageId?: string;
+  attachments: Array<{ key: string; originalName: string; mimeType: string }>;
+};
+
+export const commitAttachments = (body: CommitAttachmentsBody) =>
   api.post('/message/send-attachments', body);
 
 export const sendGif = (body: {

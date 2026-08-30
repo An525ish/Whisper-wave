@@ -23,9 +23,13 @@ const envSchema = z.object({
     .min(32, 'ADMIN_TOKEN_SECRET must be at least 32 characters')
     .optional(),
   CLIENT_URL: z.string().optional().default(''),
-  CLOUDINARY_CLOUD_NAME: z.string().min(1),
-  CLOUDINARY_API_KEY: z.string().min(1),
-  CLOUDINARY_API_SECRET: z.string().min(1),
+  // Cloudflare R2 (S3-compatible object storage)
+  R2_ACCOUNT_ID: z.string().min(1, 'R2_ACCOUNT_ID is required'),
+  R2_ACCESS_KEY_ID: z.string().min(1, 'R2_ACCESS_KEY_ID is required'),
+  R2_SECRET_ACCESS_KEY: z.string().min(1, 'R2_SECRET_ACCESS_KEY is required'),
+  R2_BUCKET: z.string().min(1, 'R2_BUCKET is required'),
+  // ImageKit delivery base URL, e.g. https://ik.imagekit.io/yourId
+  IMAGEKIT_URL_ENDPOINT: z.string().url('IMAGEKIT_URL_ENDPOINT must be a valid URL'),
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.coerce.number().optional().default(587),
   SMTP_USER: z.string().optional().default(''),
