@@ -35,7 +35,7 @@ const MessageContent = ({ content, highlightQuery }: MessageContentProps) => {
         part.type === 'url' ? (
           <a
             key={`${part.value}-${index}`}
-            href={part.value}
+            href={part.href}
             target="_blank"
             rel="noopener noreferrer"
             className="break-all text-[#53bdeb] hover:underline"

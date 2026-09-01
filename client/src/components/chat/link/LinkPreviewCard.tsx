@@ -20,13 +20,23 @@ const skeletonLine = (surface: LinkPreviewSurface, width: string, height = 'h-2.
     surface === 'composer' ? 'bg-border/40' : 'bg-white/12'
   }`;
 
-const HorizontalSkeleton = ({ surface }: { surface: LinkPreviewSurface }) => (
+const HorizontalSkeleton = ({
+  surface,
+  compact = false,
+}: {
+  surface: LinkPreviewSurface;
+  compact?: boolean;
+}) => (
   <>
-    <div className={`${thumbBox} animate-pulse ${surface === 'composer' ? 'bg-border/30' : 'bg-white/10'}`} />
+    <div
+      className={`${compact ? 'h-14 w-14' : thumbBox} shrink-0 animate-pulse rounded-md ${
+        surface === 'composer' ? 'bg-border/30' : 'bg-white/10'
+      }`}
+    />
     <div className="min-w-0 flex-1 space-y-1.5 py-0.5">
-      <div className={skeletonLine(surface, 'w-3/4', 'h-3')} />
-      <div className={skeletonLine(surface, 'w-full')} />
-      <div className={skeletonLine(surface, 'w-1/2', 'h-2')} />
+      <div className={skeletonLine(surface, 'w-3/4', compact ? 'h-2.5' : 'h-3')} />
+      <div className={skeletonLine(surface, 'w-full', compact ? 'h-2' : 'h-2.5')} />
+      {!compact ? <div className={skeletonLine(surface, 'w-1/2', 'h-2')} /> : null}
     </div>
   </>
 );
@@ -37,6 +47,8 @@ type LinkPreviewCardProps = {
   href?: string;
   onDismiss?: () => void;
   lead?: boolean;
+  /** Inside the composer pill — full width, no card chrome. */
+  embedded?: boolean;
   className?: string;
 };
 
@@ -46,6 +58,7 @@ const LinkPreviewCard = ({
   href,
   onDismiss,
   lead = false,
+  embedded = false,
   className = '',
 }: LinkPreviewCardProps) => {
   const { data, isPending } = useLinkPreviewQuery(link.url);
@@ -85,15 +98,19 @@ const LinkPreviewCard = ({
     !ogImage || loadedImageUrl === ogImage || failedImageUrl === ogImage;
   const showSkeleton = !metadataReady || !imageSettled;
 
-  const shellClass = `${LINK_PREVIEW_WIDTH_CLASS} flex items-center gap-2 overflow-hidden rounded-lg p-2 ${surfaceClass[surface]} ${
-    lead ? '' : 'mt-2'
-  } ${className}`;
+  const thumbClass = 'h-14 w-14';
+
+  const shellClass = embedded
+    ? `w-full flex items-center gap-2.5 overflow-hidden ${className}`
+    : `${LINK_PREVIEW_WIDTH_CLASS} flex items-center gap-2 overflow-hidden rounded-lg p-2 ${surfaceClass[surface]} ${
+        lead ? '' : 'mt-2'
+      } ${className}`;
 
   const inner = showSkeleton ? (
-    <HorizontalSkeleton surface={surface} />
+    <HorizontalSkeleton surface={surface} compact={embedded} />
   ) : (
     <>
-      <div className={`flex items-center justify-center ${thumbBox}`}>
+      <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary/50 ${thumbClass}`}>
         {image ? (
           <img
             src={image}
@@ -104,7 +121,7 @@ const LinkPreviewCard = ({
           <img
             src={favicon}
             alt=""
-            className="h-7 w-7 rounded object-contain"
+            className={embedded ? 'h-8 w-8 rounded object-contain' : 'h-7 w-7 rounded object-contain'}
             onError={() => setFaviconFailed(true)}
           />
         ) : (
@@ -117,13 +134,20 @@ const LinkPreviewCard = ({
           {title}
         </p>
         {description ? (
-          <p className="mt-0.5 line-clamp-1 text-[11px] leading-tight text-body-300/60">
+          <p className={`line-clamp-2 leading-snug text-body-300/60 ${embedded ? 'mt-1 text-[11px]' : 'mt-0.5 text-[11px]'}`}>
             {description}
           </p>
         ) : null}
-        <p className="mt-0.5 truncate text-[10px] leading-tight text-body-300/40">
-          {link.displayUrl}
-        </p>
+        {embedded ? (
+          <p className="mt-1 truncate text-[10px] leading-tight text-body-300/45">
+            {link.displayUrl}
+          </p>
+        ) : null}
+        {!embedded ? (
+          <p className="mt-0.5 truncate text-[10px] leading-tight text-body-300/40">
+            {link.displayUrl}
+          </p>
+        ) : null}
       </div>
     </>
   );
@@ -133,7 +157,9 @@ const LinkPreviewCard = ({
       type="button"
       onClick={onDismiss}
       aria-label="Dismiss link preview"
-      className="grid h-6 w-6 shrink-0 place-items-center self-start rounded-full text-body-300/60 transition hover:bg-primary/60 hover:text-body"
+      className={`grid shrink-0 place-items-center self-start rounded-full text-body-300/60 transition hover:bg-primary/60 hover:text-body ${
+        embedded ? 'h-7 w-7' : 'h-6 w-6'
+      }`}
     >
       <CloseIcon className="h-3.5 w-3.5" />
     </button>

@@ -51,25 +51,13 @@ const MessageReactions = ({ reactions, messageId, chatId, sameSender }: MessageR
   const openPicker = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const stripHeight = 52;
-      const gap = 8;
-      const style: CSSProperties = {
+      const gap = 6;
+      setPickerStyle({
         position: 'fixed',
         zIndex: 9999,
-      };
-
-      if (rect.top >= stripHeight + gap) {
-        style.bottom = window.innerHeight - rect.top + gap;
-      } else {
-        style.top = rect.bottom + gap;
-      }
-
-      if (sameSender) {
-        style.right = Math.max(8, window.innerWidth - rect.right);
-      } else {
-        style.left = Math.max(8, rect.left);
-      }
-      setPickerStyle(style);
+        top: rect.bottom + gap,
+        right: Math.max(8, window.innerWidth - rect.right),
+      });
     }
     setPickerOpen((p) => !p);
   };
@@ -77,16 +65,13 @@ const MessageReactions = ({ reactions, messageId, chatId, sameSender }: MessageR
   // Portal renders outside all overflow-hidden ancestors — no clipping
   const pickerPortal = pickerOpen
     ? createPortal(
-        <div ref={portalRef} style={pickerStyle}>
-          {/* No overflow-hidden here so inner EmojiPicker can open freely */}
-          <div className="rounded-xl border border-border bg-primary shadow-xl">
-            <ReactionStrip
+        <div ref={portalRef} style={pickerStyle} className="flex flex-col items-end">
+          <ReactionStrip
               reactions={reactions}
               myUserId={myId}
               onReact={handleToggle}
               onClose={closePicker}
-            />
-          </div>
+          />
         </div>,
         document.body,
       )

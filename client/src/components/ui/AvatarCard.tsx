@@ -8,9 +8,8 @@ type AvatarCardProps = {
 };
 
 const AvatarCard = ({ avatars, max = 3, avatarClassName, showOnline = false }: AvatarCardProps) => {
-  const list =
-    avatars && avatars.length > 0 ? avatars : [null];
-  const shown = list.slice(0, Math.min(max, list.length));
+  const list = (avatars ?? []).filter((src) => Boolean(src));
+  const shown = (list.length > 0 ? list : [null]).slice(0, Math.min(max, list.length || 1));
   const stacked = shown.length > 1;
 
   return (
@@ -38,6 +37,7 @@ const AvatarCard = ({ avatars, max = 3, avatarClassName, showOnline = false }: A
               alt="avatar-icon"
               className="h-full w-full"
               displayWidth={96}
+              showLoading={false}
             />
           </div>
           {showOnline && index === 0 ? (

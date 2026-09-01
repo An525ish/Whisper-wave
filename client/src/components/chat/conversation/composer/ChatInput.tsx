@@ -7,9 +7,9 @@ import EmojiIcon from "@/components/ui/icons/Emoji";
 import SendIcon from "@/components/ui/icons/Send";
 import type { GifItem } from "@/api/gif";
 import { MAX_FILES } from "@/constants/app";
-import { MAX_TEXTAREA_HEIGHT } from "@/constants/chat";
+import { MAX_TEXTAREA_HEIGHT, COMPOSER_ROW_MIN_PX, COMPOSER_ROW_MIN_PX_COMPACT, COMPOSER_ROW_MIN_CLASS, COMPOSER_ROW_MIN_CLASS_COMPACT, COMPOSER_SEND_SIZE_CLASS, COMPOSER_SEND_SIZE_CLASS_COMPACT } from "@/constants/chat";
 import { readFilesFromClipboardEvent } from "@/utils/chat";
-import { extractLinksFromText, type ParsedLink } from "@/utils/linkParser";
+import { extractLinksFromText, splitTextByUrls, type ParsedLink } from "@/utils/linkParser";
 import { useChatClipboardStore } from "@/stores/chat/clipboard";
 import {
     useCallback,
@@ -33,14 +33,12 @@ type ChatInputProps = {
     handleSubmit: () => void | Promise<void>;
     onGifSelect?: (gif: GifItem) => void;
     editMode?: boolean;
-    /** Hide the attachment (clip) icon — useful when the upload flow isn't available */
     showAttachment?: boolean;
-    /** Reduce height/padding for compact contexts (e.g. inline reply bars) */
     compact?: boolean;
-    /** Glass pill for overlays (e.g. image viewer reply) */
     floating?: boolean;
-    /** Renders above the input pill only (same width, excludes send button) */
     replySlot?: ReactNode;
+    /** Fired when the composer height changes (e.g. link preview dock). */
+    onComposerResize?: () => void;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'className'>;
 
 const renderFilePreviews = (
@@ -58,6 +56,26 @@ const renderFilePreviews = (
     </div>
 );
 
+/** Mirror layer — stacked in the same grid cell as the textarea. Typography only; no min-height. */
+const TextHighlightMirror = ({ text, className }: { text: string; className: string }) => {
+    const parts = splitTextByUrls(text);
+    if (!parts.some((part) => part.type === 'url')) return null;
+
+    return (
+        <div
+            aria-hidden
+            className={`pointer-events-none col-start-1 row-start-1 overflow-hidden whitespace-pre-wrap wrap-break-word ${className}`}
+        >
+            {parts.map((part, i) =>
+                part.type === 'url' ? (
+                    <span key={i} className="text-[#53bdeb]">{part.value}</span>
+                ) : (
+                    <span key={i} className="text-transparent">{part.value}</span>
+                ),
+            )}
+        </div>
+    );
+};
 
 const ChatInput = ({
     className,
@@ -72,26 +90,51 @@ const ChatInput = ({
     compact = false,
     floating = false,
     replySlot,
+    onComposerResize,
+    onChange: onChangeProp,
     ...props }: ChatInputProps) => {
 
-    const [isAttachmentClicked, setIsAttachmentClicked] = useState(false);
-    const [isEmojiClicked, setIsEmojiClicked] = useState(false);
+    const [isAttachmentOpen, setIsAttachmentOpen] = useState(false);
+    const [isEmojiOpen, setIsEmojiOpen] = useState(false);
+
+    // Menus are always closed in editMode — derived, not synced via effect
+    const isAttachmentClicked = !editMode && isAttachmentOpen;
+    const isEmojiClicked = !editMode && isEmojiOpen;
 
     const clipIconRef = useRef<HTMLSpanElement | null>(null);
     const emojiIconRef = useRef<HTMLSpanElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const rootRef = useRef<HTMLDivElement | null>(null);
 
-    // Link preview state
     const [detectedLink, setDetectedLink] = useState<ParsedLink | null>(null);
-    const [dismissedUrl, setDismissedUrl] = useState<string | null>(null);
+    const [dismissedLink, setDismissedLink] = useState<{ url: string; raw: string } | null>(null);
 
-    useEffect(() => {
-        if (!editMode) return;
-        setIsAttachmentClicked(false);
-        setIsEmojiClicked(false);
-    }, [editMode]);
+    const currentLinkRaw =
+        splitTextByUrls(message).find((part) => part.type === 'url')?.value ?? null;
 
-    // Debounced URL detection — 400ms after the user stops typing
+    const syncDismissWithMessage = useCallback((next: string) => {
+        setDismissedLink((dismissed) => {
+            if (!dismissed) return dismissed;
+            const nextRaw =
+                splitTextByUrls(next).find((part) => part.type === 'url')?.value ?? null;
+            return nextRaw === dismissed.raw ? dismissed : null;
+        });
+    }, []);
+
+    const setMessageWithDismissSync = useCallback<Dispatch<SetStateAction<string>>>((value) => {
+        if (typeof value === 'function') {
+            setMessage((prev) => {
+                const next = value(prev);
+                syncDismissWithMessage(next);
+                return next;
+            });
+            return;
+        }
+        syncDismissWithMessage(value);
+        setMessage(value);
+    }, [setMessage, syncDismissWithMessage]);
+
+    // Debounced URL detection
     useEffect(() => {
         if (editMode) return;
         const id = setTimeout(() => {
@@ -101,19 +144,17 @@ const ChatInput = ({
         return () => clearTimeout(id);
     }, [message, editMode]);
 
-    // Clear dismissed state when message changes to a different URL
-    useEffect(() => {
-        if (!detectedLink || detectedLink.url !== dismissedUrl) {
-            setDismissedUrl(null);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [detectedLink?.url]);
+    const activeUrl = detectedLink?.url ?? null;
+    const isDismissed =
+        dismissedLink !== null &&
+        activeUrl === dismissedLink.url &&
+        currentLinkRaw === dismissedLink.raw;
 
     useEffect(() => {
         const node = textareaRef.current;
         if (!node) return;
         node.style.height = 'auto';
-        const minH = compact ? 28 : 40;
+        const minH = compact ? COMPOSER_ROW_MIN_PX_COMPACT : COMPOSER_ROW_MIN_PX;
         node.style.height = `${Math.max(minH, Math.min(node.scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
         if (editMode) {
             node.focus();
@@ -122,9 +163,17 @@ const ChatInput = ({
         }
     }, [message, editMode, compact]);
 
+    useEffect(() => {
+        const node = rootRef.current;
+        if (!node || !onComposerResize) return;
+        const observer = new ResizeObserver(() => onComposerResize());
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [onComposerResize]);
+
     const toggleAttachmentMenu = () => {
         if (editMode) return;
-        setIsAttachmentClicked(prev => !prev);
+        setIsAttachmentOpen(prev => !prev);
     };
 
     const handleFileSelect = useCallback((type: string, files: File[]) => {
@@ -171,13 +220,16 @@ const ChatInput = ({
         const textToApply = storedFiles.length > 0 ? storedText : clipboardText;
 
         if (textToApply) {
-            setMessage((prev) => (prev.trim() ? prev : textToApply));
+            setMessageWithDismissSync((prev) => (prev.trim() ? prev : textToApply));
         }
-    }, [editMode, setAttachments, setMessage]);
+    }, [editMode, setAttachments, setMessageWithDismissSync]);
 
     const canSend = Boolean(message.trim()) || (!editMode && attachments.length > 0);
     const isMultiline = message.includes('\n');
     const hasReply = Boolean(replySlot);
+    const hasUrlHighlight = splitTextByUrls(message).some((part) => part.type === 'url');
+
+    const showLinkPreview = !editMode && attachments.length === 0 && detectedLink && !isDismissed;
 
     const inputShellClass = editMode
         ? 'border-green/45 bg-green/10'
@@ -185,94 +237,131 @@ const ChatInput = ({
           ? 'border-white/15 bg-black/45 shadow-[0_8px_28px_rgba(0,0,0,0.35)] backdrop-blur-md md:bg-black/45'
           : 'border-border bg-primary/40 md:bg-transparent';
 
+    const rowMinClass = compact ? COMPOSER_ROW_MIN_CLASS_COMPACT : COMPOSER_ROW_MIN_CLASS;
+    const sendSizeClass = compact ? COMPOSER_SEND_SIZE_CLASS_COMPACT : COMPOSER_SEND_SIZE_CLASS;
+    const textareaMinClass = compact ? 'min-h-8' : 'min-h-11';
+
+    const textareaTypographyClass = [
+        'px-1 md:px-2',
+        compact ? 'text-sm' : 'text-[16px] md:text-sm',
+        isMultiline ? 'py-2 leading-snug' : compact ? 'py-0 leading-8' : 'py-0 leading-11',
+    ].join(' ');
+
+    const textareaClassName = [
+        'max-h-32 w-full min-w-0 resize-none overflow-y-auto bg-transparent outline-none',
+        textareaTypographyClass,
+        textareaMinClass,
+        hasUrlHighlight ? 'col-start-1 row-start-1 text-transparent' : '',
+        className ?? '',
+    ].join(' ');
+
     return (
-        <div className="relative w-full">
+        <div ref={rootRef} className="relative w-full">
             {!editMode && attachments.length > 0 && renderFilePreviews(attachments, handleRemoveFile)}
-            {!editMode && attachments.length === 0 && detectedLink && detectedLink.url !== dismissedUrl && (
-                <ComposerLinkPreview
-                    key={detectedLink.url}
-                    link={detectedLink}
-                    onDismiss={() => setDismissedUrl(detectedLink.url)}
-                />
-            )}
-            <div className="relative flex w-full items-end gap-2">
-                <div className={`flex min-w-0 flex-1 flex-col ${hasReply ? 'overflow-hidden rounded-3xl shadow-[0_10px_36px_rgba(0,0,0,0.28),0_0_0_1px_rgba(1,195,109,0.14)]' : ''}`}>
-                    {replySlot}
-                    <div className="relative min-w-0">
-                {!editMode && isAttachmentClicked && (
-                    <AttachmentMenu
-                        onClose={() => setIsAttachmentClicked(false)}
-                        onFileSelect={handleFileSelect}
-                        clipIconRef={clipIconRef}
-                    />
-                )}
-                {!editMode && isEmojiClicked && (
-                    <div className="absolute bottom-14 left-0 z-30 max-w-[calc(100vw-1rem)]">
-                        <ComposerPicker
-                            triggerRef={emojiIconRef}
-                            setMessage={setMessage}
-                            onClose={() => setIsEmojiClicked(false)}
-                            onGifSelect={(gif) => {
-                                onGifSelect?.(gif);
-                                setIsEmojiClicked(false);
-                            }}
-                        />
+            <div className={`flex min-w-0 flex-1 flex-col ${hasReply ? 'overflow-hidden rounded-3xl shadow-[0_10px_36px_rgba(0,0,0,0.28),0_0_0_1px_rgba(1,195,109,0.14)]' : ''}`}>
+                {replySlot}
+                <div className="flex min-w-0 items-end gap-2">
+                    <div className="relative min-w-0 flex-1">
+                        {!editMode && isAttachmentClicked && (
+                            <AttachmentMenu
+                                onClose={() => setIsAttachmentOpen(false)}
+                                onFileSelect={handleFileSelect}
+                                clipIconRef={clipIconRef}
+                            />
+                        )}
+                        {!editMode && isEmojiClicked && (
+                            <div className="absolute bottom-14 left-0 z-30 max-w-[calc(100vw-1rem)]">
+                                <ComposerPicker
+                                    triggerRef={emojiIconRef}
+                                    setMessage={setMessageWithDismissSync}
+                                    onClose={() => setIsEmojiOpen(false)}
+                                    onGifSelect={(gif) => {
+                                        onGifSelect?.(gif);
+                                        setIsEmojiOpen(false);
+                                    }}
+                                />
+                            </div>
+                        )}
+                        <div className={`flex h-full w-full min-w-0 flex-col overflow-hidden border ${
+                            hasReply ? 'rounded-b-3xl rounded-t-none border-t-0 border-green/15 bg-primary/50 md:bg-primary/30' : 'rounded-3xl'
+                        } ${hasReply && !editMode && !floating ? '' : inputShellClass}`}>
+                            {showLinkPreview && detectedLink ? (
+                                <ComposerLinkPreview
+                                    key={detectedLink.url}
+                                    link={detectedLink}
+                                    hasReplyAbove={hasReply}
+                                    onDismiss={() => {
+                                        if (!detectedLink || !currentLinkRaw) return;
+                                        setDismissedLink({ url: detectedLink.url, raw: currentLinkRaw });
+                                    }}
+                                />
+                            ) : null}
+                            <div className={`flex w-full min-w-0 items-center gap-0.5 px-1.5 md:gap-1 md:px-2 ${rowMinClass} ${
+                                showLinkPreview ? 'border-t border-border/25' : ''
+                            }`}>
+                            {!editMode ? (
+                                <span ref={emojiIconRef} className="shrink-0">
+                                    <button
+                                        type="button"
+                                        className={`grid place-items-center rounded-full transition active:bg-background/40 ${compact ? 'h-7 w-7' : 'h-10 w-10'}`}
+                                        onClick={() => setIsEmojiOpen(prev => !prev)}
+                                        aria-label="Emoji"
+                                    >
+                                        <EmojiIcon className={compact ? 'h-4 w-4 hover:fill-body' : 'h-5 w-5 hover:fill-body'} />
+                                    </button>
+                                </span>
+                            ) : null}
+
+                            <div className={`min-w-0 w-full ${hasUrlHighlight ? 'grid' : 'contents'}`}>
+                                {hasUrlHighlight ? (
+                                    <TextHighlightMirror text={message} className={textareaTypographyClass} />
+                                ) : null}
+                                <textarea
+                                    ref={textareaRef}
+                                    rows={1}
+                                    value={message}
+                                    enterKeyHint={editMode ? 'done' : 'send'}
+                                    autoComplete="off"
+                                    {...props}
+                                    onPaste={handlePaste}
+                                    onChange={(e) => {
+                                        syncDismissWithMessage(e.target.value);
+                                        if (onChangeProp) {
+                                            onChangeProp(e);
+                                        } else {
+                                            setMessage(e.target.value);
+                                        }
+                                    }}
+                                    style={hasUrlHighlight ? { caretColor: 'var(--color-body)' } : undefined}
+                                    className={textareaClassName}
+                                />
+                            </div>
+
+                            {!editMode && showAttachment ? (
+                                <span ref={clipIconRef} className="shrink-0">
+                                    <button
+                                        type="button"
+                                        className="grid h-10 w-10 place-items-center rounded-full transition active:bg-background/40"
+                                        onClick={toggleAttachmentMenu}
+                                        aria-label="Attach file"
+                                    >
+                                        <ClipIcon className="h-5 w-5 rotate-90 hover:fill-body" />
+                                    </button>
+                                </span>
+                            ) : null}
+                            </div>
+                        </div>
                     </div>
-                )}
-                <div className={`flex w-full min-w-0 items-center gap-0.5 border px-1.5 py-0.5 md:gap-1 md:px-2 ${compact ? 'min-h-8' : 'min-h-10'} ${
-                    hasReply ? 'rounded-b-3xl rounded-t-none border-t-0 border-green/15 bg-primary/50 md:bg-primary/30' : 'rounded-3xl'
-                } ${hasReply && !editMode && !floating ? '' : inputShellClass}`}>
-                    {!editMode ? (
-                        <span ref={emojiIconRef} className="shrink-0">
-                            <button
-                                type="button"
-                                className={`grid place-items-center rounded-full transition active:bg-background/40 ${compact ? 'h-7 w-7' : 'h-10 w-10'}`}
-                                onClick={() => setIsEmojiClicked(prev => !prev)}
-                                aria-label="Emoji"
-                            >
-                                <EmojiIcon className={compact ? 'h-4 w-4 hover:fill-body' : 'h-5 w-5 hover:fill-body'} />
-                            </button>
-                        </span>
-                    ) : null}
-                    <textarea
-                        ref={textareaRef}
-                        rows={1}
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        enterKeyHint={editMode ? 'done' : 'send'}
-                        autoComplete="off"
-                        {...props}
-                        onPaste={handlePaste}
-                        className={`max-h-32 w-full min-w-0 resize-none overflow-y-auto bg-transparent px-1 outline-none md:px-2 ${compact ? 'text-sm min-h-7' : 'text-[16px] md:text-sm min-h-10'} ${
-                            isMultiline
-                                ? 'py-2 leading-snug'
-                                : compact ? 'py-0 leading-7' : 'py-0 leading-10'
-                        } ${className ?? ''}`}
-                    />
-                    {!editMode && showAttachment ? (
-                        <span ref={clipIconRef} className="shrink-0">
-                            <button
-                                type="button"
-                                className="grid h-10 w-10 place-items-center rounded-full transition active:bg-background/40"
-                                onClick={toggleAttachmentMenu}
-                                aria-label="Attach file"
-                            >
-                                <ClipIcon className="h-5 w-5 rotate-90 hover:fill-body" />
-                            </button>
-                        </span>
-                    ) : null}
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={!canSend}
+                        className={`grid shrink-0 place-items-center rounded-full bg-gradient-green text-white shadow-md transition enabled:active:scale-95 disabled:opacity-40 ${sendSizeClass}`}
+                        aria-label={editMode ? 'Save edit' : 'Send message'}
+                    >
+                        <SendIcon className="mt-0.5 mr-0.5 h-5 w-5 fill-white" />
+                    </button>
                 </div>
-                    </div>
-                </div>
-                <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={!canSend}
-                    className={`grid shrink-0 place-items-center rounded-full bg-gradient-green text-white shadow-md transition enabled:active:scale-95 disabled:opacity-40 ${compact ? 'h-8 w-8' : 'h-11 w-11 md:h-10 md:w-10'}`}
-                    aria-label={editMode ? 'Save edit' : 'Send message'}
-                >
-                    <SendIcon className="mt-0.5 mr-0.5 h-5 w-5 fill-white" />
-                </button>
             </div>
         </div>
     );

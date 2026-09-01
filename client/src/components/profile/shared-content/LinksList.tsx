@@ -1,5 +1,5 @@
 import EmptyState from '@/components/ui/EmptyState'
-import LinkIcon from '@/components/ui/icons/Link'
+import LinkPreviewThumb from '@/components/chat/link/LinkPreviewThumb'
 import type { SharedLink } from '@/components/profile/shared-content/types'
 
 const ExternalLinkIcon = ({ className }: { className?: string }) => (
@@ -42,9 +42,7 @@ const LinksList = ({ links, query, onCopyLink }: LinksListProps) => {
           key={`${link.messageId}-${link.url}`}
           className="flex items-center gap-2 rounded-2xl bg-background-alt/55 p-2.5 ring-1 ring-border/45"
         >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-linear-to-br from-green-dark/70 to-primary ring-1 ring-green/25">
-            <LinkIcon className="h-4 w-4 stroke-green" />
-          </span>
+          <LinkPreviewThumb url={link.url} className="h-9 w-9 rounded-xl" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-body">{link.host}</p>
             <p className="mt-0.5 line-clamp-1 text-[11px] leading-snug text-body-300">{link.url}</p>

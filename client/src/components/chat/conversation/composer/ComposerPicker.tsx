@@ -2,17 +2,12 @@ import {
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
   type Dispatch,
   type RefObject,
   type SetStateAction,
 } from 'react';
-import EmojiPicker, {
-  Theme,
-  EmojiStyle,
-  type EmojiClickData,
-} from 'emoji-picker-react';
 import GifPicker from './gif-picker/GifPicker';
+import StyledEmojiPicker, { emojiPickerShellClass } from './StyledEmojiPicker';
 import type { GifItem } from '@/api/gif';
 import EmojiIcon from '@/components/ui/icons/Emoji';
 
@@ -25,22 +20,6 @@ type ComposerPickerProps = {
   onClose: () => void;
   onGifSelect: (gif: GifItem) => void;
 };
-
-const emojiPickerStyles: CSSProperties = {
-  '--epr-bg-color': 'transparent',
-  '--epr-category-label-bg-color': 'rgba(33, 26, 42, 1)',
-  '--epr-text-color': '#FFFFFF',
-  '--epr-hover-bg-color': 'rgba(255, 255, 255, 0.08)',
-  '--epr-focus-bg-color': 'rgba(255, 255, 255, 0.12)',
-  '--epr-highlight-color': 'rgba(1, 195, 109, 0.45)',
-  '--epr-search-bg-color': 'rgba(0, 0, 0, 0.22)',
-  '--epr-search-border-color': 'rgba(255, 255, 255, 0.1)',
-  '--epr-header-padding': '6px 10px 0',
-  '--epr-font-family': "'DM Sans', sans-serif",
-  '--epr-scrollbar-width': '4px',
-  '--epr-scrollbar-thumb-color': '#EBECEC4D',
-  '--epr-search-input-bg-color': 'rgba(0, 0, 0, 0.22)',
-} as CSSProperties;
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'emoji', label: 'Emoji' },
@@ -82,7 +61,7 @@ const ComposerPicker = ({
   return (
     <div
       ref={containerRef}
-      className="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[rgba(33,26,42,1)] shadow-2xl"
+      className={emojiPickerShellClass}
       style={{ width: 312, height: 380 }}
     >
       <div className="shrink-0 px-2.5 pt-2.5">
@@ -147,72 +126,11 @@ const ComposerPicker = ({
 
       <div className="min-h-0 flex-1 overflow-hidden">
         {activeTab === 'emoji' ? (
-          <>
-            <EmojiPicker
-              autoFocusSearch={false}
-              theme={Theme.DARK}
-              width={312}
-              height={328}
-              onEmojiClick={(e: EmojiClickData) =>
-                setMessage((prev) => prev + e.emoji)
-              }
-              previewConfig={{ showPreview: false }}
-              emojiStyle={EmojiStyle.FACEBOOK}
-              lazyLoadEmojis
-              searchPlaceHolder="Search emoji…"
-              style={emojiPickerStyles}
-            />
-            <style>{`
-              .EmojiPickerReact {
-                border-radius: 0;
-                border: none !important;
-                background: transparent !important;
-              }
-              .EmojiPickerReact .epr-header {
-                padding: var(--epr-header-padding);
-              }
-              .EmojiPickerReact .epr-search-container {
-                margin: 0;
-                padding: 0;
-              }
-              .EmojiPickerReact .epr-search-container input {
-                height: 2rem;
-                border-radius: 9999px;
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                background-color: rgba(0, 0, 0, 0.22) !important;
-                padding: 0 2.25rem 0 2.1rem;
-                font-size: 0.75rem;
-                color: #fff;
-                box-shadow: none;
-              }
-              .EmojiPickerReact .epr-search-container input::placeholder {
-                color: rgba(235, 236, 236, 0.45);
-              }
-              .EmojiPickerReact .epr-search-container input:focus {
-                border-color: rgba(1, 195, 109, 0.5);
-                background-color: rgba(0, 0, 0, 0.3) !important;
-                outline: none;
-              }
-              .EmojiPickerReact .epr-icn-search {
-                opacity: 0.5;
-              }
-              .EmojiPickerReact .epr-category-nav {
-                padding: 0.15rem 0.75rem 0.2rem;
-                margin-top: 0.15rem;
-              }
-              .EmojiPickerReact .epr-emoji-category-label {
-                font-size: 0.8rem;
-                padding: 4px 0.75rem;
-                height: fit-content;
-              }
-              .EmojiPickerReact .epr-body::-webkit-scrollbar { width: 4px; }
-              .EmojiPickerReact .epr-body::-webkit-scrollbar-track { display: none; }
-              .EmojiPickerReact .epr-body::-webkit-scrollbar-thumb {
-                background-color: #EBECEC4D;
-                border-radius: 20px;
-              }
-            `}</style>
-          </>
+          <StyledEmojiPicker
+            width={312}
+            height={328}
+            onEmojiClick={(e) => setMessage((prev) => prev + e.emoji)}
+          />
         ) : (
           <div className="h-full px-2.5 pb-2 pt-2">
             <GifPicker kind={activeTab} onSelect={handleMediaSelected} />

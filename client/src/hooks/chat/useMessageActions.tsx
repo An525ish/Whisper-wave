@@ -66,7 +66,7 @@ export function useMessageActions({
   const socket = useSocket();
   const editMessageMutation = useEditMessageMutation();
   const forwardMutation = useForwardMessagesMutation();
-  const { menuState, showContextMenu, hideContextMenu } = useContextMenu();
+  const { menuState, showContextMenu, hideContextMenu, setContextMenuOptionsVisible } = useContextMenu();
 
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
@@ -266,11 +266,12 @@ export function useMessageActions({
           myUserId={String(user?._id ?? '')}
           onReact={(emoji) => toggleReaction(msg, emoji)}
           onClose={hideContextMenu}
+          onPickerOpenChange={(open) => setContextMenuOptionsVisible(!open)}
         />
       );
       showContextMenu(pos, buildMenuOptions(msg), header);
     },
-    [buildMenuOptions, canInteractMessage, hideContextMenu, isEditing, showContextMenu, toggleReaction, user?._id],
+    [buildMenuOptions, canInteractMessage, hideContextMenu, isEditing, setContextMenuOptionsVisible, showContextMenu, toggleReaction, user?._id],
   );
 
   const openMessageContextMenu = useCallback(

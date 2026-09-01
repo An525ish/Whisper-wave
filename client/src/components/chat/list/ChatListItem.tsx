@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import AvatarCard from '@/components/ui/AvatarCard';
 import ReadReceipt from '@/components/ui/icons/ReadReceipt';
 import { Link, useParams } from 'react-router-dom';
@@ -121,4 +122,4 @@ const ChatListItem = ({
   );
 };
 
-export default ChatListItem;
+export default memo(ChatListItem);
