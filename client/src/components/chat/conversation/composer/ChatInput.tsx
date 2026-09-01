@@ -1,5 +1,6 @@
 import AttachmentMenu from "@/components/chat/conversation/composer/attachment-menu/AttachmentMenu";
 import FilePreview from "@/components/chat/conversation/composer/attachment-menu/FilePreview";
+import ComposerLinkPreview from "@/components/chat/conversation/composer/ComposerLinkPreview";
 import ComposerPicker from "@/components/chat/conversation/composer/ComposerPicker";
 import ClipIcon from "@/components/ui/icons/Clip";
 import EmojiIcon from "@/components/ui/icons/Emoji";
@@ -8,6 +9,7 @@ import type { GifItem } from "@/api/gif";
 import { MAX_FILES } from "@/constants/app";
 import { MAX_TEXTAREA_HEIGHT } from "@/constants/chat";
 import { readFilesFromClipboardEvent } from "@/utils/chat";
+import { extractLinksFromText, type ParsedLink } from "@/utils/linkParser";
 import { useChatClipboardStore } from "@/stores/chat/clipboard";
 import {
     useCallback,
@@ -45,10 +47,10 @@ const renderFilePreviews = (
     attachments: File[],
     handleRemoveFile: (file: File) => void,
 ) => (
-    <div className="absolute bottom-12 left-0 right-0 z-20 mb-1 flex flex-wrap gap-1 rounded-xl border border-border bg-background-alt p-2 shadow-lg md:right-auto md:max-w-md">
-        {attachments.map((file, index) => (
+    <div className="absolute bottom-14 left-0 right-0 z-50 mb-2 flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain rounded-lg border border-border/70 bg-background-alt p-2 shadow-lg scrollbar-hide md:right-auto md:max-w-md">
+        {attachments.map((file) => (
             <FilePreview
-                key={index}
+                key={`${file.name}-${file.size}-${file.lastModified}`}
                 file={file}
                 onRemove={handleRemoveFile}
             />
@@ -79,11 +81,33 @@ const ChatInput = ({
     const emojiIconRef = useRef<HTMLSpanElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+    // Link preview state
+    const [detectedLink, setDetectedLink] = useState<ParsedLink | null>(null);
+    const [dismissedUrl, setDismissedUrl] = useState<string | null>(null);
+
     useEffect(() => {
         if (!editMode) return;
         setIsAttachmentClicked(false);
         setIsEmojiClicked(false);
     }, [editMode]);
+
+    // Debounced URL detection — 400ms after the user stops typing
+    useEffect(() => {
+        if (editMode) return;
+        const id = setTimeout(() => {
+            const links = extractLinksFromText(message);
+            setDetectedLink(links[0] ?? null);
+        }, 400);
+        return () => clearTimeout(id);
+    }, [message, editMode]);
+
+    // Clear dismissed state when message changes to a different URL
+    useEffect(() => {
+        if (!detectedLink || detectedLink.url !== dismissedUrl) {
+            setDismissedUrl(null);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [detectedLink?.url]);
 
     useEffect(() => {
         const node = textareaRef.current;
@@ -164,6 +188,13 @@ const ChatInput = ({
     return (
         <div className="relative w-full">
             {!editMode && attachments.length > 0 && renderFilePreviews(attachments, handleRemoveFile)}
+            {!editMode && attachments.length === 0 && detectedLink && detectedLink.url !== dismissedUrl && (
+                <ComposerLinkPreview
+                    key={detectedLink.url}
+                    link={detectedLink}
+                    onDismiss={() => setDismissedUrl(detectedLink.url)}
+                />
+            )}
             <div className="relative flex w-full items-end gap-2">
                 <div className={`flex min-w-0 flex-1 flex-col ${hasReply ? 'overflow-hidden rounded-3xl shadow-[0_10px_36px_rgba(0,0,0,0.28),0_0_0_1px_rgba(1,195,109,0.14)]' : ''}`}>
                     {replySlot}

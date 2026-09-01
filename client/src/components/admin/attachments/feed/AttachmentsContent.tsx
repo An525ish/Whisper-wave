@@ -29,6 +29,9 @@ type AttachmentsContentProps = {
   onMediaClick: (item: FlatItem) => void;
   onLoadMore: () => void;
   onRetry: () => void;
+  isSelectMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (msgId: string) => void;
 };
 
 const AttachmentsContent = ({
@@ -52,6 +55,9 @@ const AttachmentsContent = ({
   onMediaClick,
   onLoadMore,
   onRetry,
+  isSelectMode,
+  selectedIds,
+  onToggleSelect,
 }: AttachmentsContentProps) => (
   <div
     ref={scrollRef}
@@ -80,14 +86,21 @@ const AttachmentsContent = ({
       <div className="space-y-6 pb-4">
         {showMedia && mediaItems.length > 0 && (
           <div>
-            {kindFilter === 'all' && (
+            {(kindFilter === 'all' || kindFilter === 'deleted') && (
               <p className="mb-2.5 text-xs font-semibold uppercase tracking-widest text-body-300/50">
                 Media · {mediaItems.length} loaded
               </p>
             )}
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {mediaItems.map((item) => (
-                <MediaCard key={item.key} item={item} onClick={() => onMediaClick(item)} />
+                <MediaCard
+                  key={item.key}
+                  item={item}
+                  onClick={() => onMediaClick(item)}
+                  isSelectMode={isSelectMode}
+                  isSelected={selectedIds?.has(item.msg._id)}
+                  onToggleSelect={onToggleSelect}
+                />
               ))}
             </div>
           </div>
@@ -95,24 +108,43 @@ const AttachmentsContent = ({
 
         {showDocs && docItems.length > 0 && (
           <div>
-            {kindFilter === 'all' && (
+            {(kindFilter === 'all' || kindFilter === 'deleted') && (
               <p className="mb-2.5 text-xs font-semibold uppercase tracking-widest text-body-300/50">
                 Documents · {docItems.length} loaded
               </p>
             )}
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {docItems.map((item) => (
-                <DocCard key={item.key} item={item} />
+                <DocCard
+                  key={item.key}
+                  item={item}
+                  isSelectMode={isSelectMode}
+                  isSelected={selectedIds?.has(item.msg._id)}
+                  onToggleSelect={onToggleSelect}
+                />
               ))}
             </div>
           </div>
         )}
 
         {showLinks && linkItems.length > 0 && (
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <div>
+            {kindFilter === 'deleted' && (
+              <p className="mb-2.5 text-xs font-semibold uppercase tracking-widest text-body-300/50">
+                Links · {linkItems.length} loaded
+              </p>
+            )}
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {linkItems.map((item) => (
-              <LinkCard key={item.key} item={item} />
+              <LinkCard
+                key={item.key}
+                item={item}
+                isSelectMode={isSelectMode}
+                isSelected={selectedIds?.has(item.msg._id)}
+                onToggleSelect={onToggleSelect}
+              />
             ))}
+            </div>
           </div>
         )}
 

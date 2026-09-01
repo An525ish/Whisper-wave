@@ -19,7 +19,7 @@ const MessagesFeedHeader = ({
 }: MessagesFeedHeaderProps) => (
   <div className="mb-4 flex shrink-0 flex-wrap items-end justify-between gap-3">
     <div>
-      <h2 className="font-display text-xl leading-none tracking-tight text-body">Recent feed</h2>
+      <h2 className="font-semibold text-xl leading-none tracking-tight text-body">Recent feed</h2>
       <p className="mt-1.5 text-sm text-body-300">
         {messagesFeedSubtitle(senderFilter, querySearch)}
       </p>

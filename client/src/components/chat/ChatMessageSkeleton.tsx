@@ -5,7 +5,7 @@ type ChatMessageSkeletonProps = {
 };
 
 const bubbleShell = (isOut: boolean, minHeight: string) =>
-  `animate-pulse pt-2 pb-2.5 pl-3.5 pr-3.5 shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${minHeight} ${
+  `animate-pulse pt-2 pb-2.5 pl-3.5 pr-3.5 ${minHeight} ${
     isOut
       ? 'bubble-out border border-green/35 bg-green-dark/55'
       : 'bubble-in border border-border bg-primary/90'

@@ -7,6 +7,7 @@ import { catchAsync } from '../utils/catchAsync.js';
 import type {
   AdminActivityEventsQuery,
   AdminAttachmentsQuery,
+  AdminDeleteAttachmentsBody,
   AdminIdParam,
   AdminImpersonationLogsQuery,
   AdminLoginInput,
@@ -101,6 +102,12 @@ export const deleteGroup: RequestHandler = catchAsync(async (req, res) => {
 export const deleteMessage: RequestHandler = catchAsync(async (req, res) => {
   const { id } = req.params as AdminIdParam;
   await adminService.deleteMessage(id);
+  res.status(200).json({ success: true });
+});
+
+export const deleteAttachments: RequestHandler = catchAsync(async (req, res) => {
+  const { messageIds } = req.body as AdminDeleteAttachmentsBody;
+  await adminService.deleteAttachments(messageIds);
   res.status(200).json({ success: true });
 });
 

@@ -23,7 +23,7 @@ const UsersDirectoryHeader = ({
   <>
     <div className="mb-4 flex shrink-0 items-end justify-between gap-3">
       <div>
-        <h2 className="font-display text-xl leading-none tracking-tight text-body">Directory</h2>
+        <h2 className="font-semibold text-xl leading-none tracking-tight text-body">Directory</h2>
         <p className="mt-1.5 text-sm text-body-300">{usersDirectorySubtitle(querySearch)}</p>
       </div>
       <div className="flex items-center gap-2">

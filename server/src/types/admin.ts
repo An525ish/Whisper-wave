@@ -116,6 +116,7 @@ export type AdminMessageListItem = {
   _id: Types.ObjectId;
   content?: string;
   status?: string;
+  isDeleted?: boolean;
   attachments?: unknown[];
   createdAt?: Date;
   sender?: {
@@ -145,6 +146,7 @@ export type AdminAttachmentMessageRow = {
   _id: Types.ObjectId;
   content?: string;
   attachments: AdminAttachmentItem[];
+  isDeleted?: boolean;
   sender?: {
     _id?: Types.ObjectId;
     name?: string;

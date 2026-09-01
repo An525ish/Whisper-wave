@@ -8,6 +8,19 @@ export const SEARCH_DEBOUNCE_MS = 450;
 /** Max auto-grow height (px) for the chat composer textarea. */
 export const MAX_TEXTAREA_HEIGHT = 128;
 
+/** Clearance for the floating conversation header (matches Chat.tsx fade). */
+export const CHAT_HEADER_OFFSET_CLASS =
+  'pt-[calc(max(0.5rem,env(safe-area-inset-top))+5.25rem)] md:pt-[calc(0.25rem+7rem)]';
+
+export const CHAT_HEADER_TOP_CLASS =
+  'top-[calc(max(0.5rem,env(safe-area-inset-top))+5.25rem)] md:top-[calc(0.25rem+7rem)]';
+
+export const CHAT_HEADER_FADE_CLASS =
+  'h-[calc(max(0.5rem,env(safe-area-inset-top))+5.25rem)] md:h-28';
+
+/** Compact link preview width — composer strip + message bubble cards. */
+export const LINK_PREVIEW_WIDTH_CLASS = 'w-[15rem] max-w-full';
+
 
 // ── from features/chat/constants/tabs.ts ──────────────────────────────
 import type { NewConnectTab } from '@/types/chat';

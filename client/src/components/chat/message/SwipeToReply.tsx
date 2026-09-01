@@ -6,6 +6,8 @@ type Props = {
   /** 'end' for own messages (right-aligned), 'start' for others (left-aligned) */
   side: 'start' | 'end';
   disabled?: boolean;
+  /** Matches bubble-in / bubble-out so overflow clip follows bubble shape */
+  shellClassName?: string;
   children: ReactNode;
 };
 
@@ -20,7 +22,7 @@ const DIRECTION: Record<Props['side'], 1 | -1> = { start: 1, end: -1 };
  * — Vertical or very short swipes are ignored so normal scroll is unaffected.
  * — On desktop this is a no-op (no touch events).
  */
-const SwipeToReply = ({ onReply, side, disabled = false, children }: Props) => {
+const SwipeToReply = ({ onReply, side, disabled = false, shellClassName = '', children }: Props) => {
   const [tx, setTx] = useState(0);
   const startRef = useRef<{ x: number; y: number } | null>(null);
   const firedRef = useRef(false);
@@ -67,7 +69,7 @@ const SwipeToReply = ({ onReply, side, disabled = false, children }: Props) => {
 
   return (
     <div
-      className="relative w-fit min-w-0 max-w-full overflow-hidden select-none [-webkit-touch-callout:none] touch-pan-y"
+      className={`relative w-fit min-w-0 max-w-full overflow-hidden select-none [-webkit-touch-callout:none] touch-pan-y ${shellClassName}`}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}

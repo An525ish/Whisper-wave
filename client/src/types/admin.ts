@@ -158,12 +158,13 @@ export type AdminMessageAttachment = {
   publicId?: string;
 };
 
-export type AttachmentKindFilter = 'all' | 'images' | 'videos' | 'gifs' | 'links' | 'docs';
+export type AttachmentKindFilter = 'all' | 'images' | 'videos' | 'gifs' | 'links' | 'docs' | 'deleted';
 
 export type AdminAttachmentRow = {
   _id: string;
   content?: string;
   attachments: AdminMessageAttachment[];
+  isDeleted?: boolean;
   sender?: { _id?: string; name?: string; username?: string; avatar?: { url?: string } };
   chat?: { _id?: string; name?: string; groupChat?: boolean };
   createdAt?: string;
@@ -180,6 +181,7 @@ export type AdminMessageRow = {
   _id: string;
   content?: string;
   status?: string;
+  isDeleted?: boolean;
   createdAt?: string;
   attachments?: AdminMessageAttachment[];
   sender?: {
@@ -223,7 +225,8 @@ export type DashboardMetric = {
 export type DashboardCompositionSegment = {
   label: string;
   value: number;
-  glow: string;
+  from: string;
+  to: string;
 };
 
 export type AdminImpersonationLogEntry = {

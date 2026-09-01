@@ -11,7 +11,7 @@ const URL_RE = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
 
 export const matchesKind = (att: AdminMessageAttachment, kind: AttachmentKindFilter): boolean => {
   const k = resolveAttachmentKind(att);
-  if (kind === 'all') return k === 'image' || k === 'video' || k === 'gif' || k === 'doc';
+  if (kind === 'all' || kind === 'deleted') return k === 'image' || k === 'video' || k === 'gif' || k === 'doc';
   if (kind === 'images') return k === 'image';
   if (kind === 'videos') return k === 'video';
   if (kind === 'gifs') return k === 'gif';
@@ -77,6 +77,7 @@ export const attachmentSectionTitle = (kindFilter: AttachmentKindFilter): string
   if (kindFilter === 'gifs') return 'GIFs';
   if (kindFilter === 'links') return 'Links';
   if (kindFilter === 'docs') return 'Documents';
+  if (kindFilter === 'deleted') return 'Deleted';
   return 'All Media';
 };
 
@@ -95,6 +96,7 @@ export const attachmentEmptyStateTitle = (
   if (kindFilter === 'links') return 'No links found';
   if (kindFilter === 'docs') return 'No documents found';
   if (kindFilter === 'gifs') return 'No GIFs found';
+  if (kindFilter === 'deleted') return 'No deleted files found';
   return 'No media found';
 };
 
@@ -108,6 +110,7 @@ export const attachmentEmptyStateSubtitle = (
   if (kindFilter === 'gifs') return 'No GIFs have been shared yet';
   if (kindFilter === 'links') return 'No links have been shared in any chat';
   if (kindFilter === 'docs') return 'No documents have been shared yet';
+  if (kindFilter === 'deleted') return 'Nothing has been deleted yet';
   return 'No media has been shared yet';
 };
 
@@ -145,7 +148,7 @@ export const buildLinkItems = (
   pages: AdminAttachmentsPage[],
   kindFilter: AttachmentKindFilter,
 ): LinkItem[] => {
-  if (kindFilter !== 'links') return [];
+  if (kindFilter !== 'links' && kindFilter !== 'deleted') return [];
   return pages
     .flatMap((p) => p.messages)
     .flatMap((msg) =>
@@ -158,10 +161,10 @@ export const buildLinkItems = (
 };
 
 export const showsMediaSection = (kindFilter: AttachmentKindFilter): boolean =>
-  kindFilter === 'all' || kindFilter === 'images' || kindFilter === 'videos' || kindFilter === 'gifs';
+  kindFilter === 'all' || kindFilter === 'deleted' || kindFilter === 'images' || kindFilter === 'videos' || kindFilter === 'gifs';
 
 export const showsDocsSection = (kindFilter: AttachmentKindFilter): boolean =>
-  kindFilter === 'all' || kindFilter === 'docs';
+  kindFilter === 'all' || kindFilter === 'deleted' || kindFilter === 'docs';
 
 export const showsLinksSection = (kindFilter: AttachmentKindFilter): boolean =>
-  kindFilter === 'links';
+  kindFilter === 'links' || kindFilter === 'deleted';

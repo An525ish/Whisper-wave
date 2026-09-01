@@ -1,4 +1,4 @@
-import { DASHBOARD_COMPOSITION_GLOWS } from '@/constants/admin/dashboard';
+import { DASHBOARD_COMPOSITION_GRADIENTS } from '@/constants/admin/dashboard';
 import type { AdminStats } from '@/types/admin';
 import type { DashboardCompositionSegment } from '@/types/admin';
 
@@ -20,14 +20,14 @@ export const formatDashboardUpdated = (timestamp: number): string | null =>
 export const buildCompositionSegments = (
   stats?: AdminStats,
 ): DashboardCompositionSegment[] => [
-  { label: 'Users', value: stats?.users ?? 0, glow: DASHBOARD_COMPOSITION_GLOWS.users },
-  { label: 'Groups', value: stats?.groups ?? 0, glow: DASHBOARD_COMPOSITION_GLOWS.groups },
+  { label: 'Users', value: stats?.users ?? 0, ...DASHBOARD_COMPOSITION_GRADIENTS.users },
+  { label: 'Groups', value: stats?.groups ?? 0, ...DASHBOARD_COMPOSITION_GRADIENTS.groups },
   {
     label: 'DM chats',
     value: dmChatCount(stats?.chats, stats?.groups),
-    glow: DASHBOARD_COMPOSITION_GLOWS.dmChats,
+    ...DASHBOARD_COMPOSITION_GRADIENTS.dmChats,
   },
-  { label: 'Messages', value: stats?.messages ?? 0, glow: DASHBOARD_COMPOSITION_GLOWS.messages },
+  { label: 'Messages', value: stats?.messages ?? 0, ...DASHBOARD_COMPOSITION_GRADIENTS.messages },
 ];
 
 export const pendingRequestsHint = (

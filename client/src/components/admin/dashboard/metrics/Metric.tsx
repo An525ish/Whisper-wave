@@ -10,7 +10,7 @@ type MetricProps = {
 
 const Metric = ({ label, value, accent, hint, spark }: MetricProps) => (
   <div className="flex min-h-36 min-w-22 flex-1 flex-col px-4 first:pl-0 last:pr-0 sm:min-w-28">
-    <p className={`font-display text-3xl leading-none tabular-nums sm:text-4xl ${accent}`}>
+    <p className={`font-semibold text-3xl leading-none tabular-nums sm:text-4xl ${accent}`}>
       {value}
     </p>
     <p className="mt-2 text-xs font-medium text-body-300">{label}</p>

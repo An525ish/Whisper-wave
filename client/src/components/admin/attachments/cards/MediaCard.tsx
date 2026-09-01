@@ -15,13 +15,17 @@ import {
   ADMIN_MEDIA_GRID_FAILED_ILLUSTRATION,
   ADMIN_MEDIA_GRID_LOADING_ICON,
 } from '@/constants/admin/attachments';
+import DeletedTag from '@/components/admin/attachments/cards/DeletedTag';
 
 type MediaCardProps = {
   item: FlatItem;
   onClick: () => void;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (msgId: string) => void;
 };
 
-const MediaCard = ({ item, onClick }: MediaCardProps) => {
+const MediaCard = ({ item, onClick, isSelectMode, isSelected, onToggleSelect }: MediaCardProps) => {
   const { att, msg, rk } = item;
   const sender = msg.sender;
   const displayName = sender?.name?.trim() || 'Unknown user';
@@ -36,8 +40,8 @@ const MediaCard = ({ item, onClick }: MediaCardProps) => {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="group relative aspect-square w-full overflow-hidden rounded-xl bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue/50"
+      onClick={isSelectMode ? () => onToggleSelect?.(msg._id) : onClick}
+      className={`group relative aspect-square w-full overflow-hidden rounded-xl bg-surface-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue/50 ${isSelectMode && isSelected ? 'ring-2 ring-green/70' : ''}`}
     >
       {rk === 'video' ? (
         <RetryableMediaVideo
@@ -70,8 +74,34 @@ const MediaCard = ({ item, onClick }: MediaCardProps) => {
         </div>
       )}
 
+      {msg.isDeleted ? (
+        <div className="pointer-events-none absolute left-2 top-2 z-10">
+          <DeletedTag />
+        </div>
+      ) : null}
+
+      {isSelectMode ? (
+        <div className={`pointer-events-none absolute inset-0 z-10 transition-colors duration-150 ${isSelected ? 'bg-green/20' : 'bg-transparent group-hover:bg-white/5'}`} />
+      ) : null}
+
+      {isSelectMode ? (
+        <div
+          className={`pointer-events-none absolute right-2 top-2 z-20 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all duration-150 ${
+            isSelected
+              ? 'border-green bg-green'
+              : 'border-white/60 bg-black/30 group-hover:border-white'
+          }`}
+        >
+          {isSelected ? (
+            <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          ) : null}
+        </div>
+      ) : null}
+
       {rk === 'gif' && (
-        <div className="pointer-events-none absolute left-2 top-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-0">
+        <div className={`pointer-events-none absolute top-2 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-0 ${msg.isDeleted ? 'right-2' : 'left-2'}`}>
           GIF
         </div>
       )}

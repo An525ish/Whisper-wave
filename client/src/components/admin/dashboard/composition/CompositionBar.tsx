@@ -5,6 +5,9 @@ type CompositionBarProps = {
   className?: string;
 };
 
+const segmentGradient = (from: string, to: string, angle = '135deg') =>
+  `linear-gradient(${angle}, ${from}, ${to})`;
+
 const CompositionBar = ({ segments, className = '' }: CompositionBarProps) => {
   const total = segments.reduce((sum, segment) => sum + segment.value, 0) || 1;
   const active = segments.filter((segment) => segment.value > 0);
@@ -17,7 +20,7 @@ const CompositionBar = ({ segments, className = '' }: CompositionBarProps) => {
             const pct = (segment.value / total) * 100;
             const start = cursor;
             cursor += pct;
-            return `${segment.glow} ${start}% ${cursor}%`;
+            return `${segment.from} ${start}%, ${segment.to} ${cursor}%`;
           })
           .join(', ')
       : 'rgba(235,236,236,0.08) 0% 100%';
@@ -29,8 +32,8 @@ const CompositionBar = ({ segments, className = '' }: CompositionBarProps) => {
           className="relative h-36 w-36 shrink-0 rounded-full p-2 sm:h-40 sm:w-40"
           style={{ background: `conic-gradient(from 220deg, ${conicStops})` }}
         >
-          <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-background text-center">
-            <p className="font-display text-xl leading-none tabular-nums text-body sm:text-2xl">
+          <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-background text-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
+            <p className="font-semibold text-xl leading-none tabular-nums text-body sm:text-2xl">
               {total.toLocaleString()}
             </p>
             <p className="mt-1 text-[9px] uppercase tracking-[0.14em] text-body-300/55">
@@ -42,25 +45,26 @@ const CompositionBar = ({ segments, className = '' }: CompositionBarProps) => {
         <ul className="w-full min-w-0 flex-1 space-y-3">
           {segments.map((segment) => {
             const pct = Math.round((segment.value / total) * 100);
+            const fill = segmentGradient(segment.from, segment.to, 'to right');
             return (
               <li key={segment.label} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2 text-sm">
                   <span className="flex min-w-0 items-center gap-2 text-body-300">
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: segment.glow }}
+                      style={{ background: segmentGradient(segment.from, segment.to) }}
                     />
                     {segment.label}
                   </span>
                   <span className="shrink-0 tabular-nums text-xs">
-                    <span className="font-display text-body">{segment.value.toLocaleString()}</span>
+                    <span className="font-semibold text-body">{segment.value.toLocaleString()}</span>
                     <span className="ml-1.5 text-body-300/50">{pct}%</span>
                   </span>
                 </div>
                 <div className="h-1 overflow-hidden rounded-full bg-primary/35">
                   <div
                     className="h-full rounded-full transition-[width] duration-500"
-                    style={{ width: `${pct}%`, backgroundColor: segment.glow }}
+                    style={{ width: `${pct}%`, background: fill }}
                   />
                 </div>
               </li>

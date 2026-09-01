@@ -122,7 +122,7 @@ const UserDetailPanel = ({ userId, onClose }: UserDetailPanelProps) => {
               </div>
             </div>
 
-            <h2 className="mt-5 font-display text-2xl leading-tight tracking-tight text-body">
+            <h2 className="mt-5 font-semibold text-2xl leading-tight tracking-tight text-body">
               {isLoading ? (
                 <span className="inline-block h-7 w-36 animate-pulse rounded bg-border/25" />
               ) : (

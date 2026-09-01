@@ -32,6 +32,7 @@ import { isOutgoingMessageRead } from '@/utils/chat';
 import DoubleChevronDown from '@/components/ui/icons/DoubleChevronDown';
 import ReplyComposerBar from '@/components/chat/conversation/composer/ReplyBar';
 import ChatDayLabel from '@/components/chat/conversation/ChatDayLabel';
+import { CHAT_HEADER_OFFSET_CLASS, CHAT_HEADER_TOP_CLASS } from '@/constants/chat';
 
 export type ConversationPanelHandle = {
   clearChat: () => void;
@@ -377,7 +378,7 @@ useImperativeHandle(ref, () => ({
   return (
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <div className="bg-glass-background relative min-h-0 flex-1 overflow-hidden md:rounded-xl">
-        <div ref={containerRef} className={`relative h-full min-h-0 overflow-x-hidden overflow-y-auto overscroll-x-none bg-[rgba(33,26,42,0.75)] px-2 py-3 backdrop-blur-lg backdrop-saturate-100 scrollbar-hide md:rounded-xl md:p-2 md:pt-28 ${isEditing ? 'pointer-events-none select-none' : ''}`} style={{ paddingTop: 'var(--header-offset)' }}>
+        <div ref={containerRef} className={`relative h-full min-h-0 overflow-x-hidden overflow-y-auto overscroll-x-none bg-[rgba(33,26,42,0.75)] px-2 pb-3 backdrop-blur-lg backdrop-saturate-100 scrollbar-hide md:rounded-xl md:px-2 md:pb-2 ${CHAT_HEADER_OFFSET_CLASS} ${isEditing ? 'pointer-events-none select-none' : ''}`}>
           {msgLoading ? <ChatMessagesSkeleton /> : (
             <>
               <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
@@ -410,7 +411,7 @@ useImperativeHandle(ref, () => ({
                   const hasReactions = Boolean(msg.reactions?.length);
                   return (
                     <div key={entry.key} data-index={item.index} ref={virtualizer.measureElement}
-                      className={`absolute left-0 w-full overflow-hidden pb-4 ${sameSender ? 'flex justify-end' : 'flex justify-start'}`}
+                      className={`absolute left-0 w-full overflow-visible pb-4 ${sameSender ? 'flex justify-end' : 'flex justify-start'}`}
                       style={{ transform: `translateY(${item.start}px)` }}
                       onClick={() => { if (selectable) toggleSelected(msg._id); }}>
                       {/* selection bg — inset so it only wraps the bubble, not the bottom padding */}
@@ -421,10 +422,11 @@ useImperativeHandle(ref, () => ({
                       <div className={`group relative z-1 flex flex-col w-fit min-w-0 max-w-[min(100%,22rem)] shrink-0 ${!hasReactions && msg._id && chatId && !msg.isDeleted ? 'pb-4.5 -mb-4.5' : ''} ${sameSender ? 'self-end items-end' : 'self-start items-start'}`}>
                         <SwipeToReply
                           side={sameSender ? 'end' : 'start'}
+                          shellClassName={sameSender ? 'bubble-out' : 'bubble-in'}
                           disabled={!canInteractMessage(msg) || selectMode}
                           onReply={() => startReply(msg)}
                         >
-                          <div className="relative w-fit max-w-full rounded-2xl select-none [-webkit-touch-callout:none]" onContextMenu={(e) => openMessageContextMenu(e, msg)}
+                          <div className="relative w-fit max-w-full select-none [-webkit-touch-callout:none]" onContextMenu={(e) => openMessageContextMenu(e, msg)}
                             role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
                             {...longPressHandlers(msg)}
                             onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(msg._id); } } : undefined}>
@@ -455,7 +457,7 @@ useImperativeHandle(ref, () => ({
         </div>
         {stickyDayHeader && isDateHeaderScrolling && !msgLoading ? (
           <div
-            className="pointer-events-none absolute inset-x-0 z-10 flex justify-center transition-opacity duration-200"
+            className={`pointer-events-none absolute inset-x-0 z-10 flex justify-center transition-opacity duration-200 ${CHAT_HEADER_TOP_CLASS}`}
             style={{transform: `translateY(${stickyDayHeader.pushY}px)` }}
           >
             <ChatDayLabel label={stickyDayHeader.label} />
