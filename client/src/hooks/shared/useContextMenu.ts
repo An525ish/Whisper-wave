@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { ContextMenuPosition, ContextMenuOption, ContextMenuState } from '@/types';
 import { useEffect, useState } from 'react';
 
@@ -12,8 +13,9 @@ const useContextMenu = () => {
   const showContextMenu = (
     position: ContextMenuPosition,
     options: ContextMenuOption[],
+    header?: ReactNode,
   ): void => {
-    setMenuState({ visible: true, position, options });
+    setMenuState({ visible: true, position, options, header });
   };
 
   const hideContextMenu = (): void => {

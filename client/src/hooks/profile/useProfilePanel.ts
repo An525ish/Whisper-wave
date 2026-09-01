@@ -9,6 +9,7 @@ import {
   useUpdateGroupDetailsMutation,
 } from '@/hooks/chat'
 import { useUpdateProfileMutation } from '@/hooks/auth'
+import { useDeleteMessageMutation, useForwardMessagesMutation } from '@/hooks/chat/useMessageMutations'
 import useAsyncMutation from '@/hooks/shared/useAsyncMutation'
 import useErrors from '@/hooks/shared/useError'
 import { useSocket } from '@/socket/SocketProvider'
@@ -46,6 +47,8 @@ export type ViewerMediaFile = {
   name?: string;
   publicId?: string;
   fileType?: string;
+  messageId?: string;
+  senderId?: string;
 };
 
 const resolveAvatarSrc = (
@@ -105,6 +108,15 @@ export type UseProfilePanelReturn = {
   openSharedSheet: (tab: SharedContentTab) => void
   openImageViewerForFile: (file: MediaFile) => void
   handleFileAction: (e: MouseEvent, url: string | undefined, fileName: string | undefined) => Promise<void>
+  viewerForwardMsgId: string | null
+  viewerDeleteMsgId: string | null
+  handleViewerForward: (messageId: string) => void
+  handleViewerDelete: (messageId: string) => void
+  confirmViewerDelete: () => Promise<void>
+  handleViewerForwardToChat: (targetChatIds: string[]) => Promise<void>
+  forwardIsPending: boolean
+  setViewerForwardMsgId: (id: string | null) => void
+  setViewerDeleteMsgId: (id: string | null) => void
   startNameEdit: () => void
   cancelNameEdit: () => void
   saveName: () => Promise<boolean>
@@ -136,6 +148,8 @@ export const useProfilePanel = (
 
   const [viewerOpen, setViewerOpen] = useState(false)
   const [initialImageIndex, setInitialImageIndex] = useState(0)
+  const [viewerForwardMsgId, setViewerForwardMsgId] = useState<string | null>(null)
+  const [viewerDeleteMsgId, setViewerDeleteMsgId] = useState<string | null>(null)
   const [sharedSheetOpen, setSharedSheetOpen] = useState(false)
   const [sharedSheetTab, setSharedSheetTab] = useState<SharedContentTab>('photos')
   const [editingBio, setEditingBio] = useState(false)
@@ -146,6 +160,8 @@ export const useProfilePanel = (
 
   const [updateProfile, { isLoading: isUpdatingProfile }] = useAsyncMutation(useUpdateProfileMutation)
   const [updateGroup, { isLoading: isUpdatingGroup }] = useAsyncMutation(useUpdateGroupDetailsMutation)
+  const deleteMutation = useDeleteMessageMutation()
+  const forwardMutation = useForwardMessagesMutation()
 
   const openSharedSheet = (tab: SharedContentTab) => {
     setSharedSheetTab(tab)
@@ -203,7 +219,43 @@ export const useProfilePanel = (
 
   const viewerMediaFiles: ViewerMediaFile[] = mediaFiles
     .filter((f): f is MediaFile & { url: string } => Boolean(f.url))
-    .map((f) => ({ _id: f._id ?? f.publicId ?? f.url, url: f.url, name: f.name, publicId: f.publicId, fileType: f.fileType }))
+    .map((f) => ({ _id: f._id ?? f.publicId ?? f.url, url: f.url, name: f.name, publicId: f.publicId, fileType: f.fileType, messageId: f.messageId, senderId: f.senderId }))
+
+  const handleViewerForward = useCallback((messageId: string) => {
+    setViewerOpen(false)
+    setViewerForwardMsgId(messageId)
+  }, [])
+
+  const handleViewerDelete = useCallback((messageId: string) => {
+    setViewerOpen(false)
+    setViewerDeleteMsgId(messageId)
+  }, [])
+
+const confirmViewerDelete = useCallback(async () => {
+    if (!viewerDeleteMsgId || !chatId) return
+    try {
+      await deleteMutation.mutateAsync({ messageId: viewerDeleteMsgId, chatId })
+    } catch {
+      toast.error('Failed to delete message')
+    } finally {
+      setViewerDeleteMsgId(null)
+    }
+  }, [viewerDeleteMsgId, chatId, deleteMutation])
+
+  const handleViewerForwardToChat = useCallback(async (targetChatIds: string[]) => {
+    if (!chatId || !viewerForwardMsgId || targetChatIds.length === 0) return
+    try {
+      await Promise.all(
+        targetChatIds.map((targetChatId) =>
+          forwardMutation.mutateAsync({ targetChatId, sourceChatId: chatId, messageIds: [viewerForwardMsgId] })
+        )
+      )
+      setViewerForwardMsgId(null)
+      toast.success('Forwarded')
+    } catch {
+      toast.error('Failed to forward')
+    }
+  }, [chatId, viewerForwardMsgId, forwardMutation])
 
   const openImageViewerForFile = (file: MediaFile) => {
     const index = viewerMediaFiles.findIndex(
@@ -311,5 +363,9 @@ export const useProfilePanel = (
     startNameEdit, cancelNameEdit, saveName, startBioEdit, cancelBioEdit, saveBio,
     handleCancelSelfProfile, handleAvatarChange,
     setViewerOpen, setSharedSheetOpen, isLoading, viewSelfProfile,
+    viewerForwardMsgId, viewerDeleteMsgId,
+    handleViewerForward, handleViewerDelete, confirmViewerDelete, handleViewerForwardToChat,
+    forwardIsPending: forwardMutation.isPending,
+    setViewerForwardMsgId, setViewerDeleteMsgId,
   }
 }

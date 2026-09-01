@@ -15,6 +15,7 @@ export const SOCKET_EVENTS = {
   ONLINE_USERS: 'ONLINE_USERS',
   USER_ONLINE: 'USER_ONLINE',
   USER_OFFLINE: 'USER_OFFLINE',
+  MESSAGE_REACTION: 'MESSAGE_REACTION',
 } as const
 
 export type SocketEventName = typeof SOCKET_EVENTS[keyof typeof SOCKET_EVENTS]

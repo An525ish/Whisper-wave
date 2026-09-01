@@ -38,8 +38,6 @@ export const helmetOptions: HelmetOptions = {
         'https://ik.imagekit.io',
         'https://img.logoipsum.com',
         'https://raw.githubusercontent.com',
-        // Old storage provider, will be removed soon
-        'https://res.cloudinary.com',
         // GitHub user avatars
         'https://avatars.githubusercontent.com',
         'https://www.google.com',
@@ -58,7 +56,6 @@ export const helmetOptions: HelmetOptions = {
         imageKitOrigin,
         'https://ik.imagekit.io',
         'https://static.klipy.com',
-        'https://res.cloudinary.com',
       ],
     },
   },

@@ -44,6 +44,11 @@ const ContextMenu = ({ menuState, hideContextMenu }: ContextMenuProps) => {
       onMouseDown={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
     >
+      {menuState.header ? (
+        <div className="border-b border-border/60">
+          {menuState.header}
+        </div>
+      ) : null}
       <ul className="py-1">
         {menuState.options.map((option: ContextMenuOption) => (
           <li key={option.label} role="none">

@@ -45,7 +45,7 @@ const ChatList = ({
   return (
     <div
       ref={parentRef}
-      className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2 scrollbar-hide"
+      className="flex h-full min-h-0 flex-col gap-2 overflow-x-hidden overflow-y-auto p-2 scrollbar-hide"
     >
       {isLoading ? (
         Array(8)

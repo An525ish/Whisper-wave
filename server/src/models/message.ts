@@ -31,11 +31,20 @@ const replyToSchema = new Schema<MessageReplyTo>(
   { _id: false }
 );
 
+const reactionSchema = new Schema(
+  {
+    emoji: { type: String, required: true },
+    users: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  },
+  { _id: false }
+);
+
 const messageSchema = new Schema<IMessage>(
   {
     content: { type: String },
     attachments: [attachmentSchema],
     replyTo: { type: replyToSchema },
+    reactions: { type: [reactionSchema], default: [] },
     sender: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     chat: { type: Schema.Types.ObjectId, ref: 'Chat', required: true },
     status: {

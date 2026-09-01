@@ -260,6 +260,8 @@ export type ChatSharedContent = {
     url: string;
     name: string;
     fileType: string;
+    messageId: string;
+    senderId: string;
   }>;
   links: ChatSharedLink[];
 };

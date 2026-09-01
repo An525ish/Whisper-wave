@@ -13,6 +13,7 @@ import type {
   ChatClearedPayload,
   ChatMessage,
   ChatReadPayload,
+  MessageReactionPayload,
   MessageUpdatedPayload,
   MessagesDeletedPayload,
   MessagesPage,
@@ -271,6 +272,31 @@ export function useChatMessages({
     [chatId, invalidateMessages, onChatCleared],
   );
 
+  const messageReactionListener = useCallback(
+    (res: MessageReactionPayload) => {
+      if (res.chatId !== chatId) return;
+      const patch = (m: ChatMessage) =>
+        m._id === res.messageId ? { ...m, reactions: res.reactions } : m;
+      // Patch the live (in-session) layer
+      setLiveMessages((prev) => prev.map(patch));
+      // Patch the query-cache layer so history messages also update
+      queryClient.setQueryData<InfiniteData<MessagesPage>>(
+        queryKeys.messages(chatId),
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              data: page.data?.map(patch),
+            })),
+          };
+        },
+      );
+    },
+    [chatId, queryClient, setLiveMessages],
+  );
+
   const socketEvents = useMemo(
     () => ({
       [SOCKET_EVENTS.NEW_MESSAGE]: newMessageListener,
@@ -278,8 +304,9 @@ export function useChatMessages({
       [SOCKET_EVENTS.MESSAGE_UPDATED]: messageUpdatedListener,
       [SOCKET_EVENTS.MESSAGES_DELETED]: messagesDeletedListener,
       [SOCKET_EVENTS.CHAT_CLEARED]: chatClearedListener,
+      [SOCKET_EVENTS.MESSAGE_REACTION]: messageReactionListener,
     }),
-    [chatReadListener, chatClearedListener, messageUpdatedListener, messagesDeletedListener, newMessageListener],
+    [chatReadListener, chatClearedListener, messageUpdatedListener, messagesDeletedListener, newMessageListener, messageReactionListener],
   );
 
   useSocketEvent(socket, socketEvents as Parameters<typeof useSocketEvent>[1]);

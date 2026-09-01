@@ -32,6 +32,8 @@ export type SharedMediaRow = {
   name?: string;
   url?: string;
   fileType?: string;
+  messageId?: string;
+  senderId?: string;
 };
 
 export type MediaResponse = {
@@ -64,6 +66,11 @@ export type ChatBoxData = {
   replyTo?: MessageReplyTo;
 };
 
+export type MessageReaction = {
+  emoji: string;
+  users: string[];
+};
+
 // --- Messages ---
 export type ChatMessage = ChatBoxData & {
   _id: string;
@@ -72,6 +79,7 @@ export type ChatMessage = ChatBoxData & {
   isDeleted?: boolean;
   editedAt?: string;
   replyTo?: MessageReplyTo;
+  reactions?: MessageReaction[];
 };
 
 export type MessagesPage = {
@@ -137,6 +145,12 @@ export type MessagesDeletedPayload = {
 
 export type ChatClearedPayload = {
   chatId: string;
+};
+
+export type MessageReactionPayload = {
+  chatId: string;
+  messageId: string;
+  reactions: MessageReaction[];
 };
 
 export type SendAttachmentsResult = {

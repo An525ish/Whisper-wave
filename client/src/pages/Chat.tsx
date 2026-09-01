@@ -103,7 +103,7 @@ const Chat = () => {
 
   return (
     <AppWrapper>
-      <div className="relative flex h-full min-h-0 flex-col bg-background md:bg-transparent md:pt-1">
+      <div className="relative flex h-full min-h-0 flex-col overflow-x-clip bg-background md:bg-transparent md:pt-1">
         {/* Soft top fade so scrolled messages dissolve under the floating header */}
         <div
           aria-hidden

@@ -13,3 +13,4 @@ export const CHAT_READ = 'CHAT_READ';
 export const ONLINE_USERS = 'ONLINE_USERS';
 export const USER_ONLINE = 'USER_ONLINE';
 export const USER_OFFLINE = 'USER_OFFLINE';
+export const MESSAGE_REACTION = 'MESSAGE_REACTION';

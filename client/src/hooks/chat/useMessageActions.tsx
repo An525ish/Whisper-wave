@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { MouseEvent, TouchEvent } from 'react';
 import useContextMenu from '@/hooks/shared/useContextMenu';
+import { useSocket } from '@/socket/SocketProvider';
+import { SOCKET_EVENTS } from '@/constants/socket';
+import { useEditMessageMutation, useForwardMessagesMutation } from '@/hooks/chat/useMessageMutations';
+import ReactionStrip from '@/components/chat/message/ReactionStrip';
 import { isValidMessageId } from '@/utils/helpers';
 import {
   buildChatCopyPayload,
@@ -17,7 +21,10 @@ import TrashIcon from '@/components/ui/icons/Trash';
 import ReadReceipt from '@/components/ui/icons/ReadReceipt';
 import type { Avatar } from '@/types';
 import type { ChatMessage } from '@/types/chat';
-import { useEditMessageMutation, useForwardMessagesMutation } from '@/hooks/chat/useMessageMutations';
+
+const clearTextSelection = () => {
+  window.getSelection()?.removeAllRanges();
+};
 
 interface Params {
   chatId: string | undefined;
@@ -56,6 +63,7 @@ export function useMessageActions({
   clearTypingState,
   onEditingChange,
 }: Params) {
+  const socket = useSocket();
   const editMessageMutation = useEditMessageMutation();
   const forwardMutation = useForwardMessagesMutation();
   const { menuState, showContextMenu, hideContextMenu } = useContextMenu();
@@ -236,18 +244,40 @@ export function useMessageActions({
       onSelectModeChange, openForwardDialog, setSelectedIds, startEditMessage, startReply],
   );
 
+  // Reactions
+  const toggleReaction = useCallback(
+    (msg: ChatMessage, emoji: string) => {
+      if (!chatId || !canInteractMessage(msg)) return;
+      socket.emit(SOCKET_EVENTS.MESSAGE_REACTION, {
+        messageId: msg._id,
+        chatId,
+        emoji,
+      });
+    },
+    [canInteractMessage, chatId, socket],
+  );
+
   const openMenuAt = useCallback(
     (pos: { x: number; y: number }, msg: ChatMessage) => {
       if (isEditing || !canInteractMessage(msg)) return;
-      showContextMenu(pos, buildMenuOptions(msg));
+      const header = (
+        <ReactionStrip
+          reactions={msg.reactions}
+          myUserId={String(user?._id ?? '')}
+          onReact={(emoji) => toggleReaction(msg, emoji)}
+          onClose={hideContextMenu}
+        />
+      );
+      showContextMenu(pos, buildMenuOptions(msg), header);
     },
-    [buildMenuOptions, canInteractMessage, isEditing, showContextMenu],
+    [buildMenuOptions, canInteractMessage, hideContextMenu, isEditing, showContextMenu, toggleReaction, user?._id],
   );
 
   const openMessageContextMenu = useCallback(
     (e: MouseEvent, msg: ChatMessage) => {
       e.preventDefault();
       e.stopPropagation();
+      clearTextSelection();
       openMenuAt({ x: e.clientX, y: e.clientY }, msg);
     },
     [openMenuAt],
@@ -255,6 +285,8 @@ export function useMessageActions({
 
   const openMessageContextMenuFromTouch = useCallback(
     (e: TouchEvent, msg: ChatMessage) => {
+      e.preventDefault();
+      clearTextSelection();
       const touch = e.changedTouches[0] ?? e.touches[0];
       if (!touch) return;
       openMenuAt({ x: touch.clientX, y: touch.clientY }, msg);
@@ -294,5 +326,6 @@ export function useMessageActions({
     deletableSelectedIds, canDeleteMessage, canInteractMessage,
     editIsPending: editMessageMutation.isPending,
     receiptMessage, setReceiptMessage,
+    toggleReaction,
   };
 }

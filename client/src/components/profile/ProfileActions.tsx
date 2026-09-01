@@ -4,6 +4,7 @@ import { RetryableMediaImage, RetryableMediaVideo } from '@/components/ui/media/
 import ImagesIcon from '@/components/ui/icons/Images'
 import FilesIcon from '@/components/ui/icons/FilesIcon'
 import LinkIcon from '@/components/ui/icons/Link'
+import AudiosIcon from '@/components/ui/icons/Audio'
 import { fileData, fileFormat, getMediaDisplayName, getMediaKindFromFile } from '@/utils/fileFormat'
 import type { MouseEvent } from 'react'
 import type { MediaFile, SharedLink, SharedContentTab } from '@/components/profile/shared-content/types'
@@ -53,7 +54,7 @@ const renderMediaThumbnail = (file: MediaFile) => {
   }
   return (
     <div className="w-full aspect-5/4 bg-primary rounded-lg flex items-center justify-center">
-      <img src="/icons/music-icon.svg" alt="Audio" className="w-10 h-10 opacity-80" />
+      <AudiosIcon className="h-10 w-10 text-body opacity-80" aria-hidden />
     </div>
   )
 }
