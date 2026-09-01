@@ -164,6 +164,7 @@ export type MessageForClient = {
   replyTo?: MessageReplyToClient;
   sender: MessageSenderClient;
   readBy: string[];
+  reactions?: MessageReaction[];
 };
 
 /** Populated sender from a lean message query (before client mapping). */
@@ -247,6 +248,18 @@ export type FindReceiptsResult = {
   isMember: boolean;
 };
 
+/** Client-safe reaction shape (users as string IDs). */
+export type MessageReaction = {
+  emoji: string;
+  users: string[];
+};
+
+/** DB-layer reaction shape (users as ObjectIds). */
+export type MessageReactionDb = {
+  emoji: string;
+  users: Types.ObjectId[];
+};
+
 export type IMessageFields = {
   _id: Types.ObjectId;
   content?: string;
@@ -259,6 +272,7 @@ export type IMessageFields = {
   isDeleted?: boolean;
   editedAt?: Date;
   replyTo?: MessageReplyTo;
+  reactions?: MessageReactionDb[];
   createdAt: Date;
   updatedAt: Date;
 };

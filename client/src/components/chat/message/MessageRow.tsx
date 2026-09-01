@@ -11,14 +11,14 @@ import { useMemo, useState, type MouseEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import MessageBubble from '@/components/chat/message/MessageBubble';
 import type {
-  ChatAttachment, MessageReplyTo, ChatBoxData,
+  ChatAttachment, MessageReplyTo, ChatBoxData, MessageReaction,
   SharedMediaRow, MediaResponse,
 } from '@/types/chat';
 
 export type { MessageReplyTo, ChatBoxData };
 
 type ChatBoxProps = {
-  chatData: ChatBoxData;
+  chatData: ChatBoxData & { _id?: string; reactions?: MessageReaction[] };
   isGroupChat?: boolean;
   showReadReceipt?: boolean;
   isRead?: boolean;
@@ -27,6 +27,8 @@ type ChatBoxProps = {
   isDeleted?: boolean;
   editedAt?: string;
   centered?: boolean;
+  onDeleteMessage?: (messageId: string) => void;
+  onForwardMessage?: (messageId: string) => void;
 };
 
 const resolveAttachmentKind = (
@@ -59,6 +61,8 @@ const MessageRow = ({
   isDeleted = false,
   editedAt,
   centered = false,
+  onDeleteMessage,
+  onForwardMessage,
 }: ChatBoxProps) => {
   const { chatId } = useParams();
   const { content, sender, attachments = [], createdAt, replyTo } = chatData;
@@ -111,7 +115,11 @@ const MessageRow = ({
     );
 
     if (matchIndex >= 0) {
-      setGalleryOverride(null);
+      // Stamp messageId so delete/forward work for this item
+      const stamped = sharedGalleryFiles.map((f, i) =>
+        i === matchIndex ? { ...f, messageId: chatData._id ?? undefined, senderId: String(sender._id) } : f,
+      );
+      setGalleryOverride(stamped);
       setGalleryIndex(matchIndex);
       return;
     }
@@ -122,6 +130,8 @@ const MessageRow = ({
       name: attachment.name,
       publicId: attachment.public_id,
       fileType: attachment.type,
+      messageId: chatData._id,
+      senderId: String(sender._id),
     };
     setGalleryOverride([fallback, ...sharedGalleryFiles]);
     setGalleryIndex(0);
@@ -168,7 +178,6 @@ const MessageRow = ({
   const avatarSrc =
     typeof sender.avatar === 'string' ? sender.avatar : sender.avatar?.url;
   const linkVariant = sameSender ? 'outgoing' : 'incoming';
-  const multiMedia = attachments.length > 1;
   const replyPreviewText = replyTo
     ? replyTo.previewAttachment?.name || replyTo.content?.trim() || 'Message'
     : '';
@@ -193,7 +202,6 @@ const MessageRow = ({
         hasAttachments={hasAttachments}
         mediaOnly={mediaOnly}
         linkOnly={linkOnly}
-        multiMedia={multiMedia}
         replyTo={replyTo}
         replyPreviewText={replyPreviewText}
         currentTime={currentTime}
@@ -211,6 +219,9 @@ const MessageRow = ({
           mediaFiles={activeGalleryFiles}
           initialIndex={galleryIndex}
           onClose={closeGallery}
+          onDelete={onDeleteMessage && chatData._id ? (_file) => { closeGallery(); onDeleteMessage(chatData._id!); } : undefined}
+          onForward={onForwardMessage && chatData._id ? (_file) => { closeGallery(); onForwardMessage(chatData._id!); } : undefined}
+          chatId={chatId ?? undefined}
         />
       ) : null}
     </>

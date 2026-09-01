@@ -6,6 +6,8 @@ import GroupMembersList from '@/components/profile/GroupMembersList'
 import ProfileActions from '@/components/profile/ProfileActions'
 import SharedContentSheet from '@/components/profile/SharedContentSheet'
 import ProfilePanelSkeleton from '@/components/profile/ProfilePanelSkeleton'
+import ForwardDialog from '@/components/chat/dialogs/ForwardDialog'
+import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal'
 
 type ProfilePanelProps = {
   variant?: 'column' | 'sheet'
@@ -73,7 +75,40 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
         />
       ) : null}
       {p.viewerOpen ? (
-        <ImageViewer mediaFiles={p.viewerMediaFiles} initialIndex={p.initialImageIndex} onClose={() => p.setViewerOpen(false)} />
+        <ImageViewer
+          mediaFiles={p.viewerMediaFiles}
+          initialIndex={p.initialImageIndex}
+          onClose={() => p.setViewerOpen(false)}
+          onForward={p.chatId ? (file) => { if (file.messageId) p.handleViewerForward(file.messageId); } : undefined}
+          onDelete={p.chatId ? (file) => { if (file.messageId) p.handleViewerDelete(file.messageId); } : undefined}
+          chatId={p.chatId}
+        />
+      ) : null}
+
+      {p.viewerForwardMsgId && p.chatId ? (
+        <ForwardDialog
+          open={true}
+          sourceChatId={p.chatId}
+          messageIds={[p.viewerForwardMsgId]}
+          onClose={() => p.setViewerForwardMsgId(null)}
+          onForward={p.handleViewerForwardToChat}
+          isForwarding={p.forwardIsPending}
+        />
+      ) : null}
+
+      {p.viewerDeleteMsgId ? (
+        <ConfirmationModal
+          variant="danger"
+          title="Delete this message?"
+          description="This message will be removed for everyone in this chat."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onClose={() => p.setViewerDeleteMsgId(null)}
+          handleConfirmationModal={({ accept }) => {
+            if (accept) void p.confirmViewerDelete()
+            else p.setViewerDeleteMsgId(null)
+          }}
+        />
       ) : null}
 
       <div className={p.isSheet

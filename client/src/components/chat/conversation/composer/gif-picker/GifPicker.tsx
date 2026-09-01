@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useGifSearch } from '@/hooks/chat/useGifHooks';
 import type { GifItem, KlipyKind } from '@/api/gif';
-import searchIcon from '@/assets/search.svg';
+import SearchIcon from '@/components/ui/icons/Search';
 import EmptyState from '@/components/ui/EmptyState';
 
 type GifPickerProps = {
@@ -75,10 +75,9 @@ const PickerSearch = ({
   inputRef?: RefObject<HTMLInputElement | null>;
 }) => (
   <div className="relative shrink-0">
-    <img
-      src={searchIcon}
-      alt=""
-      className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 opacity-50"
+    <SearchIcon
+      aria-hidden
+      className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-body-300 opacity-50"
     />
     <input
       ref={inputRef}

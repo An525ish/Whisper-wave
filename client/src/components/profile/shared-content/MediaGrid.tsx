@@ -1,3 +1,4 @@
+import AudiosIcon from '@/components/ui/icons/Audio'
 import EmptyState from '@/components/ui/EmptyState'
 import { RetryableMediaImage, RetryableMediaVideo } from '@/components/ui/media/RetryableMedia'
 import { getMediaDisplayName, getMediaKindFromFile } from '@/utils/fileFormat'
@@ -34,7 +35,7 @@ const renderThumbnail = (file: MediaFile) => {
   }
   return (
     <div className="flex aspect-square w-full items-center justify-center bg-linear-to-br from-green-dark/80 to-primary">
-      <img src="/icons/music-icon.svg" alt="" className="h-10 w-10 opacity-90" />
+      <AudiosIcon className="h-10 w-10 text-body opacity-90" aria-hidden />
     </div>
   )
 }

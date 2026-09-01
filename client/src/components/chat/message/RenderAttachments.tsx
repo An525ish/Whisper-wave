@@ -23,6 +23,8 @@ type RenderAttachmentsProps = {
   overlay?: ReactNode;
   /** Stretch tile to parent width (multi-attachment grid). */
   fill?: boolean;
+  /** WhatsApp-style album tile — no outer radius, fills grid cell. */
+  album?: boolean;
   onDownload?: (e: MouseEvent) => void;
 };
 
@@ -42,10 +44,14 @@ const formatBytes = (bytes?: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const tileClass = (fill?: boolean) =>
-  `relative aspect-4/3 overflow-hidden rounded-2xl bg-[#0c1014] ${
+const tileClass = (fill?: boolean, album?: boolean) => {
+  if (album) {
+    return 'relative h-full w-full min-h-0 overflow-hidden bg-[#0c1014]';
+  }
+  return `relative aspect-4/3 overflow-hidden rounded-2xl bg-[#0c1014] ${
     fill ? 'w-full' : 'w-58 max-w-full'
   }`;
+};
 
 const mediaFillClass = 'absolute inset-0 h-full w-full object-cover';
 
@@ -104,6 +110,7 @@ const RenderAttachments = ({
   isUploading,
   overlay,
   fill = false,
+  album = false,
   onDownload,
 }: RenderAttachmentsProps) => {
   const isImage = type?.startsWith('image/') || fileType === 'image';
@@ -112,7 +119,7 @@ const RenderAttachments = ({
   const fileExtension = fileFormat(name);
 
   const withTile = (media: ReactNode, opts?: { play?: boolean }) => (
-    <div className={tileClass(fill)}>
+    <div className={tileClass(fill, album)}>
       {media}
       {opts?.play ? <PlayBadge /> : null}
       {isUploading ? (
@@ -120,7 +127,7 @@ const RenderAttachments = ({
           <CircularLoader />
         </div>
       ) : null}
-      <BottomFade>{overlay}</BottomFade>
+      {album ? null : <BottomFade>{overlay}</BottomFade>}
     </div>
   );
 

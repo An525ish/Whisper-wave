@@ -4,9 +4,21 @@ import VideoCallIcon from '@/components/ui/icons/VideoCall';
 import LeaveGroupIcon from '@/components/ui/icons/LeaveGroup';
 import MembersIcon from '@/components/ui/icons/Members';
 import SelectMessagesIcon from '@/components/ui/icons/SelectMessages';
+import SearchIcon from '@/components/ui/icons/Search';
+import ClearChatIcon from '@/components/ui/icons/ClearChat';
 import AccountBar from '@/components/profile/AccountBar';
 import { type ReactNode, type RefObject } from 'react';
-import searchIcon from '@/assets/search.svg';
+
+const menuBtnClass =
+  'grid h-8 w-8 place-items-center rounded-full border text-body transition md:h-10 md:w-10';
+
+/** Filled icons (3-dot menu). */
+const menuIconClass =
+  'h-4 w-4 fill-current transition md:h-5 md:w-5';
+
+/** Stroke bell — slightly larger on mobile so it matches filled icons optically. */
+const headerBellIconClass =
+  'h-[1.125rem] w-[1.125rem] stroke-[1.75] text-body-300 transition md:h-5 md:w-5 md:stroke-[1.5]';
 
 type DefaultActionsProps = {
   isDotsMenu: boolean;
@@ -85,13 +97,18 @@ const HeaderActions = ({
 }: DefaultActionsProps) => (
   <>
     <div className="md:hidden">
-      <AccountBar variant="notification" overlayClassName="fixed inset-0 z-50" />
+      <AccountBar
+        variant="notification"
+        overlayClassName="fixed inset-0 z-50"
+        notificationButtonClassName={`${menuBtnClass} border-white/15 text-body-300 active:bg-primary/40`}
+        notificationIconClassName={headerBellIconClass}
+      />
     </div>
 
     <button
       type="button"
       disabled
-      className="hidden h-10 w-10 place-items-center rounded-full border border-border group hover:border-green-light md:grid"
+      className={`${menuBtnClass} hidden border-border group hover:border-green-light md:grid`}
       aria-label="Voice call (coming soon)"
     >
       <PhoneCallIcon className="h-5 w-5 transition group-hover:fill-green" />
@@ -99,7 +116,7 @@ const HeaderActions = ({
     <button
       type="button"
       disabled
-      className="hidden h-10 w-10 place-items-center rounded-full border border-border group hover:border-green-light lg:grid"
+      className={`${menuBtnClass} hidden border-border group hover:border-green-light lg:grid`}
       aria-label="Video call (coming soon)"
     >
       <VideoCallIcon className="h-5 w-5 transition group-hover:fill-green" />
@@ -109,7 +126,7 @@ const HeaderActions = ({
       type="button"
       ref={buttonRef}
       onClick={onToggle}
-      className={`grid h-10 w-10 place-items-center rounded-full border text-body transition ${
+      className={`${menuBtnClass} ${
         searchOpen || isDotsMenu
           ? 'border-green/50 bg-green/10 text-green'
           : 'border-white/15 group hover:border-green-light hover:text-white'
@@ -117,7 +134,7 @@ const HeaderActions = ({
       aria-label="Chat options"
       aria-expanded={isDotsMenu}
     >
-      <ThreeDotsIcon className="h-5 w-5 fill-current transition group-hover:fill-green group-hover:text-green" />
+      <ThreeDotsIcon className={`${menuIconClass} group-hover:fill-green group-hover:text-green`} />
     </button>
 
     {isDotsMenu ? (
@@ -132,7 +149,7 @@ const HeaderActions = ({
           label="Search chat"
           tone="accent"
           onClick={onOpenSearch}
-          icon={<img src={searchIcon} alt="" className="h-3.5 w-3.5" />}
+          icon={<SearchIcon className="h-3.5 w-3.5" />}
         />
 
         <div className="mx-2 my-0.5 h-px bg-white/8" />
@@ -148,7 +165,7 @@ const HeaderActions = ({
             label="Clear chat"
             tone="danger"
             onClick={onClearChat}
-            icon={<img src="/icons/clear.svg" alt="" className="h-3.5 w-3.5" />}
+            icon={<ClearChatIcon className="h-3.5 w-3.5" />}
           />
         ) : null}
 

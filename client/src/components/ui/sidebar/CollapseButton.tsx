@@ -1,3 +1,5 @@
+import ChevronLeft from '@/components/ui/icons/ChevronLeft';
+
 type CollapseButtonProps = {
   expanded: boolean;
   onClick: () => void;
@@ -22,11 +24,9 @@ const CollapseButton = ({
     }
     aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
   >
-    <img
-      src="/icons/angle-right-icon.svg"
-      alt=""
+    <ChevronLeft
       aria-hidden
-      className={`h-3 w-3 transition-transform duration-300 ${expanded ? '-scale-x-100' : ''}`}
+      className={`h-3.5 w-3.5 transition-transform duration-300 ${expanded ? '' : 'rotate-180'}`}
     />
   </button>
 );

@@ -140,12 +140,19 @@ const ConversationHeader = ({
     (s) => (!groupChat && peerId ? (s.lastSeenByUserId[peerId] ?? null) : null),
   );
 
+  const memberCount = useMemo(
+    () => normalizeMemberIds(chatData.members).length,
+    [chatData.members],
+  );
+
   const statusLabel = selectMode
     ? `${selectedCount} selected`
     : isTyping
       ? 'typing…'
       : groupChat
-        ? null
+        ? memberCount > 0
+          ? `${memberCount} member${memberCount === 1 ? '' : 's'}`
+          : null
         : peerOnline
           ? 'online'
           : formatLastSeen(peerLastSeen);
@@ -183,22 +190,42 @@ const ConversationHeader = ({
       <header className={headerShellClass}>
         <div className={headerInnerClass}>
           <div className="relative flex items-center justify-between gap-2">
-            <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-1.5">
-              <Link
-                to="/"
-                replace
-                className="inline-flex h-11 shrink-0 items-center gap-0.5 rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
-                aria-label="Back to chats"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </Link>
+            <div className="flex min-w-0 flex-1 items-center gap-0.5 md:gap-1.5">
+              {selectMode ? (
+                <button
+                  type="button"
+                  onClick={onCancelSelect}
+                  className="inline-flex h-9 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
+                  aria-label="Cancel selection"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              ) : (
+                <Link
+                  to="/"
+                  replace
+                  className="inline-flex h-9 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
+                  aria-label="Back to chats"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Link>
+              )}
+
+              {selectMode ? (
+                <p className="min-w-0 flex-1 truncate text-[17px] font-semibold tabular-nums text-white md:hidden">
+                  {selectedCount}
+                </p>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => {
                   if (selectMode || !canOpenProfileSheet || !onOpenProfile) return;
                   onOpenProfile();
                 }}
-                className={`flex min-w-0 flex-1 items-center gap-1 rounded-xl text-left transition md:gap-1.5 ${
+                className={`min-w-0 items-center gap-1 rounded-xl text-left transition md:gap-1.5 ${
+                  selectMode ? 'hidden md:flex' : 'flex'
+                } flex-1 ${
                   !selectMode && canOpenProfileSheet && onOpenProfile
                     ? 'active:bg-primary/40 lg:active:bg-transparent'
                     : 'cursor-default hover:filter-none active:filter-none'
@@ -237,7 +264,7 @@ const ConversationHeader = ({
               </button>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2 md:gap-3">
+            <div className="flex shrink-0 items-center gap-1.5 md:gap-3">
               {selectMode ? (
                 <SelectModeActions
                   selectedCount={selectedCount}

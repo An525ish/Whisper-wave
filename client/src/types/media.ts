@@ -5,6 +5,10 @@ export type MediaFile = {
   publicId?: string;
   thumbnailUrl?: string;
   fileType?: string;
+  /** ID of the message this file belongs to — enables delete/forward from the viewer */
+  messageId?: string;
+  /** Sender user ID — used to gate delete permission */
+  senderId?: string;
 };
 
 export type MediaKind = 'image' | 'video' | 'audio';

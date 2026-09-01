@@ -16,13 +16,13 @@ import ConfirmationModal from '@/components/ui/modal/confirmation-modal/Confirma
 import MessageReceiptDialog from '@/components/chat/message/MessageReceiptDialog';
 import SwipeToReply from '@/components/chat/message/SwipeToReply';
 import CloseIcon from '@/components/ui/icons/Close';
-import CheckboxIcon from '@/components/ui/icons/Checkbox';
 import { useAuthStore } from '@/stores/auth';
 import { ChatMessagesSkeleton } from '@/components/chat/ChatMessageSkeleton';
 import toast from 'react-hot-toast';
 import type { Avatar } from '@/types';
 import { isValidMessageId, normalizeMemberIds } from '@/utils/helpers';
 import ChatBox from '@/components/chat/message/MessageRow';
+import MessageReactions from '@/components/chat/message/MessageReactions';
 import ChatInput from '@/components/chat/conversation/composer/ChatInput';
 import ForwardDialog from '@/components/chat/dialogs/ForwardDialog';
 import type {
@@ -93,7 +93,10 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     [chatDetails],
   );
 
-  const { selectedIds, setSelectedIds, toggleSelected } = useMessageSelection({ selectMode });
+  const { selectedIds, setSelectedIds, toggleSelected } = useMessageSelection({
+    selectMode,
+    onExitSelectMode: () => onSelectModeChange?.(false),
+  });
 
   const {
     msgLoading, isFetchingNextPage, hasNextPage, fetchNextPage,
@@ -158,7 +161,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   useEffect(() => { onDeletableSelectedCountChange?.(deletableSelectedIds.length); }, [deletableSelectedIds.length, onDeletableSelectedCountChange]);
   useEffect(() => { setMessage(''); setAttachments([]); }, [chatId]);
 
-  useImperativeHandle(ref, () => ({
+useImperativeHandle(ref, () => ({
     clearChat: () => { if (canClearChat) setConfirmClearOpen(true); },
     deleteSelected: () => {
       if (selectedIds.size === 0 || deletableSelectedIds.length === 0) return;
@@ -205,6 +208,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
       onTouchEnd: () => { if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); },
       onTouchMove: () => { longPressMovedRef.current = true; if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); },
       onTouchCancel: () => { if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); },
+      onSelectStart: (e: Event) => { e.preventDefault(); },
     }),
     [openMessageContextMenuFromTouch],
   );
@@ -371,9 +375,9 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   const replySnapshot = replyingTo ? buildReplySnapshot(replyingTo) : null;
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <div className="bg-glass-background relative min-h-0 flex-1 overflow-hidden md:rounded-xl">
-        <div ref={containerRef} className={`relative h-full min-h-0 overflow-y-auto bg-[rgba(33,26,42,0.75)] px-2 py-3 pt-[5.75rem] backdrop-blur-lg backdrop-saturate-100 scrollbar-hide md:rounded-xl md:p-2 md:pt-28 ${isEditing ? 'pointer-events-none select-none' : ''}`}>
+        <div ref={containerRef} className={`relative h-full min-h-0 overflow-x-hidden overflow-y-auto overscroll-x-none bg-[rgba(33,26,42,0.75)] px-2 py-3 backdrop-blur-lg backdrop-saturate-100 scrollbar-hide md:rounded-xl md:p-2 md:pt-28 ${isEditing ? 'pointer-events-none select-none' : ''}`} style={{ paddingTop: 'var(--header-offset)' }}>
           {msgLoading ? <ChatMessagesSkeleton /> : (
             <>
               <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
@@ -403,31 +407,44 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
                   const sameSender = String(msg.sender._id) === String(user?._id ?? '');
                   const isSelected = selectedIds.has(msg._id);
                   const selectable = selectMode && canInteractMessage(msg);
+                  const hasReactions = Boolean(msg.reactions?.length);
                   return (
                     <div key={entry.key} data-index={item.index} ref={virtualizer.measureElement}
-                      className={`absolute left-0 w-full pb-4 ${sameSender ? 'flex justify-end' : 'flex justify-start'}`} style={{ transform: `translateY(${item.start}px)` }}>
-                      <div className={`flex max-w-[min(88%,20rem)] items-center gap-2 md:max-w-[70%] ${sameSender ? 'flex-row-reverse' : 'flex-row'}`}>
-                        {selectable ? (
-                          <button type="button" onClick={() => toggleSelected(msg._id)} className={`grid h-5 w-5 shrink-0 place-items-center transition ${isSelected ? 'text-green' : 'text-body-700'}`} aria-label={isSelected ? 'Deselect message' : 'Select message'}>
-                            <CheckboxIcon className="h-5 w-5" checked={isSelected} />
-                          </button>
-                        ) : null}
+                      className={`absolute left-0 w-full overflow-hidden pb-4 ${sameSender ? 'flex justify-end' : 'flex justify-start'}`}
+                      style={{ transform: `translateY(${item.start}px)` }}
+                      onClick={() => { if (selectable) toggleSelected(msg._id); }}>
+                      {/* selection bg — inset so it only wraps the bubble, not the bottom padding */}
+                      {selectable ? (
+                        <span aria-hidden className={`pointer-events-none absolute inset-x-0 top-0 bottom-3 -z-0 transition-opacity duration-150 bg-linear-to-r from-transparent via-green/15 to-transparent ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+                      ) : null}
+                      {/* flex-col wrapper so reactions sit below the bubble, outside SwipeToReply (which has overflow-hidden) */}
+                      <div className={`group relative z-1 flex flex-col w-fit min-w-0 max-w-[min(100%,22rem)] shrink-0 ${!hasReactions && msg._id && chatId && !msg.isDeleted ? 'pb-4.5 -mb-4.5' : ''} ${sameSender ? 'self-end items-end' : 'self-start items-start'}`}>
                         <SwipeToReply
                           side={sameSender ? 'end' : 'start'}
                           disabled={!canInteractMessage(msg) || selectMode}
                           onReply={() => startReply(msg)}
                         >
-                          <div className="w-fit max-w-full rounded-2xl" onContextMenu={(e) => openMessageContextMenu(e, msg)}
-                            onClick={() => { if (selectable) toggleSelected(msg._id); }}
+                          <div className="relative w-fit max-w-full rounded-2xl select-none [-webkit-touch-callout:none]" onContextMenu={(e) => openMessageContextMenu(e, msg)}
                             role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
                             {...longPressHandlers(msg)}
                             onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(msg._id); } } : undefined}>
                             <ChatBox chatData={msg} isGroupChat={isGroupChat} showReadReceipt={sameSender}
                               isRead={isMessageRead(msg)} searchHighlight={msg._id === highlightedMessageId}
                               highlightQuery={msg._id === highlightedMessageId && highlightQuery ? highlightQuery : undefined}
-                              isDeleted={Boolean(msg.isDeleted)} editedAt={msg.editedAt} />
+                              isDeleted={Boolean(msg.isDeleted)} editedAt={msg.editedAt}
+                              onDeleteMessage={(msgId) => setConfirmDelete({ type: 'one', messageId: msgId })}
+                              onForwardMessage={(msgId) => openForwardDialog([msgId])} />
                           </div>
                         </SwipeToReply>
+                        {/* Reactions rendered here — outside SwipeToReply so they aren't clipped */}
+                        {msg._id && chatId && !msg.isDeleted ? (
+                          <MessageReactions
+                            reactions={msg.reactions ?? []}
+                            messageId={msg._id}
+                            chatId={chatId}
+                            sameSender={sameSender}
+                          />
+                        ) : null}
                       </div>
                     </div>
                   );
@@ -438,8 +455,8 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
         </div>
         {stickyDayHeader && isDateHeaderScrolling && !msgLoading ? (
           <div
-            className="pointer-events-none absolute inset-x-0 top-23 z-10 flex justify-center transition-opacity duration-200 md:top-28"
-            style={{ transform: `translateY(${stickyDayHeader.pushY}px)` }}
+            className="pointer-events-none absolute inset-x-0 z-10 flex justify-center transition-opacity duration-200"
+            style={{transform: `translateY(${stickyDayHeader.pushY}px)` }}
           >
             <ChatDayLabel label={stickyDayHeader.label} />
           </div>
@@ -460,17 +477,16 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
         </div>
       ) : null}
 
-      {replySnapshot && replyingTo ? (
-        <ReplyComposerBar
-          senderName={replyingTo.sender.name ?? 'Unknown'}
-          previewText={getReplyPreviewText(replySnapshot)}
-          previewAttachment={replySnapshot.previewAttachment}
-          onCancel={clearReply}
-        />
-      ) : null}
-
       <div className="relative z-40 shrink-0 border-t border-border/40 bg-background/95 px-2 py-2 backdrop-blur-md md:border-0 md:bg-transparent md:px-0 md:pb-0 md:pt-3">
         <ChatInput message={message} setMessage={setMessage} disabled={isLoading || editIsPending}
+          replySlot={replySnapshot && replyingTo ? (
+            <ReplyComposerBar
+              senderName={replyingTo.sender.name ?? 'Unknown'}
+              previewText={getReplyPreviewText(replySnapshot)}
+              previewAttachment={replySnapshot.previewAttachment}
+              onCancel={clearReply}
+            />
+          ) : undefined}
           autoFocus={true} onKeyDown={handleEnterPress} handleSubmit={handleSubmit}
           onChange={handleMessageChange} attachments={attachments} setAttachments={setAttachments}
           onGifSelect={handleGifSelect}

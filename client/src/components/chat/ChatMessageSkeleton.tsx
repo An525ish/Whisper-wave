@@ -22,7 +22,7 @@ const ChatMessageSkeleton = ({
     <div
       className={`flex w-full pb-4 ${isOut ? 'justify-end' : 'justify-start'}`}
     >
-      <div className="w-fit max-w-[min(88%,20rem)] md:max-w-[70%]">
+      <div className="w-fit max-w-[min(100%,22rem)]">
         <div
           className={bubbleShell(isOut, minHeight)}
           style={{ width }}

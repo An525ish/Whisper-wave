@@ -14,7 +14,7 @@ const ChevronIcon = ({ className }: { className?: string }) => (
     <path
       d="M12.5 4.5L7 10l5.5 5.5"
       stroke="currentColor"
-      strokeWidth="1.75"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -27,14 +27,10 @@ type ImageViewerNavProps = {
   onPrev: () => void;
   onNext: () => void;
   onSelect: (index: number) => void;
-  /** The media renderer rendered inside the nav area. */
   children: ReactNode;
+  replyBar?: ReactNode;
 };
 
-/**
- * Wraps the media area with prev/next arrows and renders the thumbnail strip below.
- * Owns the outer `mx-4` container so arrows can be absolutely positioned within it.
- */
 const ImageViewerNav = ({
   mediaFiles,
   currentIndex,
@@ -42,23 +38,34 @@ const ImageViewerNav = ({
   onNext,
   onSelect,
   children,
+  replyBar,
 }: ImageViewerNavProps) => {
   const hasMultiple = mediaFiles.length > 1;
+  const totalCount = mediaFiles.length;
 
   return (
     <>
-      <div className="relative mx-4 flex min-h-0 flex-1 items-stretch overflow-hidden rounded-2xl bg-black/40 ring-1 ring-inset ring-white/6 sm:mx-6">
+      {/* Main media area — full bleed, reply bar floats over the bottom */}
+      <div className="relative flex min-h-0 flex-1 items-stretch overflow-hidden bg-black-dark/70">
+        {/* Vignette */}
         <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(1,195,109,0.06),transparent_68%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(0,0,0,0.4)_100%)]"
           aria-hidden
         />
+
+        {/* Counter pill — top-right, always visible when multiple */}
+        {hasMultiple ? (
+          <span className="absolute right-3 top-3 z-10 rounded-full bg-black/50 px-2.5 py-0.5 text-xs tabular-nums text-white/80 ring-1 ring-white/10 backdrop-blur-sm">
+            {currentIndex + 1}&thinsp;/&thinsp;{totalCount}
+          </span>
+        ) : null}
 
         {hasMultiple ? (
           <>
             <button
               type="button"
               onClick={onPrev}
-              className="absolute left-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border/60 bg-background/75 text-white shadow-lg backdrop-blur-sm transition hover:border-green/40 hover:bg-background sm:left-4"
+              className="absolute left-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border/70 bg-background/80 text-body-300 shadow-lg backdrop-blur-sm transition-all duration-150 hover:border-green-light hover:text-green active:scale-95 sm:left-4"
               aria-label="Previous"
             >
               <ChevronIcon className="h-5 w-5" />
@@ -66,7 +73,7 @@ const ImageViewerNav = ({
             <button
               type="button"
               onClick={onNext}
-              className="absolute right-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border/60 bg-background/75 text-white shadow-lg backdrop-blur-sm transition hover:border-green/40 hover:bg-background sm:right-4"
+              className="absolute right-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border/70 bg-background/80 text-body-300 shadow-lg backdrop-blur-sm transition-all duration-150 hover:border-green-light hover:text-green active:scale-95 sm:right-4"
               aria-label="Next"
             >
               <ChevronIcon className="h-5 w-5 rotate-180" />
@@ -74,66 +81,77 @@ const ImageViewerNav = ({
           </>
         ) : null}
 
-        <div className="relative flex h-full min-h-[70vh] w-full items-center justify-center px-14 py-8 sm:px-16">
+        <div
+          className={`relative flex h-full min-h-[65vh] w-full flex-1 items-center justify-center px-16 py-6 sm:px-20 ${
+            replyBar ? 'pb-20' : ''
+          }`}
+        >
           {children}
         </div>
+
+        {replyBar ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black-dark via-black-dark/75 to-transparent px-6 pb-6 pt-14">
+            <div className="pointer-events-auto mx-auto w-full max-w-lg">
+              {replyBar}
+            </div>
+          </div>
+        ) : null}
       </div>
 
+      {/* Thumbnail strip */}
       {hasMultiple ? (
-        <footer className="shrink-0 border-t border-border/50 bg-background-alt/30 px-5 py-4 sm:px-6">
-          <p className="mb-2.5 text-[11px] font-medium uppercase tracking-wider text-body-300">
-            All media
-          </p>
-          <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {mediaFiles.map((item, index) => {
-              const thumbKind = getMediaKindFromFile(item);
-              const active = index === currentIndex;
+        <footer className="shrink-0 border-t border-border/60 bg-primary/60 px-0 py-2 backdrop-blur-sm">
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 px-3 py-1">
+              {mediaFiles.map((item, index) => {
+                const thumbKind = getMediaKindFromFile(item);
+                const active = index === currentIndex;
 
-              return (
-                <button
-                  type="button"
-                  key={item._id}
-                  onClick={() => onSelect(index)}
-                  className={`relative h-17 w-19 shrink-0 snap-start overflow-hidden rounded-xl transition duration-200 ${
-                    active
-                      ? 'ring-2 ring-green shadow-[0_0_20px_rgba(1,195,109,0.28)]'
-                      : 'opacity-45 ring-1 ring-border/50 hover:opacity-75'
-                  }`}
-                  aria-label={`View item ${index + 1}`}
-                  aria-current={active}
-                >
-                  {thumbKind === 'video' ? (
-                    <RetryableMediaVideo
-                      url={item.url}
-                      className="h-full w-full object-cover"
-                      fallbackIconClassName={galleryThumbFallbackIconClass}
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
-                  ) : thumbKind === 'audio' ? (
-                    <div className="flex h-full w-full items-center justify-center bg-primary">
-                      {item.thumbnailUrl ? (
-                        <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                return (
+                  <button
+                    type="button"
+                    key={item._id}
+                    onClick={() => onSelect(index)}
+                    className={`relative h-14 w-16 shrink-0 snap-start overflow-hidden rounded-lg transition-opacity duration-200 ${
+                      active
+                        ? 'border-2 border-green'
+                        : 'border-2 border-transparent opacity-40 hover:opacity-70'
+                    }`}
+                    aria-label={`View item ${index + 1}`}
+                    aria-current={active}
+                  >
+                    <div className="relative h-full w-full overflow-hidden rounded-[6px]">
+                      {thumbKind === 'video' ? (
+                        <RetryableMediaVideo
+                          url={item.url}
+                          className="h-full w-full object-cover"
+                          fallbackIconClassName={galleryThumbFallbackIconClass}
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : thumbKind === 'audio' ? (
+                        <div className="flex h-full w-full items-center justify-center bg-white/5">
+                          {item.thumbnailUrl ? (
+                            <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <ImageViewerIcon name="music" className="h-5 w-5 fill-white/40" />
+                          )}
+                        </div>
                       ) : (
-                        <ImageViewerIcon name="music" className="h-6 w-6 fill-body-300" />
+                        <RetryableMediaImage
+                          url={item.url}
+                          transformWidth={280}
+                          alt={item.name ?? ''}
+                          className="h-full w-full object-cover"
+                          fallbackIconClassName={galleryThumbFallbackIconClass}
+                        />
                       )}
                     </div>
-                  ) : (
-                    <RetryableMediaImage
-                      url={item.url}
-                      transformWidth={280}
-                      alt={item.name ?? ''}
-                      className="h-full w-full object-cover"
-                      fallbackIconClassName={galleryThumbFallbackIconClass}
-                    />
-                  )}
-                  {active ? (
-                    <span className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-green" />
-                  ) : null}
-                </button>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </footer>
       ) : null}

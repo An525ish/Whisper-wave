@@ -6,7 +6,7 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react';
-import searchIcon from '@/assets/search.svg';
+import SearchIcon from '@/components/ui/icons/Search';
 
 type SearchbarProps = {
   searchText: string;
@@ -66,10 +66,9 @@ export default function Searchbar({
             : 'border-white/10 bg-black-light/35'
         } ${className}`}
       >
-        <img
-          src={searchIcon}
-          alt=""
-          className={`h-4 w-4 shrink-0 transition ${isFocused ? 'opacity-90' : 'opacity-55'}`}
+        <SearchIcon
+          aria-hidden
+          className={`h-4 w-4 shrink-0 text-body transition ${isFocused ? 'opacity-90' : 'opacity-55'}`}
         />
         <input
           type="search"
@@ -102,11 +101,7 @@ export default function Searchbar({
           isFocused ? 'border-green/70' : 'border-border'
         } ${className}`}
       >
-        <img
-          src={searchIcon}
-          alt=""
-          className="h-5 w-5 shrink-0 opacity-60"
-        />
+        <SearchIcon aria-hidden className="h-5 w-5 shrink-0 text-body opacity-60" />
         <input
           type="text"
           value={searchText}
@@ -134,10 +129,9 @@ export default function Searchbar({
   if (!expandable) {
     return (
       <div className={`relative w-full ${className}`}>
-        <img
-          src={searchIcon}
-          alt=""
-          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 opacity-70"
+        <SearchIcon
+          aria-hidden
+          className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-body opacity-70"
         />
         <input
           type="text"
@@ -170,7 +164,7 @@ export default function Searchbar({
           onClick={() => setIsSearchBarFocused(true)}
           aria-label="Open search"
         >
-          <img src={searchIcon} alt="" />
+          <SearchIcon className="h-5 w-5 text-body" aria-hidden />
         </button>
       ) : null}
 
@@ -181,10 +175,9 @@ export default function Searchbar({
             : 'pointer-events-none w-0 opacity-0'
         }`}
       >
-        <img
-          src={searchIcon}
-          alt=""
-          className="absolute left-2 top-[7px] h-4"
+        <SearchIcon
+          aria-hidden
+          className="absolute left-2 top-[7px] h-4 w-4 text-body-300"
         />
 
         <input

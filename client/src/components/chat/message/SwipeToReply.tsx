@@ -67,17 +67,17 @@ const SwipeToReply = ({ onReply, side, disabled = false, children }: Props) => {
 
   return (
     <div
-      className="relative select-none"
+      className="relative w-fit min-w-0 max-w-full overflow-hidden select-none [-webkit-touch-callout:none] touch-pan-y"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchEnd}
     >
-      {/* Reply icon revealed behind the bubble */}
+      {/* Reply icon — inset within the row so it doesn't widen the scroll area */}
       <div
         className={`pointer-events-none absolute inset-y-0 ${
-          side === 'start' ? '-left-8' : '-right-8'
-        } flex items-center`}
+          side === 'start' ? 'left-0' : 'right-0'
+        } flex w-8 items-center justify-center`}
         style={{
           opacity: iconOpacity,
           transform: `scale(${iconScale})`,

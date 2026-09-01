@@ -23,7 +23,13 @@ export const getMedia = async (
     messageRepo.findTextContentsByChat(chatId),
   ]);
 
-  const attachments = messages.flatMap((msg) => msg.attachments);
+  const attachments = messages.flatMap((msg) =>
+    msg.attachments.map((att) => ({
+      ...att,
+      messageId: String(msg._id),
+      senderId: String(msg.sender),
+    }))
+  );
   const links = extractUniqueLinks(textMessages);
 
   return { attachments, links };

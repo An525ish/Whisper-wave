@@ -16,6 +16,7 @@ import {
     useState,
     type ClipboardEvent,
     type Dispatch,
+    type ReactNode,
     type SetStateAction,
     type TextareaHTMLAttributes,
 } from "react";
@@ -30,6 +31,14 @@ type ChatInputProps = {
     handleSubmit: () => void | Promise<void>;
     onGifSelect?: (gif: GifItem) => void;
     editMode?: boolean;
+    /** Hide the attachment (clip) icon — useful when the upload flow isn't available */
+    showAttachment?: boolean;
+    /** Reduce height/padding for compact contexts (e.g. inline reply bars) */
+    compact?: boolean;
+    /** Glass pill for overlays (e.g. image viewer reply) */
+    floating?: boolean;
+    /** Renders above the input pill only (same width, excludes send button) */
+    replySlot?: ReactNode;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'className'>;
 
 const renderFilePreviews = (
@@ -57,6 +66,10 @@ const ChatInput = ({
     handleSubmit,
     onGifSelect,
     editMode = false,
+    showAttachment = true,
+    compact = false,
+    floating = false,
+    replySlot,
     ...props }: ChatInputProps) => {
 
     const [isAttachmentClicked, setIsAttachmentClicked] = useState(false);
@@ -76,13 +89,14 @@ const ChatInput = ({
         const node = textareaRef.current;
         if (!node) return;
         node.style.height = 'auto';
-        node.style.height = `${Math.max(40, Math.min(node.scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
+        const minH = compact ? 28 : 40;
+        node.style.height = `${Math.max(minH, Math.min(node.scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
         if (editMode) {
             node.focus();
             const len = node.value.length;
             node.setSelectionRange(len, len);
         }
-    }, [message, editMode]);
+    }, [message, editMode, compact]);
 
     const toggleAttachmentMenu = () => {
         if (editMode) return;
@@ -139,11 +153,21 @@ const ChatInput = ({
 
     const canSend = Boolean(message.trim()) || (!editMode && attachments.length > 0);
     const isMultiline = message.includes('\n');
+    const hasReply = Boolean(replySlot);
+
+    const inputShellClass = editMode
+        ? 'border-green/45 bg-green/10'
+        : floating
+          ? 'border-white/15 bg-black/45 shadow-[0_8px_28px_rgba(0,0,0,0.35)] backdrop-blur-md md:bg-black/45'
+          : 'border-border bg-primary/40 md:bg-transparent';
 
     return (
         <div className="relative w-full">
             {!editMode && attachments.length > 0 && renderFilePreviews(attachments, handleRemoveFile)}
-            <div className="relative flex w-full items-center gap-2">
+            <div className="relative flex w-full items-end gap-2">
+                <div className={`flex min-w-0 flex-1 flex-col ${hasReply ? 'overflow-hidden rounded-3xl shadow-[0_10px_36px_rgba(0,0,0,0.28),0_0_0_1px_rgba(1,195,109,0.14)]' : ''}`}>
+                    {replySlot}
+                    <div className="relative min-w-0">
                 {!editMode && isAttachmentClicked && (
                     <AttachmentMenu
                         onClose={() => setIsAttachmentClicked(false)}
@@ -164,20 +188,18 @@ const ChatInput = ({
                         />
                     </div>
                 )}
-                <div className={`flex min-h-10 min-w-0 flex-1 items-center gap-0.5 rounded-3xl border px-1.5 py-0.5 md:gap-1 md:bg-transparent md:px-2 ${
-                    editMode
-                        ? 'border-green/45 bg-green/10'
-                        : 'border-border bg-primary/40'
-                }`}>
+                <div className={`flex w-full min-w-0 items-center gap-0.5 border px-1.5 py-0.5 md:gap-1 md:px-2 ${compact ? 'min-h-8' : 'min-h-10'} ${
+                    hasReply ? 'rounded-b-3xl rounded-t-none border-t-0 border-green/15 bg-primary/50 md:bg-primary/30' : 'rounded-3xl'
+                } ${hasReply && !editMode && !floating ? '' : inputShellClass}`}>
                     {!editMode ? (
                         <span ref={emojiIconRef} className="shrink-0">
                             <button
                                 type="button"
-                                className="grid h-10 w-10 place-items-center rounded-full transition active:bg-background/40"
+                                className={`grid place-items-center rounded-full transition active:bg-background/40 ${compact ? 'h-7 w-7' : 'h-10 w-10'}`}
                                 onClick={() => setIsEmojiClicked(prev => !prev)}
                                 aria-label="Emoji"
                             >
-                                <EmojiIcon className="h-5 w-5 hover:fill-body" />
+                                <EmojiIcon className={compact ? 'h-4 w-4 hover:fill-body' : 'h-5 w-5 hover:fill-body'} />
                             </button>
                         </span>
                     ) : null}
@@ -185,17 +207,18 @@ const ChatInput = ({
                         ref={textareaRef}
                         rows={1}
                         value={message}
+                        onChange={(e) => setMessage(e.target.value)}
                         enterKeyHint={editMode ? 'done' : 'send'}
                         autoComplete="off"
                         {...props}
                         onPaste={handlePaste}
-                        className={`max-h-32 w-full min-h-10 min-w-0 resize-none overflow-y-auto bg-transparent px-1 outline-none md:px-2 text-[16px] md:text-sm ${
+                        className={`max-h-32 w-full min-w-0 resize-none overflow-y-auto bg-transparent px-1 outline-none md:px-2 ${compact ? 'text-sm min-h-7' : 'text-[16px] md:text-sm min-h-10'} ${
                             isMultiline
                                 ? 'py-2 leading-snug'
-                                : 'py-0 leading-10'
+                                : compact ? 'py-0 leading-7' : 'py-0 leading-10'
                         } ${className ?? ''}`}
                     />
-                    {!editMode ? (
+                    {!editMode && showAttachment ? (
                         <span ref={clipIconRef} className="shrink-0">
                             <button
                                 type="button"
@@ -208,11 +231,13 @@ const ChatInput = ({
                         </span>
                     ) : null}
                 </div>
+                    </div>
+                </div>
                 <button
                     type="button"
                     onClick={handleSubmit}
                     disabled={!canSend}
-                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-green text-white shadow-md transition enabled:active:scale-95 disabled:opacity-40 md:h-10 md:w-10"
+                    className={`grid shrink-0 place-items-center rounded-full bg-gradient-green text-white shadow-md transition enabled:active:scale-95 disabled:opacity-40 ${compact ? 'h-8 w-8' : 'h-11 w-11 md:h-10 md:w-10'}`}
                     aria-label={editMode ? 'Save edit' : 'Send message'}
                 >
                     <SendIcon className="mt-0.5 mr-0.5 h-5 w-5 fill-white" />
