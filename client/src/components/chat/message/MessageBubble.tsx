@@ -145,10 +145,10 @@ const MessageBubble = ({
           </div>
         ) : null}
         <div
-          className={`rounded-2xl border border-dashed px-3.5 py-2 text-sm italic shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${
+          className={`border border-dashed px-3.5 py-2 text-sm italic ${
             sameSender
-              ? 'bubble-out border-green/25 bg-green-dark/30 text-body-300'
-              : 'bubble-in border-border/60 bg-primary/50 text-body-300'
+              ? 'bubble-out border-green/40 bg-green-dark/30 text-body-300'
+              : 'bubble-in border-body-300/35 bg-primary/50 text-body-300'
           }`}
         >
           This message was deleted
@@ -174,7 +174,7 @@ const MessageBubble = ({
       ) : null}
 
       <div
-        className={`min-w-0 w-fit max-w-full select-none text-left [-webkit-touch-callout:none] shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${bubblePadding} ${
+        className={`min-w-0 w-fit max-w-full select-none text-left [-webkit-touch-callout:none] ${bubblePadding} ${
           sameSender
             ? 'bubble-out border border-green/35 bg-green-dark/55'
             : 'bubble-in border border-border bg-primary/90'

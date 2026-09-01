@@ -39,7 +39,7 @@ const ActivityFeed = ({
   <section className="flex min-h-0 flex-1 flex-col lg:col-span-8">
     <div className="shrink-0 flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h2 className="font-display text-xl leading-none tracking-tight text-body">Event stream</h2>
+        <h2 className="font-semibold text-xl leading-none tracking-tight text-body">Event stream</h2>
         <p className="mt-1.5 text-sm text-body-300">Latest platform activity</p>
       </div>
       <ActivityFilterTabs filter={filter} onChange={onFilterChange} />

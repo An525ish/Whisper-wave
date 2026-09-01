@@ -226,6 +226,18 @@ export function useDeleteAdminMessageMutation() {
   });
 }
 
+export function useDeleteAdminAttachmentsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: adminApi.deleteAdminAttachments,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['adminAttachments'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.stats });
+    },
+  });
+}
+
 export function useRetryAdminMessageMutation() {
   const queryClient = useQueryClient();
 

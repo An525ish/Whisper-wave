@@ -12,7 +12,11 @@
     "build": "tsc",
     "start": "node --env-file-if-exists=.env dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "cleanup-deleted-attachments:dry": "DRY_RUN=true tsx --env-file=.env scripts/cleanup-deleted-attachments.ts",
+    "cleanup-deleted-attachments": "tsx --env-file=.env scripts/cleanup-deleted-attachments.ts",
+    "migrate-cloudinary-to-r2:dry": "DRY_RUN=true tsx --env-file=.env scripts/migrate-cloudinary-to-r2.ts",
+    "migrate-cloudinary-to-r2": "tsx --env-file=.env scripts/migrate-cloudinary-to-r2.ts"
   },
   "keywords": [],
   "author": "",

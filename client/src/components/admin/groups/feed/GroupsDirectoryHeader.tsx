@@ -22,7 +22,7 @@ const GroupsDirectoryHeader = ({
 }: GroupsDirectoryHeaderProps) => (
   <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
     <div className="min-w-0 flex-1">
-      <h2 className="font-display text-xl leading-none tracking-tight text-body">Directory</h2>
+      <h2 className="font-semibold text-xl leading-none tracking-tight text-body">Directory</h2>
       <p className="mt-1.5 text-sm text-body-300">
         {groupsDirectorySubtitle(memberFilter, querySearch)}
       </p>

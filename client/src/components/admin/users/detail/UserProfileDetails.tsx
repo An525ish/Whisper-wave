@@ -34,7 +34,7 @@ const StatBlock = ({
     {loading ? (
       <div className="mx-auto mt-2.5 h-4 w-20 animate-pulse rounded bg-border/25" />
     ) : (
-      <p className={`mt-2 font-display text-lg leading-tight tabular-nums ${valueClass}`}>
+      <p className={`mt-2 font-semibold text-lg leading-tight tabular-nums ${valueClass}`}>
         {value}
       </p>
     )}

@@ -10,6 +10,7 @@ export const ATTACHMENT_KIND_TABS: { id: AttachmentKindFilter; label: string }[]
   { id: 'gifs', label: 'GIFs' },
   { id: 'links', label: 'Links' },
   { id: 'docs', label: 'Docs' },
+  { id: 'deleted', label: 'Deleted' },
 ];
 
 export const ATTACHMENT_LIST_CARD_CLASS =

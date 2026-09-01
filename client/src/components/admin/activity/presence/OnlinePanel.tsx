@@ -39,7 +39,7 @@ const OnlinePanel = ({ users, count, extra }: OnlinePanelProps) => (
           <LiveDot />
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-green">Presence</p>
         </div>
-        <p className="mt-2 font-display text-3xl leading-none tabular-nums text-body">
+        <p className="mt-2 font-semibold text-3xl leading-none tabular-nums text-body">
           {count}
           <span className="ml-2 text-sm font-normal text-body-300">online</span>
         </p>

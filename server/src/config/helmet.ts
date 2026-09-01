@@ -42,12 +42,16 @@ export const helmetOptions: HelmetOptions = {
         'https://avatars.githubusercontent.com',
         'https://www.google.com',
         'https://*.googleusercontent.com',
+        // Google favicon service (S2 redirects to t3.gstatic.com)
+        'https://t3.gstatic.com',
         // emoji-picker-react (facebook emoji sheet)
         'https://cdn.jsdelivr.net',
         // Klipy GIF / meme CDN
         'https://static.klipy.com',
         // Faker.js seeded test-data avatars — dev/staging only
         'https://cloudflare-ipfs.com',
+        // OG preview images — any HTTPS origin (link previews in composer)
+        'https:',
       ],
       'media-src': [
         "'self'",

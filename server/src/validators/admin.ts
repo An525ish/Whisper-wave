@@ -46,12 +46,16 @@ export const adminAttachmentsQuerySchema = z.object({
   before: z.string().min(1).optional(),
   q: z.string().max(120).optional(),
   senderId: z.string().min(1).optional(),
-  kind: z.enum(['all', 'images', 'videos', 'gifs', 'links', 'docs']).default('all'),
+  kind: z.enum(['all', 'images', 'videos', 'gifs', 'links', 'docs', 'deleted']).default('all'),
 });
 
 export const adminImpersonationLogsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(20),
   before: z.string().min(1).optional(),
+});
+
+export const adminDeleteAttachmentsSchema = z.object({
+  messageIds: z.array(z.string().min(1)).min(1).max(100),
 });
 
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
@@ -63,3 +67,4 @@ export type AdminGroupsQuery = z.infer<typeof adminGroupsQuerySchema>;
 export type AdminMessagesQuery = z.infer<typeof adminMessagesQuerySchema>;
 export type AdminAttachmentsQuery = z.infer<typeof adminAttachmentsQuerySchema>;
 export type AdminImpersonationLogsQuery = z.infer<typeof adminImpersonationLogsQuerySchema>;
+export type AdminDeleteAttachmentsBody = z.infer<typeof adminDeleteAttachmentsSchema>;

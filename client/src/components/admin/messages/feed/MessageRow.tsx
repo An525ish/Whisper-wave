@@ -13,6 +13,7 @@ import {
 } from '@/utils/admin/messages';
 import MessageBody from './MessageBody';
 import MessageStatusDot from './MessageStatusDot';
+import DeletedTag from '@/components/admin/attachments/cards/DeletedTag';
 
 type MessageRowProps = {
   msg: AdminMessageRow;
@@ -24,6 +25,7 @@ type MessageRowProps = {
 
 const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowProps) => {
   const isFailed = msg.status === 'failed';
+  const isDeleted = Boolean(msg.isDeleted);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const mediaFiles = useMemo(
@@ -54,12 +56,12 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
     <>
       <article
         className={`group relative rounded-xl px-3 py-4 transition-colors hover:bg-primary/22 sm:px-4 ${
-          isFailed ? 'bg-red/3' : ''
+          isFailed || isDeleted ? 'bg-red/3' : ''
         }`}
       >
         <div
           className={`absolute bottom-3 left-0 top-3 w-0.5 rounded-full ${
-            isFailed ? 'bg-red/45' : 'bg-green/35'
+            isFailed || isDeleted ? 'bg-red/45' : 'bg-green/35'
           }`}
           aria-hidden
         />
@@ -97,6 +99,7 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
                     ·
                   </span>
                   <MessageStatusDot status={msg.status} />
+                  {isDeleted ? <DeletedTag /> : null}
                 </div>
               </div>
 

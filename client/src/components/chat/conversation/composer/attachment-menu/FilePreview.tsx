@@ -1,70 +1,86 @@
+import { useEffect, useState } from 'react';
+import CloseIcon from '@/components/ui/icons/Close';
 import { fileData, fileFormat, type FileDocType } from '@/utils/fileFormat';
-import Image from '@/components/ui/Image';
 
 type FilePreviewProps = {
   file: File;
   onRemove: (file: File) => void;
 };
 
+const thumbClass = 'h-24 w-24 rounded object-cover';
+const thumbBox = 'h-24 w-24';
+
 const FilePreview = ({ file, onRemove }: FilePreviewProps) => {
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
   const isAudio = file.type.startsWith('audio/');
-  const fileExension = fileFormat(file.name);
+  const fileExtension = fileFormat(file.name);
+  const [previewSrc] = useState(() =>
+    isImage || isVideo || isAudio ? URL.createObjectURL(file) : null,
+  );
+
+  useEffect(() => {
+    if (!previewSrc) return;
+    return () => URL.revokeObjectURL(previewSrc);
+  }, [previewSrc]);
 
   return (
-    <div className="relative grid place-items-center m-2">
-      {isImage && (
-        <Image
-          src={URL.createObjectURL(file)}
+    <div className={`relative ${thumbBox} shrink-0 overflow-visible`}>
+      {isImage && previewSrc ? (
+        <img
+          src={previewSrc}
           alt={file.name}
-          className="w-20 h-20 object-cover rounded"
+          draggable={false}
+          className={thumbClass}
         />
-      )}
-      {isVideo && (
+      ) : null}
+      {isVideo && previewSrc ? (
         <video
-          src={URL.createObjectURL(file)}
-          className="w-20 h-20 object-cover rounded"
+          src={previewSrc}
+          className={thumbClass}
+          muted
+          playsInline
+          preload="metadata"
         />
-      )}
-      {isAudio && (
-        <audio
-          src={URL.createObjectURL(file)}
-          controls
-          className="w-20 h-20"
-        />
-      )}
-      {!isImage && !isVideo && !isAudio && (
-        <RenderFile fileExension={fileExension} fileName={file.name} />
-      )}
+      ) : null}
+      {isAudio && previewSrc ? (
+        <div className={`flex ${thumbBox} items-center justify-center rounded bg-primary/80 p-1`}>
+          <audio src={previewSrc} controls className="w-full" />
+        </div>
+      ) : null}
+      {!isImage && !isVideo && !isAudio ? (
+        <DocPreview fileExtension={fileExtension} fileName={file.name} />
+      ) : null}
       <button
+        type="button"
         onClick={() => onRemove(file)}
-        className="absolute top-0 right-0 bg-primary text-white rounded-full size-4.5 flex items-center justify-center"
+        aria-label={`Remove ${file.name}`}
+        className="absolute right-1 top-1 z-20 grid h-5 w-5 place-items-center rounded-full bg-black/80 text-white ring-1 ring-white/30"
       >
-        ×
+        <CloseIcon className="h-3 w-3" />
       </button>
     </div>
   );
 };
 
-type RenderFileProps = {
-  fileExension: string;
+type DocPreviewProps = {
+  fileExtension: string;
   fileName: string;
 };
 
-const RenderFile = ({ fileExension, fileName }: RenderFileProps) => {
+const DocPreview = ({ fileExtension, fileName }: DocPreviewProps) => {
   const fileDetails = fileData.find(
-    (entry) => entry.docType === (fileExension as FileDocType),
+    (entry) => entry.docType === (fileExtension as FileDocType),
   );
 
   return (
-    <div className="relative w-20 h-20 bg-primary flex items-center justify-center rounded">
+    <div className={`flex ${thumbBox} flex-col items-center justify-center rounded bg-primary/80 p-1.5`}>
       <img
-        src={fileDetails?.icon}
-        alt={'file.docName'}
-        className="w-full h-full"
+        src={fileDetails?.icon ?? fileData[0].icon}
+        alt=""
+        className="h-9 w-9 object-contain"
       />
-      <span className="absolute -bottom-2 text-center w-20 truncate capitalize text-sm">
+      <span className="mt-0.5 w-full truncate text-center text-[10px] leading-none text-body-300">
         {fileName}
       </span>
     </div>

@@ -1,8 +1,10 @@
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
+import { Message } from '../../models/message.js';
 import type { AdminMessagesPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
 import { trimOptional } from '../../utils/normalize.js';
+import { deleteManyFromR2 } from '../../utils/storage.js';
 import type { AdminMessagesQuery } from '../../validators/admin.js';
 import { parseBeforeCursor } from './shared.js';
 
@@ -36,6 +38,15 @@ export const listMessages = async (input: AdminMessagesQuery): Promise<AdminMess
 export const deleteMessage = async (id: string): Promise<void> => {
   const deleted = await messageRepo.deleteById(id);
   if (!deleted) throw new AppError(404, 'Message not found');
+};
+
+export const deleteAttachments = async (messageIds: string[]): Promise<void> => {
+  const msgs = await messageRepo.findManyByIds(messageIds);
+  const keys = msgs.flatMap((m) =>
+    (m.attachments ?? []).map((a: { publicId?: string }) => a.publicId).filter(Boolean) as string[],
+  );
+  await deleteManyFromR2(keys);
+  await Message.deleteMany({ _id: { $in: messageIds } });
 };
 
 export const retryMessage = async (

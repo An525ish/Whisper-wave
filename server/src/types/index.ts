@@ -120,3 +120,4 @@ export type {
   SendFriendRequestInput,
   GetMyFriendsInput,
 } from './friend-request.js';
+export type { LinkPreviewData } from './linkPreview.js';

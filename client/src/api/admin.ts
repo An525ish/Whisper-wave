@@ -53,11 +53,13 @@ export const getAdminMessages = (params: {
   status?: 'all' | 'sent' | 'failed';
   q?: string;
   senderId?: string;
+  deleted?: 'all' | 'only';
 }) =>
   api.get<ApiSuccess & AdminMessagesPage>('/admin/messages', {
     limit: params.limit ?? MESSAGES_PAGE_SIZE,
     before: params.before,
     status: params.status ?? 'all',
+    deleted: params.deleted ?? 'all',
     q: params.q,
     senderId: params.senderId,
   });
@@ -100,6 +102,9 @@ export const deleteAdminGroup = (id: string) =>
 export const deleteAdminMessage = (id: string) =>
   api.delete<ApiSuccess>(`/admin/messages/${id}`);
 
+export const deleteAdminAttachments = (messageIds: string[]) =>
+  api.delete<ApiSuccess>('/admin/attachments', { messageIds });
+
 export const removeAdminGroupMember = (groupId: string, userId: string) =>
   api.delete<ApiSuccess>(`/admin/groups/${groupId}/members/${userId}`);
 
@@ -117,6 +122,7 @@ export const getAdminAttachments = (params: {
   q?: string;
   senderId?: string;
   kind?: AttachmentKindFilter;
+  deleted?: 'all' | 'only';
 }) =>
   api.get<ApiSuccess & AdminAttachmentsPage>('/admin/attachments', {
     limit: params.limit ?? ATTACHMENTS_PAGE_SIZE,
@@ -124,6 +130,7 @@ export const getAdminAttachments = (params: {
     q: params.q,
     senderId: params.senderId,
     kind: params.kind ?? 'all',
+    deleted: params.deleted ?? 'all',
   });
 
 export const IMPERSONATION_LOGS_PAGE_SIZE = 20;
