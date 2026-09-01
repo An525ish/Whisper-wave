@@ -4,6 +4,7 @@ import { RetryableMediaImage, RetryableMediaVideo } from '@/components/ui/media/
 import ImagesIcon from '@/components/ui/icons/Images'
 import FilesIcon from '@/components/ui/icons/FilesIcon'
 import LinkIcon from '@/components/ui/icons/Link'
+import LinkPreviewThumb from '@/components/chat/link/LinkPreviewThumb'
 import AudiosIcon from '@/components/ui/icons/Audio'
 import { fileData, fileFormat, getMediaDisplayName, getMediaKindFromFile } from '@/utils/fileFormat'
 import type { MouseEvent } from 'react'
@@ -130,9 +131,7 @@ const ProfileActions = ({
                 <a key={`${link.messageId}-${link.url}`} href={link.url} target="_blank" rel="noopener noreferrer"
                   className="flex w-full items-start gap-3 rounded-xl bg-background-alt/70 px-3 py-2.5 text-left ring-1 ring-border/40 hover:ring-green/35 hover:bg-background-alt transition duration-200"
                 >
-                  <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-green-dark/60 ring-1 ring-green/25">
-                    <LinkIcon className="h-4 w-4 stroke-green" />
-                  </span>
+                  <LinkPreviewThumb url={link.url} className="mt-0.5 h-8 w-8 rounded-lg" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm text-body">{link.host}</span>
                     <span className="block truncate text-[11px] text-body-300 mt-0.5">{link.url}</span>

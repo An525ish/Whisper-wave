@@ -142,7 +142,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   });
 
   const {
-    containerRef, virtualizer, showScrollToBottom, scrollToBottom,
+    containerRef, virtualizer, showScrollToBottom, scrollToBottom, isNearBottomRef,
     highlightedMessageId, stickyDayHeader, isDateHeaderScrolling,
   } = useChatScroll({
     chatId, timelineItems, timelineRef, hasNextPage, isFetchingNextPage, fetchNextPage,
@@ -156,6 +156,10 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   useEffect(() => {
     onFetchingNextPageChange?.(false);
   }, [chatId, onFetchingNextPageChange]);
+
+  const handleComposerResize = useCallback(() => {
+    if (isNearBottomRef.current) scrollToBottom();
+  }, [isNearBottomRef, scrollToBottom]);
 
   useErrors([{ error, isError }, { error: dbError, isError: dbIsError }]);
   useEffect(() => { onSelectedCountChange?.(selectedIds.size); }, [onSelectedCountChange, selectedIds]);
@@ -492,6 +496,7 @@ useImperativeHandle(ref, () => ({
           autoFocus={true} onKeyDown={handleEnterPress} handleSubmit={handleSubmit}
           onChange={handleMessageChange} attachments={attachments} setAttachments={setAttachments}
           onGifSelect={handleGifSelect}
+          onComposerResize={handleComposerResize}
           editMode={isEditing} className="text-body-700 placeholder:text-body-300" placeholder={isEditing ? 'Edit message…' : 'Message…'} />
       </div>
 

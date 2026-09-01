@@ -1,4 +1,14 @@
-const URL_IN_TEXT = /https?:\/\/[^\s<>"'`{}|\\^[\]]+/gi;
+const TRAILING_PUNCT_RE = /[),.;!?]+$/;
+
+/** URLs with explicit http(s) scheme. */
+const PROTOCOL_URL_RE = /https?:\/\/[^\s<>"'`{}|\\^[\]]+/gi;
+
+/**
+ * Bare domains like github.com/user — at line start or after whitespace/(
+ * (avoids matching the domain part of an email address).
+ */
+const BARE_DOMAIN_URL_RE =
+  /(?:^|(?<=[\s(]))((?:www\.)?(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}(?::\d{1,5})?(?:\/[^\s<>"'`{}|\\^[\]]*)?)/gi;
 
 export type ParsedLink = {
   url: string;
@@ -8,40 +18,69 @@ export type ParsedLink = {
   displayUrl: string;
 };
 
-const trimTrailingPunctuation = (raw: string) => raw.replace(/[),.;!?]+$/g, '');
+export type TextPart =
+  | { type: 'text'; value: string }
+  | { type: 'url'; value: string; href: string };
+
+type UrlSpan = { index: number; raw: string };
+
+const trimTrailingPunctuation = (raw: string) => raw.replace(TRAILING_PUNCT_RE, '');
+
+const spansOverlap = (a: UrlSpan, b: UrlSpan) =>
+  a.index < b.index + b.raw.length && b.index < a.index + a.raw.length;
+
+const findUrlSpans = (text: string): UrlSpan[] => {
+  const spans: UrlSpan[] = [];
+
+  for (const match of text.matchAll(PROTOCOL_URL_RE)) {
+    if (match.index === undefined) continue;
+    spans.push({ index: match.index, raw: trimTrailingPunctuation(match[0]) });
+  }
+
+  for (const match of text.matchAll(BARE_DOMAIN_URL_RE)) {
+    if (match.index === undefined || !match[1]) continue;
+    const raw = trimTrailingPunctuation(match[1]);
+    const span = { index: match.index, raw };
+    if (!spans.some((existing) => spansOverlap(existing, span))) {
+      spans.push(span);
+    }
+  }
+
+  return spans.sort((a, b) => a.index - b.index);
+};
+
+export const withHttpsProtocol = (raw: string): string => {
+  const trimmed = raw.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+};
 
 export const parseLink = (rawUrl: string): ParsedLink => {
-  const url = trimTrailingPunctuation(rawUrl);
+  const display = trimTrailingPunctuation(rawUrl);
+  const url = withHttpsProtocol(display);
 
   try {
     const parsed = new URL(url);
     const host = parsed.hostname.replace(/^www\./, '');
     const pathWithQuery = `${parsed.pathname}${parsed.search}`.replace(/\/$/, '');
-    const path =
-      pathWithQuery && pathWithQuery !== ''
-        ? pathWithQuery
-        : host;
-
-    const displayUrl = url.replace(/^https?:\/\//i, '');
+    const path = pathWithQuery && pathWithQuery !== '' ? pathWithQuery : host;
+    const displayUrl = display.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
 
     return { url, host, path, displayUrl };
   } catch {
-    return { url, host: url, path: '', displayUrl: url };
+    return { url, host: display, path: '', displayUrl: display };
   }
 };
 
 export const extractLinksFromText = (text = ''): ParsedLink[] => {
-  const matches = text.match(URL_IN_TEXT);
-  if (!matches) return [];
-
   const seen = new Set<string>();
   const links: ParsedLink[] = [];
 
-  for (const raw of matches) {
-    const url = trimTrailingPunctuation(raw);
-    if (seen.has(url)) continue;
-    seen.add(url);
-    links.push(parseLink(url));
+  for (const { raw } of findUrlSpans(text)) {
+    const parsed = parseLink(raw);
+    if (seen.has(parsed.url)) continue;
+    seen.add(parsed.url);
+    links.push(parsed);
   }
 
   return links;
@@ -51,38 +90,44 @@ export const isLinkOnlyMessage = (text = ''): boolean => {
   const trimmed = text.trim();
   if (!trimmed) return false;
   const links = extractLinksFromText(trimmed);
-  return links.length === 1 && links[0]?.url === trimmed;
+  if (links.length !== 1) return false;
+  const link = links[0];
+  return (
+    trimmed === link.displayUrl ||
+    trimmed === link.url ||
+    trimmed === withHttpsProtocol(trimmed)
+  );
 };
 
-export type TextPart = { type: 'text' | 'url'; value: string };
-
 export const splitTextByUrls = (text: string): TextPart[] => {
-  const parts: TextPart[] = [];
-  const regex = new RegExp(URL_IN_TEXT.source, 'gi');
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
+  const spans = findUrlSpans(text);
+  if (spans.length === 0) return [{ type: 'text', value: text }];
 
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push({ type: 'text', value: text.slice(lastIndex, match.index) });
+  const parts: TextPart[] = [];
+  let lastIndex = 0;
+
+  for (const { index, raw } of spans) {
+    if (index > lastIndex) {
+      parts.push({ type: 'text', value: text.slice(lastIndex, index) });
     }
     parts.push({
       type: 'url',
-      value: trimTrailingPunctuation(match[0]),
+      value: raw,
+      href: parseLink(raw).url,
     });
-    lastIndex = regex.lastIndex;
+    lastIndex = index + raw.length;
   }
 
   if (lastIndex < text.length) {
     parts.push({ type: 'text', value: text.slice(lastIndex) });
   }
 
-  return parts.length > 0 ? parts : [{ type: 'text', value: text }];
+  return parts;
 };
 
 export const getLinkFaviconUrl = (url: string): string | undefined => {
   try {
-    const host = new URL(url).hostname;
+    const host = new URL(withHttpsProtocol(url)).hostname;
     return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`;
   } catch {
     return undefined;

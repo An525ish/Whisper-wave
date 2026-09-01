@@ -8,6 +8,14 @@ export const SEARCH_DEBOUNCE_MS = 450;
 /** Max auto-grow height (px) for the chat composer textarea. */
 export const MAX_TEXTAREA_HEIGHT = 128;
 
+/** Composer row + send button sizing (input pill border adds 2px to outer height). */
+export const COMPOSER_ROW_MIN_PX = 44;
+export const COMPOSER_ROW_MIN_PX_COMPACT = 32;
+export const COMPOSER_ROW_MIN_CLASS = 'min-h-11';
+export const COMPOSER_ROW_MIN_CLASS_COMPACT = 'min-h-8';
+export const COMPOSER_SEND_SIZE_CLASS = 'size-[calc(2.75rem+2px)]';
+export const COMPOSER_SEND_SIZE_CLASS_COMPACT = 'size-[calc(2rem+2px)]';
+
 /** Clearance for the floating conversation header (matches Chat.tsx fade). */
 export const CHAT_HEADER_OFFSET_CLASS =
   'pt-[calc(max(0.5rem,env(safe-area-inset-top))+5.25rem)] md:pt-[calc(0.25rem+7rem)]';

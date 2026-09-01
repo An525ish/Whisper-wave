@@ -258,6 +258,17 @@
   }
 }
 
+@keyframes reaction-picker-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes auth-glow-a {
   0%,
   100% {

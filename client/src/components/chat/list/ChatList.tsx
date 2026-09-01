@@ -39,7 +39,7 @@ const ChatList = ({
     getScrollElement: () => parentRef.current,
     estimateSize: () => 80,
     gap: 8,
-    overscan: 6,
+    overscan: 12,
   });
 
   return (
@@ -60,8 +60,10 @@ const ChatList = ({
         >
           {virtualizer.getVirtualItems().map((item) => {
             const data = chats[item.index];
-            const { avatar, name, _id, groupChat, members, lastMessage, unreadCount } =
-              data;
+            const { avatar, name, _id, groupChat, members, lastMessage, unreadCount } = data;
+            const avatarUrls = (Array.isArray(avatar) ? avatar : avatar ? [avatar] : []).filter(
+              (url): url is string => Boolean(url),
+            );
             const peerIds = normalizeMemberIds(members).filter(
               (id) => id !== selfId,
             );
@@ -81,7 +83,7 @@ const ChatList = ({
                 }}
               >
                 <ChatListItem
-                  avatar={Array.isArray(avatar) ? avatar : avatar ? [avatar] : []}
+                  avatar={avatarUrls}
                   name={name ?? ''}
                   groupChat={groupChat}
                   isOnline={isOnline}
