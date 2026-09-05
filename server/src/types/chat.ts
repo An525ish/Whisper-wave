@@ -50,7 +50,7 @@ export type PopulatedMember = {
 export type ChatListLastMessage = {
   _id?: string;
   content?: string;
-  createdAt?: Date;
+  createdAt?: string;
   type?: LastMessageType;
   sender?: {
     _id: string;
