@@ -1,4 +1,5 @@
 import Image from '@/components/ui/Image';
+import { AVATAR_ONLINE_DOT_POSITION_CLASS } from '@/constants/app';
 
 type AvatarCardProps = {
   avatars?: Array<string | null | undefined>;
@@ -42,7 +43,7 @@ const AvatarCard = ({ avatars, max = 3, avatarClassName, showOnline = false }: A
           </div>
           {showOnline && index === 0 ? (
             <span
-              className="absolute -bottom-0.5 -right-0.5 z-10 h-3 w-3 rounded-full border-2 border-background bg-green"
+              className={`absolute z-10 h-3 w-3 rounded-full border-2 border-background bg-green ${AVATAR_ONLINE_DOT_POSITION_CLASS}`}
               aria-hidden
             />
           ) : null}

@@ -241,6 +241,7 @@ const MessageBubble = ({
                         type={attachment.type}
                         size={attachment.size}
                         isUploading={attachment.uploading}
+                        isHd={attachment.isHd}
                         overlay={stampOnMedia ? mediaTimestamp : stampOnFile ? fileTimestamp : null}
                         onDownload={!isVisualMedia ? () => { void onDownload(attachment); } : undefined}
                       />

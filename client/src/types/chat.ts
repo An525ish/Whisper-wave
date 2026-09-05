@@ -18,6 +18,7 @@ export type ChatAttachment = {
   size?: number;
   public_id?: string;
   uploading?: boolean;
+  isHd?: boolean;
 };
 
 export type ChatSender = {
@@ -187,6 +188,7 @@ export type ChatRow = {
   members?: Array<string | { _id?: string }>;
   lastMessage?: ChatLastMessage | null;
   unreadCount?: number;
+  createdAt?: string;
 };
 
 export type ChatListEntry = {

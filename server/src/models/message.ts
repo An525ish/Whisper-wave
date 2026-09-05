@@ -13,6 +13,7 @@ const attachmentSchema = new Schema<MessageAttachment>(
     url: { type: String, required: true },
     name: { type: String, required: true },
     fileType: { type: String, required: true },
+    isHd: { type: Boolean },
   },
   { _id: false }
 );

@@ -35,6 +35,14 @@ const chatSchema = new Schema<IChat>(
     admins: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     members: [{ type: Schema.Types.ObjectId, ref: 'User', required: true }],
     lastMessage: { type: lastMessageSchema },
+    deletedFor: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    clearedFor: [
+      {
+        user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        at: { type: Date, required: true },
+        _id: false,
+      },
+    ],
   },
   { timestamps: true }
 );

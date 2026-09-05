@@ -5,6 +5,7 @@ import {
   SIDEBAR_PAD,
 } from '@/components/ui/sidebar/constants';
 import { useSidebar } from '@/components/ui/sidebar/context';
+import { AVATAR_ONLINE_DOT_POSITION_CLASS } from '@/constants/app';
 import { useAdminLogoutMutation } from '@/hooks/admin';
 
 const footerShellClass = (expanded: boolean) =>
@@ -21,7 +22,7 @@ const SessionAvatar = () => (
       <span className="font-display text-[11px] font-bold tracking-tight text-blue">OA</span>
     </div>
     <span
-      className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-green shadow-[0_0_8px_rgba(34,197,94,0.45)]"
+      className={`absolute h-2.5 w-2.5 rounded-full border-2 border-background bg-green shadow-[0_0_8px_rgba(34,197,94,0.45)] ${AVATAR_ONLINE_DOT_POSITION_CLASS}`}
       aria-hidden
     />
   </div>

@@ -235,8 +235,8 @@ export const forwardMessages: RequestHandler = catchAsync(async (req, res) => {
 export const getMessageReceipts: RequestHandler = catchAsync(async (req, res) => {
   const messageId = param(req.params.messageId);
   const userId = req.userId!;
-  const { readers, isMember } = await messageRepo.findReceipts(messageId, userId);
-  if (!isMember) {
+  const { readers, isAuthorized } = await messageRepo.findReceipts(messageId, userId);
+  if (!isAuthorized) {
     res.status(403).json({ success: false, message: 'Forbidden' });
     return;
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, type MouseEvent as ReactMouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import ImageViewerIcon from '@/components/ui/image-viewer/ImageViewerIcons';
 import {
@@ -33,6 +33,14 @@ type MediaKind = 'image' | 'video' | 'audio';
 
 const galleryFallbackIconClass = 'h-36 w-36 sm:h-44 sm:w-44';
 
+const MIN_SCALE = 1;
+const MAX_SCALE = 5;
+const ZOOM_IN_TARGET = 2.5;
+
+const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+const getTouchDist = (t: TouchList) =>
+  Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+
 const ImageViewer = ({
   mediaFiles = [],
   initialIndex,
@@ -43,24 +51,45 @@ const ImageViewer = ({
 }: ImageViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [scale, setScale] = useState(1);
+  const [translate, setTranslate] = useState({ x: 0, y: 0 });
+  const [isGesturing, setIsGesturing] = useState(false);
   const [entered, setEntered] = useState(false);
+
+  // Always-current values readable inside non-reactive event handlers
+  const live = useRef({ scale: 1, tx: 0, ty: 0 });
+
+  // Gesture state
+  const gestureRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<{ initDist: number; initScale: number } | null>(null);
+  const dragRef = useRef<{ startX: number; startY: number; initTx: number; initTy: number } | null>(null);
+  const lastTapRef = useRef(0);
 
   const currentMedia = mediaFiles[currentIndex];
   const mediaKind = getMediaKindFromFile(currentMedia) as MediaKind;
   const displayName = getMediaDisplayName(currentMedia);
   const isVideo = mediaKind === 'video';
   const isAudio = mediaKind === 'audio';
-
-  // Whether to show the inline reply composer
   const canReply = Boolean(chatId && currentMedia?.messageId);
 
-  const resetZoom = useCallback(() => setScale(1), []);
+  const applyScale = useCallback((next: number, resetTranslate = false) => {
+    const s = clamp(next, MIN_SCALE, MAX_SCALE);
+    live.current.scale = s;
+    if (resetTranslate || s <= MIN_SCALE) {
+      live.current.tx = 0;
+      live.current.ty = 0;
+      setTranslate({ x: 0, y: 0 });
+    }
+    setScale(s);
+  }, []);
 
-  useEffect(() => {
-    setCurrentIndex(initialIndex);
-    resetZoom();
-  }, [initialIndex, resetZoom]);
+  const resetZoom = useCallback(() => {
+    live.current = { scale: 1, tx: 0, ty: 0 };
+    setScale(1);
+    setTranslate({ x: 0, y: 0 });
+    setIsGesturing(false);
+  }, []);
 
+  useEffect(() => { setCurrentIndex(initialIndex); resetZoom(); }, [initialIndex, resetZoom]);
   useEffect(() => { resetZoom(); }, [currentIndex, resetZoom]);
 
   const handlePrev = useCallback(() => {
@@ -71,24 +100,133 @@ const ImageViewer = ({
     setCurrentIndex((prev) => (prev < mediaFiles.length - 1 ? prev + 1 : 0));
   }, [mediaFiles.length]);
 
+  // ── Keyboard + body scroll lock ───────────────────────────────────────────
   useEffect(() => {
     const frame = requestAnimationFrame(() => setEntered(true));
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't steal keys when an input/textarea inside the viewer is focused
+    const onKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === 'ArrowLeft') handlePrev();
       if (e.key === 'ArrowRight') handleNext();
       if (e.key === 'Escape') onClose();
     };
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', onKeyDown);
     return () => {
       cancelAnimationFrame(frame);
       document.body.style.overflow = prevOverflow;
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keydown', onKeyDown);
     };
   }, [handlePrev, handleNext, onClose]);
+
+  // ── Non-passive gesture listeners (wheel + touch) ────────────────────────
+  useEffect(() => {
+    const el = gestureRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      // Normalize across pixel/line/page delta modes
+      const px = e.deltaMode === 0 ? e.deltaY : e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY * 100;
+      applyScale(live.current.scale * (1 - px * 0.004));
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchRef.current = { initDist: getTouchDist(e.touches), initScale: live.current.scale };
+        dragRef.current = null;
+      } else if (e.touches.length === 1) {
+        // Double-tap detection
+        const now = Date.now();
+        if (now - lastTapRef.current < 300) {
+          e.preventDefault();
+          applyScale(live.current.scale > MIN_SCALE ? MIN_SCALE : ZOOM_IN_TARGET, true);
+          lastTapRef.current = 0;
+          return;
+        }
+        lastTapRef.current = now;
+        // Pan when zoomed
+        if (live.current.scale > MIN_SCALE) {
+          dragRef.current = {
+            startX: e.touches[0].clientX,
+            startY: e.touches[0].clientY,
+            initTx: live.current.tx,
+            initTy: live.current.ty,
+          };
+        }
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && pinchRef.current) {
+        e.preventDefault();
+        setIsGesturing(true);
+        const ratio = getTouchDist(e.touches) / pinchRef.current.initDist;
+        applyScale(pinchRef.current.initScale * ratio);
+      } else if (e.touches.length === 1 && dragRef.current && live.current.scale > MIN_SCALE) {
+        e.preventDefault();
+        setIsGesturing(true);
+        const tx = dragRef.current.initTx + (e.touches[0].clientX - dragRef.current.startX);
+        const ty = dragRef.current.initTy + (e.touches[0].clientY - dragRef.current.startY);
+        live.current.tx = tx;
+        live.current.ty = ty;
+        setTranslate({ x: tx, y: ty });
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchRef.current = null;
+      if (e.touches.length === 0) {
+        dragRef.current = null;
+        setIsGesturing(false);
+        // Snap back to 1 if barely zoomed
+        if (live.current.scale < 1.08) {
+          applyScale(MIN_SCALE, true);
+        }
+      }
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('touchstart', onTouchStart, { passive: false });
+    el.addEventListener('touchmove', onTouchMove, { passive: false });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchstart', onTouchStart);
+      el.removeEventListener('touchmove', onTouchMove);
+      el.removeEventListener('touchend', onTouchEnd);
+    };
+  // re-attach whenever the displayed media changes (gesture div remounts for images)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applyScale, currentIndex]);
+
+  // ── Mouse drag (desktop pan when zoomed) ─────────────────────────────────
+  const onMouseDown = useCallback((e: ReactMouseEvent) => {
+    if (live.current.scale <= MIN_SCALE) return;
+    e.preventDefault();
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initTx: live.current.tx,
+      initTy: live.current.ty,
+    };
+    setIsGesturing(true);
+  }, []);
+
+  const onMouseMove = useCallback((e: ReactMouseEvent) => {
+    if (!dragRef.current) return;
+    const tx = dragRef.current.initTx + (e.clientX - dragRef.current.startX);
+    const ty = dragRef.current.initTy + (e.clientY - dragRef.current.startY);
+    live.current.tx = tx;
+    live.current.ty = ty;
+    setTranslate({ x: tx, y: ty });
+  }, []);
+
+  const onMouseUp = useCallback(() => {
+    dragRef.current = null;
+    setIsGesturing(false);
+  }, []);
 
   const renderMedia = () => {
     if (!currentMedia?.url) return null;
@@ -125,18 +263,33 @@ const ImageViewer = ({
       );
     }
     return (
-      <RetryableMediaImage
-        key={currentMedia.url}
-        url={currentMedia.url}
-        transformWidth={1400}
-        alt={displayName}
-        wrapperClassName="flex min-h-[min(60vh,580px)] w-full max-w-full items-center justify-center"
-        className="max-h-[min(68vh,680px)] max-w-full select-none rounded-2xl object-contain shadow-[0_24px_72px_rgba(0,0,0,0.55)]"
-        fallbackIconClassName={galleryFallbackIconClass}
-        style={{ transform: `scale(${scale})`, transition: 'transform 0.2s ease' }}
-        onDoubleClick={() => setScale((prev) => (prev === 1 ? 2 : 1))}
-        draggable={false}
-      />
+      // Gesture container — non-passive listeners attached via useEffect
+      <div
+        ref={gestureRef}
+        className="flex min-h-[min(60vh,580px)] w-full max-w-full items-center justify-center overflow-hidden"
+        style={{ cursor: scale > 1 ? (dragRef.current ? 'grabbing' : 'grab') : 'default' }}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+      >
+        <RetryableMediaImage
+          key={currentMedia.url}
+          url={currentMedia.url}
+          transformWidth={1400}
+          alt={displayName}
+          wrapperClassName="flex w-full max-w-full items-center justify-center"
+          className="max-h-[min(68vh,680px)] max-w-full select-none rounded-2xl object-contain shadow-[0_24px_72px_rgba(0,0,0,0.55)]"
+          fallbackIconClassName={galleryFallbackIconClass}
+          style={{
+            transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+            transition: isGesturing ? 'none' : 'transform 0.2s ease',
+            transformOrigin: 'center center',
+          }}
+          onDoubleClick={() => applyScale(scale > MIN_SCALE ? MIN_SCALE : ZOOM_IN_TARGET, true)}
+          draggable={false}
+        />
+      </div>
     );
   };
 

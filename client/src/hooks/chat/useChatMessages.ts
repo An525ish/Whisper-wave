@@ -115,7 +115,6 @@ export function useChatMessages({
   const invalidateMessages = useCallback(() => {
     if (!chatId) return;
     void queryClient.invalidateQueries({ queryKey: queryKeys.messages(chatId) });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
   }, [chatId, queryClient]);
 
   const applyDeletedMessages = useCallback((messageIds: string[]) => {

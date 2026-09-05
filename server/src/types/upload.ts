@@ -34,4 +34,5 @@ export type CommitAttachment = {
   key: string;
   originalName: string;
   mimeType: string;
+  isHd?: boolean;
 };

@@ -9,7 +9,7 @@ export type PresignedUploadParams = {
 export type UploadFileProgress = {
   file: File;
   progress: number; // 0–100
-  status: 'pending' | 'uploading' | 'done' | 'error';
+  status: 'pending' | 'compressing' | 'uploading' | 'done' | 'error';
   error?: string;
 };
 
@@ -18,4 +18,5 @@ export type CommitAttachment = {
   key: string;
   originalName: string;
   mimeType: string;
+  isHd?: boolean;
 };

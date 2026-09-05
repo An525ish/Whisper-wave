@@ -6,6 +6,7 @@ export type MessageAttachment = {
   url: string;
   name: string;
   fileType: string;
+  isHd?: boolean;
 };
 
 export type UploadableFile = {
@@ -245,7 +246,7 @@ export type MessageReceiptUser = {
 
 export type FindReceiptsResult = {
   readers: MessageReceiptUser[];
-  isMember: boolean;
+  isAuthorized: boolean;
 };
 
 /** Client-safe reaction shape (users as string IDs). */

@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import * as uploadApi from '@/api/upload';
 import * as chatApi from '@/api/chat';
+import { compressImages, type ImageQuality } from '@/utils/imageCompression';
 import type { UploadFileProgress, CommitAttachment } from '@/types/upload';
 
 type UploadInput = {
@@ -8,6 +9,7 @@ type UploadInput = {
   files: File[];
   content?: string;
   replyToMessageId?: string;
+  imageQuality?: ImageQuality;
 };
 
 type UseAttachmentUploadReturn = {
@@ -45,23 +47,29 @@ export const useAttachmentUpload = (): UseAttachmentUploadReturn => {
   }, []);
 
   const upload = useCallback(
-    async ({ chatId, files, content, replyToMessageId }: UploadInput): Promise<unknown> => {
+    async ({ chatId, files, content, replyToMessageId, imageQuality = 'standard' }: UploadInput): Promise<unknown> => {
       if (uploadingRef.current) return null;
       if (files.length === 0) return null;
 
       uploadingRef.current = true;
       setIsUploading(true);
 
-      // Initialise progress entries
+      // Preserve original file names for display (commit step uses these)
+      const originalNames = files.map((f) => f.name);
+
+      // ── Step 0: compress images client-side before signing ────────────────
+      // Non-images and GIFs pass through unchanged. On any error the original
+      // is returned, so this step never blocks the upload.
       setFileProgress(
-        files.map((file) => ({ file, progress: 0, status: 'pending' })),
+        files.map((file) => ({ file, progress: 0, status: 'compressing' })),
       );
+      const compressedFiles = await compressImages(files, imageQuality);
 
       try {
-        // ── Step 1: get presigned URLs ────────────────────────────────────────
+        // ── Step 1: get presigned URLs (using compressed metadata) ────────────
         const signResponse = await uploadApi.signUpload(
           chatId,
-          files.map((f) => ({ name: f.name, mimeType: f.type, size: f.size })),
+          compressedFiles.map((f) => ({ name: f.name, mimeType: f.type, size: f.size })),
         );
         const { uploads } = signResponse.data;
 
@@ -74,7 +82,7 @@ export const useAttachmentUpload = (): UseAttachmentUploadReturn => {
         await Promise.all(
           uploads.map((params, i) =>
             uploadApi
-              .directUploadToR2(files[i]!, params, (percent) => {
+              .directUploadToR2(compressedFiles[i]!, params, (percent) => {
                 setFileProgress((prev) =>
                   prev.map((fp, idx) =>
                     idx === i ? { ...fp, progress: percent } : fp,
@@ -102,10 +110,12 @@ export const useAttachmentUpload = (): UseAttachmentUploadReturn => {
         );
 
         // ── Step 3: commit — server verifies and saves the message ────────────
+        // originalNames preserves the pre-compression filename for display
         const attachments: CommitAttachment[] = uploads.map((p, i) => ({
           key: p.key,
-          originalName: files[i]!.name,
+          originalName: originalNames[i]!,
           mimeType: p.mimeType,
+          isHd: imageQuality === 'hd' && p.mimeType.startsWith('image/') ? true : undefined,
         }));
 
         const result = await chatApi.commitAttachments({

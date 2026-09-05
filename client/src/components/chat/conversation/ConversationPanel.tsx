@@ -81,6 +81,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   const actAsUser = useAuthStore((s) => s.actAsUser);
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [imageQuality, setImageQuality] = useState<'standard' | 'hd'>('standard');
 
   const { data: chatDetails, isLoading, error, isError } = useChatDetailsQuery(
     { id: chatId, populate: true }, { skip: !chatId },
@@ -164,7 +165,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   useErrors([{ error, isError }, { error: dbError, isError: dbIsError }]);
   useEffect(() => { onSelectedCountChange?.(selectedIds.size); }, [onSelectedCountChange, selectedIds]);
   useEffect(() => { onDeletableSelectedCountChange?.(deletableSelectedIds.length); }, [deletableSelectedIds.length, onDeletableSelectedCountChange]);
-  useEffect(() => { setMessage(''); setAttachments([]); }, [chatId]);
+  useEffect(() => { setMessage(''); setAttachments([]); setImageQuality('standard'); }, [chatId]);
 
 useImperativeHandle(ref, () => ({
     clearChat: () => { if (canClearChat) setConfirmClearOpen(true); },
@@ -278,13 +279,14 @@ useImperativeHandle(ref, () => ({
       },
     ]);
     const filesToUpload = [...attachments];
-    setMessage(''); setAttachments([]); clearReply();
+    setMessage(''); setAttachments([]); setImageQuality('standard'); clearReply();
     try {
       const result = await attachmentUpload.upload({
         chatId: chatId ?? '',
         files: filesToUpload,
         content: message,
         replyToMessageId,
+        imageQuality,
       });
       if (!result) { setLiveMessages((prev) => prev.filter((m) => m._id !== tempId)); return; }
       const payload = ((result as { data?: ChatMessage }).data ?? result) as ChatMessage;
@@ -495,6 +497,7 @@ useImperativeHandle(ref, () => ({
           ) : undefined}
           autoFocus={true} onKeyDown={handleEnterPress} handleSubmit={handleSubmit}
           onChange={handleMessageChange} attachments={attachments} setAttachments={setAttachments}
+          imageQuality={imageQuality} setImageQuality={setImageQuality}
           onGifSelect={handleGifSelect}
           onComposerResize={handleComposerResize}
           editMode={isEditing} className="text-body-700 placeholder:text-body-300" placeholder={isEditing ? 'Edit message…' : 'Message…'} />
@@ -507,9 +510,9 @@ useImperativeHandle(ref, () => ({
 
       {confirmClearOpen ? (
         <ConfirmationModal variant="danger" title="Clear this chat?"
-          description="All messages will be removed for everyone in this conversation. This cannot be undone."
+          description="Messages will be cleared from your view only. Others in the chat won't be affected."
           confirmLabel="Clear all" cancelLabel="Cancel" onClose={() => setConfirmClearOpen(false)}
-          handleConfirmationModal={({ accept }) => { if (accept) void handleClearChat(); else setConfirmClearOpen(false); }} />
+          handleConfirmationModal={({ accept }) => { setConfirmClearOpen(false); if (accept) void handleClearChat(); }} />
       ) : null}
 
       {confirmDelete ? (

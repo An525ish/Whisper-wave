@@ -1,9 +1,10 @@
 import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import type { ValidatedRequest } from '../middlewares/validate.js';
-import { flushNotifications, friendRequestService, joinUsersToChatRoom } from '../services/index.js';
+import { flushNotifications, friendRequestService, joinUsersToChatRoom, leaveUsersFromChatRoom } from '../services/index.js';
 import { REFETCH_CHATS } from '../constants/socket-events.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import { param } from '../utils/http.js';
 import type { GetMyFriendsQuery } from '../validators/request.js';
 
 const getIo = (req: { app: { get: (key: string) => unknown } }): Server | undefined =>
@@ -68,4 +69,15 @@ export const getMyfriends: RequestHandler = catchAsync(async (req, res) => {
     chatId,
   });
   res.status(200).json({ success: true, data });
+});
+
+export const unfriend: RequestHandler = catchAsync(async (req, res) => {
+  const chatId = param(req.params.chatId);
+  const result = await friendRequestService.unfriend(req.userId!, chatId);
+  const io = getIo(req);
+  if (io && result.memberIds?.length) {
+    flushNotifications(io, result.notifications);
+    await leaveUsersFromChatRoom(io, chatId, result.memberIds);
+  }
+  res.status(200).json({ success: true, message: result.message });
 });

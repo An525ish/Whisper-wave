@@ -20,6 +20,7 @@ type RenderAttachmentsProps = {
   type?: string;
   size?: number;
   isUploading?: boolean;
+  isHd?: boolean;
   overlay?: ReactNode;
   /** Stretch tile to parent width (multi-attachment grid). */
   fill?: boolean;
@@ -101,6 +102,12 @@ const DownloadButton = ({
   );
 };
 
+const HdBadge = () => (
+  <span className="absolute bottom-2 left-2 z-10 rounded-sm bg-black/50 px-1 py-px font-sans text-[9px] font-black tracking-widest text-white/80 backdrop-blur-sm ring-1 ring-white/10">
+    HD
+  </span>
+);
+
 const RenderAttachments = ({
   fileType,
   url,
@@ -108,6 +115,7 @@ const RenderAttachments = ({
   type,
   size,
   isUploading,
+  isHd,
   overlay,
   fill = false,
   album = false,
@@ -133,14 +141,17 @@ const RenderAttachments = ({
 
   if (isImage) {
     return withTile(
-      <RetryableMediaImage
-        url={url}
-        alt={name || 'attachment'}
-        transformWidth={320}
-        className={`${mediaFillClass} transition-opacity duration-300`}
-        wrapperClassName={mediaFillClass}
-        fallbackIconClassName="h-14 w-14"
-      />,
+      <>
+        <RetryableMediaImage
+          url={url}
+          alt={name || 'attachment'}
+          transformWidth={320}
+          className={`${mediaFillClass} transition-opacity duration-300`}
+          wrapperClassName={mediaFillClass}
+          fallbackIconClassName="h-14 w-14"
+        />
+        {isHd ? <HdBadge /> : null}
+      </>,
     );
   }
 

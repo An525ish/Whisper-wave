@@ -3,7 +3,6 @@ export type {
   IUserFields,
   LeanUser,
   PublicUser,
-  UpdateProfileInput,
   SearchUserResult,
   CreateUserInput,
   UserAuthRecord,
