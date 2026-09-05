@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { isValidMessageId } from '@/utils/helpers';
 import type { ChatMessage } from '@/types/chat';
 import {
-  useClearChatMessagesMutation,
+  useClearChatForMeMutation,
   useDeleteManyMessagesMutation,
   useDeleteMessageMutation,
 } from '@/hooks/chat/useMessageMutations';
@@ -37,7 +37,7 @@ export function useDeleteActions({
 }: Params) {
   const deleteMessageMutation = useDeleteMessageMutation();
   const deleteManyMutation = useDeleteManyMessagesMutation();
-  const clearChatMutation = useClearChatMessagesMutation();
+  const clearChatMutation = useClearChatForMeMutation();
 
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<
@@ -51,7 +51,6 @@ export function useDeleteActions({
         await deleteMessageMutation.mutateAsync({ messageId, chatId });
         applyDeletedMessages([messageId]);
         invalidateMessages();
-        toast.success('Message deleted');
       } catch {
         toast.error('Failed to delete message');
       }
@@ -73,7 +72,6 @@ export function useDeleteActions({
         return next;
       });
       invalidateMessages();
-      toast.success(messageIds.length === 1 ? 'Message deleted' : `${messageIds.length} messages deleted`);
     } catch {
       toast.error('Failed to delete messages');
     }
@@ -88,7 +86,6 @@ export function useDeleteActions({
       onSelectModeChange?.(false);
       cancelEdit();
       invalidateMessages();
-      toast.success('Chat cleared');
     } catch {
       toast.error('Failed to clear chat');
     } finally {

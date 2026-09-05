@@ -60,13 +60,20 @@ export const getMyChats = async (
     ])
   );
 
-  const data = chats.map(({ _id, name, members, groupChat, lastMessage, avatar }) => {
+  const data = chats.map((chat) => {
+    const { _id, name, members, groupChat, lastMessage, avatar, createdAt } = chat;
+    const clearedFor = (chat as unknown as { clearedFor?: Array<{ user: { toString(): string }; at: Date }> }).clearedFor;
     const typedMembers = members as unknown as PopulatedMember[];
     const otherMembers = typedMembers.filter(
       (member) => member._id.toString() !== userId.toString()
     );
     const chatId = _id.toString();
     const lastMessageId = lastMessage?._id ? String(lastMessage._id) : '';
+
+    // Check if this user cleared the chat and the last message predates the clear
+    const clearedEntry = clearedFor?.find((e) => e.user.toString() === userId.toString());
+    const lastMsgDate = lastMessage?.createdAt ? new Date(lastMessage.createdAt as unknown as string) : null;
+    const isClearedView = clearedEntry && (!lastMsgDate || lastMsgDate <= clearedEntry.at);
 
     return {
       _id,
@@ -76,18 +83,21 @@ export const getMyChats = async (
         ? resolveGroupAvatarUrls(avatar, typedMembers)
         : [otherMembers[0]?.avatar?.url].filter(Boolean),
       members: otherMembers.map((member) => member._id),
-      lastMessage: toListLastMessage(
-        lastMessage as ChatLastMessage | undefined,
-        userId,
-        readByMap.get(lastMessageId) ?? [],
-        groupChat
-          ? {
-              groupChat: true,
-              memberIds: typedMembers.map((member) => member._id.toString()),
-            }
-          : undefined,
-      ),
+      lastMessage: isClearedView
+        ? { content: 'You cleared this chat', createdAt: clearedEntry.at.toISOString(), isRead: true }
+        : toListLastMessage(
+            lastMessage as ChatLastMessage | undefined,
+            userId,
+            readByMap.get(lastMessageId) ?? [],
+            groupChat
+              ? {
+                  groupChat: true,
+                  memberIds: typedMembers.map((member) => member._id.toString()),
+                }
+              : undefined,
+          ),
       unreadCount: unreadByChat.get(chatId) ?? 0,
+      createdAt,
     };
   });
 

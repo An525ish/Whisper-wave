@@ -13,8 +13,9 @@ import type { MessageAttachment } from '../../types/message.js';
 /** Presigned URL TTL in seconds. HeadObject check rejects files older than this + 1 min. */
 const PRESIGN_TTL_SECONDS = 600; // 10 minutes
 
-/** Maximum allowed object size verified at commit time. */
-const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
+/** Maximum allowed object size verified at commit time (must match validators/upload.ts). */
+const MAX_BYTES = 20 * 1024 * 1024;        // 20 MB — images, audio, documents
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024; // 100 MB — video
 
 /**
  * Derive the app-level fileType from MIME type.
@@ -112,8 +113,9 @@ export const verifyAndNormalizeAttachment = async (
       new HeadObjectCommand({ Bucket: env.R2_BUCKET, Key: key }),
     );
 
-    if ((head.ContentLength ?? 0) > MAX_BYTES) {
-      throw new AppError(400, `Attachment exceeds 50 MB limit: ${originalName}`);
+    const sizeLimit = mimeType.startsWith('video/') ? MAX_VIDEO_BYTES : MAX_BYTES;
+    if ((head.ContentLength ?? 0) > sizeLimit) {
+      throw new AppError(400, `Attachment exceeds ${mimeType.startsWith('video/') ? '100' : '20'} MB limit: ${originalName}`);
     }
 
     const ageMs = Date.now() - (head.LastModified?.getTime() ?? 0);
@@ -139,5 +141,6 @@ export const verifyAndNormalizeAttachment = async (
     url: buildDeliveryUrl(key, mimeType),
     name: originalName,
     fileType: fileTypeFromMime(mimeType),
+    ...(attachment.isHd && mimeType.startsWith('image/') ? { isHd: true } : {}),
   };
 };

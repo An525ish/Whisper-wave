@@ -46,7 +46,7 @@ export const findMyChatsPage = async (
   skip: number,
   limit: number
 ) =>
-  Chat.find({ members: userId })
+  Chat.find({ members: userId, deletedFor: { $nin: [userId] } })
     .populate('members', 'name username email avatar')
     .populate({ path: 'lastMessage.sender', select: 'name' })
     .sort({ updatedAt: -1 })
@@ -55,7 +55,7 @@ export const findMyChatsPage = async (
     .lean();
 
 export const countForMember = async (userId: string): Promise<number> =>
-  Chat.countDocuments({ members: userId });
+  Chat.countDocuments({ members: userId, deletedFor: { $nin: [userId] } });
 
 export const findUserChatsWithLastMessage = async (
   userId: string
@@ -98,7 +98,9 @@ export const updateLastMessage = async (
   id: string,
   lastMessage: ChatLastMessage
 ): Promise<void> => {
-  await Chat.findByIdAndUpdate(id, { lastMessage });
+  // Clear deletedFor so anyone who hid this chat sees it again when a new message arrives
+  // $set: deletedFor: [] restores the chat for anyone who deleted it when a new message arrives
+  await Chat.findByIdAndUpdate(id, { $set: { lastMessage, deletedFor: [] } });
 };
 
 export const clearLastMessage = async (id: string): Promise<void> => {

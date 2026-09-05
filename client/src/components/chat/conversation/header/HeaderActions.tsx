@@ -6,6 +6,7 @@ import MembersIcon from '@/components/ui/icons/Members';
 import SelectMessagesIcon from '@/components/ui/icons/SelectMessages';
 import SearchIcon from '@/components/ui/icons/Search';
 import ClearChatIcon from '@/components/ui/icons/ClearChat';
+import TrashIcon from '@/components/ui/icons/Trash';
 import AccountBar from '@/components/profile/AccountBar';
 import { type ReactNode, type RefObject } from 'react';
 
@@ -28,12 +29,19 @@ type DefaultActionsProps = {
   groupChat?: boolean;
   canClearChat: boolean;
   isLeaveGroupLoading: boolean;
+  isCreator?: boolean;
   onToggle: () => void;
   onOpenSearch: () => void;
   onToggleSelectMode?: () => void;
   onClearChat?: () => void;
   onAddMember: () => void;
   onLeaveGroup: () => void;
+  onDeleteGroup?: () => void;
+  onDeleteChat?: () => void;
+  onUnfriend?: () => void;
+  isDeleteGroupLoading?: boolean;
+  isDeleteChatLoading?: boolean;
+  isUnfriendLoading?: boolean;
 };
 
 type MenuRowProps = {
@@ -88,12 +96,19 @@ const HeaderActions = ({
   groupChat,
   canClearChat,
   isLeaveGroupLoading,
+  isCreator,
   onToggle,
   onOpenSearch,
   onToggleSelectMode,
   onClearChat,
   onAddMember,
   onLeaveGroup,
+  onDeleteGroup,
+  onDeleteChat,
+  onUnfriend,
+  isDeleteGroupLoading,
+  isDeleteChatLoading,
+  isUnfriendLoading,
 }: DefaultActionsProps) => (
   <>
     <div className="md:hidden">
@@ -184,8 +199,38 @@ const HeaderActions = ({
               disabled={isLeaveGroupLoading}
               icon={<LeaveGroupIcon className="h-3 w-3" />}
             />
+            {isCreator && onDeleteGroup ? (
+              <MenuRow
+                label="Delete group"
+                tone="danger"
+                onClick={onDeleteGroup}
+                disabled={isDeleteGroupLoading}
+                icon={<TrashIcon className="h-3.5 w-3.5" />}
+              />
+            ) : null}
           </>
-        ) : null}
+        ) : (
+          <>
+            {onDeleteChat ? (
+              <MenuRow
+                label="Delete chat"
+                tone="danger"
+                onClick={onDeleteChat}
+                disabled={isDeleteChatLoading}
+                icon={<TrashIcon className="h-3.5 w-3.5" />}
+              />
+            ) : null}
+            {onUnfriend ? (
+              <MenuRow
+                label="Unfriend"
+                tone="danger"
+                onClick={onUnfriend}
+                disabled={isUnfriendLoading}
+                icon={<LeaveGroupIcon className="h-3 w-3" />}
+              />
+            ) : null}
+          </>
+        )}
       </div>
     ) : null}
   </>

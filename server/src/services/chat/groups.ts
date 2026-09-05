@@ -235,8 +235,10 @@ export const leaveGroup = async (
   } = { members: remainingMembers, admins: nextAdmins };
 
   if (wasCreator) {
-    const randomIndex = Math.floor(Math.random() * remainingMembers.length);
-    const newCreator = remainingMembers[randomIndex];
+    const matched = input.newCreatorId
+      ? remainingMembers.find((m) => m.toString() === input.newCreatorId)
+      : undefined;
+    const newCreator = matched ?? remainingMembers[Math.floor(Math.random() * remainingMembers.length)];
     patch.creator = newCreator;
     // New creator should not remain listed as admin.
     nextAdmins = nextAdmins.filter(

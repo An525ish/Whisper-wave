@@ -26,6 +26,8 @@ type NotificationsState = {
   removeMessageNotification: (payload: { chatId: string }) => void;
   addRequestNotification: (payload?: RequestNotification) => void;
   removeRequestNotification: (payload: { id: string }) => void;
+  /** Sync request notification count from server on startup. */
+  syncRequestNotificationsFromServer: (count: number) => void;
 };
 
 export const useNotificationsStore = create<NotificationsState>()(
@@ -164,6 +166,14 @@ export const useNotificationsStore = create<NotificationsState>()(
             0,
           ),
         }));
+      },
+
+      syncRequestNotificationsFromServer: (count) => {
+        const { messageNotificationCount } = get();
+        set({
+          requestNotificationCount: count,
+          totalNotificationCount: messageNotificationCount + count,
+        });
       },
 
       addRequestNotification: (payload) => {

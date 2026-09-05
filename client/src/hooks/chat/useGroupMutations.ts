@@ -75,7 +75,8 @@ export function useSetMemberAdminMutation() {
 export function useLeaveGroupMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ chatId }: { chatId: string }) => chatApi.leaveGroup(chatId),
+    mutationFn: ({ chatId, newCreatorId }: { chatId: string; newCreatorId?: string }) =>
+      chatApi.leaveGroup(chatId, newCreatorId ? { newCreatorId } : undefined),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
     },

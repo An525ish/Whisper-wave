@@ -19,6 +19,7 @@ export const sendAttachmentsSchema = z.object({
           .regex(/^ww\/chats\/[a-f\d]{24}\/[a-f\d]{24}\/.+$/, 'Invalid attachment key'),
         originalName: z.string().min(1).max(255),
         mimeType: z.string().min(1).max(100),
+        isHd: z.boolean().optional(),
       }),
     )
     .min(1)

@@ -33,6 +33,8 @@ export type IChatFields = {
   admins: Types.ObjectId[];
   members: Types.ObjectId[];
   lastMessage?: ChatLastMessage;
+  deletedFor?: Types.ObjectId[];
+  clearedFor?: Array<{ user: Types.ObjectId; at: Date }>;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -195,6 +197,7 @@ export type SetGroupMemberAdminInput = {
 export type LeaveGroupInput = {
   userId: string;
   chatId: string;
+  newCreatorId?: string;
 };
 
 export type DeleteGroupInput = {
@@ -286,6 +289,7 @@ export type ChatLean = {
   admins?: Types.ObjectId[];
   members: Types.ObjectId[];
   lastMessage?: ChatLastMessage;
+  clearedFor?: Array<{ user: Types.ObjectId; at: Date }>;
   createdAt?: Date;
   updatedAt?: Date;
 };

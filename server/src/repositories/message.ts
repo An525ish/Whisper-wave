@@ -13,18 +13,25 @@ import type { DayCount } from '../types/user.js';
 export const findByChatPage = async (
   chatId: string,
   skip: number,
-  limit: number
-) =>
-  Message.find({ chat: chatId, status: { $ne: 'failed' } })
+  limit: number,
+  clearedAt?: Date,
+) => {
+  const filter: Record<string, unknown> = { chat: chatId, status: { $ne: 'failed' } };
+  if (clearedAt) filter.createdAt = { $gt: clearedAt };
+  return Message.find(filter)
     .sort({ createdAt: -1 })
     .limit(limit)
     .skip(skip)
     .lean()
     .populate('sender', 'name avatar')
     .populate('chat', 'groupChat');
+};
 
-export const countByChat = async (chatId: string): Promise<number> =>
-  Message.countDocuments({ chat: chatId, status: { $ne: 'failed' } });
+export const countByChat = async (chatId: string, clearedAt?: Date): Promise<number> => {
+  const filter: Record<string, unknown> = { chat: chatId, status: { $ne: 'failed' } };
+  if (clearedAt) filter.createdAt = { $gt: clearedAt };
+  return Message.countDocuments(filter);
+};
 
 export const create = async (
   input: CreateMessageInput
@@ -687,16 +694,16 @@ export const findReceipts = async (
     .populate<{ readBy: MessageReceiptUser[] }>('readBy', 'name avatar')
     .lean();
 
-  if (!msg) return { readers: [], isMember: false };
+  if (!msg) return { readers: [], isAuthorized: false };
 
-  // Verify the requester is either the sender or in the same chat.
-  const chatMembers = await Chat.findById(msg.chat).select('members').lean();
-  const isMember = chatMembers?.members.some(
-    (m) => m.toString() === requesterId,
-  ) ?? false;
+  // Verify the requester is either the message sender or the chat creator.
+  const isSender = msg.sender.toString() === requesterId;
+  const chatData = await Chat.findById(msg.chat).select('creator').lean();
+  const isCreator = chatData?.creator?.toString() === requesterId;
+  const isAuthorized = isSender || isCreator;
 
   const readers = (msg.readBy as unknown as MessageReceiptUser[])
     .filter((u) => u._id.toString() !== msg.sender.toString());
 
-  return { readers, isMember };
+  return { readers, isAuthorized };
 };

@@ -17,3 +17,5 @@ export {
 } from './inbox.js';
 
 export { getMedia } from './media.js';
+
+export { deleteChatForMe, clearChatForMe } from './delete.js';

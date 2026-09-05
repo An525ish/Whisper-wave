@@ -3,6 +3,8 @@ import {
   addMembers,
   createGroupChat,
   deleteGroup,
+  deleteChatForMe,
+  clearChatForMe,
   findChats,
   getChatDetails,
   getMedia,
@@ -21,6 +23,7 @@ import {
   createGroupSchema,
   findChatsSchema,
   getChatDetailsQuerySchema,
+  leaveGroupSchema,
   markChatReadSchema,
   removeMemberSchema,
   setMemberAdminSchema,
@@ -81,7 +84,18 @@ chatRouter.put(
 chatRouter.delete(
   '/leave-group/:chatId',
   validate(chatIdParamSchema, 'params'),
+  validate(leaveGroupSchema),
   leaveGroup
+);
+chatRouter.delete(
+  '/:chatId/for-me',
+  validate(chatIdParamSchema, 'params'),
+  deleteChatForMe
+);
+chatRouter.delete(
+  '/:chatId/clear-for-me',
+  validate(chatIdParamSchema, 'params'),
+  clearChatForMe
 );
 chatRouter.delete(
   '/delete-group/:chatId',

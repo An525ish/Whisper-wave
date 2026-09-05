@@ -17,6 +17,7 @@ const AddFriendsPanel = () => {
   const [searchText, setSearchText] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [sentRequests, setSentRequests] = useState<string[]>([]);
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendFriendRequest] = useAsyncMutation(useSendFriendRequestMutation);
 
   useEffect(() => {
@@ -38,11 +39,14 @@ const AddFriendsPanel = () => {
     (searchResponse as SearchUsersResponse | undefined)?.data ?? [];
 
   const handleAddFriend = async (receiverId: string) => {
+    setSendingId(receiverId);
     try {
-      await sendFriendRequest('Sending Friend Request', { receiverId });
+      await sendFriendRequest(null, { receiverId });
       setSentRequests((prev) => [...prev, receiverId]);
     } catch {
-      setSentRequests((prev) => prev.filter((id) => id !== receiverId));
+      // error toast handled by useAsyncMutation
+    } finally {
+      setSendingId(null);
     }
   };
 
@@ -130,6 +134,7 @@ const AddFriendsPanel = () => {
                     isRequested:
                       user.isRequested || sentRequests.includes(user._id),
                   }}
+                  isSending={sendingId === user._id}
                   handleAddFriend={handleAddFriend}
                 />
               ))}

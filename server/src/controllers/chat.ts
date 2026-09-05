@@ -137,9 +137,11 @@ export const setMemberAdmin: RequestHandler = catchAsync(async (req, res) => {
 
 export const leaveGroup: RequestHandler = catchAsync(async (req, res) => {
   const chatId = param(req.params.chatId);
+  const { newCreatorId } = req.body as { newCreatorId?: string };
   const result = await chatService.leaveGroup({
     userId: req.userId!,
     chatId,
+    newCreatorId,
   });
   flushNotifications(getIo(req), result.notifications);
   await leaveUsersFromChatRoom(getIo(req)!, chatId, [req.userId!]);
@@ -199,6 +201,16 @@ export const markAllChatsRead: RequestHandler = catchAsync(async (req, res) => {
       lastReadAt: result.lastReadAt,
     },
   });
+});
+
+export const deleteChatForMe: RequestHandler = catchAsync(async (req, res) => {
+  await chatService.deleteChatForMe(req.userId!, param(req.params.chatId));
+  res.status(200).json({ success: true, message: 'Chat deleted' });
+});
+
+export const clearChatForMe: RequestHandler = catchAsync(async (req, res) => {
+  await chatService.clearChatForMe(req.userId!, param(req.params.chatId));
+  res.status(200).json({ success: true });
 });
 
 export const getMedia: RequestHandler = catchAsync(async (req, res) => {

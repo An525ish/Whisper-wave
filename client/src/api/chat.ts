@@ -83,7 +83,7 @@ export type CommitAttachmentsBody = {
   chatId: string;
   content?: string;
   replyToMessageId?: string;
-  attachments: Array<{ key: string; originalName: string; mimeType: string }>;
+  attachments: Array<{ key: string; originalName: string; mimeType: string; isHd?: boolean }>;
 };
 
 export const commitAttachments = (body: CommitAttachmentsBody) =>
@@ -137,8 +137,20 @@ export const setMemberAdmin = (
   body: { memberId: string; makeAdmin: boolean },
 ) => api.put(`/chat/set-admin/${chatId}`, body);
 
-export const leaveGroup = (chatId: string) =>
-  api.delete(`/chat/leave-group/${chatId}`);
+export const leaveGroup = (chatId: string, body?: { newCreatorId?: string }) =>
+  api.delete(`/chat/leave-group/${chatId}`, body ?? {});
+
+export const deleteChatForMe = (chatId: string) =>
+  api.delete(`/chat/${chatId}/for-me`);
+
+export const clearChatForMe = (chatId: string) =>
+  api.delete(`/chat/${chatId}/clear-for-me`);
+
+export const unfriend = (chatId: string) =>
+  api.delete(`/friend-request/unfriend/${chatId}`);
+
+export const deleteGroup = (chatId: string) =>
+  api.delete(`/chat/delete-group/${chatId}`);
 
 export const getMessageReceipts = (messageId: string) =>
   api.get(`/message/receipts/${messageId}`);

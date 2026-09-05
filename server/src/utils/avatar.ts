@@ -37,9 +37,11 @@ const uploadAvatarBufferToR2 = async (
   let compressedBuffer: Buffer;
 
   try {
+    const t = Date.now();
     const image = await Jimp.fromBuffer(buffer);
     scaleToFit(image, MAX_WIDTH, MAX_HEIGHT);
     compressedBuffer = Buffer.from(await image.getBuffer(JimpMime.jpeg, { quality: 85 }));
+    logger.info({ durationMs: Date.now() - t, inputBytes: buffer.byteLength, outputBytes: compressedBuffer.byteLength }, 'Jimp avatar compression');
   } catch (err) {
     logger.warn({ err }, 'Jimp compression failed — uploading original buffer');
     // Fall back to original if Jimp can't handle the format (e.g. animated WebP)

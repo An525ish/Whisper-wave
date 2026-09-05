@@ -1,5 +1,6 @@
 import { createHash, randomInt } from 'node:crypto';
-import type { AuthResult, LeanUser, PublicUser } from '../../types/user.js';
+import type { AuthResult, LeanUser } from '../../types/user.js';
+import { toPublicUser } from '../user/shared.js';
 import { AppError } from '../../utils/AppError.js';
 import { isAllowedEmail } from '../../utils/disposableEmail.js';
 import { isMailConfigured } from '../../utils/mail.js';
@@ -10,17 +11,6 @@ import { generateAccessToken, generateRefreshToken, REFRESH_TOKEN_TTL_MS } from 
 
 export const sha256 = (value: string): string =>
   createHash('sha256').update(value).digest('hex');
-
-export const toPublicUser = (
-  user: LeanUser
-): PublicUser & Record<string, unknown> => ({
-  _id: user._id,
-  name: user.name,
-  username: user.username,
-  email: user.email,
-  avatar: user.avatar.url,
-  bio: user.bio,
-});
 
 export const assertMailReady = (): void => {
   if (isProd && !isMailConfigured()) {

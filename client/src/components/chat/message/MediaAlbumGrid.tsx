@@ -72,6 +72,7 @@ const MediaAlbumGrid = ({
                 type={attachment.type}
                 size={attachment.size}
                 isUploading={isUploading?.(attachment) ?? attachment.uploading}
+                isHd={attachment.isHd}
                 album
                 fill
                 onDownload={!isVisual ? () => { void onDownload(attachment); } : undefined}

@@ -1,5 +1,8 @@
 import { AVATAR_FALLBACK } from '@/constants/app';
 import { useState, type ChangeEvent } from 'react';
+import toast from 'react-hot-toast';
+
+const MAX_AVATAR_BYTES = 10 * 1024 * 1024; // 10 MB — must match server
 
 type AvatarInputProps = {
   file?: File | null;
@@ -27,7 +30,8 @@ const AvatarInput = ({ setFile }: AvatarInputProps) => {
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const next = event.target.files?.[0];
     if (!next) return;
-    if (!ALLOWED_TYPES.has(next.type)) return; // server enforces this; skip silently (accept attr already filters picker)
+    if (!ALLOWED_TYPES.has(next.type)) return; // accept attr already filters picker; server enforces too
+    if (next.size > MAX_AVATAR_BYTES) { toast.error('Avatar must be under 10 MB'); return; }
     setFile(next);
     const reader = new FileReader();
     reader.onloadend = () => {

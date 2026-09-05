@@ -1,5 +1,6 @@
 import Image from '@/components/ui/Image';
 import MembersIcon from '@/components/ui/icons/Members';
+import { AVATAR_ONLINE_DOT_POSITION_CLASS } from '@/constants/app';
 import LiveDot from './LiveDot';
 import type { AdminActivityUser } from '@/types/admin';
 
@@ -17,7 +18,9 @@ const OnlineAvatar = ({ user }: { user: AdminActivityUser }) => (
           displayWidth={96}
         />
       </div>
-      <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-green" />
+      <span
+        className={`absolute h-3 w-3 rounded-full border-2 border-background bg-green ${AVATAR_ONLINE_DOT_POSITION_CLASS}`}
+      />
     </div>
     <p className="w-full truncate text-center text-[10px] leading-tight text-body-300/70">
       {user.name.split(' ')[0]}

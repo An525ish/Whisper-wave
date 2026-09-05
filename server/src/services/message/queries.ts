@@ -17,12 +17,7 @@ export const getMessages = async (
   const { userId, chatId, page } = input;
   const skip = (page - 1) * MESSAGE_PAGE_SIZE;
 
-  const [chat, messages, totalMessages] = await Promise.all([
-    chatRepo.findByIdLean(chatId),
-    messageRepo.findByChatPage(chatId, skip, MESSAGE_PAGE_SIZE),
-    messageRepo.countByChat(chatId),
-  ]);
-
+  const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(400, 'No chat found');
 
   const isMember = chat.members.some(
@@ -31,6 +26,15 @@ export const getMessages = async (
   if (!isMember) {
     throw new AppError(401, 'You are not authenticated to access the resource');
   }
+
+  const clearedAt = chat.clearedFor?.find(
+    (e) => e.user.toString() === userId.toString()
+  )?.at;
+
+  const [messages, totalMessages] = await Promise.all([
+    messageRepo.findByChatPage(chatId, skip, MESSAGE_PAGE_SIZE, clearedAt),
+    messageRepo.countByChat(chatId, clearedAt),
+  ]);
 
   type PopulatedChat = { _id: { toString(): string }; groupChat?: boolean };
 

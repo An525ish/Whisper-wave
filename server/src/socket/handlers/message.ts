@@ -1,6 +1,7 @@
 import {
   NEW_MESSAGE,
   NEW_MESSAGE_ALERT,
+  REFETCH_CHATS,
 } from '../../constants/socket-events.js';
 import { onSocketEvent } from '../../middlewares/index.js';
 import { messageService } from '../../services/index.js';
@@ -46,6 +47,8 @@ export const registerMessageHandler = (
 
       io.to(chatRoom(chatId)).emit(NEW_MESSAGE, eventPayload);
       socket.broadcast.to(chatRoom(chatId)).emit(NEW_MESSAGE_ALERT, { chatId });
+      // Let other members refetch so deleted chats reappear when a new message arrives
+      socket.broadcast.to(chatRoom(chatId)).emit(REFETCH_CHATS, { chatId });
     },
     {
       before: () => limiter.allow(socket.id),
