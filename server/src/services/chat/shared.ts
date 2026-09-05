@@ -54,7 +54,7 @@ export const toListLastMessage = (
   return {
     _id: lastMessage._id ? String(lastMessage._id) : undefined,
     content: lastMessage.content,
-    createdAt: lastMessage.createdAt,
+    createdAt: lastMessage.createdAt?.toISOString(),
     type: lastMessage.type,
     sender: senderId
       ? { _id: senderId, name: senderNameOf(lastMessage.sender) }
