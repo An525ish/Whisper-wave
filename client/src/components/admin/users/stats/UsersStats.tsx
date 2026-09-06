@@ -39,7 +39,7 @@ const UsersStats = ({
       aria-hidden
     />
     <div className="relative flex flex-wrap items-end border-b border-border/40 pb-6">
-      <StatChip label="Total accounts" value={platformTotal} accent="text-body" />
+      <StatChip label="Total Users" value={platformTotal} accent="text-body" />
       <StatDivider />
       <StatChip label={matchesLabel} value={matchesValue} accent="text-blue" />
       <StatDivider />

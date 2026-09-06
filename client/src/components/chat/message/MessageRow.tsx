@@ -1,24 +1,23 @@
-import { fileFormat, getMediaKindFromFile, type FileFormatKind } from '@/utils/fileFormat';
+import { resolveAttachmentKind } from '@/utils/fileFormat';
 import { extractLinksFromText, isLinkOnlyMessage } from '@/utils/linkParser';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/stores/auth';
 import ImageViewer, {
   type MediaFile,
 } from '@/components/ui/image-viewer/ImageViewer';
-import { useGetMediaQuery } from '@/hooks/chat';
 import toast from 'react-hot-toast';
-import { useMemo, useState, type MouseEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, type MouseEvent } from 'react';
 import MessageBubble from '@/components/chat/message/MessageBubble';
 import type {
   ChatAttachment, MessageReplyTo, ChatBoxData, MessageReaction,
-  SharedMediaRow, MediaResponse,
 } from '@/types/chat';
 
 export type { MessageReplyTo, ChatBoxData };
 
 type ChatBoxProps = {
   chatData: ChatBoxData & { _id?: string; reactions?: MessageReaction[] };
+  chatId?: string;
+  sharedGalleryFiles?: MediaFile[];
   isGroupChat?: boolean;
   showReadReceipt?: boolean;
   isRead?: boolean;
@@ -31,28 +30,11 @@ type ChatBoxProps = {
   onForwardMessage?: (messageId: string) => void;
 };
 
-const resolveAttachmentKind = (
-  attachment: ChatAttachment,
-  url: string,
-): FileFormatKind => {
-  if (attachment.type?.startsWith('image/')) return 'image';
-  if (attachment.type?.startsWith('video/')) return 'video';
-  if (attachment.type?.startsWith('audio/')) return 'audio';
-  const fromName = fileFormat(attachment.name);
-  if (fromName !== 'unknown') return fromName;
-  return fileFormat(url);
-};
-
-const normalizeMediaAttachments = (
-  data: MediaResponse['data'],
-): SharedMediaRow[] => {
-  if (!data) return [];
-  if (Array.isArray(data)) return data;
-  return data.attachments ?? [];
-};
 
 const MessageRow = ({
   chatData,
+  chatId,
+  sharedGalleryFiles: sharedGalleryFilesProp,
   isGroupChat,
   showReadReceipt = false,
   isRead = false,
@@ -64,7 +46,6 @@ const MessageRow = ({
   onDeleteMessage,
   onForwardMessage,
 }: ChatBoxProps) => {
-  const { chatId } = useParams();
   const { content, sender, attachments = [], createdAt, replyTo } = chatData;
   const links = content ? extractLinksFromText(content) : [];
   const linkOnly = content ? isLinkOnlyMessage(content) : false;
@@ -82,26 +63,7 @@ const MessageRow = ({
     ? user?.name || sender.name || 'You'
     : sender.name || 'Unknown';
 
-  const { data: media } = useGetMediaQuery({ chatId }, { skip: !chatId });
-
-  const sharedGalleryFiles = useMemo(() => {
-    const mediaData = normalizeMediaAttachments(
-      (media as MediaResponse | undefined)?.data,
-    );
-    return mediaData
-      .filter((file) => file.fileType !== 'document' && Boolean(file.url))
-      .filter((file) => {
-        const kind = getMediaKindFromFile(file);
-        return kind === 'image' || kind === 'video';
-      })
-      .map((file) => ({
-        _id: file._id ?? file.publicId ?? file.url!,
-        url: file.url!,
-        name: file.name,
-        publicId: file.publicId,
-        fileType: file.fileType,
-      }));
-  }, [media]);
+  const sharedGalleryFiles = sharedGalleryFilesProp ?? [];
 
   const activeGalleryFiles = galleryOverride ?? sharedGalleryFiles;
 
@@ -163,12 +125,13 @@ const MessageRow = ({
     e.preventDefault();
     const url = attachment.url || attachment.tempUrl;
     if (!url) return;
-    const fileType = resolveAttachmentKind(attachment, url);
-    if (fileType === 'image' || fileType === 'video') {
+    const fileType = resolveAttachmentKind({ ...attachment, url });
+    if (fileType === 'image' || fileType === 'video' || fileType === 'gif') {
       openSharedGallery(attachment, url);
       return;
     }
-    if (fileType === 'pdf') {
+    // resolveAttachmentKind maps PDFs to 'doc'; check MIME/name directly
+    if (/pdf/i.test(attachment.type ?? '') || /\.pdf$/i.test(attachment.name ?? '')) {
       window.open(url, '_blank');
       return;
     }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Image from '@/components/ui/Image';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
@@ -29,8 +29,10 @@ const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [removeMemberTarget, setRemoveMemberTarget] = useState<AdminGroupMember | null>(null);
   const [open, setOpen] = useState(false);
-  const [members, setMembers] = useState<AdminGroupMember[]>(group.members ?? []);
   const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Derive from prop — mutation invalidates the query so parent gets fresh data automatically
+  const members = useMemo(() => group.members ?? [], [group.members]);
 
   const { mutate: deleteGroup, isPending: deleting } = useDeleteAdminGroupMutation();
   const { mutate: removeMember, isPending: removing } = useRemoveGroupMemberMutation();
@@ -238,10 +240,7 @@ const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
           handleConfirmationModal={({ accept }) => {
             const target = removeMemberTarget;
             setRemoveMemberTarget(null);
-            if (accept) {
-              setMembers((prev) => prev.filter((member) => member._id !== target._id));
-              removeMember({ groupId: group._id, userId: target._id });
-            }
+            if (accept) removeMember({ groupId: group._id, userId: target._id });
           }}
         />
       )}

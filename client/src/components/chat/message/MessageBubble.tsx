@@ -1,5 +1,5 @@
 import { type MouseEvent } from 'react';
-import { fileFormat, type FileFormatKind } from '@/utils/fileFormat';
+import { resolveAttachmentKind, type AttachmentKind } from '@/utils/fileFormat';
 import type { ParsedLink } from '@/utils/linkParser';
 import Image from '@/components/ui/Image';
 import ReadReceipt from '@/components/ui/icons/ReadReceipt';
@@ -39,14 +39,9 @@ export type MessageBubbleProps = {
   onDownload: (attachment: ChatAttachment) => Promise<void> | void;
 };
 
-const resolveKind = (attachment: ChatAttachment, url: string): FileFormatKind => {
-  if (attachment.type?.startsWith('image/')) return 'image';
-  if (attachment.type?.startsWith('video/')) return 'video';
-  if (attachment.type?.startsWith('audio/')) return 'audio';
-  const fromName = fileFormat(attachment.name);
-  if (fromName !== 'unknown') return fromName;
-  return fileFormat(url);
-};
+/** Adapter: resolveAttachmentKind uses an object arg; callers here use (att, url). */
+const resolveKind = (attachment: ChatAttachment, url: string): AttachmentKind =>
+  resolveAttachmentKind({ ...attachment, url });
 
 const metaRowClass =
   'inline-flex h-[19px] items-center whitespace-nowrap text-[11px] leading-none tabular-nums';
@@ -216,7 +211,7 @@ const MessageBubble = ({
                   const fileType = resolveKind(attachment, url ?? '');
                   const isLast = index === attachments.length - 1;
                   const isVisualMedia =
-                    fileType === 'image' || fileType === 'video' || fileType === 'audio';
+                    fileType === 'image' || fileType === 'video' || fileType === 'audio' || fileType === 'gif';
                   const stampOnMedia = mediaOnly && isLast && isVisualMedia;
                   const stampOnFile = mediaOnly && isLast && !isVisualMedia;
 

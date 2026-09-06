@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { adminQueryKeys } from '@/hooks/admin/queryKeys';
 import {
@@ -7,6 +7,7 @@ import {
   useAdminImpersonationLogsQuery,
   useAdminStatsQuery,
 } from '@/hooks/admin';
+import type { ServerActivityFilter } from '@/api/admin';
 import type { AdminActivityFilter } from '@/types/admin';
 import { groupActivityEvents } from '@/utils/admin/activity';
 
@@ -32,7 +33,7 @@ export function useActivityPage() {
     fetchNextPage,
     refetch: refetchEvents,
     isRefetching,
-  } = useAdminActivityEventsQuery(filter, !isAdminLogsTab);
+  } = useAdminActivityEventsQuery(filter as ServerActivityFilter, !isAdminLogsTab);
 
   const {
     data: logsData,
@@ -63,11 +64,11 @@ export function useActivityPage() {
     [logsData],
   );
 
-  const refreshFeed = () => {
+  const refreshFeed = useCallback(() => {
     void refetchEvents();
     void queryClient.invalidateQueries({ queryKey: adminQueryKeys.activityPresence });
-    void queryClient.invalidateQueries({ queryKey: ['adminImpersonationLogs'] });
-  };
+    void queryClient.invalidateQueries({ queryKey: adminQueryKeys.impersonationLogs });
+  }, [refetchEvents, queryClient]);
 
   const isInitialLoad = presenceLoading || (isAdminLogsTab ? logsLoading : eventsLoading);
   const sentinelEnabled = !isInitialLoad && !eventsError && events.length > 0;

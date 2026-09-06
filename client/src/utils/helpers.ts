@@ -33,6 +33,7 @@ export const validateFiles = (
   individualLimit = 0,
   cumulativeLimit = 0,
 ): string | null => {
+  if (!files.length) return null;
   const fileType = files[0].type.split('/')[0];
 
   if (files.length > MAX_FILES) {
@@ -132,6 +133,21 @@ export const normalizeMemberIds = (
 };
 
 /** WhatsApp-style last seen label. */
+/**
+ * Extract a formatted date+time string from a MongoDB ObjectId.
+ * The first 4 bytes of an ObjectId encode a Unix timestamp.
+ * Returns null if the id is not a valid ObjectId hex string.
+ */
+export const formatDateFromObjectId = (id?: string): string | null => {
+  if (!id || id.length < 8 || !/^[0-9a-f]+$/i.test(id.slice(0, 8))) return null;
+  try {
+    const ts = parseInt(id.slice(0, 8), 16);
+    return dayjs(ts * 1000).format('D MMM YYYY, h:mm A');
+  } catch {
+    return null;
+  }
+};
+
 export const formatLastSeen = (iso?: string | null): string | null => {
   if (!iso) return null;
 

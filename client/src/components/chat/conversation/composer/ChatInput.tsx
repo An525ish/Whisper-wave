@@ -14,6 +14,7 @@ import { useChatClipboardStore } from "@/stores/chat/clipboard";
 import {
     useCallback,
     useEffect,
+    useMemo,
     useRef,
     useState,
     type ClipboardEvent,
@@ -110,25 +111,20 @@ const renderFilePreviews = (
 };
 
 /** Mirror layer — stacked in the same grid cell as the textarea. Typography only; no min-height. */
-const TextHighlightMirror = ({ text, className }: { text: string; className: string }) => {
-    const parts = splitTextByUrls(text);
-    if (!parts.some((part) => part.type === 'url')) return null;
-
-    return (
-        <div
-            aria-hidden
-            className={`pointer-events-none col-start-1 row-start-1 overflow-hidden whitespace-pre-wrap wrap-break-word ${className}`}
-        >
-            {parts.map((part, i) =>
-                part.type === 'url' ? (
-                    <span key={i} className="text-[#53bdeb]">{part.value}</span>
-                ) : (
-                    <span key={i} className="text-transparent">{part.value}</span>
-                ),
-            )}
-        </div>
-    );
-};
+const TextHighlightMirror = ({ parts, className }: { parts: ReturnType<typeof splitTextByUrls>; className: string }) => (
+    <div
+        aria-hidden
+        className={`pointer-events-none col-start-1 row-start-1 overflow-hidden whitespace-pre-wrap wrap-break-word ${className}`}
+    >
+        {parts.map((part, i) =>
+            part.type === 'url' ? (
+                <span key={i} className="text-[#53bdeb]">{part.value}</span>
+            ) : (
+                <span key={i} className="text-transparent">{part.value}</span>
+            ),
+        )}
+    </div>
+);
 
 const ChatInput = ({
     className,
@@ -164,8 +160,9 @@ const ChatInput = ({
     const [detectedLink, setDetectedLink] = useState<ParsedLink | null>(null);
     const [dismissedLink, setDismissedLink] = useState<{ url: string; raw: string } | null>(null);
 
-    const currentLinkRaw =
-        splitTextByUrls(message).find((part) => part.type === 'url')?.value ?? null;
+    // Parse once per message change — used for URL highlight, link preview, and mirror
+    const parsedParts = useMemo(() => splitTextByUrls(message), [message]);
+    const currentLinkRaw = parsedParts.find((part) => part.type === 'url')?.value ?? null;
 
     const syncDismissWithMessage = useCallback((next: string) => {
         setDismissedLink((dismissed) => {
@@ -226,10 +223,10 @@ const ChatInput = ({
         return () => observer.disconnect();
     }, [onComposerResize]);
 
-    const toggleAttachmentMenu = () => {
+    const toggleAttachmentMenu = useCallback(() => {
         if (editMode) return;
         setIsAttachmentOpen(prev => !prev);
-    };
+    }, [editMode]);
 
     const handleFileSelect = useCallback((type: string, files: File[]) => {
         setAttachments(prevSelectedFiles => {
@@ -282,7 +279,7 @@ const ChatInput = ({
     const canSend = Boolean(message.trim()) || (!editMode && attachments.length > 0);
     const isMultiline = message.includes('\n');
     const hasReply = Boolean(replySlot);
-    const hasUrlHighlight = splitTextByUrls(message).some((part) => part.type === 'url');
+    const hasUrlHighlight = parsedParts.some((part) => part.type === 'url');
 
     const showLinkPreview = !editMode && attachments.length === 0 && detectedLink && !isDismissed;
 
@@ -369,7 +366,7 @@ const ChatInput = ({
 
                             <div className={`min-w-0 w-full ${hasUrlHighlight ? 'grid' : 'contents'}`}>
                                 {hasUrlHighlight ? (
-                                    <TextHighlightMirror text={message} className={textareaTypographyClass} />
+                                    <TextHighlightMirror parts={parsedParts} className={textareaTypographyClass} />
                                 ) : null}
                                 <textarea
                                     ref={textareaRef}

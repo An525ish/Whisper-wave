@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { MediaFile } from '@/components/ui/image-viewer/ImageViewer';
 import type { UserFilterOption } from '@/types/admin';
 import { ADMIN_MIN_SEARCH_LEN } from '@/constants/admin/attachments';
 import { SEARCH_DEBOUNCE_MS } from '@/constants/app';
+import { useDebounce } from '@/hooks/shared/useDebounce';
 import { useAdminAttachmentsQuery, useDeleteAdminAttachmentsMutation } from '@/hooks/admin';
 import type { FlatItem, AttachmentKindFilter } from '@/types/admin';
 import {
@@ -18,7 +19,6 @@ import {
 export function useAttachmentsPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [kindFilter, setKindFilter] = useState<AttachmentKindFilter>('all');
   const [senderFilter, setSenderFilter] = useState<UserFilterOption | null>(null);
   const [viewerMediaFiles, setViewerMediaFiles] = useState<MediaFile[]>([]);
@@ -45,13 +45,10 @@ export function useAttachmentsPage() {
     setIsSelectMode(false);
   }, []);
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setDebouncedSearch(searchText.length >= ADMIN_MIN_SEARCH_LEN ? searchText : ''),
-      SEARCH_DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [searchText]);
+  const debouncedSearch = useDebounce(
+    searchText.length >= ADMIN_MIN_SEARCH_LEN ? searchText : '',
+    SEARCH_DEBOUNCE_MS,
+  );
 
   const isSearchPending = searchText !== debouncedSearch;
   const showMinSearchHint = searchText.length > 0 && searchText.length < ADMIN_MIN_SEARCH_LEN;
@@ -66,13 +63,13 @@ export function useAttachmentsPage() {
     refetch,
   } = useAdminAttachmentsQuery(debouncedSearch, senderFilter?._id ?? '', kindFilter);
 
-  const pages = data?.pages ?? [];
-  const matchTotal = pages[0]?.total ?? 0;
+  const matchTotal = data?.pages[0]?.total ?? 0;
   const hasFilter = Boolean(debouncedSearch || senderFilter || kindFilter !== 'all');
 
+  // Derive `pages` inside each memo so the array ref doesn't defeat memoization
   const flatItems = useMemo(
-    () => flattenAttachmentItems(pages, kindFilter),
-    [pages, kindFilter],
+    () => flattenAttachmentItems(data?.pages ?? [], kindFilter),
+    [data, kindFilter],
   );
 
   const mediaItems = useMemo(
@@ -83,8 +80,8 @@ export function useAttachmentsPage() {
   const docItems = useMemo(() => filterDocItems(flatItems), [flatItems]);
 
   const linkItems = useMemo(
-    () => buildLinkItems(pages, kindFilter),
-    [pages, kindFilter],
+    () => buildLinkItems(data?.pages ?? [], kindFilter),
+    [data, kindFilter],
   );
 
   // Derive all selectable message IDs from the currently loaded items

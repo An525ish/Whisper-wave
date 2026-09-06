@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import type { EmojiClickData } from 'emoji-picker-react';
 import StyledEmojiPicker, {
   emojiPickerShellClass,
@@ -63,10 +63,9 @@ const ReactionStrip = ({ reactions, myUserId, onReact, onClose, onPickerOpenChan
   const [pickerOpen, setPickerOpen] = useState(false);
   const moreBtnRef = useRef<HTMLButtonElement>(null);
 
-  const myReactions = new Set(
-    (reactions ?? [])
-      .filter((r) => r.users.includes(myUserId))
-      .map((r) => r.emoji),
+  const myReactions = useMemo(
+    () => new Set((reactions ?? []).filter((r) => r.users.includes(myUserId)).map((r) => r.emoji)),
+    [reactions, myUserId],
   );
 
   const handleReact = (emoji: string) => {

@@ -6,7 +6,6 @@ import {
 } from 'react-router-dom';
 import { SocketProvider } from '@/socket/SocketProvider';
 import { useAuthStore } from '@/stores/auth';
-import { useAdminStore } from '@/stores/admin';
 import type { ReactNode } from 'react';
 import AdminWrapper from '@/layout/AdminWrapper';
 import AppLoader from '@/components/ui/loader/AppLoader';
@@ -48,14 +47,18 @@ function AdminBootstrap() {
 }
 
 function AdminGuestOnly() {
-  const isAdmin = useAdminStore((s) => s.isAdmin);
+  // Read from query cache — already resolved by the time AdminBootstrap hands off.
+  // Avoids the one-render gap between query settling and the useEffect syncing Zustand.
+  const { data } = useAdminMeQuery();
+  const isAdmin = data?.isAdmin ?? false;
   return (
     <ProtectedRoutes allow={!isAdmin} redirect="/admin/dashboard" />
   );
 }
 
 function AdminAuthed() {
-  const isAdmin = useAdminStore((s) => s.isAdmin);
+  const { data } = useAdminMeQuery();
+  const isAdmin = data?.isAdmin ?? false;
   return (
     <ProtectedRoutes allow={isAdmin} redirect="/admin">
       <AdminWrapper />

@@ -82,7 +82,7 @@ const ImageViewerNav = ({
         ) : null}
 
         <div
-          className={`relative flex h-full min-h-[65vh] w-full flex-1 items-center justify-center px-16 py-6 sm:px-20 ${
+          className={`relative flex h-full min-h-[65vh] w-full flex-1 items-center justify-center px-2 py-3 sm:px-20 sm:py-6 ${
             replyBar ? 'pb-20' : ''
           }`}
         >

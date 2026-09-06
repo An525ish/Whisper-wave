@@ -53,13 +53,11 @@ export const getAdminMessages = (params: {
   status?: 'all' | 'sent' | 'failed';
   q?: string;
   senderId?: string;
-  deleted?: 'all' | 'only';
 }) =>
   api.get<ApiSuccess & AdminMessagesPage>('/admin/messages', {
     limit: params.limit ?? MESSAGES_PAGE_SIZE,
     before: params.before,
     status: params.status ?? 'all',
-    deleted: params.deleted ?? 'all',
     q: params.q,
     senderId: params.senderId,
   });
@@ -82,10 +80,13 @@ export const ACTIVITY_PAGE_SIZE = 20;
 export const getAdminActivityPresence = () =>
   api.get<ApiSuccess & AdminActivityPresence>('/admin/activity/presence');
 
+/** 'admin-logs' is a client-only tab state — server enum is ['all','messages','signups'] */
+export type ServerActivityFilter = Exclude<AdminActivityFilter, 'admin-logs'>;
+
 export const getAdminActivityEvents = (params: {
   limit?: number;
   before?: string;
-  type: AdminActivityFilter;
+  type: ServerActivityFilter;
 }) =>
   api.get<ApiSuccess & AdminActivityEventsPage>('/admin/activity/events', {
     limit: params.limit ?? ACTIVITY_PAGE_SIZE,
@@ -122,7 +123,6 @@ export const getAdminAttachments = (params: {
   q?: string;
   senderId?: string;
   kind?: AttachmentKindFilter;
-  deleted?: 'all' | 'only';
 }) =>
   api.get<ApiSuccess & AdminAttachmentsPage>('/admin/attachments', {
     limit: params.limit ?? ATTACHMENTS_PAGE_SIZE,
@@ -130,7 +130,6 @@ export const getAdminAttachments = (params: {
     q: params.q,
     senderId: params.senderId,
     kind: params.kind ?? 'all',
-    deleted: params.deleted ?? 'all',
   });
 
 export const IMPERSONATION_LOGS_PAGE_SIZE = 20;

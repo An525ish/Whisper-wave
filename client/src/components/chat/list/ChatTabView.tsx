@@ -7,40 +7,28 @@ import {
   useGetMyNotificationsQuery,
 } from '@/hooks/chat';
 import ChatList from '@/components/chat/list/ChatList';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNotificationsStore } from '@/stores/notifications';
 import GridAllIcon from '@/components/ui/icons/GridAll';
 import ChatIcon from '@/components/ui/icons/Chat';
 import MembersIcon from '@/components/ui/icons/Members';
-import type { ChatRow, ChatsResponse, NewMessagePayload, ChatReadPayload } from '@/types/chat';
+import type { ChatsResponse, NewMessagePayload, ChatReadPayload } from '@/types/chat';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/hooks/chat';
 import { useAuthStore } from '@/stores/auth';
 
-const tabsData = Object.freeze({
-  0: {
-    id: 'allchats',
-    name: 'All Chats',
-    icon: <GridAllIcon className="h-4 w-4" />,
-  },
-  1: {
-    id: 'personal',
-    name: 'Personal',
-    icon: <ChatIcon className="h-4 w-4" />,
-  },
-  2: {
-    id: 'group',
-    name: 'Groups',
-    icon: <MembersIcon className="h-5 w-5" />,
-  },
-});
+const tabsData = [
+  { id: 'allchats', name: 'All Chats',  icon: <GridAllIcon className="h-4 w-4" /> },
+  { id: 'personal', name: 'Personal',   icon: <ChatIcon className="h-4 w-4" /> },
+  { id: 'group',    name: 'Groups',     icon: <MembersIcon className="h-5 w-5" /> },
+];
 
 type ChatTabViewProps = {
   searchText: string;
 };
 
 const ChatTabView = ({ searchText }: ChatTabViewProps) => {
-  const { data: chats, isLoading, refetch } = useMyChatsQuery();
+  const { data: chats, isLoading } = useMyChatsQuery();
   const { data: notificationsData } = useGetMyNotificationsQuery();
   const syncMessageNotificationsFromServer = useNotificationsStore(
     (s) => s.syncMessageNotificationsFromServer,
@@ -59,12 +47,6 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
   const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.user?._id);
 
-  const filteredChats = (chatList: ChatRow[] | undefined) => {
-    return chatList?.filter((chat) =>
-      chat.name.toLowerCase().includes(searchText.toLowerCase()),
-    );
-  };
-
   const chatsData = (chats as ChatsResponse | undefined)?.data;
 
   // Track insert time for every chatId we see. Empty chats (no lastMessage) that
@@ -79,8 +61,6 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
     for (const chat of chatsData) {
       if (!seenChatIdsRef.current.has(chat._id)) {
         seenChatIdsRef.current.add(chat._id);
-        // On initial load: use the actual message time (or 0) — don't boost empty chats.
-        // After initial load: new empty chat = just accepted request → pin to top.
         newEntries[chat._id] = chat.lastMessage?.createdAt
           ? Date.parse(chat.lastMessage.createdAt)
           : isInitialLoad
@@ -92,19 +72,6 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
       setChatInsertTimes((prev) => ({ ...prev, ...newEntries }));
     }
   }, [chatsData]);
-
-  /** Sort by max(lastMessageTime, insertTime) — gives WhatsApp-like ordering:
-   *  messages move chats up, and newly accepted (empty) chats start at the top. */
-  const sortByRecent = (chatList: ChatRow[] | undefined) => {
-    if (!chatList) return chatList;
-    return [...chatList].sort((a, b) => {
-      const aMsg = a.lastMessage?.createdAt ? Date.parse(a.lastMessage.createdAt) : 0;
-      const bMsg = b.lastMessage?.createdAt ? Date.parse(b.lastMessage.createdAt) : 0;
-      const aTime = Math.max(aMsg, chatInsertTimes[a._id] ?? 0);
-      const bTime = Math.max(bMsg, chatInsertTimes[b._id] ?? 0);
-      return bTime - aTime;
-    });
-  };
 
   useEffect(() => {
     if (!chatsData) return;
@@ -121,17 +88,25 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
     syncRequestNotificationsFromServer(count);
   }, [notificationsData, syncRequestNotificationsFromServer]);
 
-  const personalChats = sortByRecent(
-    filteredChats(chatsData?.filter((chat) => !chat.groupChat)),
-  );
-  const groupChats = sortByRecent(
-    filteredChats(chatsData?.filter((chat) => chat.groupChat)),
-  );
-  const allChats = sortByRecent(filteredChats(chatsData));
+  /** Memoised full sorted+filtered lists — recomputed only when data, search, or insert times change. */
+  const allChats = useMemo(() => {
+    const filtered = chatsData?.filter((chat) =>
+      chat.name.toLowerCase().includes(searchText.toLowerCase()),
+    );
+    if (!filtered) return filtered;
+    return [...filtered].sort((a, b) => {
+      const aMsg = a.lastMessage?.createdAt ? Date.parse(a.lastMessage.createdAt) : 0;
+      const bMsg = b.lastMessage?.createdAt ? Date.parse(b.lastMessage.createdAt) : 0;
+      return Math.max(bMsg, chatInsertTimes[b._id] ?? 0) - Math.max(aMsg, chatInsertTimes[a._id] ?? 0);
+    });
+  }, [chatsData, searchText, chatInsertTimes]);
+
+  const personalChats = useMemo(() => allChats?.filter((c) => !c.groupChat), [allChats]);
+  const groupChats    = useMemo(() => allChats?.filter((c) => c.groupChat),  [allChats]);
 
   const refetchChatListener = useCallback(() => {
-    refetch();
-  }, [refetch]);
+    void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+  }, [queryClient]);
 
   // Instantly patch lastMessage in the cache when any new message arrives —
   // avoids the full /get-my-chats round-trip for both sender and recipient.
@@ -159,7 +134,7 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
         return { ...old, data: next };
       });
     },
-    [queryClient, userId],
+    [queryClient],
   );
 
   // When the peer reads, flip isRead on the last message in that chat.
@@ -182,29 +157,25 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
     [queryClient, userId],
   );
 
-  const events = {
+  const events = useMemo(() => ({
     [SOCKET_EVENTS.REFETCH_CHATS]: refetchChatListener,
     [SOCKET_EVENTS.NEW_MESSAGE]: newMessageChatListPatch,
     [SOCKET_EVENTS.CHAT_READ]: chatReadChatListPatch,
-  };
+  }), [refetchChatListener, newMessageChatListPatch, chatReadChatListPatch]);
 
   useSocketEvent(socket, events);
 
+  const tabLists = [allChats, personalChats, groupChats];
+
   return (
     <TabView tabsData={tabsData}>
-      {(activeTabIndex: number) =>
-        Object.values(tabsData).map((tab) => (
+      {() =>
+        tabsData.map((tab, i) => (
           <ChatList
             key={tab.id}
             type={tab.id}
             isLoading={isLoading}
-            chats={
-              activeTabIndex == 1
-                ? personalChats
-                : activeTabIndex == 2
-                  ? groupChats
-                  : allChats
-            }
+            chats={tabLists[i]}
           />
         ))
       }

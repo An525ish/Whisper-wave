@@ -1,6 +1,7 @@
 import {
   fileData,
   fileFormat,
+  isGifFile,
   type FileFormatKind,
 } from '@/utils/fileFormat';
 import CircularLoader from '@/components/ui/loaders/CircularLoader';
@@ -121,7 +122,8 @@ const RenderAttachments = ({
   album = false,
   onDownload,
 }: RenderAttachmentsProps) => {
-  const isImage = type?.startsWith('image/') || fileType === 'image';
+  const isGif = fileType === 'gif' || type === 'image/gif' || isGifFile(url, name);
+  const isImage = type?.startsWith('image/') || fileType === 'image' || isGif;
   const isVideo = type?.startsWith('video/') || fileType === 'video';
   const isAudio = type?.startsWith('audio/') || fileType === 'audio';
   const fileExtension = fileFormat(name);
@@ -145,7 +147,7 @@ const RenderAttachments = ({
         <RetryableMediaImage
           url={url}
           alt={name || 'attachment'}
-          transformWidth={320}
+          transformWidth={isGif ? undefined : 320}
           className={`${mediaFillClass} transition-opacity duration-300`}
           wrapperClassName={mediaFillClass}
           fallbackIconClassName="h-14 w-14"

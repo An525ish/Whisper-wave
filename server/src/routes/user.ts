@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import {
-  deleteProfile,
   getProfile,
   searchUser,
   updateProfile,
@@ -28,4 +27,3 @@ userRouter.put(
   updateProfile
 );
 
-userRouter.delete('/delete-profile', deleteProfile);

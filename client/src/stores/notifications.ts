@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 import type { MessageNotification, RequestNotification } from '@/types';
 
 type NotificationsState = {
-  totalNotificationCount: number;
   messageNotificationCount: number;
   requestNotificationCount: number;
   messageNotifications: MessageNotification[];
@@ -30,10 +29,13 @@ type NotificationsState = {
   syncRequestNotificationsFromServer: (count: number) => void;
 };
 
+/** Derived — always msg + req. Use this selector instead of a stored total. */
+export const selectTotalNotificationCount = (s: NotificationsState) =>
+  s.messageNotificationCount + s.requestNotificationCount;
+
 export const useNotificationsStore = create<NotificationsState>()(
   persist(
     (set, get) => ({
-      totalNotificationCount: 0,
       messageNotificationCount: 0,
       requestNotificationCount: 0,
       messageNotifications: [],
@@ -41,12 +43,7 @@ export const useNotificationsStore = create<NotificationsState>()(
       dismissedMessageCounts: {},
 
       resetMessageNotification: () => {
-        const { totalNotificationCount, messageNotificationCount } = get();
         set({
-          totalNotificationCount: Math.max(
-            totalNotificationCount - messageNotificationCount,
-            0,
-          ),
           messageNotificationCount: 0,
           messageNotifications: [],
           dismissedMessageCounts: {},
@@ -54,7 +51,7 @@ export const useNotificationsStore = create<NotificationsState>()(
       },
 
       clearMessageNotifications: () => {
-        const { messageNotifications, requestNotificationCount } = get();
+        const { messageNotifications } = get();
         const dismissedMessageCounts = { ...(get().dismissedMessageCounts ?? {}) };
         for (const notification of messageNotifications) {
           dismissedMessageCounts[notification.chatId] = Math.max(
@@ -66,23 +63,15 @@ export const useNotificationsStore = create<NotificationsState>()(
           dismissedMessageCounts,
           messageNotifications: [],
           messageNotificationCount: 0,
-          totalNotificationCount: requestNotificationCount,
         });
       },
 
       resetRequestNotification: () => {
-        const { totalNotificationCount, requestNotificationCount } = get();
-        set({
-          totalNotificationCount: Math.max(
-            totalNotificationCount - requestNotificationCount,
-            0,
-          ),
-          requestNotificationCount: 0,
-        });
+        set({ requestNotificationCount: 0 });
       },
 
       syncMessageNotificationsFromServer: (items) => {
-        const { requestNotificationCount, dismissedMessageCounts } = get();
+        const { dismissedMessageCounts } = get();
         const nextDismissed = { ...(dismissedMessageCounts ?? {}) };
         const messageNotifications = items
           .filter((item) => item.count > 0)
@@ -94,10 +83,7 @@ export const useNotificationsStore = create<NotificationsState>()(
             }
             return false;
           })
-          .map((item) => ({
-            chatId: item.chatId,
-            count: item.count,
-          }));
+          .map((item) => ({ chatId: item.chatId, count: item.count }));
 
         for (const item of items) {
           if (item.count === 0) delete nextDismissed[item.chatId];
@@ -108,13 +94,7 @@ export const useNotificationsStore = create<NotificationsState>()(
           0,
         );
 
-        set({
-          dismissedMessageCounts: nextDismissed,
-          messageNotifications,
-          messageNotificationCount,
-          totalNotificationCount:
-            messageNotificationCount + requestNotificationCount,
-        });
+        set({ dismissedMessageCounts: nextDismissed, messageNotifications, messageNotificationCount });
       },
 
       addMessageNotification: ({ chatId, name, avatar, timestamp }) => {
@@ -124,27 +104,19 @@ export const useNotificationsStore = create<NotificationsState>()(
         const existing = messageNotifications.find((n) => n.chatId === chatId);
         const next = existing
           ? messageNotifications.map((n) =>
-              n.chatId === chatId
-                ? { ...n, count: n.count + 1, timestamp }
-                : n,
+              n.chatId === chatId ? { ...n, count: n.count + 1, timestamp } : n,
             )
-          : [
-              ...messageNotifications,
-              { chatId, name, avatar, count: 1, timestamp },
-            ];
+          : [...messageNotifications, { chatId, name, avatar, count: 1, timestamp }];
 
         set((state) => ({
           dismissedMessageCounts: nextDismissed,
           messageNotifications: next,
           messageNotificationCount: state.messageNotificationCount + 1,
-          totalNotificationCount: state.totalNotificationCount + 1,
         }));
       },
 
       removeMessageNotification: ({ chatId }) => {
-        const notification = get().messageNotifications.find(
-          (n) => n.chatId === chatId,
-        );
+        const notification = get().messageNotifications.find((n) => n.chatId === chatId);
         const nextDismissed = { ...(get().dismissedMessageCounts ?? {}) };
         delete nextDismissed[chatId];
         if (!notification) {
@@ -154,26 +126,13 @@ export const useNotificationsStore = create<NotificationsState>()(
 
         set((state) => ({
           dismissedMessageCounts: nextDismissed,
-          messageNotifications: state.messageNotifications.filter(
-            (n) => n.chatId !== chatId,
-          ),
-          messageNotificationCount: Math.max(
-            state.messageNotificationCount - notification.count,
-            0,
-          ),
-          totalNotificationCount: Math.max(
-            state.totalNotificationCount - notification.count,
-            0,
-          ),
+          messageNotifications: state.messageNotifications.filter((n) => n.chatId !== chatId),
+          messageNotificationCount: Math.max(state.messageNotificationCount - notification.count, 0),
         }));
       },
 
       syncRequestNotificationsFromServer: (count) => {
-        const { messageNotificationCount } = get();
-        set({
-          requestNotificationCount: count,
-          totalNotificationCount: messageNotificationCount + count,
-        });
+        set({ requestNotificationCount: count });
       },
 
       addRequestNotification: (payload) => {
@@ -182,30 +141,19 @@ export const useNotificationsStore = create<NotificationsState>()(
             ? [...state.requestNotifications, payload]
             : state.requestNotifications,
           requestNotificationCount: state.requestNotificationCount + 1,
-          totalNotificationCount: state.totalNotificationCount + 1,
         }));
       },
 
       removeRequestNotification: ({ id }) => {
         set((state) => ({
-          requestNotifications: state.requestNotifications.filter(
-            (r) => r.id !== id,
-          ),
-          requestNotificationCount: Math.max(
-            state.requestNotificationCount - 1,
-            0,
-          ),
-          totalNotificationCount: Math.max(
-            state.totalNotificationCount - 1,
-            0,
-          ),
+          requestNotifications: state.requestNotifications.filter((r) => r.id !== id),
+          requestNotificationCount: Math.max(state.requestNotificationCount - 1, 0),
         }));
       },
     }),
     {
       name: 'ww-notifications',
       partialize: (state) => ({
-        totalNotificationCount: state.totalNotificationCount,
         messageNotificationCount: state.messageNotificationCount,
         requestNotificationCount: state.requestNotificationCount,
         messageNotifications: state.messageNotifications,

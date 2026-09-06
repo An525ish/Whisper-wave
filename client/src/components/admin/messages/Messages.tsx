@@ -39,8 +39,8 @@ const Messages = () => {
     sentinelEnabled,
     deleteMessage,
     retryMessage,
-    deleting,
-    retrying,
+    deletingId,
+    retryingId,
   } = useMessagesPage();
 
   return (
@@ -88,10 +88,10 @@ const Messages = () => {
           hasNextPage={Boolean(hasNextPage)}
           isFetchingNextPage={isFetchingNextPage}
           sentinelEnabled={sentinelEnabled}
-          deleting={deleting}
-          retrying={retrying}
+          deletingId={deletingId}
+          retryingId={retryingId}
           onDelete={setDeleteTarget}
-          onRetry={(messageId) => retryMessage(messageId)}
+          onRetry={retryMessage}
           onLoadMore={() => void fetchNextPage()}
           onRetryFetch={() => void refetch()}
         />
@@ -108,7 +108,7 @@ const Messages = () => {
           handleConfirmationModal={({ accept }) => {
             const target = deleteTarget;
             setDeleteTarget(null);
-            if (accept) deleteMessage(target._id);
+            if (accept) deleteMessage(target._id); // wrapper sets deletingId + clears on settle
           }}
         />
       )}

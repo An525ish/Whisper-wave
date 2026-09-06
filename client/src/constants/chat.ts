@@ -2,11 +2,8 @@
 /** Distance from bottom (px) below which the view is considered "near bottom". */
 export const NEAR_BOTTOM_PX = 120;
 
-/** Debounce delay (ms) for user-search inputs. */
-export const SEARCH_DEBOUNCE_MS = 450;
-
-/** Max auto-grow height (px) for the chat composer textarea. */
-export const MAX_TEXTAREA_HEIGHT = 128;
+// Re-exported from app.ts — single source of truth
+export { SEARCH_DEBOUNCE_MS, MAX_TEXTAREA_HEIGHT } from '@/constants/app';
 
 /** Composer row + send button sizing (input pill border adds 2px to outer height). */
 export const COMPOSER_ROW_MIN_PX = 44;

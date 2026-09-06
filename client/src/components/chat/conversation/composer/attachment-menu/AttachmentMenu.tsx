@@ -29,7 +29,6 @@ const AttachmentMenu = ({
       if (error) { toast.error(error); return; }
       onFileSelect(type, Array.from(files));
       onClose();
-      console.log(`${type} uploaded:`, files);
     },
     [onClose, onFileSelect],
   );

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from '@/components/ui/Image';
 import { SEARCH_DEBOUNCE_MS } from '@/constants/app';
+import { useDebounce } from '@/hooks/shared/useDebounce';
 import { useAdminUsersQuery } from '@/hooks/admin';
 import type { UserFilterOption } from '@/types/admin';
 
@@ -14,14 +15,10 @@ type Props = {
 const UserFilterChip = ({ value, onChange, label = 'Sender', popoverAlign = 'left' }: Props) => {
   const [open, setOpen] = useState(false);
   const [inputText, setInputText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(inputText.trim()), SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [inputText]);
+  const debouncedSearch = useDebounce(inputText.trim(), SEARCH_DEBOUNCE_MS);
 
   const active = debouncedSearch.length >= 2;
   const { data, isFetching } = useAdminUsersQuery(active ? debouncedSearch : '', 'all', active);
@@ -46,13 +43,14 @@ const UserFilterChip = ({ value, onChange, label = 'Sender', popoverAlign = 'lef
   }, []);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 30);
+    if (!open) return;
+    const id = setTimeout(() => inputRef.current?.focus(), 30);
+    return () => clearTimeout(id);
   }, [open]);
 
   const handleSelect = (opt: UserFilterOption) => {
     onChange(opt);
     setInputText('');
-    setDebouncedSearch('');
     setOpen(false);
   };
 
@@ -60,7 +58,6 @@ const UserFilterChip = ({ value, onChange, label = 'Sender', popoverAlign = 'lef
     e.stopPropagation();
     onChange(null);
     setInputText('');
-    setDebouncedSearch('');
     setOpen(false);
   };
 

@@ -1,6 +1,6 @@
 import {
-  forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
-  type ChangeEvent, type KeyboardEvent, type TouchEvent,
+  useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
+  type ChangeEvent, type KeyboardEvent, type Ref, type TouchEvent,
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import useErrors from '@/hooks/shared/useError';
@@ -10,6 +10,8 @@ import {
   useMessageActions, useMessageSelection,
   useSendGifMutation, useTypingIndicator, queryKeys,
 } from '@/hooks/chat';
+import { useGetMediaQuery } from '@/hooks/chat/useMessageQueries';
+import { getMediaKindFromFile } from '@/utils/fileFormat';
 import { useAttachmentUpload } from '@/hooks/chat/useAttachmentUpload';
 import ContextMenu from '@/components/ui/context-menu/ContextMenu';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
@@ -24,11 +26,13 @@ import { isValidMessageId, normalizeMemberIds } from '@/utils/helpers';
 import ChatBox from '@/components/chat/message/MessageRow';
 import MessageReactions from '@/components/chat/message/MessageReactions';
 import ChatInput from '@/components/chat/conversation/composer/ChatInput';
-import ForwardDialog from '@/components/chat/dialogs/ForwardDialog';
+import { lazy, Suspense } from 'react';
+const ForwardDialog = lazy(() => import('@/components/chat/dialogs/ForwardDialog'));
 import type {
-  ChatDetailsResponse, ChatMessage, MessageReplyTo,
+  ChatDetailsResponse, ChatMessage, MediaResponse, SharedMediaRow,
 } from '@/types/chat';
-import { isOutgoingMessageRead } from '@/utils/chat';
+import type { MediaFile } from '@/components/ui/image-viewer/ImageViewer';
+import { isOutgoingMessageRead, buildReplySnapshot, getReplyPreviewText } from '@/utils/chat';
 import DoubleChevronDown from '@/components/ui/icons/DoubleChevronDown';
 import ReplyComposerBar from '@/components/chat/conversation/composer/ReplyBar';
 import ChatDayLabel from '@/components/chat/conversation/ChatDayLabel';
@@ -42,6 +46,7 @@ export type ConversationPanelHandle = {
 };
 
 type ChatsViewPanelProps = {
+  ref?: Ref<ConversationPanelHandle>;
   chatId?: string;
   focusMessageId?: string | null;
   highlightQuery?: string;
@@ -55,26 +60,14 @@ type ChatsViewPanelProps = {
   onFetchingNextPageChange?: (loading: boolean) => void;
 };
 
-const buildReplySnapshot = (msg: ChatMessage): MessageReplyTo => {
-  const firstAttachment = msg.attachments?.[0];
-  return {
-    messageId: msg._id, content: msg.content,
-    senderName: msg.sender.name ?? 'Unknown',
-    previewAttachment: firstAttachment
-      ? { url: firstAttachment.url ?? firstAttachment.tempUrl ?? '', name: firstAttachment.name ?? 'Attachment', fileType: firstAttachment.type ?? '' }
-      : undefined,
-  };
-};
 
-const getReplyPreviewText = (reply: MessageReplyTo) =>
-  reply.previewAttachment?.name || reply.content?.trim() || 'Message';
-
-const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProps>(({
+const ConversationPanel = ({
+  ref,
   chatId, focusMessageId = null, highlightQuery = '', searchOpen = false,
   selectMode = false, onSelectModeChange, onSelectedCountChange,
   onDeletableSelectedCountChange, onDeletingSelectedChange, onEditingChange,
   onFetchingNextPageChange,
-}, ref) => {
+}: ChatsViewPanelProps) => {
   const socket = useSocket();
   const user = useAuthStore((s) => s.user);
   const isImpersonated = useAuthStore((s) => s.isImpersonated);
@@ -89,7 +82,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   const isGroupChat = Boolean((chatDetails as ChatDetailsResponse | undefined)?.data?.groupChat);
   const myRole = (chatDetails as ChatDetailsResponse | undefined)?.data?.myRole ?? null;
   const canModerateGroup = isGroupChat && (myRole === 'creator' || myRole === 'admin');
-  const canClearChat = !isGroupChat || myRole === 'creator';
+  const canClearChat = true; // clear-for-me — available to everyone
   const memberIds = useMemo(
     () => normalizeMemberIds((chatDetails as ChatDetailsResponse | undefined)?.data?.members),
     [chatDetails],
@@ -134,6 +127,16 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     setLiveMessages, clearTypingState, message, setMessage, setAttachments,
     onEditingChange,
   });
+
+  const { data: mediaData } = useGetMediaQuery({ chatId }, { skip: !chatId });
+  const sharedGalleryFiles = useMemo<MediaFile[]>(() => {
+    const raw = (mediaData as MediaResponse | undefined)?.data;
+    const rows: SharedMediaRow[] = !raw ? [] : Array.isArray(raw) ? raw : (raw.attachments ?? []);
+    return rows
+      .filter((f) => Boolean(f.url))
+      .filter((f) => { const k = getMediaKindFromFile(f); return k === 'image' || k === 'video'; })
+      .map((f) => ({ _id: f._id ?? f.publicId ?? f.url!, url: f.url!, name: f.name, publicId: f.publicId, fileType: f.fileType }));
+  }, [mediaData]);
 
   const { deleteOneMessage, deleteSelectedMessages, handleClearChat } = useDeleteActions({
     chatId, canModerateGroup, canClearChat, deletableSelectedIds,
@@ -219,7 +222,7 @@ useImperativeHandle(ref, () => ({
     [openMessageContextMenuFromTouch],
   );
 
-  const handleMessageChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+  const handleMessageChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
     setMessage(next);
     if (isEditing || !chatId) return;
@@ -227,17 +230,9 @@ useImperativeHandle(ref, () => ({
     if (!isTypingRef.current) { setIsTyping(true); emitStartTyping(); }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => { setIsTyping(false); emitStopTyping(); timeoutRef.current = null; }, 1200);
-  };
+  }, [isEditing, chatId, clearTypingState, isTypingRef, setIsTyping, emitStartTyping, timeoutRef, emitStopTyping]);
 
-  const handleEnterPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (editingMessageId) { void saveEdit(); return; }
-      void handleSubmit();
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (editingMessageId) { await saveEdit(); return; }
     if (!message.trim() && (!attachments || attachments.length === 0)) return;
     // Ghost mode without "act as user" — block sends silently.
@@ -259,13 +254,12 @@ useImperativeHandle(ref, () => ({
     const replySnapshot = replyingTo ? buildReplySnapshot(replyingTo) : undefined;
     const replyToMessageId = replyingTo && isValidMessageId(replyingTo._id) ? replyingTo._id : undefined;
     const tempId = String(Date.now());
-    const tempAttachments = attachments.map((f) => ({
-      tempUrl: URL.createObjectURL(f),
-      name: f.name,
-      type: f.type,
-      size: f.size,
-      uploading: true,
-    }));
+    const blobUrls: string[] = [];
+    const tempAttachments = attachments.map((f) => {
+      const tempUrl = URL.createObjectURL(f);
+      blobUrls.push(tempUrl);
+      return { tempUrl, name: f.name, type: f.type, size: f.size, uploading: true };
+    });
     setLiveMessages((prev) => [
       ...prev,
       {
@@ -288,6 +282,7 @@ useImperativeHandle(ref, () => ({
         replyToMessageId,
         imageQuality,
       });
+      blobUrls.forEach(URL.revokeObjectURL);
       if (!result) { setLiveMessages((prev) => prev.filter((m) => m._id !== tempId)); return; }
       const payload = ((result as { data?: ChatMessage }).data ?? result) as ChatMessage;
       setLiveMessages((prev) =>
@@ -310,11 +305,23 @@ useImperativeHandle(ref, () => ({
       attachmentUpload.reset();
       scrollToBottom();
     } catch {
+      blobUrls.forEach(URL.revokeObjectURL);
       toast.error('Failed to send attachments');
       setLiveMessages((prev) => prev.filter((m) => m._id !== tempId));
       attachmentUpload.reset();
     }
-  };
+  }, [editingMessageId, saveEdit, message, attachments, isImpersonated, actAsUser, isTyping,
+      clearTypingState, chatId, replyingTo, setLiveMessages, user, setMessage, clearReply,
+      socket, scrollToBottom, setAttachments, setImageQuality, attachmentUpload, imageQuality, queryClient]);
+
+  // handleEnterPress must come after handleSubmit to avoid TDZ reference
+  const handleEnterPress = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (editingMessageId) { void saveEdit(); return; }
+      void handleSubmit();
+    }
+  }, [editingMessageId, saveEdit, handleSubmit]);
 
   const handleGifSelect = useCallback(
     (gif: {
@@ -379,7 +386,10 @@ useImperativeHandle(ref, () => ({
     [chatId, replyingTo, user, setLiveMessages, clearReply, scrollToBottom, sendGifMutation]
   );
 
-  const replySnapshot = replyingTo ? buildReplySnapshot(replyingTo) : null;
+  const replySnapshot = useMemo(
+    () => (replyingTo ? buildReplySnapshot(replyingTo) : null),
+    [replyingTo],
+  );
 
   return (
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -436,7 +446,7 @@ useImperativeHandle(ref, () => ({
                             role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
                             {...longPressHandlers(msg)}
                             onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(msg._id); } } : undefined}>
-                            <ChatBox chatData={msg} isGroupChat={isGroupChat} showReadReceipt={sameSender}
+                            <ChatBox chatData={msg} chatId={chatId} sharedGalleryFiles={sharedGalleryFiles} isGroupChat={isGroupChat} showReadReceipt={sameSender}
                               isRead={isMessageRead(msg)} searchHighlight={msg._id === highlightedMessageId}
                               highlightQuery={msg._id === highlightedMessageId && highlightQuery ? highlightQuery : undefined}
                               isDeleted={Boolean(msg.isDeleted)} editedAt={msg.editedAt}
@@ -503,9 +513,11 @@ useImperativeHandle(ref, () => ({
           editMode={isEditing} className="text-body-700 placeholder:text-body-300" placeholder={isEditing ? 'Edit message…' : 'Message…'} />
       </div>
 
-      <ForwardDialog open={forwardOpen} sourceChatId={chatId ?? ''} messageIds={forwardMessageIds}
-        onClose={() => { setForwardOpen(false); setForwardMessageIds([]); }}
-        onForward={handleForwardToChat} isForwarding={forwardIsPending} />
+      <Suspense fallback={null}>
+        <ForwardDialog open={forwardOpen} sourceChatId={chatId ?? ''} messageIds={forwardMessageIds}
+          onClose={() => { setForwardOpen(false); setForwardMessageIds([]); }}
+          onForward={handleForwardToChat} isForwarding={forwardIsPending} />
+      </Suspense>
       <ContextMenu menuState={menuState} hideContextMenu={hideContextMenu} />
 
       {confirmClearOpen ? (
@@ -541,8 +553,6 @@ useImperativeHandle(ref, () => ({
       ) : null}
     </div>
   );
-});
-
-ConversationPanel.displayName = 'ConversationPanel';
+};
 
 export default ConversationPanel;

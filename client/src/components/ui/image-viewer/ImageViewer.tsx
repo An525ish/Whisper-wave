@@ -5,7 +5,7 @@ import {
   RetryableMediaImage,
   RetryableMediaVideo,
 } from '@/components/ui/media/RetryableMedia';
-import { getMediaKindFromFile, getMediaDisplayName } from '@/utils/fileFormat';
+import { getMediaKindFromFile, getMediaDisplayName, isGifFile } from '@/utils/fileFormat';
 import ImageViewerToolbar from '@/components/ui/image-viewer/ImageViewerToolbar';
 import ImageViewerNav from '@/components/ui/image-viewer/ImageViewerNav';
 import ImageViewerReplyBar from '@/components/ui/image-viewer/ImageViewerReplyBar';
@@ -67,6 +67,7 @@ const ImageViewer = ({
   const currentMedia = mediaFiles[currentIndex];
   const mediaKind = getMediaKindFromFile(currentMedia) as MediaKind;
   const displayName = getMediaDisplayName(currentMedia);
+  const currentIsGif = isGifFile(currentMedia?.url, currentMedia?.name);
   const isVideo = mediaKind === 'video';
   const isAudio = mediaKind === 'audio';
   const canReply = Boolean(chatId && currentMedia?.messageId);
@@ -235,8 +236,8 @@ const ImageViewer = ({
         <RetryableMediaVideo
           key={currentMedia.url}
           url={currentMedia.url}
-          wrapperClassName="flex min-h-[min(60vh,580px)] w-full max-w-full items-center justify-center"
-          className="max-h-[min(68vh,680px)] max-w-full rounded-2xl object-contain shadow-[0_24px_64px_rgba(0,0,0,0.6)]"
+          wrapperClassName="flex w-full max-w-full items-center justify-center"
+          className="max-h-[min(78dvh,680px)] max-w-full rounded-2xl object-contain shadow-[0_24px_64px_rgba(0,0,0,0.6)] sm:max-h-[min(68vh,680px)]"
           fallbackIconClassName={galleryFallbackIconClass}
           controls
           playsInline
@@ -276,10 +277,10 @@ const ImageViewer = ({
         <RetryableMediaImage
           key={currentMedia.url}
           url={currentMedia.url}
-          transformWidth={1400}
+          transformWidth={currentIsGif ? undefined : 1400}
           alt={displayName}
           wrapperClassName="flex w-full max-w-full items-center justify-center"
-          className="max-h-[min(68vh,680px)] max-w-full select-none rounded-2xl object-contain shadow-[0_24px_72px_rgba(0,0,0,0.55)]"
+          className="max-h-[min(78dvh,680px)] max-w-full select-none rounded-2xl object-contain shadow-[0_24px_72px_rgba(0,0,0,0.55)] sm:max-h-[min(68vh,680px)]"
           fallbackIconClassName={galleryFallbackIconClass}
           style={{
             transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
@@ -325,7 +326,6 @@ const ImageViewer = ({
 
         <ImageViewerToolbar
           currentMedia={currentMedia}
-          mediaKind={mediaKind}
           onClose={onClose}
           onDelete={onDelete && currentMedia ? () => onDelete(currentMedia) : undefined}
           onForward={onForward && currentMedia ? () => onForward(currentMedia) : undefined}

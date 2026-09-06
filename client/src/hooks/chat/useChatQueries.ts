@@ -51,6 +51,6 @@ export function useGetMyNotificationsQuery() {
   return useQuery({
     queryKey: queryKeys.notifications,
     queryFn: chatApi.getMyNotifications,
-    staleTime: 0,
+    staleTime: 30_000, // socket events drive freshness; avoid refetch on every mount
   });
 }

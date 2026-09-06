@@ -23,10 +23,15 @@ export function useDashboardPage() {
   const groupsSeries = stats?.groupsSeries ?? [];
   const requestsSeries = stats?.requestsSeries ?? [];
 
-  const weekUsers = sumSeries(newUsersSeries);
-  const weekMessages = sumSeries(messagesSeries);
-  const weekGroups = sumSeries(groupsSeries);
-  const weekRequests = sumSeries(requestsSeries);
+  const { weekUsers, weekMessages, weekGroups, weekRequests } = useMemo(
+    () => ({
+      weekUsers: sumSeries(newUsersSeries),
+      weekMessages: sumSeries(messagesSeries),
+      weekGroups: sumSeries(groupsSeries),
+      weekRequests: sumSeries(requestsSeries),
+    }),
+    [newUsersSeries, messagesSeries, groupsSeries, requestsSeries],
+  );
   const totalUsers = stats?.users ?? 0;
   const onlineUsers = stats?.onlineUsers ?? 0;
   const onlinePct = onlinePercent(onlineUsers, totalUsers);
@@ -73,7 +78,7 @@ export function useDashboardPage() {
   );
 
   const composition = useMemo(() => buildCompositionSegments(stats), [stats]);
-  const lastUpdated = formatDashboardUpdated(dataUpdatedAt);
+  const lastUpdated = useMemo(() => formatDashboardUpdated(dataUpdatedAt), [dataUpdatedAt]);
 
   return {
     metrics,

@@ -19,11 +19,11 @@ type MessageRowProps = {
   msg: AdminMessageRow;
   onDelete: () => void;
   onRetry: () => void;
-  deleting: boolean;
-  retrying: boolean;
+  isDeleting: boolean;
+  isRetrying: boolean;
 };
 
-const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowProps) => {
+const MessageRow = ({ msg, onDelete, onRetry, isDeleting, isRetrying }: MessageRowProps) => {
   const isFailed = msg.status === 'failed';
   const isDeleted = Boolean(msg.isDeleted);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -114,7 +114,7 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
                   <button
                     type="button"
                     onClick={onRetry}
-                    disabled={retrying}
+                    disabled={isRetrying}
                     className="rounded-lg p-2 text-body-300/50 transition hover:bg-green/10 hover:text-green disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
                     title="Retry delivery"
                     aria-label="Retry message delivery"
@@ -125,7 +125,7 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
                 <button
                   type="button"
                   onClick={onDelete}
-                  disabled={deleting}
+                  disabled={isDeleting}
                   className="rounded-lg p-2 text-body-300/35 transition hover:bg-red/10 hover:text-red disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
                   title="Delete message"
                   aria-label="Delete message"

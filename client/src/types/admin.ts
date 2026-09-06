@@ -17,7 +17,7 @@ export type AdminMessage = {
   sender?: { _id: string; name?: string; username?: string; avatar?: { url?: string } };
   chat?: { _id: string; name?: string };
   createdAt?: string;
-  attachments?: unknown[];
+  attachments?: AdminMessageAttachment[];
 };
 
 export type AdminGroup = {
@@ -57,7 +57,7 @@ export type AdminActivityUser = {
 export type AdminActivityMessage = {
   _id: string;
   content?: string;
-  attachments?: unknown[];
+  attachments?: AdminMessageAttachment[];
   status?: string;
   createdAt?: string;
   sender?: AdminActivityUser;

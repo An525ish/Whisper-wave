@@ -83,7 +83,7 @@ const AttachmentsContent = ({
         hasSearch={Boolean(debouncedSearch)}
       />
     ) : (
-      <div className="space-y-6 pb-4">
+      <div className="space-y-6 px-0.5 pt-0.5 pb-4">
         {showMedia && mediaItems.length > 0 && (
           <div>
             {(kindFilter === 'all' || kindFilter === 'deleted') && (

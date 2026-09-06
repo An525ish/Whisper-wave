@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ADMIN_MIN_SEARCH_LEN } from '@/constants/admin/users';
 import { SEARCH_DEBOUNCE_MS } from '@/constants/app';
+import { useDebounce } from '@/hooks/shared/useDebounce';
 import { useAdminStatsQuery, useAdminUsersQuery } from '@/hooks/admin';
 import type { SignupMethodFilter } from '@/types/admin';
 import { sumSeries } from '@/utils/admin/dashboard';
@@ -8,16 +9,10 @@ import { sumSeries } from '@/utils/admin/dashboard';
 export function useUsersPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [signupMethod, setSignupMethod] = useState<SignupMethodFilter>('all');
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearch(searchText.trim());
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timeoutId);
-  }, [searchText]);
+  const debouncedSearch = useDebounce(searchText.trim(), SEARCH_DEBOUNCE_MS);
 
   const querySearch =
     debouncedSearch.length >= ADMIN_MIN_SEARCH_LEN ? debouncedSearch : '';

@@ -149,10 +149,9 @@ export function useChatMessages({
   useEffect(() => {
     setLiveMessages([]);
     setPeerLastReadAt(null);
-    if (chatId) {
-      removeMessageNotification({ chatId });
-      if (!isImpersonated) markReadMutation.mutate({ chatId });
-    }
+    markCurrentChatRead();
+    // markCurrentChatRead is stable via useCallback; intentionally omitted from deps
+    // so this only runs on chatId change, not on every re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId]);
 

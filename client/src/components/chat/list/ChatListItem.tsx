@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import AvatarCard from '@/components/ui/AvatarCard';
 import ReadReceipt from '@/components/ui/icons/ReadReceipt';
-import { Link, useParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { getFirstName, formatChatTime } from '@/utils/helpers';
 import CountBadge from '@/components/ui/CountBadge';
 import type { ChatLastMessage } from '@/types/chat';
@@ -10,6 +10,7 @@ type ChatListItemProps = {
   avatar?: string[];
   name: string;
   id: string;
+  isActive?: boolean;
   groupChat?: boolean;
   isOnline?: boolean;
   isTyping?: boolean;
@@ -22,6 +23,7 @@ const ChatListItem = ({
   avatar = [],
   name,
   id,
+  isActive = false,
   groupChat = false,
   isOnline = false,
   isTyping = false,
@@ -29,9 +31,7 @@ const ChatListItem = ({
   unreadCount = 0,
   currentUserId,
 }: ChatListItemProps) => {
-  const { chatId } = useParams();
   const hasUnread = unreadCount > 0;
-  const isActive = chatId === id;
   const senderId = lastMessage?.sender?._id
     ? String(lastMessage.sender._id)
     : '';

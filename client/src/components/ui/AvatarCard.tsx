@@ -6,9 +6,10 @@ type AvatarCardProps = {
   max?: number;
   avatarClassName?: string;
   showOnline?: boolean;
+  showLoading?: boolean;
 };
 
-const AvatarCard = ({ avatars, max = 3, avatarClassName, showOnline = false }: AvatarCardProps) => {
+const AvatarCard = ({ avatars, max = 3, avatarClassName, showOnline = false, showLoading = false }: AvatarCardProps) => {
   const list = (avatars ?? []).filter((src) => Boolean(src));
   const shown = (list.length > 0 ? list : [null]).slice(0, Math.min(max, list.length || 1));
   const stacked = shown.length > 1;
@@ -26,7 +27,7 @@ const AvatarCard = ({ avatars, max = 3, avatarClassName, showOnline = false }: A
           style={{ zIndex: shown.length - index }}
         >
           <div
-            className={`overflow-hidden rounded-full border-2 border-border shadow-md ${
+            className={`overflow-hidden rounded-full border-2 border-border bg-border/25 shadow-md ${
               stacked
                 ? 'h-11 w-11 md:h-12 md:w-12'
                 : 'h-11 w-11 md:h-12 md:w-12'
@@ -38,7 +39,7 @@ const AvatarCard = ({ avatars, max = 3, avatarClassName, showOnline = false }: A
               alt="avatar-icon"
               className="h-full w-full"
               displayWidth={96}
-              showLoading={false}
+              showLoading={showLoading}
             />
           </div>
           {showOnline && index === 0 ? (

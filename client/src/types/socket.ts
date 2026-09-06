@@ -1,3 +1,6 @@
+// Re-export the canonical NewMessagePayload from chat types (has chatId + message)
+export type { NewMessagePayload } from '@/types/chat';
+
 export type NewMessageAlertPayload = {
   chatId: string;
 };
@@ -12,9 +15,5 @@ export type UserPresencePayload = {
 };
 
 export type TypingPayload = {
-  chatId: string;
-};
-
-export type NewMessagePayload = {
   chatId: string;
 };
