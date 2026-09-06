@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from 'react';
+import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
 import Searchbar from '@/components/ui/Searchbar';
 import AccountBar from '@/components/profile/AccountBar';
 import DotsMenu from '@/components/ui/DotsMenu';
@@ -26,19 +26,45 @@ const ChatListHeader = ({
 }: ChatListHeaderProps) => {
   const { data: chats } = useMyChatsQuery();
   const chatsData = (chats as ChatsResponse | undefined)?.data;
-  const unreadCount =
-    chatsData?.reduce((sum, chat) => sum + (chat.unreadCount ?? 0), 0) ?? 0;
+  const unreadCount = useMemo(
+    () => chatsData?.reduce((sum, chat) => sum + (chat.unreadCount ?? 0), 0) ?? 0,
+    [chatsData],
+  );
   const resetMessageNotification = useNotificationsStore(
     (s) => s.resetMessageNotification,
   );
   const [markAllRead] = useAsyncMutation(useMarkAllChatsReadMutation);
 
-  const handleMarkAllRead = () => {
+  const handleMarkAllRead = useCallback(() => {
     if (unreadCount === 0) return;
     void markAllRead('Marking all as read…', undefined).then((res) => {
       if (res) resetMessageNotification();
     });
-  };
+  }, [unreadCount, markAllRead, resetMessageNotification]);
+
+  const menuItems = useMemo(() => [
+    {
+      id: 'mark-all-read',
+      label: 'Mark all as read',
+      tone: 'accent' as const,
+      icon: <ReadReceipt read className="h-3.5 w-3.5" />,
+      disabled: unreadCount === 0,
+      onSelect: handleMarkAllRead,
+    },
+    {
+      id: 'add-friends',
+      label: 'Add friends',
+      dividerBefore: true,
+      icon: <AddMemberIcon className="h-3.5 w-3.5 fill-current" />,
+      onSelect: () => onOpenNew?.('friends'),
+    },
+    {
+      id: 'create-group',
+      label: 'Create group',
+      icon: <CreateGroupIcon className="h-3.5 w-3.5 fill-current" />,
+      onSelect: () => onOpenNew?.('group'),
+    },
+  ], [unreadCount, handleMarkAllRead, onOpenNew]);
 
   return (
     <div className="relative flex w-full flex-col gap-3 border-b border-border/50 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:border-0 md:p-2 md:pt-1">
@@ -61,29 +87,7 @@ const ChatListHeader = ({
           <DotsMenu
             ariaLabel="Chat list options"
             align="right"
-            items={[
-              {
-                id: 'mark-all-read',
-                label: 'Mark all as read',
-                tone: 'accent',
-                icon: <ReadReceipt read className="h-3.5 w-3.5" />,
-                disabled: unreadCount === 0,
-                onSelect: handleMarkAllRead,
-              },
-              {
-                id: 'add-friends',
-                label: 'Add friends',
-                dividerBefore: true,
-                icon: <AddMemberIcon className="h-3.5 w-3.5 fill-current" />,
-                onSelect: () => onOpenNew?.('friends'),
-              },
-              {
-                id: 'create-group',
-                label: 'Create group',
-                icon: <CreateGroupIcon className="h-3.5 w-3.5 fill-current" />,
-                onSelect: () => onOpenNew?.('group'),
-              },
-            ]}
+            items={menuItems}
           />
         </div>
       </div>

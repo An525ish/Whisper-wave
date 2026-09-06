@@ -131,7 +131,8 @@ export type ChatReadPayload = {
   chatId: string;
   userId: string;
   lastReadAt: string;
-  lastReadMessageId?: string;
+  // Note: lastReadMessageId is NOT emitted by the server — per-message read-cursor
+  // is only available from the REST markChatRead response, not via socket.
 };
 
 export type MessageUpdatedPayload = {
@@ -251,7 +252,7 @@ export type ChatSearchHit = {
   content?: string;
   createdAt: string;
   sender: { _id: string; name: string; avatar?: string };
-  attachments?: Array<{ name?: string; fileType?: string }>;
+  attachments?: Array<{ name?: string; fileType?: string; url?: string }>;
 };
 
 export type SearchMode = 'messages' | 'media' | 'links' | 'date';

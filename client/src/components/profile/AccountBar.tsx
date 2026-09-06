@@ -8,7 +8,7 @@ import { useSignOutMutation } from '@/hooks/auth';
 import LeaveGroupIcon from '@/components/ui/icons/LeaveGroup';
 import { getFirstName } from '@/utils/helpers';
 import { useAuthStore } from '@/stores/auth';
-import { useNotificationsStore } from '@/stores/notifications';
+import { useNotificationsStore, selectTotalNotificationCount } from '@/stores/notifications';
 import { useProfileUiStore } from '@/stores/profile';
 import { useLocation } from 'react-router-dom';
 
@@ -42,9 +42,7 @@ const AccountBar = ({
   const location = useLocation();
   const isNotificationOpen = notificationPath === location.pathname;
 
-  const totalNotificationCount = useNotificationsStore(
-    (s) => s.totalNotificationCount,
-  );
+  const totalNotificationCount = useNotificationsStore(selectTotalNotificationCount);
   const user = useAuthStore((s) => s.user);
   const openSelfProfile = useProfileUiStore((s) => s.openSelfProfile);
   const signOut = useSignOutMutation();
@@ -83,7 +81,7 @@ const AccountBar = ({
   };
 
   useEffect(() => {
-    if (isFullscreenOverlay) return;
+    if (isFullscreenOverlay || !isNotificationOpen) return;
 
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -100,7 +98,7 @@ const AccountBar = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isFullscreenOverlay]);
+  }, [isFullscreenOverlay, isNotificationOpen]);
 
   const options = [
     {

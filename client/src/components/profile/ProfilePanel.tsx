@@ -1,12 +1,13 @@
-import ImageViewer from '@/components/ui/image-viewer/ImageViewer'
+import { lazy, Suspense } from 'react'
 import Image from '@/components/ui/Image'
+const ImageViewer = lazy(() => import('@/components/ui/image-viewer/ImageViewer'))
 import { useProfilePanel } from '@/hooks/profile/useProfilePanel'
 import { ProfileNameBlock, ProfileBioSection } from '@/components/profile/ProfileForm'
 import GroupMembersList from '@/components/profile/GroupMembersList'
 import ProfileActions from '@/components/profile/ProfileActions'
 import SharedContentSheet from '@/components/profile/SharedContentSheet'
 import ProfilePanelSkeleton from '@/components/profile/ProfilePanelSkeleton'
-import ForwardDialog from '@/components/chat/dialogs/ForwardDialog'
+const ForwardDialog = lazy(() => import('@/components/chat/dialogs/ForwardDialog'))
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal'
 
 type ProfilePanelProps = {
@@ -45,7 +46,10 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
             className={`absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/0 opacity-0 transition duration-200 hover:bg-black/45 hover:opacity-100 ${p.isSaving ? 'pointer-events-none' : ''}`}
             title={p.groupChat ? 'Change group photo' : 'Change photo'}
           >
-            <img src="https://raw.githubusercontent.com/ThiagoLuizNunes/angular-boilerplate/master/src/assets/imgs/camera-white.png" alt="" className="h-8 w-8" />
+            <svg viewBox="0 0 24 24" className="h-8 w-8 text-white" fill="none" aria-hidden>
+              <path d="M4 8.5h2.2l1.1-1.8h5.4L14 8.5H16.5A1.5 1.5 0 0 1 18 10v7.5A1.5 1.5 0 0 1 16.5 19h-9A1.5 1.5 0 0 1 6 17.5V10a1.5 1.5 0 0 1 1.5-1.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="12" cy="13.5" r="2.4" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
           </label>
           <button
             type="button" onClick={() => p.avatarInputRef.current?.click()} disabled={p.isSaving}
@@ -74,27 +78,29 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
           onOpenPhoto={p.openImageViewerForFile} onOpenDocument={p.handleFileAction}
         />
       ) : null}
-      {p.viewerOpen ? (
-        <ImageViewer
-          mediaFiles={p.viewerMediaFiles}
-          initialIndex={p.initialImageIndex}
-          onClose={() => p.setViewerOpen(false)}
-          onForward={p.chatId ? (file) => { if (file.messageId) p.handleViewerForward(file.messageId); } : undefined}
-          onDelete={p.chatId ? (file) => { if (file.messageId) p.handleViewerDelete(file.messageId); } : undefined}
-          chatId={p.chatId}
-        />
-      ) : null}
+      <Suspense fallback={null}>
+        {p.viewerOpen ? (
+          <ImageViewer
+            mediaFiles={p.viewerMediaFiles}
+            initialIndex={p.initialImageIndex}
+            onClose={() => p.setViewerOpen(false)}
+            onForward={p.chatId ? (file) => { if (file.messageId) p.handleViewerForward(file.messageId); } : undefined}
+            onDelete={p.chatId ? (file) => { if (file.messageId) p.handleViewerDelete(file.messageId); } : undefined}
+            chatId={p.chatId}
+          />
+        ) : null}
 
-      {p.viewerForwardMsgId && p.chatId ? (
-        <ForwardDialog
-          open={true}
-          sourceChatId={p.chatId}
-          messageIds={[p.viewerForwardMsgId]}
-          onClose={() => p.setViewerForwardMsgId(null)}
-          onForward={p.handleViewerForwardToChat}
-          isForwarding={p.forwardIsPending}
-        />
-      ) : null}
+        {p.viewerForwardMsgId && p.chatId ? (
+          <ForwardDialog
+            open={true}
+            sourceChatId={p.chatId}
+            messageIds={[p.viewerForwardMsgId]}
+            onClose={() => p.setViewerForwardMsgId(null)}
+            onForward={p.handleViewerForwardToChat}
+            isForwarding={p.forwardIsPending}
+          />
+        ) : null}
+      </Suspense>
 
       {p.viewerDeleteMsgId ? (
         <ConfirmationModal

@@ -192,7 +192,16 @@ const UserDetailPanel = ({ userId, onClose }: UserDetailPanelProps) => {
           onClose={() => setConfirmImpersonate(false)}
           handleConfirmationModal={({ accept }) => {
             setConfirmImpersonate(false);
-            if (accept) impersonate(userId);
+            if (accept) {
+              // Open blank tab synchronously (user gesture context) — async onSuccess would be blocked
+              const tab = window.open('', '_blank');
+              impersonate(userId, {
+                onSuccess: () => {
+                  if (tab) tab.location.href = '/';
+                  else window.open('/', '_blank');
+                },
+              });
+            }
           }}
         />
       )}

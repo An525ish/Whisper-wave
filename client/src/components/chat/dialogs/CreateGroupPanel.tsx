@@ -7,6 +7,7 @@ import PencilIcon from '@/components/ui/icons/Pencil';
 import {
   useEffect,
   useId,
+  useMemo,
   useState,
   type ChangeEvent,
 } from 'react';
@@ -97,9 +98,15 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     );
   }
 
-  const friendsData = (friends as FriendsResponse | undefined)?.data || [];
-  const filteredMembers = friendsData.filter((friend) =>
-    friend.name.toLowerCase().includes(searchText.toLowerCase()),
+  const friendsData = useMemo(
+    () => (friends as FriendsResponse | undefined)?.data ?? [],
+    [friends],
+  );
+  const filteredMembers = useMemo(
+    () => friendsData.filter((friend) =>
+      friend.name.toLowerCase().includes(searchText.toLowerCase()),
+    ),
+    [friendsData, searchText],
   );
 
   const canCreate =

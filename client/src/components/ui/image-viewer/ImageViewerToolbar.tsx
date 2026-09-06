@@ -1,9 +1,10 @@
-import type { MediaFile, MediaKind } from '@/types/media';
+import type { MediaFile } from '@/types/media';
 import ImageViewerIcon from '@/components/ui/image-viewer/ImageViewerIcons';
 import ForwardIcon from '@/components/ui/icons/Forward';
 import TrashIcon from '@/components/ui/icons/Trash';
 import toast from 'react-hot-toast';
 import { getMediaDisplayName } from '@/utils/fileFormat';
+import { formatDateFromObjectId } from '@/utils/helpers';
 
 const CloseIcon = () => (
   <svg viewBox="0 0 20 20" fill="none" aria-hidden className="h-4 w-4">
@@ -11,15 +12,8 @@ const CloseIcon = () => (
   </svg>
 );
 
-const mediaTypeLabel = (kind: MediaKind) => {
-  if (kind === 'video') return 'Video';
-  if (kind === 'audio') return 'Audio';
-  return 'Photo';
-};
-
 type ImageViewerToolbarProps = {
   currentMedia: MediaFile | undefined;
-  mediaKind: MediaKind;
   onClose: () => void;
   onDelete?: () => void;
   onForward?: () => void;
@@ -53,12 +47,12 @@ const ActionBtn = ({
 
 const ImageViewerToolbar = ({
   currentMedia,
-  mediaKind,
   onClose,
   onDelete,
   onForward,
 }: ImageViewerToolbarProps) => {
   const displayName = getMediaDisplayName(currentMedia);
+  const dateLabel = formatDateFromObjectId(currentMedia?.messageId ?? currentMedia?._id);
 
   const handleDownload = async () => {
     if (!currentMedia?.url) return;
@@ -89,12 +83,12 @@ const ImageViewerToolbar = ({
         <CloseIcon />
       </button>
 
-      {/* Meta — type badge + filename (filename hidden on small screens) */}
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="shrink-0 rounded-md bg-green/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-green ring-1 ring-inset ring-green/20">
-          {mediaTypeLabel(mediaKind)}
-        </span>
-        <p className="hidden truncate text-sm text-body-700 sm:block">{displayName}</p>
+      {/* Meta — filename + date */}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-body-700">{displayName}</p>
+        {dateLabel ? (
+          <p className="truncate text-[11px] text-body-300 sm:block">{dateLabel}</p>
+        ) : null}
       </div>
 
       {/* Actions */}

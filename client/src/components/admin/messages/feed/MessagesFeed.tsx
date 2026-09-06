@@ -16,8 +16,8 @@ type MessagesFeedProps = {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   sentinelEnabled: boolean;
-  deleting: boolean;
-  retrying: boolean;
+  deletingId: string | null;
+  retryingId: string | null;
   onDelete: (msg: AdminMessageRow) => void;
   onRetry: (messageId: string) => void;
   onLoadMore: () => void;
@@ -34,8 +34,8 @@ const MessagesFeed = ({
   hasNextPage,
   isFetchingNextPage,
   sentinelEnabled,
-  deleting,
-  retrying,
+  deletingId,
+  retryingId,
   onDelete,
   onRetry,
   onLoadMore,
@@ -57,8 +57,8 @@ const MessagesFeed = ({
           <MessageRow
             key={msg._id}
             msg={msg}
-            deleting={deleting}
-            retrying={retrying}
+            isDeleting={deletingId === msg._id}
+            isRetrying={retryingId === msg._id}
             onDelete={() => onDelete(msg)}
             onRetry={() => onRetry(msg._id)}
           />

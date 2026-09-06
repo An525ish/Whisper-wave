@@ -1,7 +1,7 @@
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import * as authApi from '@/api/auth';
 import { queryKeys } from '@/hooks/chat';
-import { ApiError } from '@/api/client';
 import { useAuthStore } from '@/stores/auth';
 
 export function useProfileQuery(enabled = true) {
@@ -9,24 +9,26 @@ export function useProfileQuery(enabled = true) {
   const setImpersonated = useAuthStore((s) => s.setImpersonated);
   const clear = useAuthStore((s) => s.clear);
 
-  return useQuery({
+  // queryFn is pure — no store writes inside to avoid double-fire under React Strict Mode.
+  // TQ v5 removed onSuccess/onError; sync store via useEffect instead.
+  const query = useQuery({
     queryKey: queryKeys.profile,
-    queryFn: async () => {
-      try {
-        const res = await authApi.getProfile();
-        setUser(res.user);
-        setImpersonated(res.isImpersonated ?? false);
-        return res.user;
-      } catch (error) {
-        clear();
-        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-          return null;
-        }
-        return null;
-      }
-    },
+    queryFn: authApi.getProfile,
     enabled,
     staleTime: 60_000,
     retry: false,
   });
+
+  useEffect(() => {
+    if (query.data) {
+      setUser(query.data.user);
+      setImpersonated(query.data.isImpersonated ?? false);
+    }
+  }, [query.data, setUser, setImpersonated]);
+
+  useEffect(() => {
+    if (query.isError) clear();
+  }, [query.isError, clear]);
+
+  return query;
 }

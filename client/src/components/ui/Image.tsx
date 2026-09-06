@@ -6,7 +6,6 @@ import {
   markAvatarImageLoaded,
 } from '@/utils/avatarImageState';
 import {
-  useLayoutEffect,
   useState,
   type ImgHTMLAttributes,
   type SyntheticEvent,
@@ -84,6 +83,8 @@ const Image = ({
   );
   const [prevSrc, setPrevSrc] = useState(src);
 
+  // Render-time derived-state update: re-check cache when src changes.
+  // Avoids an effect + cascading setState — initialAvatarFlags is safe to call during render.
   if (src !== prevSrc) {
     setPrevSrc(src);
     const next = isAvatarMode
@@ -95,13 +96,6 @@ const Image = ({
 
   const imgSrc = resolveImgSrc(src, failed, errorFallback, displayWidth);
   const attemptedSrc = src ? resolveImgSrc(src, false, errorFallback, displayWidth) : '';
-
-  useLayoutEffect(() => {
-    if (!src || failed || loaded) return;
-    if (getAvatarImageState(attemptedSrc) === 'loaded' || isImageCached(attemptedSrc)) {
-      setLoaded(true);
-    }
-  }, [src, attemptedSrc, failed, loaded]);
 
   const showAvatarLoading =
     isAvatarMode && showLoading && Boolean(src) && !failed && !loaded;
@@ -146,7 +140,7 @@ const Image = ({
             src={AVATAR_LOADING}
             alt=""
             className="h-full w-full object-cover animate-pulse motion-reduce:animate-none"
-          />
+        />
         </span>
       ) : null}
       {img}

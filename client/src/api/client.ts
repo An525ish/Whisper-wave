@@ -1,4 +1,5 @@
 import { BASE_URL } from '@/constants/app';
+import { useAuthStore } from '@/stores/auth';
 
 export class ApiError extends Error {
   status: number;
@@ -104,6 +105,8 @@ async function request<T>(
       if (refreshed) {
         return request<T>(endpoint, options, true);
       }
+      // Refresh failed — session is dead. Clear auth state so the app redirects to /auth.
+      useAuthStore.getState().clear();
     }
 
     throw new ApiError(extractMessage(payload), response.status, payload);

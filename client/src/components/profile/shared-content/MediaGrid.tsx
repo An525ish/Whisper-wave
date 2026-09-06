@@ -10,8 +10,7 @@ const ExpandIcon = ({ className }: { className?: string }) => (
   </svg>
 )
 
-const renderThumbnail = (file: MediaFile) => {
-  const kind = getMediaKindFromFile(file)
+const renderThumbnail = (file: MediaFile, kind: ReturnType<typeof getMediaKindFromFile>) => {
   if (kind === 'image') {
     return (
       <RetryableMediaImage
@@ -40,13 +39,6 @@ const renderThumbnail = (file: MediaFile) => {
   )
 }
 
-const mediaTypeLabel = (file: MediaFile) => {
-  const kind = getMediaKindFromFile(file)
-  if (kind === 'video') return 'Video'
-  if (kind === 'audio') return 'Audio'
-  return 'Photo'
-}
-
 type MediaGridProps = {
   files: MediaFile[]
   query: string
@@ -72,6 +64,7 @@ const MediaGrid = ({ files, query, photoFilter, onOpenPhoto }: MediaGridProps) =
     <div className="grid grid-cols-3 gap-1.5">
       {files.map((file) => {
         const kind = getMediaKindFromFile(file)
+        const label = kind !== 'image' ? (kind === 'video' ? 'Video' : 'Audio') : null
         return (
           <button
             type="button"
@@ -79,7 +72,7 @@ const MediaGrid = ({ files, query, photoFilter, onOpenPhoto }: MediaGridProps) =
             onClick={() => onOpenPhoto(file)}
             className="group relative overflow-hidden rounded-xl ring-1 ring-border/45 transition hover:ring-green/45 hover:shadow-[0_8px_24px_rgba(1,195,109,0.12)]"
           >
-            {renderThumbnail(file)}
+            {renderThumbnail(file, kind)}
             <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent opacity-0 transition group-hover:opacity-100" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 p-1.5 opacity-0 transition group-hover:opacity-100">
               <span className="truncate text-[10px] font-medium text-white/90">{getMediaDisplayName(file)}</span>
@@ -87,9 +80,9 @@ const MediaGrid = ({ files, query, photoFilter, onOpenPhoto }: MediaGridProps) =
                 <ExpandIcon className="h-3.5 w-3.5" />
               </span>
             </div>
-            {kind !== 'image' ? (
+            {label ? (
               <span className="pointer-events-none absolute left-1.5 top-1.5 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
-                {mediaTypeLabel(file)}
+                {label}
               </span>
             ) : null}
           </button>

@@ -77,9 +77,9 @@ const ActivityFeed = ({
                 {group.label}
               </p>
               <div className="space-y-0.5">
-                {group.events.map((event, i) => (
+                {group.events.map((event, i /* isLast index */) => (
                   <TimelineRow
-                    key={`${event.kind}-${event.data._id}-${i}`}
+                    key={`${event.kind}-${event.data._id}-${event.ts}`}
                     event={event}
                     isLast={i === group.events.length - 1}
                   />

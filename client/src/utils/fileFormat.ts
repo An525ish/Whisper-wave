@@ -239,6 +239,10 @@ export const fileData: FileDataItem[] = [
   },
 ];
 
+/** Returns true if the URL or filename is a GIF — used to skip CDN transforms that strip animation. */
+export const isGifFile = (url?: string, name?: string): boolean =>
+  /\.gif(\?|$)/i.test(url ?? '') || /\.gif$/i.test(name ?? '');
+
 export const transformImage = (url = '', width = 100): string => {
   if (!url) return url;
 

@@ -7,7 +7,7 @@ export function useSendFriendRequestMutation() {
   return useMutation({
     mutationFn: chatApi.sendFriendRequest,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['searchUsers'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.searchUsersPrefix });
     },
   });
 }
@@ -19,7 +19,7 @@ export function useHandleFriendRequestMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
       void queryClient.invalidateQueries({ queryKey: queryKeys.notifications });
-      void queryClient.invalidateQueries({ queryKey: ['searchUsers'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.searchUsersPrefix });
     },
   });
 }

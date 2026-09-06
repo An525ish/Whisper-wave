@@ -2,11 +2,11 @@ import { useState } from 'react';
 import AttachmentSenderMeta from './AttachmentSenderMeta';
 import DeletedTag from '@/components/admin/attachments/cards/DeletedTag';
 import CopyButton from '@/components/ui/CopyButton';
+import LinkIcon from '@/components/ui/icons/Link';
 import { ATTACHMENT_LIST_CARD_CLASS } from '@/constants/admin/attachments';
 import ExternalLinkIcon from '@/components/ui/icons/ExternalLink';
 import type { LinkItem } from '@/types/admin';
 import { urlDomain } from '@/utils/admin/attachments';
-import LinkIcon from '@/components/ui/icons/Link';
 
 type LinkCardProps = {
   item: LinkItem;
@@ -35,9 +35,9 @@ const LinkCard = ({ item, isSelectMode, isSelected, onToggleSelect }: LinkCardPr
         aria-hidden
       />
       <div className="flex items-start gap-3">
-        <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-linear-to-br from-green-dark/70 to-primary ring-1 ring-green/25">
+        <span className="relative grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-linear-to-br from-primary/80 to-background/60 ring-1 ring-border/30 shadow-[inset_0_0_10px_rgba(0,0,0,0.5)]">
           {faviconFailed ? (
-            <LinkIcon className="h-5 w-5 stroke-green" />
+            <LinkIcon className="h-5 w-5 stroke-body-300/60" />
           ) : (
             <img
               src={faviconSrc}

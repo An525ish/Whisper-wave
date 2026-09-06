@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useRef,
   useState,
@@ -6,10 +8,15 @@ import {
   type RefObject,
   type SetStateAction,
 } from 'react';
-import GifPicker from './gif-picker/GifPicker';
-import StyledEmojiPicker, { emojiPickerShellClass } from './StyledEmojiPicker';
 import type { GifItem } from '@/api/gif';
 import EmojiIcon from '@/components/ui/icons/Emoji';
+
+const GifPicker = lazy(() => import('./gif-picker/GifPicker'));
+const StyledEmojiPicker = lazy(() => import('./StyledEmojiPicker'));
+
+// Inlined to avoid importing the module eagerly just for this class string
+const emojiPickerShellClass =
+  'flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[rgba(33,26,42,1)] shadow-2xl';
 
 type Tab = 'emoji' | 'gif' | 'meme';
 
@@ -125,17 +132,19 @@ const ComposerPicker = ({
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        {activeTab === 'emoji' ? (
-          <StyledEmojiPicker
-            width={312}
-            height={328}
-            onEmojiClick={(e) => setMessage((prev) => prev + e.emoji)}
-          />
-        ) : (
-          <div className="h-full px-2.5 pb-2 pt-2">
-            <GifPicker kind={activeTab} onSelect={handleMediaSelected} />
-          </div>
-        )}
+        <Suspense fallback={<div className="h-full w-full animate-pulse bg-white/5" />}>
+          {activeTab === 'emoji' ? (
+            <StyledEmojiPicker
+              width={312}
+              height={328}
+              onEmojiClick={(e) => setMessage((prev) => prev + e.emoji)}
+            />
+          ) : (
+            <div className="h-full px-2.5 pb-2 pt-2">
+              <GifPicker kind={activeTab} onSelect={handleMediaSelected} />
+            </div>
+          )}
+        </Suspense>
       </div>
     </div>
   );

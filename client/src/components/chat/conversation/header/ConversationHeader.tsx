@@ -110,6 +110,7 @@ const ConversationHeader = ({
   const dotsMenuOpen = isDotsMenu && !selectMode;
 
   useEffect(() => {
+    if (!isDotsMenu) return;
     const handleClickOutside = (event: MouseEvent) => {
       if (
         menuRef.current &&
@@ -122,7 +123,7 @@ const ConversationHeader = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isDotsMenu]);
 
   const chatData = (chatDetails as ChatDetailsResponse | undefined)?.data || {};
   const { avatar, name, groupChat, myRole, members: rawMembers } = chatData;
@@ -350,6 +351,7 @@ const ConversationHeader = ({
                     avatars={avatarList}
                     avatarClassName="shadow-none"
                     showOnline={!groupChat && peerOnline}
+                    showLoading
                   />
                 </div>
                 <div className="min-w-0 pr-2">

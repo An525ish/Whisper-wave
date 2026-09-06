@@ -30,7 +30,7 @@ const ImageViewerReplyBar = ({ chatId, replyToMessageId }: ImageViewerReplyBarPr
         gifId: gif.id,
         gifUrl: gif.url,
         gifTitle: gif.title,
-        mimeType: gif.mimeType,
+        mimeType: gif.mimeType as 'image/gif' | 'image/png' | 'image/webp' | 'image/jpeg' | undefined,
         replyToMessageId,
       });
     } catch {

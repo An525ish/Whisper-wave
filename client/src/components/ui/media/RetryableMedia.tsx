@@ -38,7 +38,7 @@ export const RetryableMediaImage = ({
   style,
   ...props
 }: RetryableMediaImageProps) => {
-  const loaderRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const {
     src,
     showFallback,
@@ -48,11 +48,10 @@ export const RetryableMediaImage = ({
     handleError,
   } = useRetryableMediaSrc({ url, kind, transformWidth });
 
+  // If the browser already has the image cached, onLoad won't fire — check immediately.
   useEffect(() => {
-    const loader = loaderRef.current;
-    if (loader?.complete && loader.naturalWidth > 0) {
-      handleLoad();
-    }
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth > 0) handleLoad();
   }, [src, handleLoad]);
 
   if (showFallback) {
@@ -69,43 +68,33 @@ export const RetryableMediaImage = ({
     );
   }
 
-  if (isLoading) {
-    return (
-      <>
+  // Render shimmer behind + actual img always mounted (opacity-0 → opacity-100 on load).
+  // Avoids the blank flash caused by unmounting the placeholder and mounting the img separately.
+  return (
+    <>
+      {isLoading && (
         <MediaPlaceholder
           kind={kind}
           variant="loading"
-          className={wrapperClassName || className}
+          className={`absolute inset-0 ${wrapperClassName}`}
           iconClassName={fallbackIconClassName}
-        failedIllustrationClassName={failedIllustrationClassName}
+          failedIllustrationClassName={failedIllustrationClassName}
           style={style}
           aria-label={alt ? `Loading ${alt}` : 'Loading media'}
         />
-        <img
-          ref={loaderRef}
-          src={src}
-          alt=""
-          aria-hidden
-          className="hidden"
-          decoding="async"
-          onLoad={handleLoad}
-          onError={handleError}
-        />
-      </>
-    );
-  }
-
-  return (
-    <img
-      {...props}
-      src={src}
-      alt={alt}
-      className={className}
-      style={style}
-      decoding="async"
-      onLoad={handleLoad}
-      onError={handleError}
-    />
+      )}
+      <img
+        {...props}
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        className={`${className} transition-opacity duration-300 motion-reduce:transition-none ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+        style={style}
+        decoding="async"
+        onLoad={handleLoad}
+        onError={handleError}
+      />
+    </>
   );
 };
 

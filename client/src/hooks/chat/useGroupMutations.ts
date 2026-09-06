@@ -19,7 +19,7 @@ export function useUpdateGroupDetailsMutation() {
       chatApi.updateGroupDetails(chatId, body),
     onSuccess: (_data, vars) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
-      void queryClient.invalidateQueries({ queryKey: ['chatDetails', vars.chatId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chatDetailsPrefix(vars.chatId) });
     },
   });
 }
@@ -30,8 +30,8 @@ export function useAddMemberMutation() {
     mutationFn: ({ chatId, members }: { chatId: string; members: string[] }) =>
       chatApi.addMembers(chatId, members),
     onSuccess: (_data, vars) => {
-      void queryClient.invalidateQueries({ queryKey: ['chatDetails', vars.chatId] });
-      void queryClient.invalidateQueries({ queryKey: ['friends'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chatDetailsPrefix(vars.chatId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.friendsPrefix });
     },
   });
 }
@@ -47,8 +47,8 @@ export function useRemoveMemberMutation() {
       memberToBeRemoved: string;
     }) => chatApi.removeMember(chatId, memberToBeRemoved),
     onSuccess: (_data, vars) => {
-      void queryClient.invalidateQueries({ queryKey: ['chatDetails', vars.chatId] });
-      void queryClient.invalidateQueries({ queryKey: ['friends'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chatDetailsPrefix(vars.chatId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.friendsPrefix });
     },
   });
 }
@@ -66,7 +66,7 @@ export function useSetMemberAdminMutation() {
       makeAdmin: boolean;
     }) => chatApi.setMemberAdmin(chatId, { memberId, makeAdmin }),
     onSuccess: (_data, vars) => {
-      void queryClient.invalidateQueries({ queryKey: ['chatDetails', vars.chatId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.chatDetailsPrefix(vars.chatId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
     },
   });

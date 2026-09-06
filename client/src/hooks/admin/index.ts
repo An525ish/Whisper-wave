@@ -1,29 +1,34 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import * as adminApi from '@/api/admin';
+import type { ServerActivityFilter } from '@/api/admin';
 import { adminQueryKeys as queryKeys } from '@/hooks/admin/queryKeys';
 import { useAdminStore } from '@/stores/admin';
-import type { AdminActivityFilter, AttachmentKindFilter } from '@/types/admin';
+import type { AttachmentKindFilter } from '@/types/admin';
 
 export function useAdminMeQuery() {
   const setAdmin = useAdminStore((s) => s.setAdmin);
   const clear = useAdminStore((s) => s.clear);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.me,
-    queryFn: async () => {
-      try {
-        const res = await adminApi.adminMe();
-        if (res.isAdmin) setAdmin(true);
-        else clear();
-        return res;
-      } catch {
-        clear();
-        return { success: false, isAdmin: false };
-      }
-    },
+    queryFn: adminApi.adminMe, // pure — no side effects in queryFn
     retry: false,
     staleTime: 60_000,
   });
+
+  // Sync result to Zustand store (TQ v5: no onSuccess/onError on useQuery)
+  useEffect(() => {
+    if (!query.data) return;
+    if (query.data.isAdmin) setAdmin(true);
+    else clear();
+  }, [query.data, setAdmin, clear]);
+
+  useEffect(() => {
+    if (query.isError) clear();
+  }, [query.isError, clear]);
+
+  return query;
 }
 
 export function useAdminLoginMutation() {
@@ -58,6 +63,7 @@ export function useAdminStatsQuery(enabled = true) {
     queryFn: adminApi.getAdminStats,
     enabled,
     refetchInterval: 30_000,
+    staleTime: 29_000, // prevent double-fetch from window-focus + interval
   });
 }
 
@@ -169,7 +175,7 @@ export function useAdminActivityPresenceQuery(enabled = true) {
 }
 
 export function useAdminActivityEventsQuery(
-  type: AdminActivityFilter = 'all',
+  type: ServerActivityFilter = 'all',
   enabled = true,
 ) {
   return useInfiniteQuery({
@@ -185,7 +191,7 @@ export function useAdminActivityEventsQuery(
       lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,
     enabled,
     staleTime: 30_000,
-    refetchOnWindowFocus: true,
+    // refetchOnWindowFocus is TQ's default (true) — no need to re-declare
   });
 }
 
@@ -195,7 +201,7 @@ export function useDeleteAdminUserMutation() {
   return useMutation({
     mutationFn: adminApi.deleteAdminUser,
     onSuccess: (_data, id) => {
-      void queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.usersPrefix });
       void queryClient.removeQueries({ queryKey: queryKeys.userDetail(id) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stats });
     },
@@ -208,7 +214,7 @@ export function useDeleteAdminGroupMutation() {
   return useMutation({
     mutationFn: adminApi.deleteAdminGroup,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['adminGroups'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.groupsPrefix });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stats });
     },
   });
@@ -220,7 +226,7 @@ export function useDeleteAdminMessageMutation() {
   return useMutation({
     mutationFn: adminApi.deleteAdminMessage,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['adminMessages'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.messagesPrefix });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stats });
     },
   });
@@ -232,7 +238,9 @@ export function useDeleteAdminAttachmentsMutation() {
   return useMutation({
     mutationFn: adminApi.deleteAdminAttachments,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['adminAttachments'] });
+      // Attachments are message records — invalidate both views + stats
+      void queryClient.invalidateQueries({ queryKey: queryKeys.attachmentsPrefix });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.messagesPrefix });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stats });
     },
   });
@@ -244,7 +252,7 @@ export function useRetryAdminMessageMutation() {
   return useMutation({
     mutationFn: adminApi.retryAdminMessage,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['adminMessages'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.messagesPrefix });
     },
   });
 }
@@ -255,24 +263,25 @@ export function useRemoveGroupMemberMutation() {
   return useMutation({
     mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
       adminApi.removeAdminGroupMember(groupId, userId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['adminGroups'] });
+    onSuccess: (_data, { userId }) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.groupsPrefix });
+      // Also refresh the removed member's user detail (stale group membership)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.userDetail(userId) });
     },
   });
 }
 
+/** window.open must be called synchronously from the click handler (popup-blocker safe).
+ *  This mutation has no onSuccess — callers handle the navigation. */
 export function useImpersonateMutation() {
   return useMutation({
     mutationFn: adminApi.impersonateUser,
-    onSuccess: () => {
-      window.open('/', '_blank');
-    },
   });
 }
 
 export function useAdminImpersonationLogsQuery(enabled = true) {
   return useInfiniteQuery({
-    queryKey: ['adminImpersonationLogs'],
+    queryKey: queryKeys.impersonationLogs,
     queryFn: ({ pageParam }) =>
       adminApi.getImpersonationLogs({
         limit: adminApi.IMPERSONATION_LOGS_PAGE_SIZE,

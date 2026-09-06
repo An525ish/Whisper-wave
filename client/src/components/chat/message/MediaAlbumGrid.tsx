@@ -1,11 +1,11 @@
 import { type MouseEvent, type ReactNode } from 'react';
 import RenderAttachments from '@/components/chat/message/RenderAttachments';
 import type { ChatAttachment } from '@/types/chat';
-import type { FileFormatKind } from '@/utils/fileFormat';
+import type { AttachmentKind } from '@/utils/fileFormat';
 
 type MediaAlbumGridProps = {
   attachments: ChatAttachment[];
-  resolveKind: (attachment: ChatAttachment, url: string) => FileFormatKind;
+  resolveKind: (attachment: ChatAttachment, url: string) => AttachmentKind;
   onFileAction: (e: MouseEvent, attachment: ChatAttachment) => void | Promise<void>;
   onDownload: (attachment: ChatAttachment) => void | Promise<void>;
   /** Timestamp + read receipt for media-only albums (WhatsApp-style overlay). */
@@ -48,7 +48,7 @@ const MediaAlbumGrid = ({
         {items.map((attachment, index) => {
           const url = attachment.url || attachment.tempUrl || '';
           const fileType = resolveKind(attachment, url);
-          const isVisual = fileType === 'image' || fileType === 'video';
+          const isVisual = fileType === 'image' || fileType === 'video' || fileType === 'gif';
           const showOverflow = overflow > 0 && index === 3;
 
           return (
@@ -100,13 +100,13 @@ const MediaAlbumGrid = ({
 
 export const isMediaAlbumEligible = (
   attachments: ChatAttachment[],
-  resolveKind: (attachment: ChatAttachment, url: string) => FileFormatKind,
+  resolveKind: (attachment: ChatAttachment, url: string) => AttachmentKind,
 ): boolean => {
   if (attachments.length < 2) return false;
   return attachments.every((attachment) => {
     const url = attachment.url || attachment.tempUrl || '';
     const kind = resolveKind(attachment, url);
-    return kind === 'image' || kind === 'video';
+    return kind === 'image' || kind === 'video' || kind === 'gif';
   });
 };
 

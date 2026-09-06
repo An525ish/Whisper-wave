@@ -73,10 +73,10 @@ export const markChatRead = (
 
 export const markAllChatsRead = () => api.put('/chat/read-all');
 
-export const sendFriendRequest = (receiverId: unknown) =>
-  api.post('/friend-request/send-request', receiverId);
+export const sendFriendRequest = (body: { receiverId: string }) =>
+  api.post('/friend-request/send-request', body);
 
-export const handleFriendRequest = (body: unknown) =>
+export const handleFriendRequest = (body: { requestId: string; accept: boolean }) =>
   api.put('/friend-request/handle-request', body);
 
 export type CommitAttachmentsBody = {
@@ -94,7 +94,8 @@ export const sendGif = (body: {
   gifId: string;
   gifUrl: string;
   gifTitle?: string;
-  mimeType?: string;
+  /** Server accepts only these MIME types — matches sendGifSchema validator */
+  mimeType?: 'image/gif' | 'image/png' | 'image/webp' | 'image/jpeg';
   kind?: 'gif' | 'meme';
   replyToMessageId?: string;
 }) => api.post('/message/send-gif', body);
