@@ -25,6 +25,9 @@ export const helmetOptions: HelmetOptions = {
       'connect-src': [
         "'self'",
         ...r2ConnectOrigins,
+        // ImageKit — fetch() for media download in gallery / attachments
+        imageKitOrigin,
+        'https://ik.imagekit.io',
         'https://accounts.google.com',
         'https://oauth2.googleapis.com',
         'https://www.googleapis.com',
