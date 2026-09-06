@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, type MouseEvent as ReactMouseEvent } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import ImageViewerIcon from '@/components/ui/image-viewer/ImageViewerIcons';
 import {
@@ -90,16 +90,40 @@ const ImageViewer = ({
     setIsGesturing(false);
   }, []);
 
-  useEffect(() => { setCurrentIndex(initialIndex); resetZoom(); }, [initialIndex, resetZoom]);
-  useEffect(() => { resetZoom(); }, [currentIndex, resetZoom]);
+  // Sync when parent opens viewer at a different index — render-time adjustment, not an effect.
+  const [prevInitialIndex, setPrevInitialIndex] = useState(initialIndex);
+  if (initialIndex !== prevInitialIndex) {
+    setPrevInitialIndex(initialIndex);
+    setCurrentIndex(initialIndex);
+    setScale(1);
+    setTranslate({ x: 0, y: 0 });
+    setIsGesturing(false);
+  }
+
+  // Keep gesture ref in sync with zoom state (for native event handlers).
+  useLayoutEffect(() => {
+    live.current.scale = scale;
+    live.current.tx = translate.x;
+    live.current.ty = translate.y;
+  }, [scale, translate]);
+
+  const selectIndex = useCallback(
+    (index: number) => {
+      resetZoom();
+      setCurrentIndex(index);
+    },
+    [resetZoom],
+  );
 
   const handlePrev = useCallback(() => {
+    resetZoom();
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : mediaFiles.length - 1));
-  }, [mediaFiles.length]);
+  }, [mediaFiles.length, resetZoom]);
 
   const handleNext = useCallback(() => {
+    resetZoom();
     setCurrentIndex((prev) => (prev < mediaFiles.length - 1 ? prev + 1 : 0));
-  }, [mediaFiles.length]);
+  }, [mediaFiles.length, resetZoom]);
 
   // ── Keyboard + body scroll lock ───────────────────────────────────────────
   useEffect(() => {
@@ -120,7 +144,7 @@ const ImageViewer = ({
     };
   }, [handlePrev, handleNext, onClose]);
 
-  // ── Non-passive gesture listeners (wheel + touch) ────────────────────────
+  // ── Native gesture listeners (wheel/touch/mouse) — avoid React passive touch/wheel ─
   useEffect(() => {
     const el = gestureRef.current;
     if (!el) return;
@@ -188,46 +212,56 @@ const ImageViewer = ({
       }
     };
 
+    const onDblClick = () => {
+      applyScale(live.current.scale > MIN_SCALE ? MIN_SCALE : ZOOM_IN_TARGET, true);
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (live.current.scale <= MIN_SCALE) return;
+      e.preventDefault();
+      dragRef.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        initTx: live.current.tx,
+        initTy: live.current.ty,
+      };
+      setIsGesturing(true);
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragRef.current) return;
+      const tx = dragRef.current.initTx + (e.clientX - dragRef.current.startX);
+      const ty = dragRef.current.initTy + (e.clientY - dragRef.current.startY);
+      live.current.tx = tx;
+      live.current.ty = ty;
+      setTranslate({ x: tx, y: ty });
+    };
+
+    const endMouseDrag = () => {
+      dragRef.current = null;
+      setIsGesturing(false);
+    };
+
     el.addEventListener('wheel', onWheel, { passive: false });
     el.addEventListener('touchstart', onTouchStart, { passive: false });
     el.addEventListener('touchmove', onTouchMove, { passive: false });
     el.addEventListener('touchend', onTouchEnd, { passive: true });
+    el.addEventListener('dblclick', onDblClick);
+    el.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', endMouseDrag);
+
     return () => {
       el.removeEventListener('wheel', onWheel);
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchend', onTouchEnd);
+      el.removeEventListener('dblclick', onDblClick);
+      el.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', endMouseDrag);
     };
-  // re-attach whenever the displayed media changes (gesture div remounts for images)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [applyScale, currentIndex]);
-
-  // ── Mouse drag (desktop pan when zoomed) ─────────────────────────────────
-  const onMouseDown = useCallback((e: ReactMouseEvent) => {
-    if (live.current.scale <= MIN_SCALE) return;
-    e.preventDefault();
-    dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      initTx: live.current.tx,
-      initTy: live.current.ty,
-    };
-    setIsGesturing(true);
-  }, []);
-
-  const onMouseMove = useCallback((e: ReactMouseEvent) => {
-    if (!dragRef.current) return;
-    const tx = dragRef.current.initTx + (e.clientX - dragRef.current.startX);
-    const ty = dragRef.current.initTy + (e.clientY - dragRef.current.startY);
-    live.current.tx = tx;
-    live.current.ty = ty;
-    setTranslate({ x: tx, y: ty });
-  }, []);
-
-  const onMouseUp = useCallback(() => {
-    dragRef.current = null;
-    setIsGesturing(false);
-  }, []);
 
   const renderMedia = () => {
     if (!currentMedia?.url) return null;
@@ -268,11 +302,7 @@ const ImageViewer = ({
       <div
         ref={gestureRef}
         className="flex min-h-[min(60vh,580px)] w-full max-w-full items-center justify-center overflow-hidden"
-        style={{ cursor: scale > 1 ? (dragRef.current ? 'grabbing' : 'grab') : 'default' }}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
+        style={{ cursor: scale > 1 ? (isGesturing ? 'grabbing' : 'grab') : 'default' }}
       >
         <RetryableMediaImage
           key={currentMedia.url}
@@ -287,7 +317,6 @@ const ImageViewer = ({
             transition: isGesturing ? 'none' : 'transform 0.2s ease',
             transformOrigin: 'center center',
           }}
-          onDoubleClick={() => applyScale(scale > MIN_SCALE ? MIN_SCALE : ZOOM_IN_TARGET, true)}
           draggable={false}
         />
       </div>
@@ -344,7 +373,7 @@ const ImageViewer = ({
             currentIndex={currentIndex}
             onPrev={handlePrev}
             onNext={handleNext}
-            onSelect={setCurrentIndex}
+            onSelect={selectIndex}
             replyBar={canReply ? (
               <ImageViewerReplyBar
                 key={currentMedia!.messageId}

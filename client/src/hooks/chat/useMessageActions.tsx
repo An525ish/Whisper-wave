@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import type { MouseEvent, TouchEvent } from 'react';
+import type { MouseEvent } from 'react';
 import useContextMenu from '@/hooks/shared/useContextMenu';
 import { useSocket } from '@/socket/SocketProvider';
 import { SOCKET_EVENTS } from '@/constants/socket';
@@ -285,12 +285,9 @@ export function useMessageActions({
   );
 
   const openMessageContextMenuFromTouch = useCallback(
-    (e: TouchEvent, msg: ChatMessage) => {
-      e.preventDefault();
+    (x: number, y: number, msg: ChatMessage) => {
       clearTextSelection();
-      const touch = e.changedTouches[0] ?? e.touches[0];
-      if (!touch) return;
-      openMenuAt({ x: touch.clientX, y: touch.clientY }, msg);
+      openMenuAt({ x, y }, msg);
     },
     [openMenuAt],
   );

@@ -1,7 +1,8 @@
 import {
-  useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
-  type ChangeEvent, type KeyboardEvent, type Ref, type TouchEvent,
+  useCallback, useEffect, useImperativeHandle, useMemo, useState,
+  type ChangeEvent, type KeyboardEvent, type Ref,
 } from 'react';
+import { useLongPress } from '@/hooks/shared/useLongPress';
 import { useQueryClient } from '@tanstack/react-query';
 import useErrors from '@/hooks/shared/useError';
 import { useSocket } from '@/socket/SocketProvider';
@@ -201,26 +202,9 @@ useImperativeHandle(ref, () => ({
     [isGroupChat, memberIds, peerLastReadAt, user?._id],
   );
 
-  // Long-press handler factory — one stable timer ref, used across all messages
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressMovedRef = useRef(false);
-
-  const longPressHandlers = useCallback(
-    (msg: ChatMessage) => ({
-      onTouchStart: (e: TouchEvent) => {
-        e.preventDefault();
-        longPressMovedRef.current = false;
-        longPressTimerRef.current = setTimeout(() => {
-          if (!longPressMovedRef.current) openMessageContextMenuFromTouch(e, msg);
-        }, 500);
-      },
-      onTouchEnd: () => { if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); },
-      onTouchMove: () => { longPressMovedRef.current = true; if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); },
-      onTouchCancel: () => { if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); },
-      onSelectStart: (e: Event) => { e.preventDefault(); },
-    }),
-    [openMessageContextMenuFromTouch],
-  );
+  const bindLongPress = useLongPress<ChatMessage>((msg, { clientX, clientY }) => {
+    openMessageContextMenuFromTouch(clientX, clientY, msg);
+  });
 
   const handleMessageChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
@@ -444,7 +428,7 @@ useImperativeHandle(ref, () => ({
                         >
                           <div className="relative w-fit max-w-full select-none [-webkit-touch-callout:none]" onContextMenu={(e) => openMessageContextMenu(e, msg)}
                             role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
-                            {...longPressHandlers(msg)}
+                            {...bindLongPress(msg)}
                             onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(msg._id); } } : undefined}>
                             <ChatBox chatData={msg} chatId={chatId} sharedGalleryFiles={sharedGalleryFiles} isGroupChat={isGroupChat} showReadReceipt={sameSender}
                               isRead={isMessageRead(msg)} searchHighlight={msg._id === highlightedMessageId}

@@ -15,16 +15,14 @@ export const accessCookieOptions: CookieOptions = {
 
 /**
  * Long-lived refresh token cookie (7 days).
- * SameSite: 'strict' so it is NOT sent on cross-site navigations — tighter
- * than the access cookie, because it only needs to reach /auth/refresh.
- * path: '/api/auth/refresh' scopes it to that single endpoint.
+ * No explicit path — Express defaults to '/', same as accessToken, so
+ * Set-Cookie from sign-in/refresh/sign-out and clearCookie on sign-out stay in sync.
  */
 export const refreshCookieOptions: CookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   sameSite: isProd ? 'strict' : 'lax',
   httpOnly: true,
   secure: isProd,
-  path: '/api/auth/refresh',
 };
 
 export const corsOptions: CorsOptions = {
