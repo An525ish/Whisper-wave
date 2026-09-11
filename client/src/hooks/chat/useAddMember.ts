@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react';
+import { useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth';
 import useContextMenu from '@/hooks/shared/useContextMenu';
@@ -13,7 +13,7 @@ import {
 import useAsyncMutation from '@/hooks/shared/useAsyncMutation';
 import type { User } from '@/types';
 
-type GroupMember = {
+export type GroupMember = {
   _id: string;
   name: string;
   avatar?: string;
@@ -76,10 +76,6 @@ const useAddMember = (onClose: () => void): UseAddMemberReturn => {
   const [removeMember] = useAsyncMutation(useRemoveMemberMutation);
   const [setMemberAdmin] = useAsyncMutation(useSetMemberAdminMutation);
 
-  useEffect(() => {
-    if (!menuState.visible) setContextTargetId(null);
-  }, [menuState.visible]);
-
   const handleSelectMember = (id: string) => {
     setSelectedMembers((prev) =>
       prev.includes(id) ? prev.filter((el) => el !== id) : [...prev, id],
@@ -121,8 +117,8 @@ const useAddMember = (onClose: () => void): UseAddMemberReturn => {
     if (myRole === 'creator' && !member.isCreator) {
       const makeAdmin = !member.isAdmin;
       options.push({
-        icon: '/icons/remove-user-icon.svg',
-        label: member.isAdmin ? 'Dismiss as admin' : 'Make group admin',
+        icon: '/icons/make-admin-icon.svg',
+        label: member.isAdmin ? 'Dismiss as admin' : 'Make admin',
         onClick: () => {
           void setMemberAdmin('Updating admin…', {
             chatId: chatId ?? '',
@@ -159,7 +155,7 @@ const useAddMember = (onClose: () => void): UseAddMemberReturn => {
     setSearchText,
     selectedMembers,
     isAddMember,
-    contextTargetId,
+    contextTargetId: menuState.visible ? contextTargetId : null,
     menuState,
     members,
     myRole,

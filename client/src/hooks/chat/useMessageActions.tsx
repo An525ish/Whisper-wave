@@ -195,7 +195,7 @@ export function useMessageActions({
         onSelectModeChange?.(false);
         invalidateMessages();
         toast.success(failed > 0
-          ? `Forwarded to ${succeeded} chat${succeeded === 1 ? '' : 's'} (${failed} failed)`
+          ? `Forwarded (${failed} failed)`
           : succeeded === 1 ? 'Forwarded' : `Forwarded to ${succeeded} chats`);
       } catch {
         toast.error('Failed to forward');
@@ -216,7 +216,7 @@ export function useMessageActions({
         useChatClipboardStore.getState().setPayload(payload);
         try { await writeCopyPayloadToSystemClipboard(payload); } catch { /* in-app paste still works */ }
         const fc = payload.files.length;
-        if (fc > 0 && payload.text) toast.success(fc === 1 ? 'Copied message and attachment' : `Copied with ${fc} attachments`);
+        if (fc > 0 && payload.text) toast.success(fc === 1 ? 'Copied with attachment' : `Copied with ${fc} attachments`);
         else if (fc > 0) toast.success(fc === 1 ? 'Attachment copied' : `${fc} attachments copied`);
         else toast.success(messages.length === 1 ? 'Copied' : `Copied ${messages.length} messages`);
       } catch { toast.error('Failed to copy'); }

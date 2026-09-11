@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as authApi from '@/api/auth';
 import { queryKeys } from '@/hooks/chat';
 import { useAuthStore } from '@/stores/auth';
+import { ApiError } from '@/api/client';
 
 export function useProfileQuery(enabled = true) {
   const setUser = useAuthStore((s) => s.setUser);
@@ -27,8 +28,12 @@ export function useProfileQuery(enabled = true) {
   }, [query.data, setUser, setImpersonated]);
 
   useEffect(() => {
-    if (query.isError) clear();
-  }, [query.isError, clear]);
+    // Only clear session on a definitive 401 (token truly expired/revoked).
+    // Network errors or other status codes should not log the user out.
+    if (query.isError && query.error instanceof ApiError && query.error.status === 401) {
+      clear();
+    }
+  }, [query.isError, query.error, clear]);
 
   return query;
 }

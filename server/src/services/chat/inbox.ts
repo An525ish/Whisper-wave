@@ -1,11 +1,11 @@
-import { Types } from 'mongoose';
 import { CHAT_READ } from '../../constants/socket-events.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as chatReadRepo from '../../repositories/chatRead.js';
 import * as messageRepo from '../../repositories/message.js';
 import type {
-  ChatAvatar,
+  ChatDetailsPopulated,
   ChatLastMessage,
+  ChatLean,
   FindChatItem,
   FindChatsInput,
   GetChatDetailsInput,
@@ -15,7 +15,6 @@ import type {
   MarkChatReadInput,
   MarkChatReadResult,
   PaginatedChatsResult,
-  PopulatedMember,
   RealtimeNotify,
 } from '../../types/chat.js';
 import { AppError } from '../../utils/AppError.js';
@@ -61,10 +60,8 @@ export const getMyChats = async (
   );
 
   const data = chats.map((chat) => {
-    const { _id, name, members, groupChat, lastMessage, avatar, createdAt } = chat;
-    const clearedFor = (chat as unknown as { clearedFor?: Array<{ user: { toString(): string }; at: Date }> }).clearedFor;
-    const typedMembers = members as unknown as PopulatedMember[];
-    const otherMembers = typedMembers.filter(
+    const { _id, name, members, groupChat, lastMessage, avatar, createdAt, clearedFor } = chat;
+    const otherMembers = members.filter(
       (member) => member._id.toString() !== userId.toString()
     );
     const chatId = _id.toString();
@@ -80,7 +77,7 @@ export const getMyChats = async (
       groupChat: Boolean(groupChat),
       name: groupChat ? name : otherMembers[0]?.name || 'Unknown',
       avatar: groupChat
-        ? resolveGroupAvatarUrls(avatar, typedMembers)
+        ? resolveGroupAvatarUrls(avatar, members)
         : [otherMembers[0]?.avatar?.url].filter(Boolean),
       members: otherMembers.map((member) => member._id),
       lastMessage: isClearedView
@@ -92,7 +89,7 @@ export const getMyChats = async (
             groupChat
               ? {
                   groupChat: true,
-                  memberIds: typedMembers.map((member) => member._id.toString()),
+                  memberIds: members.map((member) => member._id.toString()),
                 }
               : undefined,
           ),
@@ -124,8 +121,7 @@ export const findChats = async (
   );
 
   return chats.map(({ _id, name, members, groupChat, avatar }) => {
-    const typedMembers = members as unknown as PopulatedMember[];
-    const otherMembers = typedMembers.filter(
+    const otherMembers = members.filter(
       (member) => member._id.toString() !== userId.toString()
     );
     const chatId = _id.toString();
@@ -135,7 +131,7 @@ export const findChats = async (
       groupChat,
       name: groupChat ? name : otherMembers[0]?.name || 'Unknown',
       avatar: groupChat
-        ? resolveGroupAvatarUrls(avatar, typedMembers)
+        ? resolveGroupAvatarUrls(avatar, members)
         : [otherMembers[0]?.avatar?.url || ''],
       notificationCount: unreadByChat.get(chatId) ?? 0,
     };
@@ -243,76 +239,58 @@ export const getChatDetails = async (
   input: GetChatDetailsInput
 ): Promise<Record<string, unknown>> => {
   const { userId, chatId, populate: shouldPopulate } = input;
-  let chat: Record<string, unknown> | null = null;
-
-  if (shouldPopulate) {
-    chat = (await chatRepo.findByIdPopulated(chatId)) as Record<
-      string,
-      unknown
-    > | null;
-  } else {
-    chat = (await chatRepo.findByIdLean(chatId)) as Record<
-      string,
-      unknown
-    > | null;
-  }
+  const chat: ChatDetailsPopulated | ChatLean | null = shouldPopulate
+    ? await chatRepo.findByIdPopulated(chatId)
+    : await chatRepo.findByIdLean(chatId);
 
   if (!chat) throw new AppError(400, 'No chat found');
 
-  const leanCreator =
-    chat.creator &&
-    typeof chat.creator === 'object' &&
-    '_id' in (chat.creator as object)
-      ? (chat.creator as PopulatedMember)._id
-      : chat.creator;
-  const memberIds = (
-    shouldPopulate
-      ? ((chat.members as PopulatedMember[]) ?? []).map((m) => m._id)
-      : ((chat.members as Types.ObjectId[]) ?? [])
-  ) as Array<{ toString(): string }>;
-  const adminIds = ((chat.admins as Types.ObjectId[] | undefined) ??
-    []) as Array<{ toString(): string }>;
+  const populated = shouldPopulate && 'creator' in chat && typeof chat.creator === 'object';
+  const leanCreator = populated
+    ? (chat as ChatDetailsPopulated).creator._id
+    : (chat as ChatLean).creator;
+  const memberIds = populated
+    ? (chat as ChatDetailsPopulated).members.map((m) => m._id)
+    : (chat as ChatLean).members;
+  const adminIds = chat.admins ?? [];
 
-  chat.myRole = chat.groupChat
+  const response: Record<string, unknown> = { ...chat };
+
+  response.myRole = chat.groupChat
     ? getGroupRole(userId, {
         groupChat: true,
-        creator: leanCreator as { toString(): string },
+        creator: leanCreator,
         admins: adminIds,
         members: memberIds,
       })
     : null;
 
-  if (shouldPopulate) {
-    const typedMembers = chat.members as PopulatedMember[];
-    const creator = chat.creator as PopulatedMember & {
-      avatar?: { url?: string } | string;
-    };
+  if (populated) {
+    const populatedChat = chat as ChatDetailsPopulated;
+    const typedMembers = populatedChat.members;
+    const creator = populatedChat.creator;
     const otherMembers = typedMembers.filter(
       (member) => member._id.toString() !== userId.toString()
     );
 
-    if (
-      creator?.avatar &&
-      typeof creator.avatar === 'object' &&
-      creator.avatar.url
-    ) {
-      chat.creator = { ...creator, avatar: creator.avatar.url };
+    if (creator.avatar?.url) {
+      response.creator = { ...creator, avatar: creator.avatar.url };
     }
 
-    chat.name = chat.groupChat ? chat.name : otherMembers[0]?.name || 'Unknown';
+    response.name = chat.groupChat ? chat.name : otherMembers[0]?.name || 'Unknown';
     const storedAvatar =
       chat.avatar &&
       typeof chat.avatar === 'object' &&
       'url' in chat.avatar
-        ? (chat.avatar as ChatAvatar)
+        ? chat.avatar
         : undefined;
-    chat.avatar = chat.groupChat
+    response.avatar = chat.groupChat
       ? resolveGroupAvatarUrls(storedAvatar, typedMembers)
       : [otherMembers[0]?.avatar?.url || ''];
     if (!chat.groupChat && otherMembers[0]?.bio !== undefined) {
-      (chat as { bio?: string }).bio = otherMembers[0].bio;
+      response.bio = otherMembers[0].bio;
     }
-    chat.members = typedMembers.map(({ _id, avatar, lastSeen, ...rest }) => ({
+    response.members = typedMembers.map(({ _id, avatar, lastSeen, ...rest }) => ({
       ...rest,
       _id,
       avatar: avatar?.url,
@@ -320,11 +298,11 @@ export const getChatDetails = async (
         ? new Date(lastSeen).toISOString()
         : undefined,
       isCreator: _id.toString() === creator._id.toString(),
-      isAdmin: (chat.admins as Types.ObjectId[] | undefined)?.some(
+      isAdmin: adminIds.some(
         (adminId) => adminId.toString() === _id.toString()
-      ) ?? false,
+      ),
     }));
   }
 
-  return chat;
+  return response;
 };

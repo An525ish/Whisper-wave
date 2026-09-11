@@ -277,7 +277,6 @@ const ChatInput = ({
     }, [editMode, setAttachments, setMessageWithDismissSync]);
 
     const canSend = Boolean(message.trim()) || (!editMode && attachments.length > 0);
-    const isMultiline = message.includes('\n');
     const hasReply = Boolean(replySlot);
     const hasUrlHighlight = parsedParts.some((part) => part.type === 'url');
 
@@ -293,11 +292,11 @@ const ChatInput = ({
     const sendSizeClass = compact ? COMPOSER_SEND_SIZE_CLASS_COMPACT : COMPOSER_SEND_SIZE_CLASS;
     const textareaMinClass = compact ? 'min-h-8' : 'min-h-11';
 
-    const textareaTypographyClass = [
-        'px-1 md:px-2',
-        compact ? 'text-sm' : 'text-[16px] md:text-sm',
-        isMultiline ? 'py-2 leading-snug' : compact ? 'py-0 leading-8' : 'py-0 leading-11',
-    ].join(' ');
+    // Match line-height + vertical padding to COMPOSER_ROW_MIN_PX* so placeholder sits
+    // centered in one row; unlike leading-11, a fixed ~22px line-height stays natural when wrapped.
+    const textareaTypographyClass = compact
+        ? 'px-1 md:px-2 text-sm leading-5 py-1.5'
+        : 'px-1 md:px-2 text-[16px] md:text-sm leading-[22px] py-[11px]';
 
     const textareaClassName = [
         'max-h-32 w-full min-w-0 resize-none overflow-y-auto bg-transparent outline-none',

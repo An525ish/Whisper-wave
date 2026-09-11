@@ -70,16 +70,21 @@ export function SilverAvatarRing({
 
 type MemberSlideProps = {
   members: CarouselMember[];
+  onMemberClick?: (memberId: string) => void;
 };
 
-function MemberSlide({ members }: MemberSlideProps) {
+function MemberSlide({ members, onMemberClick }: MemberSlideProps) {
   return (
     <div className="grid w-full grid-cols-3 justify-items-center gap-x-2 gap-y-3 px-0.5 py-0.5">
       {members.map(({ name, avatar, _id }) => (
-        <div
+        <button
           key={_id}
-          className="flex w-13 flex-col items-center gap-1"
+          type="button"
+          disabled={!onMemberClick}
+          onClick={() => onMemberClick?.(_id)}
+          className="flex w-13 flex-col items-center gap-1 rounded-lg transition enabled:hover:opacity-90 enabled:active:scale-[0.98] disabled:cursor-default"
           title={name}
+          aria-label={`Open chat with ${name}`}
         >
           <AvatarRing tone="silver" className="h-11 w-11">
             <Image
@@ -91,7 +96,7 @@ function MemberSlide({ members }: MemberSlideProps) {
           <p className="w-full truncate text-center text-[10px] capitalize leading-tight text-body-300">
             {name.split(' ')[0] || name}
           </p>
-        </div>
+        </button>
       ))}
     </div>
   );
@@ -100,13 +105,14 @@ function MemberSlide({ members }: MemberSlideProps) {
 type CarouselProps = {
   members: CarouselMember[];
   className?: string;
+  onMemberClick?: (memberId: string) => void;
 };
 
 type SlickRef = {
   slickGoTo: (index: number) => void;
 };
 
-const Carousel = ({ members, className = '' }: CarouselProps) => {
+const Carousel = ({ members, className = '', onMemberClick }: CarouselProps) => {
   const sliderRef = useRef<SlickRef | null>(null);
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -155,7 +161,7 @@ const Carousel = ({ members, className = '' }: CarouselProps) => {
       >
         {memberChunks.map((chunk, index) => (
           <div key={index}>
-            <MemberSlide members={chunk} />
+            <MemberSlide members={chunk} onMemberClick={onMemberClick} />
           </div>
         ))}
       </Slider>

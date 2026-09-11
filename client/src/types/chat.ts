@@ -207,7 +207,7 @@ export type ChatsResponse = {
 };
 
 export type FriendsResponse = {
-  data?: User[];
+  data?: Array<User & { chatId?: string }>;
 };
 
 export type CreateGroupResult = {

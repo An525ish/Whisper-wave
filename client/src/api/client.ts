@@ -65,17 +65,21 @@ function extractMessage(payload: unknown): string {
   return 'Request failed';
 }
 
+/** Single-flight refresh — rotation deletes the old hash; parallel 401s must share one call. */
+let refreshInFlight: Promise<boolean> | null = null;
+
 /** Attempt a silent token refresh. Returns true if successful. */
 async function tryRefresh(): Promise<boolean> {
-  try {
-    const res = await fetch(buildUrl('/auth/refresh'), {
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(buildUrl('/auth/refresh'), {
       method: 'POST',
       credentials: 'include',
-    });
-    return res.ok;
-  } catch {
-    return false;
+    })
+      .then((res) => res.ok)
+      .catch(() => false)
+      .finally(() => { refreshInFlight = null; });
   }
+  return refreshInFlight;
 }
 
 async function request<T>(

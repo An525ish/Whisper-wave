@@ -75,6 +75,7 @@
   --animate-auth-sheen: auth-panel-sheen 7s ease-in-out infinite;
   --animate-auth-orbit: auth-orbit 12s linear infinite;
   --animate-reply-strip-rise: reply-strip-rise 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-toast-progress: toast-progress 3.5s linear forwards;
 
 
   --background-image-gradient-background: linear-gradient(
@@ -90,6 +91,14 @@
     rgba(57, 48, 70, 0.28) 28%,
     rgba(45, 37, 55, 0.38) 50%,
     rgba(57, 48, 70, 0.28) 72%,
+    transparent 100%
+  );
+  --background-image-gradient-row-hover-green: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(1, 195, 109, 0.1) 28%,
+    rgba(1, 195, 109, 0.18) 50%,
+    rgba(1, 195, 109, 0.1) 72%,
     transparent 100%
   );
   --background-image-gradient-green: linear-gradient(
@@ -141,6 +150,15 @@
       transparent 59%
     ),
     radial-gradient(at 82% 65%, hsl(264, 21%, 14%) 0, transparent 55%);
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 @keyframes loader-spin {
