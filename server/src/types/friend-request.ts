@@ -11,6 +11,7 @@ export type IRequestFields = {
 
 export type FriendSummary = {
   _id: { toString(): string };
+  chatId: { toString(): string };
   name: string;
   avatar?: string;
 };

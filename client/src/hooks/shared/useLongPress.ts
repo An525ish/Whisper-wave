@@ -41,9 +41,8 @@ export function useLongPress<T>(
         clearTimer();
       },
       onTouchCancel: clearTimer,
-      onSelectStart: (e: Event) => {
-        e.preventDefault();
-      },
+      onSelectStart: (e: Event) => { e.preventDefault(); },
+      style: { WebkitUserSelect: 'none' as const, userSelect: 'none' as const },
     }),
     [clearTimer, delay, onLongPress],
   );

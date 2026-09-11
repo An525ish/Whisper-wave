@@ -52,6 +52,7 @@ const Chat = () => {
     setDeletableSelectedCount(0);
     setIsEditingMessage(false);
     setIsFetchingOlder(false);
+    setProfileOpen(false);
   }, [chatId]);
 
   const handleJumpToMessage = useCallback(

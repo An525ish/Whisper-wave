@@ -193,6 +193,7 @@ const ConversationHeader = ({
   const handleConfirmationModal = async ({ accept }: { accept: boolean }) => {
     if (accept) {
       await leaveGroup(null, { chatId: chatId ?? '' });
+      navigate('/');
     }
     setIsConfirmLeave(false);
   };
@@ -209,6 +210,7 @@ const ConversationHeader = ({
   const handleCreatorLeaveConfirm = async (newCreatorId?: string) => {
     await leaveGroup(null, { chatId: chatId ?? '', newCreatorId });
     setIsCreatorLeaveDialog(false);
+    navigate('/');
   };
 
   const handleDeleteChatConfirm = async ({ accept }: { accept: boolean }) => {

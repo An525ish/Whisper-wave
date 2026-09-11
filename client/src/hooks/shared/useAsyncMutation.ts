@@ -59,7 +59,7 @@ const useAsyncMutation = <
         const payload = readData(res);
         setData(payload);
         if (toastMessage && toastId) {
-          toast.success(readMessage(res) || 'Updated data successfully', {
+          toast.success(readMessage(res) || 'Updated', {
             id: toastId,
           });
         }

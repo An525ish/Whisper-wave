@@ -8,13 +8,14 @@ export const getMyFriends = async (
   const { userId, chatId } = input;
   const chats = await chatRepo.findDirectChatsPopulated(userId);
 
-  const friends = chats.flatMap(({ members }) => {
+  const friends = chats.flatMap(({ _id, members }) => {
     const otherMembers = members.filter(
       (member) => member._id.toString() !== userId.toString()
     );
 
     return otherMembers.map((member) => ({
       _id: member._id,
+      chatId: _id,
       name: member.name,
       avatar: member.avatar?.url,
     }));

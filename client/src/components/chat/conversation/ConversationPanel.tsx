@@ -220,7 +220,7 @@ useImperativeHandle(ref, () => ({
     if (editingMessageId) { await saveEdit(); return; }
     if (!message.trim() && (!attachments || attachments.length === 0)) return;
     // Ghost mode without "act as user" — block sends silently.
-    if (isImpersonated && !actAsUser) { toast.error('Sends are blocked in ghost mode — toggle "Act as user" in the banner.'); return; }
+    if (isImpersonated && !actAsUser) { toast.error('Enable Act as user to send'); return; }
     if (isTyping) clearTypingState(true);
 
     if (!attachments || attachments.length === 0) {

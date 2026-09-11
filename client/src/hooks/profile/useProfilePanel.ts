@@ -309,7 +309,7 @@ const confirmViewerDelete = useCallback(async () => {
     }
     if (!chatId) return false
     const formData = new FormData(); formData.append('name', nextName)
-    const result = await updateGroup('Updating group name...', { chatId, body: formData })
+    const result = await updateGroup(null, { chatId, body: formData })
     if (result !== null) { setEditingName(false); return true }
     return false
   }, [nameDraft, groupChat, isOwnProfile, chatId, updateProfile, updateGroup])
@@ -327,7 +327,7 @@ const confirmViewerDelete = useCallback(async () => {
     }
     if (!chatId) return false
     const formData = new FormData(); formData.append('bio', nextBio)
-    const result = await updateGroup('Updating group bio...', { chatId, body: formData })
+    const result = await updateGroup(null, { chatId, body: formData })
     if (result !== null) { setEditingBio(false); return true }
     return false
   }, [bioDraft, isOwnProfile, chatId, updateProfile, updateGroup])
@@ -345,7 +345,7 @@ const confirmViewerDelete = useCallback(async () => {
     event.target.value = ''
     if (!file || !canEdit) return
     const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
-    if (!ALLOWED_AVATAR_TYPES.has(file.type)) { toast.error('Avatar must be a JPEG, PNG, WebP, or GIF'); return }
+    if (!ALLOWED_AVATAR_TYPES.has(file.type)) { toast.error('Use JPEG, PNG, WebP, or GIF'); return }
     if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview)
     const previewUrl = URL.createObjectURL(file)
     setAvatarPreview(previewUrl)
@@ -356,7 +356,7 @@ const confirmViewerDelete = useCallback(async () => {
       return
     }
     if (!chatId) return
-    await updateGroup('Updating group photo...', { chatId, body: formData })
+    await updateGroup(null, { chatId, body: formData })
     setAvatarPreview(null); URL.revokeObjectURL(previewUrl)
   }, [canEdit, avatarPreview, isOwnProfile, chatId, updateProfile, updateGroup])
 

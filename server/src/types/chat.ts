@@ -40,11 +40,87 @@ export type IChatFields = {
 };
 
 export type PopulatedMember = {
-  _id: { toString(): string };
+  _id: Types.ObjectId;
   name: string;
-  avatar?: { url?: string };
+  username?: string;
+  email?: string;
+  avatar?: ChatAvatar;
   bio?: string;
   lastSeen?: Date | string;
+};
+
+/** Inbox sidebar row — members + lastMessage.sender populated. */
+export type InboxLastMessageLean = Omit<ChatLastMessage, 'sender'> & {
+  sender?: {
+    _id: Types.ObjectId;
+    name: string;
+  };
+};
+
+export type MyChatPageLean = {
+  _id: Types.ObjectId;
+  name: string;
+  bio?: string;
+  avatar?: ChatAvatar;
+  groupChat: boolean;
+  creator: Types.ObjectId;
+  admins?: Types.ObjectId[];
+  members: PopulatedMember[];
+  lastMessage?: InboxLastMessageLean;
+  deletedFor?: Types.ObjectId[];
+  clearedFor?: Array<{ user: Types.ObjectId; at: Date }>;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type PopulatedCreator = {
+  _id: Types.ObjectId;
+  name: string;
+  avatar?: ChatAvatar;
+};
+
+/** Chat details — members + creator populated. */
+export type ChatDetailsPopulated = {
+  _id: Types.ObjectId;
+  name: string;
+  bio?: string;
+  avatar?: ChatAvatar;
+  groupChat: boolean;
+  creator: PopulatedCreator;
+  admins?: Types.ObjectId[];
+  members: PopulatedMember[];
+  lastMessage?: ChatLastMessage;
+  deletedFor?: Types.ObjectId[];
+  clearedFor?: Array<{ user: Types.ObjectId; at: Date }>;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+/** Admin groups list row — creator + members populated. */
+export type AdminGroupListLean = {
+  _id: Types.ObjectId;
+  name: string;
+  bio?: string;
+  members: Array<{
+    _id: Types.ObjectId;
+    name?: string;
+    username?: string;
+    avatar?: ChatAvatar;
+  }>;
+  creator?: {
+    _id: Types.ObjectId;
+    name?: string;
+    username?: string;
+    avatar?: ChatAvatar;
+  };
+  createdAt: Date;
+};
+
+export type ListGroupsForAdminPageInput = {
+  limit: number;
+  before?: Date;
+  q?: string;
+  memberId?: string;
 };
 
 export type ChatListLastMessage = {
@@ -307,9 +383,9 @@ export type DirectChatMembers = {
 export type FriendChatPopulated = {
   _id: Types.ObjectId;
   members: Array<{
-    _id: { toString(): string };
+    _id: Types.ObjectId;
     name: string;
-    avatar?: { url?: string };
+    avatar?: ChatAvatar;
   }>;
 };
 

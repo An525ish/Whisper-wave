@@ -7,6 +7,7 @@ import GroupMembersList from '@/components/profile/GroupMembersList'
 import ProfileActions from '@/components/profile/ProfileActions'
 import SharedContentSheet from '@/components/profile/SharedContentSheet'
 import ProfilePanelSkeleton from '@/components/profile/ProfilePanelSkeleton'
+import { useOpenMemberChat } from '@/hooks/chat'
 const ForwardDialog = lazy(() => import('@/components/chat/dialogs/ForwardDialog'))
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal'
 
@@ -17,6 +18,7 @@ type ProfilePanelProps = {
 
 const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelProps) => {
   const p = useProfilePanel(variant, forceSelf)
+  const openMemberChat = useOpenMemberChat()
 
   if (p.chatId && !p.showSelfProfile && p.isLoading) {
     return <ProfilePanelSkeleton variant={variant} />
@@ -37,7 +39,7 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
     <>
       <div className={`${sizeClass} overflow-hidden rounded-full`}>
         {/* Largest profile slot is h-24 w-24 (96px). 192 = 2× for retina. */}
-        <Image src={p.avatarSrc} className="h-full w-full object-cover" alt={p.name} displayWidth={192} />
+        <Image src={p.avatarSrc} className="h-full w-full object-cover" alt={p.name} displayWidth={192} showLoading={false} />
       </div>
       {p.canEdit ? (
         <>
@@ -141,7 +143,11 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
           <div className="relative z-20 shrink-0">
             {p.chatId && p.groupChat ? (
               <>
-                <GroupMembersList creator={p.creator} members={p.members} />
+                <GroupMembersList
+                  creator={p.creator}
+                  members={p.members}
+                  onMemberClick={openMemberChat}
+                />
                 {bioSection}
               </>
             ) : bioSection}
@@ -160,10 +166,6 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
           {p.showSelfProfile ? (
             <div className="mt-auto flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 sm:pb-5">
               <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-hidden py-2 sm:gap-3.5 sm:py-3">
-                <div
-                  className="pointer-events-none absolute inset-x-8 top-[42%] h-28 max-h-[40%] -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(1,195,109,0.12)_0%,transparent_70%)] blur-2xl"
-                  aria-hidden
-                />
                 <img
                   src="/images/profile-illustration.svg"
                   alt=""

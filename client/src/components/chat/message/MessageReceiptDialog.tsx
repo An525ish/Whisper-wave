@@ -7,6 +7,7 @@ import ChevronLeft from '@/components/ui/icons/ChevronLeft';
 import ReadReceipt from '@/components/ui/icons/ReadReceipt';
 import MessageRow from '@/components/chat/message/MessageRow';
 import type { ChatMessage } from '@/types/chat';
+import { useDragToClose } from '@/hooks/shared';
 
 type ReceiptUser = { _id: string; name: string; avatar?: { url?: string } };
 
@@ -19,6 +20,7 @@ type Props = {
 const MessageReceiptDialog = ({ message, isGroupChat = false, onClose }: Props) => {
   const titleId = useId();
   const [entered, setEntered] = useState(false);
+  const { sheetRef, handleRef, dragHandlers } = useDragToClose({ onClose });
 
   const { data, isLoading } = useQuery({
     queryKey: ['messageReceipts', message._id],
@@ -57,14 +59,16 @@ const MessageReceiptDialog = ({ message, isGroupChat = false, onClose }: Props) 
       />
 
       <div
+        ref={sheetRef}
         className={`relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-background/95 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
           entered
             ? 'translate-y-0 scale-100 opacity-100'
             : 'translate-y-6 scale-[0.98] opacity-0 sm:translate-y-0'
         }`}
+        {...dragHandlers}
       >
         <div className="pointer-events-none absolute inset-x-8 top-0 h-24 bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.14),transparent_70%)]" />
-        <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border/80 sm:hidden" />
+        <div ref={handleRef} className="mx-auto mt-2.5 h-1 w-10 shrink-0 cursor-grab rounded-full bg-border/80 active:cursor-grabbing sm:hidden" />
 
         <header className="relative flex items-center gap-2 px-4 pb-3 pt-3 sm:px-5 sm:pt-4">
           <button

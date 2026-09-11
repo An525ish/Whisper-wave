@@ -3,12 +3,16 @@ import type {
   ChatLastMessage,
   ChatLean,
   ChatMembersOnly,
+  ChatDetailsPopulated,
   JoinedChat,
   UserChatWithLastMessage,
   ChatWithMembersPopulated,
   CreateChatInput,
   DirectChatMembers,
   FriendChatPopulated,
+  MyChatPageLean,
+  AdminGroupListLean,
+  ListGroupsForAdminPageInput,
   UpdateChatPatch,
 } from '../types/chat.js';
 
@@ -44,15 +48,15 @@ export const findDirectChatsForMember = async (
 export const findMyChatsPage = async (
   userId: string,
   skip: number,
-  limit: number
-) =>
+  limit: number,
+): Promise<MyChatPageLean[]> =>
   Chat.find({ members: userId, deletedFor: { $nin: [userId] } })
     .populate('members', 'name username email avatar')
     .populate({ path: 'lastMessage.sender', select: 'name' })
     .sort({ updatedAt: -1 })
     .skip(skip)
     .limit(limit)
-    .lean();
+    .lean<MyChatPageLean[]>();
 
 export const countForMember = async (userId: string): Promise<number> =>
   Chat.countDocuments({ members: userId, deletedFor: { $nin: [userId] } });
@@ -82,11 +86,13 @@ export const findByIdsForMemberPopulated = async (
     .populate('members', 'name avatar')
     .lean<ChatWithMembersPopulated[]>();
 
-export const findByIdPopulated = async (id: string) =>
+export const findByIdPopulated = async (
+  id: string,
+): Promise<ChatDetailsPopulated | null> =>
   Chat.findById(id)
     .populate('members', 'name avatar bio lastSeen')
     .populate('creator', 'name avatar')
-    .lean();
+    .lean<ChatDetailsPopulated>();
 
 export const updateById = async (
   id: string,
@@ -162,17 +168,10 @@ const adminGroupFilter = (q?: string, memberId?: string): Record<string, unknown
 export const countGroupsForAdmin = async (q?: string, memberId?: string): Promise<number> =>
   Chat.countDocuments(adminGroupFilter(q, memberId));
 
-export const listGroupsForAdminPage = async ({
-  limit,
-  before,
-  q,
-  memberId,
-}: {
-  limit: number;
-  before?: Date;
-  q?: string;
-  memberId?: string;
-}) => {
+export const listGroupsForAdminPage = async (
+  input: ListGroupsForAdminPageInput,
+): Promise<AdminGroupListLean[]> => {
+  const { limit, before, q, memberId } = input;
   const filter: Record<string, unknown> = { ...adminGroupFilter(q, memberId) };
   if (before) filter.createdAt = { $lt: before };
 
@@ -181,11 +180,11 @@ export const listGroupsForAdminPage = async ({
     .limit(limit)
     .populate('creator', 'name username avatar')
     .populate('members', 'name username avatar')
-    .lean();
+    .lean<AdminGroupListLean[]>();
 };
 
 /** @deprecated Use listGroupsForAdminPage */
-export const listGroupsForAdmin = async () =>
+export const listGroupsForAdmin = async (): Promise<AdminGroupListLean[]> =>
   listGroupsForAdminPage({ limit: 50 });
 
 export const removeMemberFromAllGroups = async (userId: string): Promise<void> => {

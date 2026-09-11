@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useDragToClose } from '@/hooks/shared';
 
 type BottomSheetProps = {
   open: boolean;
@@ -20,6 +21,7 @@ const BottomSheet = ({
   sideCardOnDesktop = false,
 }: BottomSheetProps) => {
   const [entered, setEntered] = useState(false);
+  const { sheetRef, handleRef, dragHandlers } = useDragToClose({ onClose });
 
   useEffect(() => {
     if (!open) {
@@ -70,6 +72,7 @@ const BottomSheet = ({
       />
 
       <div
+        ref={sheetRef}
         className={`relative flex h-[90dvh] min-h-0 w-full max-w-none flex-col overflow-hidden rounded-t-[1.75rem] border border-b-0 border-border/70 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_48px_rgba(0,0,0,0.45)] backdrop-blur-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
           sideCardOnDesktop
             ? 'lg:h-[min(760px,calc(100dvh-1.5rem))] lg:max-w-110 lg:rounded-[1.75rem] lg:border-b lg:pb-0 lg:shadow-[0_28px_80px_rgba(0,0,0,0.55)] lg:transition-all'
@@ -84,10 +87,12 @@ const BottomSheet = ({
               }`
         }`}
         onClick={(e) => e.stopPropagation()}
+        {...dragHandlers}
       >
         <div className="pointer-events-none absolute inset-x-8 top-0 h-24 bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.14),transparent_70%)]" />
         <div
-          className={`mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border/80 ${
+          ref={handleRef}
+          className={`mx-auto mt-2.5 h-1 w-10 shrink-0 cursor-grab rounded-full bg-border/80 active:cursor-grabbing ${
             sideCardOnDesktop ? 'lg:hidden' : ''
           }`}
         />

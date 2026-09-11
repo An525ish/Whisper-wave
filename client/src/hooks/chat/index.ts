@@ -1,3 +1,4 @@
+export * from './useOpenMemberChat';
 export * from './useAddMember';
 export * from './useChatMessages';
 export * from './useChatQueries';

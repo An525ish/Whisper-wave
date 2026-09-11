@@ -73,7 +73,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     if (avatarFile) formData.append('avatar', avatarFile);
 
     const created = (await createGroup(
-      'Creating your group...',
+      null,
       formData,
     )) as CreateGroupResult | null;
 
@@ -81,7 +81,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     onCreated?.();
 
     if (!chatId) {
-      toast.error('Group created, but could not open the chat');
+      toast.error("Couldn't open group chat");
       return;
     }
 
