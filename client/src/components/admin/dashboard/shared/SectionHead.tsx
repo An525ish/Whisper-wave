@@ -9,7 +9,7 @@ type SectionHeadProps = {
 const SectionHead = ({ title, subtitle, badge }: SectionHeadProps) => (
   <div className="flex flex-wrap items-end justify-between gap-3">
     <div>
-      <h2 className="font-display text-xl leading-none tracking-tight text-body">
+      <h2 className="font-semibold text-xl leading-none tracking-tight text-body">
         {title}
       </h2>
       {subtitle && (

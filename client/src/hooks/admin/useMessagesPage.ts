@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ADMIN_MIN_SEARCH_LEN } from '@/constants/admin/messages';
 import { SEARCH_DEBOUNCE_MS } from '@/constants/app';
+import { useDebounce } from '@/hooks/shared/useDebounce';
 import {
   useAdminMessagesQuery,
   useAdminStatsQuery,
@@ -13,17 +14,11 @@ import { sumSeries } from '@/utils/admin/dashboard';
 export function useMessagesPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<AdminMessageStatusFilter>('all');
   const [senderFilter, setSenderFilter] = useState<UserFilterOption | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminMessageRow | null>(null);
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearch(searchText.trim());
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timeoutId);
-  }, [searchText]);
+  const debouncedSearch = useDebounce(searchText.trim(), SEARCH_DEBOUNCE_MS);
 
   const querySearch =
     debouncedSearch.length >= ADMIN_MIN_SEARCH_LEN ? debouncedSearch : '';
@@ -39,8 +34,20 @@ export function useMessagesPage() {
     refetch,
   } = useAdminMessagesQuery(statusFilter, querySearch, senderFilter?._id ?? '');
 
-  const { mutate: deleteMessage, isPending: deleting } = useDeleteAdminMessageMutation();
-  const { mutate: retryMessage, isPending: retrying } = useRetryAdminMessageMutation();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+
+  const { mutate: _deleteMessage } = useDeleteAdminMessageMutation();
+  const { mutate: _retryMessage } = useRetryAdminMessageMutation();
+
+  const deleteMessage = (id: string) => {
+    setDeletingId(id);
+    _deleteMessage(id, { onSettled: () => setDeletingId(null) });
+  };
+  const retryMessage = (id: string) => {
+    setRetryingId(id);
+    _retryMessage(id, { onSettled: () => setRetryingId(null) });
+  };
 
   const messages = useMemo(
     () => data?.pages.flatMap((page) => page.messages) ?? [],
@@ -95,7 +102,7 @@ export function useMessagesPage() {
     sentinelEnabled,
     deleteMessage,
     retryMessage,
-    deleting,
-    retrying,
+    deletingId,
+    retryingId,
   };
 }

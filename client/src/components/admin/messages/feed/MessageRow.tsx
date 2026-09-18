@@ -13,17 +13,19 @@ import {
 } from '@/utils/admin/messages';
 import MessageBody from './MessageBody';
 import MessageStatusDot from './MessageStatusDot';
+import DeletedTag from '@/components/admin/attachments/cards/DeletedTag';
 
 type MessageRowProps = {
   msg: AdminMessageRow;
   onDelete: () => void;
   onRetry: () => void;
-  deleting: boolean;
-  retrying: boolean;
+  isDeleting: boolean;
+  isRetrying: boolean;
 };
 
-const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowProps) => {
+const MessageRow = ({ msg, onDelete, onRetry, isDeleting, isRetrying }: MessageRowProps) => {
   const isFailed = msg.status === 'failed';
+  const isDeleted = Boolean(msg.isDeleted);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const mediaFiles = useMemo(
@@ -54,12 +56,12 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
     <>
       <article
         className={`group relative rounded-xl px-3 py-4 transition-colors hover:bg-primary/22 sm:px-4 ${
-          isFailed ? 'bg-red/3' : ''
+          isFailed || isDeleted ? 'bg-red/3' : ''
         }`}
       >
         <div
           className={`absolute bottom-3 left-0 top-3 w-0.5 rounded-full ${
-            isFailed ? 'bg-red/45' : 'bg-green/35'
+            isFailed || isDeleted ? 'bg-red/45' : 'bg-green/35'
           }`}
           aria-hidden
         />
@@ -97,6 +99,7 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
                     ·
                   </span>
                   <MessageStatusDot status={msg.status} />
+                  {isDeleted ? <DeletedTag /> : null}
                 </div>
               </div>
 
@@ -111,7 +114,7 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
                   <button
                     type="button"
                     onClick={onRetry}
-                    disabled={retrying}
+                    disabled={isRetrying}
                     className="rounded-lg p-2 text-body-300/50 transition hover:bg-green/10 hover:text-green disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
                     title="Retry delivery"
                     aria-label="Retry message delivery"
@@ -122,7 +125,7 @@ const MessageRow = ({ msg, onDelete, onRetry, deleting, retrying }: MessageRowPr
                 <button
                   type="button"
                   onClick={onDelete}
-                  disabled={deleting}
+                  disabled={isDeleting}
                   className="rounded-lg p-2 text-body-300/35 transition hover:bg-red/10 hover:text-red disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
                   title="Delete message"
                   aria-label="Delete message"

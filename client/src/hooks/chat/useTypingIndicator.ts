@@ -6,29 +6,35 @@ import { useAuthStore } from '@/stores/auth';
 interface Params {
   chatId: string | undefined;
   socket: Socket;
-  memberIdsRef: React.MutableRefObject<string[]>;
 }
 
-export function useTypingIndicator({ chatId, socket, memberIdsRef }: Params) {
+export function useTypingIndicator({ chatId, socket }: Params) {
   const isImpersonated = useAuthStore((s) => s.isImpersonated);
   const [isTyping, setIsTyping] = useState(false);
   const isTypingRef = useRef(false);
-  isTypingRef.current = isTyping;
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [prevChatId, setPrevChatId] = useState(chatId);
+
+  if (chatId !== prevChatId) {
+    setPrevChatId(chatId);
+    setIsTyping(false);
+  }
+
+  useEffect(() => {
+    isTypingRef.current = isTyping;
+  }, [isTyping]);
 
   const emitStopTyping = useCallback(() => {
     const id = chatId;
-    const members = memberIdsRef.current;
-    if (isImpersonated || !id || members.length === 0) return;
-    socket.emit(SOCKET_EVENTS.STOP_TYPING, { members, chatId: id });
-  }, [chatId, isImpersonated, memberIdsRef, socket]);
+    if (isImpersonated || !id) return;
+    socket.emit(SOCKET_EVENTS.STOP_TYPING, { chatId: id });
+  }, [chatId, isImpersonated, socket]);
 
   const emitStartTyping = useCallback(() => {
     const id = chatId;
-    const members = memberIdsRef.current;
-    if (isImpersonated || !id || members.length === 0) return;
-    socket.emit(SOCKET_EVENTS.START_TYPING, { members, chatId: id });
-  }, [chatId, isImpersonated, memberIdsRef, socket]);
+    if (isImpersonated || !id) return;
+    socket.emit(SOCKET_EVENTS.START_TYPING, { chatId: id });
+  }, [chatId, isImpersonated, socket]);
 
   const clearTypingState = useCallback(
     (notifyPeers: boolean) => {
@@ -53,22 +59,12 @@ export function useTypingIndicator({ chatId, socket, memberIdsRef }: Params) {
       }
       if (isTypingRef.current && !isImpersonated) {
         const id = chatId;
-        const members = memberIdsRef.current;
-        if (id && members.length > 0) {
-          socket.emit(SOCKET_EVENTS.STOP_TYPING, { members, chatId: id });
+        if (id) {
+          socket.emit(SOCKET_EVENTS.STOP_TYPING, { chatId: id });
         }
       }
     };
-  }, [chatId, memberIdsRef, socket]);
-
-  // Reset isTyping state on chat switch
-  useEffect(() => {
-    setIsTyping(false);
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  }, [chatId]);
+  }, [chatId, isImpersonated, socket]);
 
   return {
     isTyping,

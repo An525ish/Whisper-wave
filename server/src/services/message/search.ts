@@ -1,29 +1,20 @@
 import * as messageRepo from '../../repositories/message.js';
+import type {
+  JumpToDateInput,
+  JumpToDateResult,
+  ListActiveDatesInput,
+  ListActiveDatesResult,
+  MessagePopulatedSender,
+  SearchMessagesInput,
+  SearchMessagesResult,
+} from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
 import { assertChatMember } from './shared.js';
 
 export const searchMessages = async (
-  userId: string,
-  chatId: string,
-  query: string,
-  options?: {
-    scope?: 'all' | 'text' | 'media' | 'links';
-    from?: 'anyone' | 'me' | 'others';
-    senderId?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    limit?: number;
-  }
-): Promise<{
-  data: Array<{
-    _id: string;
-    content?: string;
-    attachments?: Array<{ name?: string; fileType?: string; url?: string }>;
-    createdAt: string;
-    sender: { _id: string; name: string; avatar: string };
-  }>;
-  total: number;
-}> => {
+  input: SearchMessagesInput
+): Promise<SearchMessagesResult> => {
+  const { userId, chatId, query, options } = input;
   const isMember = await assertChatMember(userId, chatId);
   if (!isMember) {
     throw new AppError(401, 'You are not authenticated to access the resource');
@@ -37,12 +28,6 @@ export const searchMessages = async (
   const validDateTo =
     dateTo && !Number.isNaN(dateTo.getTime()) ? dateTo : undefined;
 
-  type PopulatedSender = {
-    _id: unknown;
-    name?: string;
-    avatar?: string | { url?: string };
-  };
-
   const mapRow = (message: {
     _id: { toString(): string };
     content?: string;
@@ -50,7 +35,7 @@ export const searchMessages = async (
     createdAt: Date;
     sender: unknown;
   }) => {
-    const sender = message.sender as PopulatedSender;
+    const sender = message.sender as MessagePopulatedSender;
     const avatar =
       typeof sender.avatar === 'string'
         ? sender.avatar
@@ -92,15 +77,9 @@ export const searchMessages = async (
 
 /** Resolve the first message on a calendar day — no list fetch, no fall-through. */
 export const jumpToDate = async (
-  userId: string,
-  chatId: string,
-  dateFromIso: string,
-  dateToIso?: string
-): Promise<{
-  _id: string;
-  createdAt: string;
-  exactDay: boolean;
-} | null> => {
+  input: JumpToDateInput
+): Promise<JumpToDateResult | null> => {
+  const { userId, chatId, dateFromIso, dateToIso } = input;
   const isMember = await assertChatMember(userId, chatId);
   if (!isMember) {
     throw new AppError(401, 'You are not authenticated to access the resource');
@@ -135,12 +114,9 @@ export const jumpToDate = async (
 /** Calendar days in range that have at least one message (local YYYY-MM-DD),
  *  plus `minYear` derived from the oldest message (O(1) index seek). */
 export const listActiveDates = async (
-  userId: string,
-  chatId: string,
-  dateFromIso: string,
-  dateToIso: string,
-  timeZone: string
-): Promise<{ dates: string[]; minYear: number | null }> => {
+  input: ListActiveDatesInput
+): Promise<ListActiveDatesResult> => {
+  const { userId, chatId, dateFromIso, dateToIso, timeZone } = input;
   const isMember = await assertChatMember(userId, chatId);
   if (!isMember) {
     throw new AppError(401, 'You are not authenticated to access the resource');

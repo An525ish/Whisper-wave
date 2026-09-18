@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Image from '@/components/ui/Image';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
@@ -29,8 +29,10 @@ const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [removeMemberTarget, setRemoveMemberTarget] = useState<AdminGroupMember | null>(null);
   const [open, setOpen] = useState(false);
-  const [members, setMembers] = useState<AdminGroupMember[]>(group.members ?? []);
   const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Derive from prop — mutation invalidates the query so parent gets fresh data automatically
+  const members = useMemo(() => group.members ?? [], [group.members]);
 
   const { mutate: deleteGroup, isPending: deleting } = useDeleteAdminGroupMutation();
   const { mutate: removeMember, isPending: removing } = useRemoveGroupMemberMutation();
@@ -99,13 +101,13 @@ const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
             <div className="relative">
               <div className="absolute inset-0 scale-110 rounded-2xl bg-gold/20 blur-xl" aria-hidden />
               <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-linear-to-br from-gold/25 to-gold/5 ring-[3px] ring-gold/25 ring-offset-2 ring-offset-background">
-                <span className="font-display text-3xl font-bold text-gold">
+                <span className="font-semibold text-3xl font-bold text-gold">
                   {(group.name ?? 'G')[0].toUpperCase()}
                 </span>
               </div>
             </div>
 
-            <h2 className="mt-5 font-display text-2xl leading-tight tracking-tight text-body">
+            <h2 className="mt-5 font-semibold text-2xl leading-tight tracking-tight text-body">
               {group.name ?? '—'}
             </h2>
             {group.bio ? (
@@ -145,7 +147,7 @@ const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-body-300/45">
                   Created
                 </p>
-                <p className="mt-2 font-display text-lg leading-tight text-body">
+                <p className="mt-2 font-semibold text-lg leading-tight text-body">
                   {formatGroupCreated(group.createdAt)}
                 </p>
               </div>
@@ -153,7 +155,7 @@ const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-body-300/45">
                   Members
                 </p>
-                <p className="mt-2 font-display text-lg leading-tight tabular-nums text-blue">
+                <p className="mt-2 font-semibold text-lg leading-tight tabular-nums text-blue">
                   {members.length}
                 </p>
               </div>
@@ -171,7 +173,7 @@ const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
 
           <div className="mt-6">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-display text-lg leading-none tracking-tight text-body">Members</h3>
+              <h3 className="font-semibold text-lg leading-none tracking-tight text-body">Members</h3>
               <span className="rounded-full border border-border/40 bg-primary/25 px-2.5 py-1 text-[10px] font-semibold text-body-300">
                 {members.length}
               </span>
@@ -238,10 +240,7 @@ const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
           handleConfirmationModal={({ accept }) => {
             const target = removeMemberTarget;
             setRemoveMemberTarget(null);
-            if (accept) {
-              setMembers((prev) => prev.filter((member) => member._id !== target._id));
-              removeMember({ groupId: group._id, userId: target._id });
-            }
+            if (accept) removeMember({ groupId: group._id, userId: target._id });
           }}
         />
       )}

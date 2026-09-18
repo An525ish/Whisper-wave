@@ -1,7 +1,10 @@
 import { Types } from 'mongoose';
 import { Message } from '../models/message.js';
+import { Chat } from '../models/chat.js';
 import type {
   CreateMessageInput,
+  FindReceiptsResult,
+  MessageReceiptUser,
   MessageRecord,
   UpdateMessagePatch,
 } from '../types/message.js';
@@ -10,18 +13,25 @@ import type { DayCount } from '../types/user.js';
 export const findByChatPage = async (
   chatId: string,
   skip: number,
-  limit: number
-) =>
-  Message.find({ chat: chatId, status: { $ne: 'failed' } })
+  limit: number,
+  clearedAt?: Date,
+) => {
+  const filter: Record<string, unknown> = { chat: chatId, status: { $ne: 'failed' } };
+  if (clearedAt) filter.createdAt = { $gt: clearedAt };
+  return Message.find(filter)
     .sort({ createdAt: -1 })
     .limit(limit)
     .skip(skip)
     .lean()
     .populate('sender', 'name avatar')
     .populate('chat', 'groupChat');
+};
 
-export const countByChat = async (chatId: string): Promise<number> =>
-  Message.countDocuments({ chat: chatId, status: { $ne: 'failed' } });
+export const countByChat = async (chatId: string, clearedAt?: Date): Promise<number> => {
+  const filter: Record<string, unknown> = { chat: chatId, status: { $ne: 'failed' } };
+  if (clearedAt) filter.createdAt = { $gt: clearedAt };
+  return Message.countDocuments(filter);
+};
 
 export const create = async (
   input: CreateMessageInput
@@ -74,7 +84,7 @@ export const softDeleteById = async (
 ): Promise<MessageRecord | null> =>
   Message.findByIdAndUpdate(
     id,
-    { $set: { isDeleted: true, content: undefined, attachments: [] } },
+    { $set: { isDeleted: true } },
     { returnDocument: 'after' }
   ).lean<MessageRecord>();
 
@@ -100,7 +110,7 @@ export const softDeleteManyByIds = async (
   }
 
   const result = await Message.updateMany(filter, {
-    $set: { isDeleted: true, content: undefined, attachments: [] },
+    $set: { isDeleted: true },
   });
 
   if (result.modifiedCount === 0) return [];
@@ -498,10 +508,14 @@ export const listForAdminPage = async ({
 export const listForAdmin = async () => listForAdminPage({ limit: 50 });
 
 /**
- * fileType stored by upload middleware is 'media' (images/video/audio) or
- * 'document'. GIFs from the Klip service are stored with their MIME type
- * (e.g. 'image/gif'). Differentiate images vs videos by Cloudinary URL path.
+ * fileType is usually 'media' | 'document' (R2 uploads) or a full MIME (GIFs).
+ * Image vs video: Cloudinary path OR file extension (R2 / ImageKit URLs).
  */
+const IMAGE_EXT = /\.(png|jpe?g|webp|heic|heif|avif|bmp|svg)(\?|#|$)/i;
+const VIDEO_EXT = /\.(mp4|webm|mov|avi|mkv|m4v)(\?|#|$)/i;
+const AUDIO_EXT = /\.(mp3|wav|ogg|aac|m4a|flac|wma)(\?|#|$)/i;
+const GIF_EXT = /\.gif(\?|#|$)/i;
+
 const adminAttachmentFilter = ({
   q,
   senderId,
@@ -514,39 +528,57 @@ const adminAttachmentFilter = ({
   const filter: Record<string, unknown> = {};
 
   if (kind === 'images') {
-    // fileType='media' + Cloudinary image path + not a GIF filename
     filter.attachments = {
       $elemMatch: {
-        fileType: 'media',
-        url: { $regex: /\/image\/upload\//i },
-        name: { $not: /\.gif$/i },
+        $nor: [{ fileType: /^image\/gif$/i }, { name: GIF_EXT }, { url: GIF_EXT }],
+        $or: [
+          { fileType: { $regex: /^image\//i } },
+          { url: /\/image\/upload\//i },
+          { name: IMAGE_EXT },
+          { url: IMAGE_EXT },
+        ],
       },
     };
   } else if (kind === 'videos') {
-    // fileType='media' + Cloudinary video path + not an audio extension
     filter.attachments = {
       $elemMatch: {
-        fileType: 'media',
-        url: { $regex: /\/video\/upload\//i },
-        name: { $not: /\.(mp3|wav|ogg|aac|m4a|flac|wma)$/i },
+        $nor: [{ name: AUDIO_EXT }, { url: AUDIO_EXT }, { fileType: { $regex: /^audio\//i } }],
+        $or: [
+          { fileType: { $regex: /^video\//i } },
+          { url: /\/video\/upload\//i },
+          { name: VIDEO_EXT },
+          { url: VIDEO_EXT },
+        ],
       },
     };
   } else if (kind === 'gifs') {
-    // GIF MIME type (Klip) OR .gif filename (uploaded)
     filter.attachments = {
       $elemMatch: {
         $or: [
           { fileType: { $regex: /^image\/gif$/i } },
-          { name: { $regex: /\.gif$/i } },
+          { name: GIF_EXT },
+          { url: GIF_EXT },
         ],
       },
     };
   } else if (kind === 'docs') {
-    filter.attachments = { $elemMatch: { fileType: 'document' } };
+    filter.attachments = {
+      $elemMatch: {
+        $or: [
+          { fileType: 'document' },
+          { fileType: { $regex: /^(application|text)\//i } },
+        ],
+      },
+    };
   } else if (kind === 'links') {
     filter.content = { $regex: /https?:\/\//i };
+  } else if (kind === 'deleted') {
+    filter.isDeleted = true;
+    filter.$or = [
+      { 'attachments.0': { $exists: true } },
+      { content: { $regex: /https?:\/\//i } },
+    ];
   } else {
-    // 'all' — any message with at least one attachment
     filter['attachments.0'] = { $exists: true };
   }
 
@@ -555,6 +587,18 @@ const adminAttachmentFilter = ({
   if (term) {
     if (kind === 'links') {
       filter.content = { $regex: escapeRegex(term), $options: 'i' };
+    } else if (kind === 'deleted') {
+      const deletedScope = filter.$or;
+      delete filter.$or;
+      filter.$and = [
+        { $or: deletedScope as Record<string, unknown>[] },
+        {
+          $or: [
+            { 'attachments.name': { $regex: escapeRegex(term), $options: 'i' } },
+            { content: { $regex: escapeRegex(term), $options: 'i' } },
+          ],
+        },
+      ];
     } else {
       filter['attachments.name'] = { $regex: escapeRegex(term), $options: 'i' };
     }
@@ -592,11 +636,14 @@ export const listAttachmentsForAdmin = async ({
   return Message.find(filter)
     .sort({ createdAt: -1 })
     .limit(limit)
-    .select('attachments content sender chat createdAt')
+    .select('attachments content sender chat createdAt isDeleted')
     .populate('sender', 'name username avatar')
     .populate('chat', 'name groupChat')
     .lean();
 };
+
+export const findManyByIds = (ids: string[]) =>
+  Message.find({ _id: { $in: ids } }).select('attachments').lean();
 
 export const listRecentForActivity = async ({
   limit,
@@ -637,3 +684,26 @@ export const countCreatedByDay = async (
     },
     { $sort: { _id: 1 } },
   ]);
+
+export const findReceipts = async (
+  messageId: string,
+  requesterId: string
+): Promise<FindReceiptsResult> => {
+  const msg = await Message.findById(messageId)
+    .select('sender chat readBy')
+    .populate<{ readBy: MessageReceiptUser[] }>('readBy', 'name avatar')
+    .lean();
+
+  if (!msg) return { readers: [], isAuthorized: false };
+
+  // Verify the requester is either the message sender or the chat creator.
+  const isSender = msg.sender.toString() === requesterId;
+  const chatData = await Chat.findById(msg.chat).select('creator').lean();
+  const isCreator = chatData?.creator?.toString() === requesterId;
+  const isAuthorized = isSender || isCreator;
+
+  const readers = (msg.readBy as unknown as MessageReceiptUser[])
+    .filter((u) => u._id.toString() !== msg.sender.toString());
+
+  return { readers, isAuthorized };
+};

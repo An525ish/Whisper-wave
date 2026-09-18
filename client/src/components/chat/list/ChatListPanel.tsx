@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import ChatHeader from '@/components/chat/list/ChatListHeader';
 import ChatTabView from '@/components/chat/list/ChatTabView';
 import AddMemberIcon from '@/components/ui/icons/AddMember';
@@ -9,10 +9,10 @@ const ChatListPanel = () => {
   const [isNewOpen, setIsNewOpen] = useState(false);
   const [newTab, setNewTab] = useState<NewConnectTab>('friends');
 
-  const openNew = (tab: NewConnectTab) => {
+  const openNew = useCallback((tab: NewConnectTab) => {
     setNewTab(tab);
     setIsNewOpen(true);
-  };
+  }, []);
 
   return (
     <div className="relative flex h-full min-h-0 w-full flex-col">

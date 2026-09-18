@@ -1,9 +1,10 @@
 import { type MouseEvent } from 'react';
-import { fileFormat, type FileFormatKind } from '@/utils/fileFormat';
+import { resolveAttachmentKind, type AttachmentKind } from '@/utils/fileFormat';
 import type { ParsedLink } from '@/utils/linkParser';
 import Image from '@/components/ui/Image';
 import ReadReceipt from '@/components/ui/icons/ReadReceipt';
 import RenderAttachments from '@/components/chat/message/RenderAttachments';
+import MediaAlbumGrid, { isMediaAlbumEligible } from '@/components/chat/message/MediaAlbumGrid';
 import LinkPreview from '@/components/chat/message/LinkPreview';
 import MessageContent from '@/components/chat/message/MessageContent';
 import ReplyQuote from '@/components/chat/message/ReplyQuote';
@@ -25,7 +26,6 @@ export type MessageBubbleProps = {
   hasAttachments: boolean;
   mediaOnly: boolean;
   linkOnly: boolean;
-  multiMedia: boolean;
   replyTo?: MessageReplyTo;
   replyPreviewText: string;
   currentTime: string;
@@ -33,18 +33,15 @@ export type MessageBubbleProps = {
   showReadReceipt?: boolean;
   isRead?: boolean;
   editedAt?: string;
+  /** Center the bubble (e.g. message-info preview) instead of chat-thread alignment */
+  centered?: boolean;
   onFileAction: (e: MouseEvent, attachment: ChatAttachment) => Promise<void> | void;
   onDownload: (attachment: ChatAttachment) => Promise<void> | void;
 };
 
-const resolveKind = (attachment: ChatAttachment, url: string): FileFormatKind => {
-  if (attachment.type?.startsWith('image/')) return 'image';
-  if (attachment.type?.startsWith('video/')) return 'video';
-  if (attachment.type?.startsWith('audio/')) return 'audio';
-  const fromName = fileFormat(attachment.name);
-  if (fromName !== 'unknown') return fromName;
-  return fileFormat(url);
-};
+/** Adapter: resolveAttachmentKind uses an object arg; callers here use (att, url). */
+const resolveKind = (attachment: ChatAttachment, url: string): AttachmentKind =>
+  resolveAttachmentKind({ ...attachment, url });
 
 const metaRowClass =
   'inline-flex h-[19px] items-center whitespace-nowrap text-[11px] leading-none tabular-nums';
@@ -68,7 +65,6 @@ const MessageBubble = ({
   hasAttachments,
   mediaOnly,
   linkOnly,
-  multiMedia,
   replyTo,
   replyPreviewText,
   currentTime,
@@ -76,6 +72,7 @@ const MessageBubble = ({
   showReadReceipt,
   isRead,
   editedAt,
+  centered = false,
   onFileAction,
   onDownload,
 }: MessageBubbleProps) => {
@@ -124,6 +121,7 @@ const MessageBubble = ({
   );
 
   const showBubbleTimestamp = !mediaOnly;
+  const useMediaAlbum = isMediaAlbumEligible(attachments, resolveKind);
   const mediaTimestamp = renderTimestamp(
     `pointer-events-none absolute bottom-0 right-0.5 z-2 ${attachmentTimeClass}`,
   );
@@ -132,8 +130,8 @@ const MessageBubble = ({
   if (isDeleted) {
     return (
       <div
-        className={`flex max-w-[min(100%,22rem)] items-end gap-2 ${
-          sameSender ? 'ml-auto flex-row-reverse' : 'mr-auto'
+        className={`flex w-fit max-w-[min(100%,22rem)] items-end gap-2 ${
+          sameSender ? 'flex-row-reverse' : ''
         }`}
       >
         {showAvatar ? (
@@ -142,10 +140,10 @@ const MessageBubble = ({
           </div>
         ) : null}
         <div
-          className={`rounded-2xl border border-dashed px-3.5 py-2 text-sm italic shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${
+          className={`border border-dashed px-3.5 py-2 text-sm italic ${
             sameSender
-              ? 'bubble-out border-green/25 bg-green-dark/30 text-body-300'
-              : 'bubble-in border-border/60 bg-primary/50 text-body-300'
+              ? 'bubble-out border-green/40 bg-green-dark/30 text-body-300'
+              : 'bubble-in border-body-300/35 bg-primary/50 text-body-300'
           }`}
         >
           This message was deleted
@@ -156,8 +154,12 @@ const MessageBubble = ({
 
   return (
     <div
-      className={`flex max-w-[min(100%,22rem)] items-end gap-2 ${
-        sameSender ? 'ml-auto flex-row-reverse' : 'mr-auto'
+      className={`flex w-fit max-w-[min(100%,22rem)] items-end gap-2 ${
+        centered
+          ? `mx-auto ${sameSender ? 'flex-row-reverse' : ''}`
+          : sameSender
+            ? 'flex-row-reverse'
+            : ''
       }`}
     >
       {showAvatar ? (
@@ -167,7 +169,7 @@ const MessageBubble = ({
       ) : null}
 
       <div
-        className={`min-w-0 max-w-full shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${bubblePadding} ${
+        className={`min-w-0 w-fit max-w-full select-none text-left [-webkit-touch-callout:none] ${bubblePadding} ${
           sameSender
             ? 'bubble-out border border-green/35 bg-green-dark/55'
             : 'bubble-in border border-border bg-primary/90'
@@ -192,53 +194,57 @@ const MessageBubble = ({
           ) : null}
 
           {hasAttachments ? (
-            <div
-              className={`${
-                multiMedia
-                  ? 'grid w-58 max-w-full grid-cols-2 gap-1'
-                  : 'flex w-fit flex-col gap-1'
-              } ${hasText ? 'mb-1.5' : ''}`}
-            >
-              {attachments.map((attachment, index) => {
-                const url = attachment.url || attachment.tempUrl;
-                const fileType = resolveKind(attachment, url ?? '');
-                const isLast = index === attachments.length - 1;
-                const isVisualMedia =
-                  fileType === 'image' || fileType === 'video' || fileType === 'audio';
-                const stampOnMedia = mediaOnly && isLast && isVisualMedia;
-                const stampOnFile = mediaOnly && isLast && !isVisualMedia;
+            useMediaAlbum ? (
+              <div className={hasText ? 'mb-1.5' : ''}>
+                <MediaAlbumGrid
+                  attachments={attachments}
+                  resolveKind={resolveKind}
+                  onFileAction={onFileAction}
+                  onDownload={onDownload}
+                  albumOverlay={mediaOnly ? mediaTimestamp : undefined}
+                />
+              </div>
+            ) : (
+              <div className={`flex w-fit max-w-full flex-col gap-1 ${hasText ? 'mb-1.5' : ''}`}>
+                {attachments.map((attachment, index) => {
+                  const url = attachment.url || attachment.tempUrl;
+                  const fileType = resolveKind(attachment, url ?? '');
+                  const isLast = index === attachments.length - 1;
+                  const isVisualMedia =
+                    fileType === 'image' || fileType === 'video' || fileType === 'audio' || fileType === 'gif';
+                  const stampOnMedia = mediaOnly && isLast && isVisualMedia;
+                  const stampOnFile = mediaOnly && isLast && !isVisualMedia;
 
-                return (
-                  <div
-                    key={attachment.public_id || index}
-                    role="button"
-                    tabIndex={0}
-                    onClick={(e) => void onFileAction(e, attachment)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        void onFileAction(e as unknown as MouseEvent, attachment);
-                      }
-                    }}
-                    className={`block cursor-pointer overflow-hidden rounded-2xl text-left transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-green/45 ${
-                      multiMedia ? 'min-w-0' : 'w-fit max-w-full'
-                    }`}
-                  >
-                    <RenderAttachments
-                      fileType={fileType}
-                      url={url ?? ''}
-                      name={attachment.name}
-                      type={attachment.type}
-                      size={attachment.size}
-                      isUploading={attachment.uploading}
-                      overlay={stampOnMedia ? mediaTimestamp : stampOnFile ? fileTimestamp : null}
-                      fill={multiMedia}
-                      onDownload={!isVisualMedia ? () => { void onDownload(attachment); } : undefined}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+                  return (
+                    <div
+                      key={attachment.public_id || index}
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => void onFileAction(e, attachment)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          void onFileAction(e as unknown as MouseEvent, attachment);
+                        }
+                      }}
+                      className="block w-fit max-w-full cursor-pointer overflow-hidden rounded-2xl text-left transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-green/45"
+                    >
+                      <RenderAttachments
+                        fileType={fileType}
+                        url={url ?? ''}
+                        name={attachment.name}
+                        type={attachment.type}
+                        size={attachment.size}
+                        isUploading={attachment.uploading}
+                        isHd={attachment.isHd}
+                        overlay={stampOnMedia ? mediaTimestamp : stampOnFile ? fileTimestamp : null}
+                        onDownload={!isVisualMedia ? () => { void onDownload(attachment); } : undefined}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : null}
 
           {linkOnly ? (

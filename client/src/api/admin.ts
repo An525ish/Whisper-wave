@@ -80,10 +80,13 @@ export const ACTIVITY_PAGE_SIZE = 20;
 export const getAdminActivityPresence = () =>
   api.get<ApiSuccess & AdminActivityPresence>('/admin/activity/presence');
 
+/** 'admin-logs' is a client-only tab state — server enum is ['all','messages','signups'] */
+export type ServerActivityFilter = Exclude<AdminActivityFilter, 'admin-logs'>;
+
 export const getAdminActivityEvents = (params: {
   limit?: number;
   before?: string;
-  type: AdminActivityFilter;
+  type: ServerActivityFilter;
 }) =>
   api.get<ApiSuccess & AdminActivityEventsPage>('/admin/activity/events', {
     limit: params.limit ?? ACTIVITY_PAGE_SIZE,
@@ -99,6 +102,9 @@ export const deleteAdminGroup = (id: string) =>
 
 export const deleteAdminMessage = (id: string) =>
   api.delete<ApiSuccess>(`/admin/messages/${id}`);
+
+export const deleteAdminAttachments = (messageIds: string[]) =>
+  api.delete<ApiSuccess>('/admin/attachments', { messageIds });
 
 export const removeAdminGroupMember = (groupId: string, userId: string) =>
   api.delete<ApiSuccess>(`/admin/groups/${groupId}/members/${userId}`);

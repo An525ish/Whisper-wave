@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   deleteGroup,
   deleteMessage,
+  deleteAttachments,
   deleteUser,
   getActivityEvents,
   getActivityPresence,
@@ -23,6 +24,7 @@ import { authLimiter, requireAdmin, validate } from '../middlewares/index.js';
 import {
   adminActivityEventsQuerySchema,
   adminAttachmentsQuerySchema,
+  adminDeleteAttachmentsSchema,
   adminIdParamSchema,
   adminImpersonationLogsQuerySchema,
   adminLoginSchema,
@@ -80,6 +82,7 @@ adminRouter.get(
 adminRouter.delete('/users/:id', requireAdmin, validate(adminIdParamSchema, 'params'), deleteUser);
 adminRouter.delete('/groups/:id', requireAdmin, validate(adminIdParamSchema, 'params'), deleteGroup);
 adminRouter.delete('/messages/:id', requireAdmin, validate(adminIdParamSchema, 'params'), deleteMessage);
+adminRouter.delete('/attachments', requireAdmin, validate(adminDeleteAttachmentsSchema), deleteAttachments);
 adminRouter.delete(
   '/groups/:id/members/:userId',
   requireAdmin,

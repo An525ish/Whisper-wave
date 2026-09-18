@@ -1,11 +1,15 @@
-import ImageViewer from '@/components/ui/image-viewer/ImageViewer'
+import { lazy, Suspense } from 'react'
 import Image from '@/components/ui/Image'
+const ImageViewer = lazy(() => import('@/components/ui/image-viewer/ImageViewer'))
 import { useProfilePanel } from '@/hooks/profile/useProfilePanel'
 import { ProfileNameBlock, ProfileBioSection } from '@/components/profile/ProfileForm'
 import GroupMembersList from '@/components/profile/GroupMembersList'
 import ProfileActions from '@/components/profile/ProfileActions'
 import SharedContentSheet from '@/components/profile/SharedContentSheet'
 import ProfilePanelSkeleton from '@/components/profile/ProfilePanelSkeleton'
+import { useOpenMemberChat } from '@/hooks/chat'
+const ForwardDialog = lazy(() => import('@/components/chat/dialogs/ForwardDialog'))
+import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal'
 
 type ProfilePanelProps = {
   variant?: 'column' | 'sheet'
@@ -14,6 +18,7 @@ type ProfilePanelProps = {
 
 const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelProps) => {
   const p = useProfilePanel(variant, forceSelf)
+  const openMemberChat = useOpenMemberChat()
 
   if (p.chatId && !p.showSelfProfile && p.isLoading) {
     return <ProfilePanelSkeleton variant={variant} />
@@ -34,7 +39,7 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
     <>
       <div className={`${sizeClass} overflow-hidden rounded-full`}>
         {/* Largest profile slot is h-24 w-24 (96px). 192 = 2× for retina. */}
-        <Image src={p.avatarSrc} className="h-full w-full object-cover" alt={p.name} displayWidth={192} />
+        <Image src={p.avatarSrc} className="h-full w-full object-cover" alt={p.name} displayWidth={192} showLoading={false} />
       </div>
       {p.canEdit ? (
         <>
@@ -43,7 +48,10 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
             className={`absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/0 opacity-0 transition duration-200 hover:bg-black/45 hover:opacity-100 ${p.isSaving ? 'pointer-events-none' : ''}`}
             title={p.groupChat ? 'Change group photo' : 'Change photo'}
           >
-            <img src="https://raw.githubusercontent.com/ThiagoLuizNunes/angular-boilerplate/master/src/assets/imgs/camera-white.png" alt="" className="h-8 w-8" />
+            <svg viewBox="0 0 24 24" className="h-8 w-8 text-white" fill="none" aria-hidden>
+              <path d="M4 8.5h2.2l1.1-1.8h5.4L14 8.5H16.5A1.5 1.5 0 0 1 18 10v7.5A1.5 1.5 0 0 1 16.5 19h-9A1.5 1.5 0 0 1 6 17.5V10a1.5 1.5 0 0 1 1.5-1.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="12" cy="13.5" r="2.4" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
           </label>
           <button
             type="button" onClick={() => p.avatarInputRef.current?.click()} disabled={p.isSaving}
@@ -55,7 +63,7 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
               <circle cx="12" cy="13.5" r="2.4" stroke="currentColor" strokeWidth="1.6" />
             </svg>
           </button>
-          <input ref={p.avatarInputRef} id={p.avatarInputId} type="file" accept="image/*" className="hidden" onChange={p.handleAvatarChange} />
+          <input ref={p.avatarInputRef} id={p.avatarInputId} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={p.handleAvatarChange} />
         </>
       ) : null}
     </>
@@ -72,8 +80,43 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
           onOpenPhoto={p.openImageViewerForFile} onOpenDocument={p.handleFileAction}
         />
       ) : null}
-      {p.viewerOpen ? (
-        <ImageViewer mediaFiles={p.viewerMediaFiles} initialIndex={p.initialImageIndex} onClose={() => p.setViewerOpen(false)} />
+      <Suspense fallback={null}>
+        {p.viewerOpen ? (
+          <ImageViewer
+            mediaFiles={p.viewerMediaFiles}
+            initialIndex={p.initialImageIndex}
+            onClose={() => p.setViewerOpen(false)}
+            onForward={p.chatId ? (file) => { if (file.messageId) p.handleViewerForward(file.messageId); } : undefined}
+            onDelete={p.chatId ? (file) => { if (file.messageId) p.handleViewerDelete(file.messageId); } : undefined}
+            chatId={p.chatId}
+          />
+        ) : null}
+
+        {p.viewerForwardMsgId && p.chatId ? (
+          <ForwardDialog
+            open={true}
+            sourceChatId={p.chatId}
+            messageIds={[p.viewerForwardMsgId]}
+            onClose={() => p.setViewerForwardMsgId(null)}
+            onForward={p.handleViewerForwardToChat}
+            isForwarding={p.forwardIsPending}
+          />
+        ) : null}
+      </Suspense>
+
+      {p.viewerDeleteMsgId ? (
+        <ConfirmationModal
+          variant="danger"
+          title="Delete this message?"
+          description="This message will be removed for everyone in this chat."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onClose={() => p.setViewerDeleteMsgId(null)}
+          handleConfirmationModal={({ accept }) => {
+            if (accept) void p.confirmViewerDelete()
+            else p.setViewerDeleteMsgId(null)
+          }}
+        />
       ) : null}
 
       <div className={p.isSheet
@@ -100,7 +143,11 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
           <div className="relative z-20 shrink-0">
             {p.chatId && p.groupChat ? (
               <>
-                <GroupMembersList creator={p.creator} members={p.members} />
+                <GroupMembersList
+                  creator={p.creator}
+                  members={p.members}
+                  onMemberClick={openMemberChat}
+                />
                 {bioSection}
               </>
             ) : bioSection}
@@ -119,10 +166,6 @@ const ProfilePanel = ({ variant = 'column', forceSelf = false }: ProfilePanelPro
           {p.showSelfProfile ? (
             <div className="mt-auto flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 sm:px-4 sm:pb-5">
               <div className="relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-hidden py-2 sm:gap-3.5 sm:py-3">
-                <div
-                  className="pointer-events-none absolute inset-x-8 top-[42%] h-28 max-h-[40%] -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(1,195,109,0.12)_0%,transparent_70%)] blur-2xl"
-                  aria-hidden
-                />
                 <img
                   src="/images/profile-illustration.svg"
                   alt=""

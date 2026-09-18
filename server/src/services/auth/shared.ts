@@ -1,6 +1,6 @@
 import { createHash, randomInt } from 'node:crypto';
-import type { Types } from 'mongoose';
-import type { AuthResult, PublicUser } from '../../types/user.js';
+import type { AuthResult, LeanUser } from '../../types/user.js';
+import { toPublicUser } from '../user/shared.js';
 import { AppError } from '../../utils/AppError.js';
 import { isAllowedEmail } from '../../utils/disposableEmail.js';
 import { isMailConfigured } from '../../utils/mail.js';
@@ -11,22 +11,6 @@ import { generateAccessToken, generateRefreshToken, REFRESH_TOKEN_TTL_MS } from 
 
 export const sha256 = (value: string): string =>
   createHash('sha256').update(value).digest('hex');
-
-export const toPublicUser = (user: {
-  _id: Types.ObjectId;
-  name: string;
-  username: string;
-  email?: string;
-  avatar: { url: string };
-  bio?: string;
-}): PublicUser & Record<string, unknown> => ({
-  _id: user._id,
-  name: user.name,
-  username: user.username,
-  email: user.email,
-  avatar: user.avatar.url,
-  bio: user.bio,
-});
 
 export const assertMailReady = (): void => {
   if (isProd && !isMailConfigured()) {
@@ -70,11 +54,9 @@ export const issueAuthTokens = async (
   return { accessToken, refreshToken };
 };
 
-type AuthSessionUser = Parameters<typeof toPublicUser>[0];
-
 /** Issues tokens and returns the standard auth payload (cookies + JSON user). */
 export const issueAuthResult = async (
-  user: AuthSessionUser,
+  user: LeanUser,
   message: string
 ): Promise<AuthResult> => {
   const { accessToken, refreshToken } = await issueAuthTokens(user._id.toString());

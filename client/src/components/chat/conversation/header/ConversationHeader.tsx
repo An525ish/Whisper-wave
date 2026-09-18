@@ -1,9 +1,10 @@
 import ChevronLeft from '@/components/ui/icons/ChevronLeft';
 import AvatarCard from '@/components/ui/AvatarCard';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
-import { Link } from 'react-router-dom';
+import CreatorLeaveDialog from '@/components/chat/group/CreatorLeaveDialog';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { useChatDetailsQuery, useLeaveGroupMutation } from '@/hooks/chat';
+import { useChatDetailsQuery, useLeaveGroupMutation, useDeleteChatForMeMutation, useUnfriendMutation, useDeleteGroupMutation } from '@/hooks/chat';
 import useAsyncMutation from '@/hooks/shared/useAsyncMutation';
 import { useAuthStore } from '@/stores/auth';
 import { usePresenceStore } from '@/stores/chat/presence';
@@ -79,10 +80,15 @@ const ConversationHeader = ({
 }: ChatHeaderProps) => {
   const [isDotsMenu, setIsDotsMenu] = useState(false);
   const [isConfirmLeave, setIsConfirmLeave] = useState(false);
+  const [isCreatorLeaveDialog, setIsCreatorLeaveDialog] = useState(false);
+  const [isConfirmDeleteChat, setIsConfirmDeleteChat] = useState(false);
+  const [isConfirmUnfriend, setIsConfirmUnfriend] = useState(false);
+  const [isConfirmDeleteGroup, setIsConfirmDeleteGroup] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const user = useAuthStore((s) => s.user);
   const setUserLastSeen = usePresenceStore((s) => s.setUserLastSeen);
+  const navigate = useNavigate();
 
   const { data: chatDetails, isLoading } = useChatDetailsQuery({
     id: chatId,
@@ -91,10 +97,20 @@ const ConversationHeader = ({
   const [leaveGroup, { isLoading: isLeaveGroupLoading }] = useAsyncMutation(
     useLeaveGroupMutation,
   );
+  const [deleteChatForMe, { isLoading: isDeleteChatLoading }] = useAsyncMutation(
+    useDeleteChatForMeMutation,
+  );
+  const [unfriend, { isLoading: isUnfriendLoading }] = useAsyncMutation(
+    useUnfriendMutation,
+  );
+  const [deleteGroup, { isLoading: isDeleteGroupLoading }] = useAsyncMutation(
+    useDeleteGroupMutation,
+  );
 
   const dotsMenuOpen = isDotsMenu && !selectMode;
 
   useEffect(() => {
+    if (!isDotsMenu) return;
     const handleClickOutside = (event: MouseEvent) => {
       if (
         menuRef.current &&
@@ -107,11 +123,11 @@ const ConversationHeader = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [isDotsMenu]);
 
   const chatData = (chatDetails as ChatDetailsResponse | undefined)?.data || {};
-  const { avatar, name, groupChat, myRole } = chatData;
-  const canClearChat = !groupChat || myRole === 'creator';
+  const { avatar, name, groupChat, myRole, members: rawMembers } = chatData;
+  const canClearChat = true; // clear for me — available to everyone
   const avatarList = Array.isArray(avatar) ? avatar : avatar ? [avatar] : [];
   const userId = user?._id ? String(user._id) : '';
 
@@ -140,12 +156,19 @@ const ConversationHeader = ({
     (s) => (!groupChat && peerId ? (s.lastSeenByUserId[peerId] ?? null) : null),
   );
 
+  const memberCount = useMemo(
+    () => normalizeMemberIds(chatData.members).length,
+    [chatData.members],
+  );
+
   const statusLabel = selectMode
     ? `${selectedCount} selected`
     : isTyping
       ? 'typing…'
       : groupChat
-        ? null
+        ? memberCount > 0
+          ? `${memberCount} member${memberCount === 1 ? '' : 's'}`
+          : null
         : peerOnline
           ? 'online'
           : formatLastSeen(peerLastSeen);
@@ -155,11 +178,63 @@ const ConversationHeader = ({
     onOpenSearch?.();
   };
 
+  // Members excluding self (for CreatorLeaveDialog); ChatMember can be string | object
+  const otherMembers = useMemo(() => {
+    if (!Array.isArray(rawMembers)) return [];
+    return rawMembers
+      .filter(
+        (m): m is { _id?: string; name?: string; avatar?: string; isAdmin?: boolean } =>
+          typeof m === 'object' && m !== null && Boolean((m as { _id?: string })._id),
+      )
+      .filter((m) => m._id !== userId)
+      .map((m) => ({ _id: m._id!, name: m.name ?? '', avatar: m.avatar, isAdmin: m.isAdmin }));
+  }, [rawMembers, userId]);
+
   const handleConfirmationModal = async ({ accept }: { accept: boolean }) => {
     if (accept) {
-      await leaveGroup('Leaving Group', { chatId: chatId ?? '' });
+      await leaveGroup(null, { chatId: chatId ?? '' });
+      navigate('/');
     }
     setIsConfirmLeave(false);
+  };
+
+  const handleLeaveGroup = () => {
+    setIsDotsMenu(false);
+    if (groupChat && myRole === 'creator' && otherMembers.length > 0) {
+      setIsCreatorLeaveDialog(true);
+    } else {
+      setIsConfirmLeave(true);
+    }
+  };
+
+  const handleCreatorLeaveConfirm = async (newCreatorId?: string) => {
+    await leaveGroup(null, { chatId: chatId ?? '', newCreatorId });
+    setIsCreatorLeaveDialog(false);
+    navigate('/');
+  };
+
+  const handleDeleteChatConfirm = async ({ accept }: { accept: boolean }) => {
+    if (accept) {
+      await deleteChatForMe(null, chatId ?? '');
+      navigate('/');
+    }
+    setIsConfirmDeleteChat(false);
+  };
+
+  const handleUnfriendConfirm = async ({ accept }: { accept: boolean }) => {
+    if (accept) {
+      await unfriend(null, chatId ?? '');
+      navigate('/');
+    }
+    setIsConfirmUnfriend(false);
+  };
+
+  const handleDeleteGroupConfirm = async ({ accept }: { accept: boolean }) => {
+    if (accept) {
+      await deleteGroup(null, chatId ?? '');
+      navigate('/');
+    }
+    setIsConfirmDeleteGroup(false);
   };
 
   if (isLoading) {
@@ -180,25 +255,89 @@ const ConversationHeader = ({
         />
       ) : null}
 
+      <CreatorLeaveDialog
+        isOpen={isCreatorLeaveDialog}
+        members={otherMembers}
+        onConfirm={handleCreatorLeaveConfirm}
+        onCancel={() => setIsCreatorLeaveDialog(false)}
+        isLoading={isLeaveGroupLoading}
+      />
+
+      {isConfirmDeleteChat ? (
+        <ConfirmationModal
+          variant="danger"
+          title="Delete this chat?"
+          description="This chat will be removed from your inbox. The other person can still see it."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onClose={() => setIsConfirmDeleteChat(false)}
+          handleConfirmationModal={handleDeleteChatConfirm}
+        />
+      ) : null}
+
+      {isConfirmUnfriend ? (
+        <ConfirmationModal
+          variant="danger"
+          title={`Unfriend ${name ?? ''}?`}
+          description="This will remove the chat for both of you and they'll be notified."
+          confirmLabel="Unfriend"
+          cancelLabel="Cancel"
+          onClose={() => setIsConfirmUnfriend(false)}
+          handleConfirmationModal={handleUnfriendConfirm}
+        />
+      ) : null}
+
+      {isConfirmDeleteGroup ? (
+        <ConfirmationModal
+          variant="danger"
+          title={`Delete "${name ?? 'this group'}"?`}
+          description="This will permanently delete the group and all its messages for everyone."
+          confirmLabel="Delete group"
+          cancelLabel="Cancel"
+          onClose={() => setIsConfirmDeleteGroup(false)}
+          handleConfirmationModal={handleDeleteGroupConfirm}
+        />
+      ) : null}
+
       <header className={headerShellClass}>
         <div className={headerInnerClass}>
           <div className="relative flex items-center justify-between gap-2">
-            <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-1.5">
-              <Link
-                to="/"
-                replace
-                className="inline-flex h-11 shrink-0 items-center gap-0.5 rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
-                aria-label="Back to chats"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </Link>
+            <div className="flex min-w-0 flex-1 items-center gap-0.5 md:gap-1.5">
+              {selectMode ? (
+                <button
+                  type="button"
+                  onClick={onCancelSelect}
+                  className="inline-flex h-9 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
+                  aria-label="Cancel selection"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+              ) : (
+                <Link
+                  to="/"
+                  replace
+                  className="inline-flex h-9 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
+                  aria-label="Back to chats"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Link>
+              )}
+
+              {selectMode ? (
+                <p className="min-w-0 flex-1 truncate text-[17px] font-semibold tabular-nums text-white md:hidden">
+                  {selectedCount}
+                </p>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => {
                   if (selectMode || !canOpenProfileSheet || !onOpenProfile) return;
                   onOpenProfile();
                 }}
-                className={`flex min-w-0 flex-1 items-center gap-1 rounded-xl text-left transition md:gap-1.5 ${
+                className={`min-w-0 items-center gap-1 rounded-xl text-left transition md:gap-1.5 ${
+                  selectMode ? 'hidden md:flex' : 'flex'
+                } flex-1 ${
                   !selectMode && canOpenProfileSheet && onOpenProfile
                     ? 'active:bg-primary/40 lg:active:bg-transparent'
                     : 'cursor-default hover:filter-none active:filter-none'
@@ -214,6 +353,7 @@ const ConversationHeader = ({
                     avatars={avatarList}
                     avatarClassName="shadow-none"
                     showOnline={!groupChat && peerOnline}
+                    showLoading
                   />
                 </div>
                 <div className="min-w-0 pr-2">
@@ -237,7 +377,7 @@ const ConversationHeader = ({
               </button>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2 md:gap-3">
+            <div className="flex shrink-0 items-center gap-1.5 md:gap-3">
               {selectMode ? (
                 <SelectModeActions
                   selectedCount={selectedCount}
@@ -257,6 +397,7 @@ const ConversationHeader = ({
                   groupChat={groupChat}
                   canClearChat={canClearChat}
                   isLeaveGroupLoading={isLeaveGroupLoading}
+                  isCreator={myRole === 'creator'}
                   onToggle={() => setIsDotsMenu((prev) => !prev)}
                   onOpenSearch={handleOpenSearch}
                   onToggleSelectMode={() => {
@@ -271,10 +412,22 @@ const ConversationHeader = ({
                     setIsDotsMenu(false);
                     onOpenMembers?.();
                   }}
-                  onLeaveGroup={() => {
+                  onLeaveGroup={handleLeaveGroup}
+                  onDeleteGroup={() => {
                     setIsDotsMenu(false);
-                    setIsConfirmLeave(true);
+                    setIsConfirmDeleteGroup(true);
                   }}
+                  onDeleteChat={() => {
+                    setIsDotsMenu(false);
+                    setIsConfirmDeleteChat(true);
+                  }}
+                  onUnfriend={() => {
+                    setIsDotsMenu(false);
+                    setIsConfirmUnfriend(true);
+                  }}
+                  isDeleteGroupLoading={isDeleteGroupLoading}
+                  isDeleteChatLoading={isDeleteChatLoading}
+                  isUnfriendLoading={isUnfriendLoading}
                 />
               )}
             </div>

@@ -1,34 +1,43 @@
 import {
-  forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
-  type ChangeEvent, type KeyboardEvent,
+  useCallback, useEffect, useImperativeHandle, useMemo, useState,
+  type ChangeEvent, type KeyboardEvent, type Ref,
 } from 'react';
+import { useLongPress } from '@/hooks/shared/useLongPress';
+import { useQueryClient } from '@tanstack/react-query';
 import useErrors from '@/hooks/shared/useError';
 import { useSocket } from '@/socket/SocketProvider';
 import {
   useChatDetailsQuery, useChatMessages, useChatScroll, useDeleteActions,
-  useMessageActions, useMessageSelection, useSendAttachmentsMutation,
-  useSendGifMutation, useTypingIndicator,
+  useMessageActions, useMessageSelection,
+  useSendGifMutation, useTypingIndicator, queryKeys,
 } from '@/hooks/chat';
+import { useGetMediaQuery } from '@/hooks/chat/useMessageQueries';
+import { getMediaKindFromFile } from '@/utils/fileFormat';
+import { useAttachmentUpload } from '@/hooks/chat/useAttachmentUpload';
 import ContextMenu from '@/components/ui/context-menu/ContextMenu';
 import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
+import MessageReceiptDialog from '@/components/chat/message/MessageReceiptDialog';
+import SwipeToReply from '@/components/chat/message/SwipeToReply';
 import CloseIcon from '@/components/ui/icons/Close';
-import CheckboxIcon from '@/components/ui/icons/Checkbox';
 import { useAuthStore } from '@/stores/auth';
 import { ChatMessagesSkeleton } from '@/components/chat/ChatMessageSkeleton';
 import toast from 'react-hot-toast';
 import type { Avatar } from '@/types';
 import { isValidMessageId, normalizeMemberIds } from '@/utils/helpers';
 import ChatBox from '@/components/chat/message/MessageRow';
+import MessageReactions from '@/components/chat/message/MessageReactions';
 import ChatInput from '@/components/chat/conversation/composer/ChatInput';
-import ForwardDialog from '@/components/chat/dialogs/ForwardDialog';
-import useAsyncMutation from '@/hooks/shared/useAsyncMutation';
+import { lazy, Suspense } from 'react';
+const ForwardDialog = lazy(() => import('@/components/chat/dialogs/ForwardDialog'));
 import type {
-  ChatDetailsResponse, ChatMessage, MessageReplyTo, SendAttachmentsResult,
+  ChatDetailsResponse, ChatMessage, MediaResponse, SharedMediaRow,
 } from '@/types/chat';
-import { isOutgoingMessageRead } from '@/utils/chat';
+import type { MediaFile } from '@/components/ui/image-viewer/ImageViewer';
+import { isOutgoingMessageRead, buildReplySnapshot, getReplyPreviewText } from '@/utils/chat';
 import DoubleChevronDown from '@/components/ui/icons/DoubleChevronDown';
 import ReplyComposerBar from '@/components/chat/conversation/composer/ReplyBar';
 import ChatDayLabel from '@/components/chat/conversation/ChatDayLabel';
+import { CHAT_HEADER_OFFSET_CLASS, CHAT_HEADER_TOP_CLASS } from '@/constants/chat';
 
 export type ConversationPanelHandle = {
   clearChat: () => void;
@@ -38,6 +47,7 @@ export type ConversationPanelHandle = {
 };
 
 type ChatsViewPanelProps = {
+  ref?: Ref<ConversationPanelHandle>;
   chatId?: string;
   focusMessageId?: string | null;
   highlightQuery?: string;
@@ -51,32 +61,21 @@ type ChatsViewPanelProps = {
   onFetchingNextPageChange?: (loading: boolean) => void;
 };
 
-const buildReplySnapshot = (msg: ChatMessage): MessageReplyTo => {
-  const firstAttachment = msg.attachments?.[0];
-  return {
-    messageId: msg._id, content: msg.content,
-    senderName: msg.sender.name ?? 'Unknown',
-    previewAttachment: firstAttachment
-      ? { url: firstAttachment.url ?? firstAttachment.tempUrl ?? '', name: firstAttachment.name ?? 'Attachment', fileType: firstAttachment.type ?? '' }
-      : undefined,
-  };
-};
 
-const getReplyPreviewText = (reply: MessageReplyTo) =>
-  reply.previewAttachment?.name || reply.content?.trim() || 'Message';
-
-const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProps>(({
+const ConversationPanel = ({
+  ref,
   chatId, focusMessageId = null, highlightQuery = '', searchOpen = false,
   selectMode = false, onSelectModeChange, onSelectedCountChange,
   onDeletableSelectedCountChange, onDeletingSelectedChange, onEditingChange,
   onFetchingNextPageChange,
-}, ref) => {
+}: ChatsViewPanelProps) => {
   const socket = useSocket();
   const user = useAuthStore((s) => s.user);
   const isImpersonated = useAuthStore((s) => s.isImpersonated);
   const actAsUser = useAuthStore((s) => s.actAsUser);
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [imageQuality, setImageQuality] = useState<'standard' | 'hd'>('standard');
 
   const { data: chatDetails, isLoading, error, isError } = useChatDetailsQuery(
     { id: chatId, populate: true }, { skip: !chatId },
@@ -84,15 +83,16 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   const isGroupChat = Boolean((chatDetails as ChatDetailsResponse | undefined)?.data?.groupChat);
   const myRole = (chatDetails as ChatDetailsResponse | undefined)?.data?.myRole ?? null;
   const canModerateGroup = isGroupChat && (myRole === 'creator' || myRole === 'admin');
-  const canClearChat = !isGroupChat || myRole === 'creator';
+  const canClearChat = true; // clear-for-me — available to everyone
   const memberIds = useMemo(
     () => normalizeMemberIds((chatDetails as ChatDetailsResponse | undefined)?.data?.members),
     [chatDetails],
   );
-  const memberIdsRef = useRef(memberIds);
-  memberIdsRef.current = memberIds;
 
-  const { selectedIds, setSelectedIds, toggleSelected } = useMessageSelection({ selectMode });
+  const { selectedIds, setSelectedIds, toggleSelected } = useMessageSelection({
+    selectMode,
+    onExitSelectMode: () => onSelectModeChange?.(false),
+  });
 
   const {
     msgLoading, isFetchingNextPage, hasNextPage, fetchNextPage,
@@ -110,22 +110,34 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   });
 
   const { isTyping, setIsTyping, isTypingRef, timeoutRef, clearTypingState, emitStartTyping, emitStopTyping } =
-    useTypingIndicator({ chatId, socket, memberIdsRef });
+    useTypingIndicator({ chatId, socket });
 
   const {
     editingMessageId, isEditing, cancelEdit, saveEdit,
-    replyingTo, clearReply,
+    replyingTo, clearReply, startReply,
     forwardOpen, setForwardOpen, forwardMessageIds, setForwardMessageIds,
     openForwardDialog, handleForwardToChat, forwardIsPending,
-    copyMessagesByIds, openMessageContextMenu, menuState, hideContextMenu,
+    copyMessagesByIds, openMessageContextMenu, openMessageContextMenuFromTouch,
+    menuState, hideContextMenu,
     confirmClearOpen, setConfirmClearOpen, confirmDelete, setConfirmDelete,
     deletableSelectedIds, canInteractMessage, editIsPending,
+    receiptMessage, setReceiptMessage,
   } = useMessageActions({
-    chatId, user, canModerateGroup, canClearChat, allMessages,
+    chatId, user, canModerateGroup, canClearChat, isGroupChat, allMessages,
     selectedIds, setSelectedIds, onSelectModeChange, applyUpdatedMessage, invalidateMessages,
     setLiveMessages, clearTypingState, message, setMessage, setAttachments,
     onEditingChange,
   });
+
+  const { data: mediaData } = useGetMediaQuery({ chatId }, { skip: !chatId });
+  const sharedGalleryFiles = useMemo<MediaFile[]>(() => {
+    const raw = (mediaData as MediaResponse | undefined)?.data;
+    const rows: SharedMediaRow[] = !raw ? [] : Array.isArray(raw) ? raw : (raw.attachments ?? []);
+    return rows
+      .filter((f) => Boolean(f.url))
+      .filter((f) => { const k = getMediaKindFromFile(f); return k === 'image' || k === 'video'; })
+      .map((f) => ({ _id: f._id ?? f.publicId ?? f.url!, url: f.url!, name: f.name, publicId: f.publicId, fileType: f.fileType }));
+  }, [mediaData]);
 
   const { deleteOneMessage, deleteSelectedMessages, handleClearChat } = useDeleteActions({
     chatId, canModerateGroup, canClearChat, deletableSelectedIds,
@@ -135,7 +147,7 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
   });
 
   const {
-    containerRef, virtualizer, showScrollToBottom, scrollToBottom,
+    containerRef, virtualizer, showScrollToBottom, scrollToBottom, isNearBottomRef,
     highlightedMessageId, stickyDayHeader, isDateHeaderScrolling,
   } = useChatScroll({
     chatId, timelineItems, timelineRef, hasNextPage, isFetchingNextPage, fetchNextPage,
@@ -150,12 +162,16 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     onFetchingNextPageChange?.(false);
   }, [chatId, onFetchingNextPageChange]);
 
+  const handleComposerResize = useCallback(() => {
+    if (isNearBottomRef.current) scrollToBottom();
+  }, [isNearBottomRef, scrollToBottom]);
+
   useErrors([{ error, isError }, { error: dbError, isError: dbIsError }]);
   useEffect(() => { onSelectedCountChange?.(selectedIds.size); }, [onSelectedCountChange, selectedIds]);
   useEffect(() => { onDeletableSelectedCountChange?.(deletableSelectedIds.length); }, [deletableSelectedIds.length, onDeletableSelectedCountChange]);
-  useEffect(() => { setMessage(''); setAttachments([]); }, [chatId]);
+  useEffect(() => { setMessage(''); setAttachments([]); setImageQuality('standard'); }, [chatId]);
 
-  useImperativeHandle(ref, () => ({
+useImperativeHandle(ref, () => ({
     clearChat: () => { if (canClearChat) setConfirmClearOpen(true); },
     deleteSelected: () => {
       if (selectedIds.size === 0 || deletableSelectedIds.length === 0) return;
@@ -171,7 +187,8 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     },
   }), [canClearChat, copyMessagesByIds, deletableSelectedIds.length, openForwardDialog, selectedIds, setConfirmClearOpen, setConfirmDelete]);
 
-  const [sendAttachments] = useAsyncMutation(useSendAttachmentsMutation);
+  const queryClient = useQueryClient();
+  const attachmentUpload = useAttachmentUpload();
   const { mutate: sendGifMutation } = useSendGifMutation();
 
   const isMessageRead = useCallback(
@@ -185,63 +202,110 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     [isGroupChat, memberIds, peerLastReadAt, user?._id],
   );
 
-  const handleMessageChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+  const bindLongPress = useLongPress<ChatMessage>((msg, { clientX, clientY }) => {
+    openMessageContextMenuFromTouch(clientX, clientY, msg);
+  });
+
+  const handleMessageChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     const next = e.target.value;
     setMessage(next);
-    if (isEditing || !chatId || memberIdsRef.current.length === 0) return;
+    if (isEditing || !chatId) return;
     if (!next.trim()) { clearTypingState(true); return; }
     if (!isTypingRef.current) { setIsTyping(true); emitStartTyping(); }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => { setIsTyping(false); emitStopTyping(); timeoutRef.current = null; }, 1200);
-  };
+  }, [isEditing, chatId, clearTypingState, isTypingRef, setIsTyping, emitStartTyping, timeoutRef, emitStopTyping]);
 
-  const handleEnterPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (editingMessageId) { void saveEdit(); return; }
-      void handleSubmit();
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (editingMessageId) { await saveEdit(); return; }
     if (!message.trim() && (!attachments || attachments.length === 0)) return;
     // Ghost mode without "act as user" — block sends silently.
-    if (isImpersonated && !actAsUser) { toast.error('Sends are blocked in ghost mode — toggle "Act as user" in the banner.'); return; }
+    if (isImpersonated && !actAsUser) { toast.error('Enable Act as user to send'); return; }
     if (isTyping) clearTypingState(true);
 
     if (!attachments || attachments.length === 0) {
       const trimmed = message.trim();
-      if (!trimmed || !chatId || memberIds.length === 0) { if (!trimmed) return; toast.error('Unable to send message right now'); return; }
+      if (!trimmed || !chatId) { if (!trimmed) return; toast.error('Unable to send message right now'); return; }
       const replySnapshot = replyingTo ? buildReplySnapshot(replyingTo) : undefined;
       const replyToMessageId = replyingTo && isValidMessageId(replyingTo._id) ? replyingTo._id : undefined;
       const pendingId = `pending-${Date.now()}`;
       setLiveMessages((prev) => [...prev, { _id: pendingId, content: trimmed, sender: { _id: user?._id ?? '', name: user?.name ?? '', avatar: user?.avatar as Avatar | undefined }, createdAt: new Date().toISOString(), replyTo: replySnapshot }]);
       setMessage(''); clearReply();
-      socket.emit('NEW_MESSAGE', { message: trimmed, chatId, members: memberIds, replyToMessageId });
+      socket.emit('NEW_MESSAGE', { message: trimmed, chatId, replyToMessageId });
       scrollToBottom(); return;
     }
 
     const replySnapshot = replyingTo ? buildReplySnapshot(replyingTo) : undefined;
     const replyToMessageId = replyingTo && isValidMessageId(replyingTo._id) ? replyingTo._id : undefined;
     const tempId = String(Date.now());
-    const tempAttachments = attachments.map((f) => ({ tempUrl: URL.createObjectURL(f), name: f.name, type: f.type, size: f.size, uploading: true }));
-    setLiveMessages((prev) => [...prev, { _id: tempId, content: message, sender: { _id: user?._id ?? '', name: user?.name ?? '', avatar: user?.avatar as Avatar | undefined }, attachments: tempAttachments, createdAt: new Date().toISOString(), isUploading: true, replyTo: replySnapshot }]);
-    setMessage(''); setAttachments([]); clearReply();
-    const formData = new FormData();
-    formData.append('chatId', chatId ?? ''); formData.append('content', message);
-    if (replyToMessageId) formData.append('replyToMessageId', replyToMessageId);
-    attachments.forEach((f) => formData.append('files', f));
+    const blobUrls: string[] = [];
+    const tempAttachments = attachments.map((f) => {
+      const tempUrl = URL.createObjectURL(f);
+      blobUrls.push(tempUrl);
+      return { tempUrl, name: f.name, type: f.type, size: f.size, uploading: true };
+    });
+    setLiveMessages((prev) => [
+      ...prev,
+      {
+        _id: tempId,
+        content: message,
+        sender: { _id: user?._id ?? '', name: user?.name ?? '', avatar: user?.avatar as Avatar | undefined },
+        attachments: tempAttachments,
+        createdAt: new Date().toISOString(),
+        isUploading: true,
+        replyTo: replySnapshot,
+      },
+    ]);
+    const filesToUpload = [...attachments];
+    setMessage(''); setAttachments([]); setImageQuality('standard'); clearReply();
     try {
-      const result = (await sendAttachments('', formData)) as SendAttachmentsResult | null;
+      const result = await attachmentUpload.upload({
+        chatId: chatId ?? '',
+        files: filesToUpload,
+        content: message,
+        replyToMessageId,
+        imageQuality,
+      });
+      blobUrls.forEach(URL.revokeObjectURL);
       if (!result) { setLiveMessages((prev) => prev.filter((m) => m._id !== tempId)); return; }
-      const payload = (result.data ?? result) as ChatMessage;
-      setLiveMessages((prev) => prev.map((m) => m._id === tempId
-        ? { ...payload, attachments: (payload.attachments ?? []).map((att, i) => ({ ...att, tempUrl: tempAttachments[i]?.tempUrl, uploading: false })) }
-        : m));
+      const payload = ((result as { data?: ChatMessage }).data ?? result) as ChatMessage;
+      setLiveMessages((prev) =>
+        prev.map((m) =>
+          m._id === tempId
+            ? {
+                ...payload,
+                attachments: (payload.attachments ?? []).map((att, i) => ({
+                  ...att,
+                  tempUrl: tempAttachments[i]?.tempUrl,
+                  uploading: false,
+                })),
+              }
+            : m,
+        ),
+      );
+      // Invalidate so the media tab and message history reflect the new attachment
+      void queryClient.invalidateQueries({ queryKey: queryKeys.messages(chatId ?? '') });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.media(chatId ?? '') });
+      attachmentUpload.reset();
       scrollToBottom();
-    } catch { toast.error('Failed to send attachments'); setLiveMessages((prev) => prev.filter((m) => m._id !== tempId)); }
-  };
+    } catch {
+      blobUrls.forEach(URL.revokeObjectURL);
+      toast.error('Failed to send attachments');
+      setLiveMessages((prev) => prev.filter((m) => m._id !== tempId));
+      attachmentUpload.reset();
+    }
+  }, [editingMessageId, saveEdit, message, attachments, isImpersonated, actAsUser, isTyping,
+      clearTypingState, chatId, replyingTo, setLiveMessages, user, setMessage, clearReply,
+      socket, scrollToBottom, setAttachments, setImageQuality, attachmentUpload, imageQuality, queryClient]);
+
+  // handleEnterPress must come after handleSubmit to avoid TDZ reference
+  const handleEnterPress = useCallback((e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (editingMessageId) { void saveEdit(); return; }
+      void handleSubmit();
+    }
+  }, [editingMessageId, saveEdit, handleSubmit]);
 
   const handleGifSelect = useCallback(
     (gif: {
@@ -306,12 +370,15 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
     [chatId, replyingTo, user, setLiveMessages, clearReply, scrollToBottom, sendGifMutation]
   );
 
-  const replySnapshot = replyingTo ? buildReplySnapshot(replyingTo) : null;
+  const replySnapshot = useMemo(
+    () => (replyingTo ? buildReplySnapshot(replyingTo) : null),
+    [replyingTo],
+  );
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       <div className="bg-glass-background relative min-h-0 flex-1 overflow-hidden md:rounded-xl">
-        <div ref={containerRef} className={`relative h-full min-h-0 overflow-y-auto bg-[rgba(33,26,42,0.75)] px-2 py-3 pt-[5.75rem] backdrop-blur-lg backdrop-saturate-100 scrollbar-hide md:rounded-xl md:p-2 md:pt-28 ${isEditing ? 'pointer-events-none select-none' : ''}`}>
+        <div ref={containerRef} className={`relative h-full min-h-0 overflow-x-hidden overflow-y-auto overscroll-x-none bg-[rgba(33,26,42,0.75)] px-2 pb-3 backdrop-blur-lg backdrop-saturate-100 scrollbar-hide md:rounded-xl md:px-2 md:pb-2 ${CHAT_HEADER_OFFSET_CLASS} ${isEditing ? 'pointer-events-none select-none' : ''}`}>
           {msgLoading ? <ChatMessagesSkeleton /> : (
             <>
               <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
@@ -341,24 +408,45 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
                   const sameSender = String(msg.sender._id) === String(user?._id ?? '');
                   const isSelected = selectedIds.has(msg._id);
                   const selectable = selectMode && canInteractMessage(msg);
+                  const hasReactions = Boolean(msg.reactions?.length);
                   return (
                     <div key={entry.key} data-index={item.index} ref={virtualizer.measureElement}
-                      className={`absolute left-0 w-full pb-4 ${sameSender ? 'flex justify-end' : 'flex justify-start'}`} style={{ transform: `translateY(${item.start}px)` }}>
-                      <div className={`flex max-w-[min(88%,20rem)] items-center gap-2 md:max-w-[70%] ${sameSender ? 'flex-row-reverse' : 'flex-row'}`}>
-                        {selectable ? (
-                          <button type="button" onClick={() => toggleSelected(msg._id)} className={`grid h-5 w-5 shrink-0 place-items-center transition ${isSelected ? 'text-green' : 'text-body-700'}`} aria-label={isSelected ? 'Deselect message' : 'Select message'}>
-                            <CheckboxIcon className="h-5 w-5" checked={isSelected} />
-                          </button>
+                      className={`absolute left-0 w-full overflow-visible pb-4 ${sameSender ? 'flex justify-end' : 'flex justify-start'}`}
+                      style={{ transform: `translateY(${item.start}px)` }}
+                      onClick={() => { if (selectable) toggleSelected(msg._id); }}>
+                      {/* selection bg — inset so it only wraps the bubble, not the bottom padding */}
+                      {selectable ? (
+                        <span aria-hidden className={`pointer-events-none absolute inset-x-0 top-0 bottom-3 -z-0 transition-opacity duration-150 bg-linear-to-r from-transparent via-green/15 to-transparent ${isSelected ? 'opacity-100' : 'opacity-0'}`} />
+                      ) : null}
+                      {/* flex-col wrapper so reactions sit below the bubble, outside SwipeToReply (which has overflow-hidden) */}
+                      <div className={`group relative z-1 flex flex-col w-fit min-w-0 max-w-[min(100%,22rem)] shrink-0 ${!hasReactions && msg._id && chatId && !msg.isDeleted ? 'pb-4.5 -mb-4.5' : ''} ${sameSender ? 'self-end items-end' : 'self-start items-start'}`}>
+                        <SwipeToReply
+                          side={sameSender ? 'end' : 'start'}
+                          shellClassName={sameSender ? 'bubble-out' : 'bubble-in'}
+                          disabled={!canInteractMessage(msg) || selectMode}
+                          onReply={() => startReply(msg)}
+                        >
+                          <div className="relative w-fit max-w-full select-none [-webkit-touch-callout:none]" onContextMenu={(e) => openMessageContextMenu(e, msg)}
+                            role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
+                            {...bindLongPress(msg)}
+                            onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(msg._id); } } : undefined}>
+                            <ChatBox chatData={msg} chatId={chatId} sharedGalleryFiles={sharedGalleryFiles} isGroupChat={isGroupChat} showReadReceipt={sameSender}
+                              isRead={isMessageRead(msg)} searchHighlight={msg._id === highlightedMessageId}
+                              highlightQuery={msg._id === highlightedMessageId && highlightQuery ? highlightQuery : undefined}
+                              isDeleted={Boolean(msg.isDeleted)} editedAt={msg.editedAt}
+                              onDeleteMessage={(msgId) => setConfirmDelete({ type: 'one', messageId: msgId })}
+                              onForwardMessage={(msgId) => openForwardDialog([msgId])} />
+                          </div>
+                        </SwipeToReply>
+                        {/* Reactions rendered here — outside SwipeToReply so they aren't clipped */}
+                        {msg._id && chatId && !msg.isDeleted ? (
+                          <MessageReactions
+                            reactions={msg.reactions ?? []}
+                            messageId={msg._id}
+                            chatId={chatId}
+                            sameSender={sameSender}
+                          />
                         ) : null}
-                        <div className="w-fit max-w-full rounded-2xl" onContextMenu={(e) => openMessageContextMenu(e, msg)}
-                          onClick={() => { if (selectable) toggleSelected(msg._id); }}
-                          role={selectable ? 'button' : undefined} tabIndex={selectable ? 0 : undefined}
-                          onKeyDown={selectable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSelected(msg._id); } } : undefined}>
-                          <ChatBox chatData={msg} isGroupChat={isGroupChat} showReadReceipt={sameSender}
-                            isRead={isMessageRead(msg)} searchHighlight={msg._id === highlightedMessageId}
-                            highlightQuery={msg._id === highlightedMessageId && highlightQuery ? highlightQuery : undefined}
-                            isDeleted={Boolean(msg.isDeleted)} editedAt={msg.editedAt} />
-                        </div>
                       </div>
                     </div>
                   );
@@ -369,8 +457,8 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
         </div>
         {stickyDayHeader && isDateHeaderScrolling && !msgLoading ? (
           <div
-            className="pointer-events-none absolute inset-x-0 top-23 z-10 flex justify-center transition-opacity duration-200 md:top-28"
-            style={{ transform: `translateY(${stickyDayHeader.pushY}px)` }}
+            className={`pointer-events-none absolute inset-x-0 z-10 flex justify-center transition-opacity duration-200 ${CHAT_HEADER_TOP_CLASS}`}
+            style={{transform: `translateY(${stickyDayHeader.pushY}px)` }}
           >
             <ChatDayLabel label={stickyDayHeader.label} />
           </div>
@@ -391,33 +479,36 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
         </div>
       ) : null}
 
-      {replySnapshot && replyingTo ? (
-        <ReplyComposerBar
-          senderName={replyingTo.sender.name ?? 'Unknown'}
-          previewText={getReplyPreviewText(replySnapshot)}
-          previewAttachment={replySnapshot.previewAttachment}
-          onCancel={clearReply}
-        />
-      ) : null}
-
       <div className="relative z-40 shrink-0 border-t border-border/40 bg-background/95 px-2 py-2 backdrop-blur-md md:border-0 md:bg-transparent md:px-0 md:pb-0 md:pt-3">
         <ChatInput message={message} setMessage={setMessage} disabled={isLoading || editIsPending}
+          replySlot={replySnapshot && replyingTo ? (
+            <ReplyComposerBar
+              senderName={replyingTo.sender.name ?? 'Unknown'}
+              previewText={getReplyPreviewText(replySnapshot)}
+              previewAttachment={replySnapshot.previewAttachment}
+              onCancel={clearReply}
+            />
+          ) : undefined}
           autoFocus={true} onKeyDown={handleEnterPress} handleSubmit={handleSubmit}
           onChange={handleMessageChange} attachments={attachments} setAttachments={setAttachments}
+          imageQuality={imageQuality} setImageQuality={setImageQuality}
           onGifSelect={handleGifSelect}
+          onComposerResize={handleComposerResize}
           editMode={isEditing} className="text-body-700 placeholder:text-body-300" placeholder={isEditing ? 'Edit message…' : 'Message…'} />
       </div>
 
-      <ForwardDialog open={forwardOpen} sourceChatId={chatId ?? ''} messageIds={forwardMessageIds}
-        onClose={() => { setForwardOpen(false); setForwardMessageIds([]); }}
-        onForward={handleForwardToChat} isForwarding={forwardIsPending} />
+      <Suspense fallback={null}>
+        <ForwardDialog open={forwardOpen} sourceChatId={chatId ?? ''} messageIds={forwardMessageIds}
+          onClose={() => { setForwardOpen(false); setForwardMessageIds([]); }}
+          onForward={handleForwardToChat} isForwarding={forwardIsPending} />
+      </Suspense>
       <ContextMenu menuState={menuState} hideContextMenu={hideContextMenu} />
 
       {confirmClearOpen ? (
         <ConfirmationModal variant="danger" title="Clear this chat?"
-          description="All messages will be removed for everyone in this conversation. This cannot be undone."
+          description="Messages will be cleared from your view only. Others in the chat won't be affected."
           confirmLabel="Clear all" cancelLabel="Cancel" onClose={() => setConfirmClearOpen(false)}
-          handleConfirmationModal={({ accept }) => { if (accept) void handleClearChat(); else setConfirmClearOpen(false); }} />
+          handleConfirmationModal={({ accept }) => { setConfirmClearOpen(false); if (accept) void handleClearChat(); }} />
       ) : null}
 
       {confirmDelete ? (
@@ -436,10 +527,16 @@ const ConversationPanel = forwardRef<ConversationPanelHandle, ChatsViewPanelProp
             setConfirmDelete(null);
           }} />
       ) : null}
+
+      {receiptMessage ? (
+        <MessageReceiptDialog
+          message={receiptMessage}
+          isGroupChat={isGroupChat}
+          onClose={() => setReceiptMessage(null)}
+        />
+      ) : null}
     </div>
   );
-});
-
-ConversationPanel.displayName = 'ConversationPanel';
+};
 
 export default ConversationPanel;

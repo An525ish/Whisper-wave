@@ -11,6 +11,7 @@ export type IRequestFields = {
 
 export type FriendSummary = {
   _id: { toString(): string };
+  chatId: { toString(): string };
   name: string;
   avatar?: string;
 };
@@ -37,6 +38,27 @@ export type RequestWithParties = {
   _id: Types.ObjectId;
   sender: { _id: Types.ObjectId; name: string };
   receiver: { _id: Types.ObjectId; name: string };
+};
+
+export type HandleFriendRequestResult = {
+  message: string;
+  data?: { senderId: Types.ObjectId; chatId?: string };
+};
+
+export type HandleFriendRequestInput = {
+  userId: string;
+  requestId: string;
+  accept: boolean;
+};
+
+export type SendFriendRequestInput = {
+  userId: string;
+  receiverId: string;
+};
+
+export type GetMyFriendsInput = {
+  userId: string;
+  chatId?: string;
 };
 
 export type RequestWithSender = {

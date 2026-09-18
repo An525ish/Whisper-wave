@@ -7,6 +7,7 @@ import PencilIcon from '@/components/ui/icons/Pencil';
 import {
   useEffect,
   useId,
+  useMemo,
   useState,
   type ChangeEvent,
 } from 'react';
@@ -72,7 +73,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     if (avatarFile) formData.append('avatar', avatarFile);
 
     const created = (await createGroup(
-      'Creating your group...',
+      null,
       formData,
     )) as CreateGroupResult | null;
 
@@ -80,7 +81,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     onCreated?.();
 
     if (!chatId) {
-      toast.error('Group created, but could not open the chat');
+      toast.error("Couldn't open group chat");
       return;
     }
 
@@ -97,9 +98,15 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     );
   }
 
-  const friendsData = (friends as FriendsResponse | undefined)?.data || [];
-  const filteredMembers = friendsData.filter((friend) =>
-    friend.name.toLowerCase().includes(searchText.toLowerCase()),
+  const friendsData = useMemo(
+    () => (friends as FriendsResponse | undefined)?.data ?? [],
+    [friends],
+  );
+  const filteredMembers = useMemo(
+    () => friendsData.filter((friend) =>
+      friend.name.toLowerCase().includes(searchText.toLowerCase()),
+    ),
+    [friendsData, searchText],
   );
 
   const canCreate =

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getMediaDisplayName, getMediaKindFromFile } from '@/utils/fileFormat'
 import type { MediaFile, PhotoFilter, SharedLink, SharedContentTab } from '@/components/profile/shared-content/types'
@@ -64,21 +64,26 @@ export const useSharedContent = ({
     return links.filter((link) => link.host.toLowerCase().includes(q) || link.url.toLowerCase().includes(q))
   }, [links, query])
 
-  const photoCounts = useMemo(() => ({
-    all: mediaFiles.length,
-    image: mediaFiles.filter((f) => getMediaKindFromFile(f) === 'image').length,
-    video: mediaFiles.filter((f) => getMediaKindFromFile(f) === 'video').length,
-    audio: mediaFiles.filter((f) => getMediaKindFromFile(f) === 'audio').length,
-  }), [mediaFiles])
+  const photoCounts = useMemo(() => mediaFiles.reduce(
+    (acc, f) => {
+      acc.all++;
+      const kind = getMediaKindFromFile(f);
+      if (kind === 'image') acc.image++;
+      else if (kind === 'video') acc.video++;
+      else if (kind === 'audio') acc.audio++;
+      return acc;
+    },
+    { all: 0, image: 0, video: 0, audio: 0 },
+  ), [mediaFiles])
 
-  const copyLink = async (url: string) => {
+  const copyLink = useCallback(async (url: string) => {
     try {
       await navigator.clipboard.writeText(url)
       toast.success('Link copied')
     } catch {
       toast.error('Could not copy link')
     }
-  }
+  }, [])
 
   const handleTabChange = (tab: SharedContentTab) => {
     setActiveTab(tab)

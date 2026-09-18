@@ -33,22 +33,100 @@ export type IChatFields = {
   admins: Types.ObjectId[];
   members: Types.ObjectId[];
   lastMessage?: ChatLastMessage;
+  deletedFor?: Types.ObjectId[];
+  clearedFor?: Array<{ user: Types.ObjectId; at: Date }>;
   createdAt: Date;
   updatedAt: Date;
 };
 
 export type PopulatedMember = {
-  _id: { toString(): string };
+  _id: Types.ObjectId;
   name: string;
-  avatar?: { url?: string };
+  username?: string;
+  email?: string;
+  avatar?: ChatAvatar;
   bio?: string;
   lastSeen?: Date | string;
+};
+
+/** Inbox sidebar row — members + lastMessage.sender populated. */
+export type InboxLastMessageLean = Omit<ChatLastMessage, 'sender'> & {
+  sender?: {
+    _id: Types.ObjectId;
+    name: string;
+  };
+};
+
+export type MyChatPageLean = {
+  _id: Types.ObjectId;
+  name: string;
+  bio?: string;
+  avatar?: ChatAvatar;
+  groupChat: boolean;
+  creator: Types.ObjectId;
+  admins?: Types.ObjectId[];
+  members: PopulatedMember[];
+  lastMessage?: InboxLastMessageLean;
+  deletedFor?: Types.ObjectId[];
+  clearedFor?: Array<{ user: Types.ObjectId; at: Date }>;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type PopulatedCreator = {
+  _id: Types.ObjectId;
+  name: string;
+  avatar?: ChatAvatar;
+};
+
+/** Chat details — members + creator populated. */
+export type ChatDetailsPopulated = {
+  _id: Types.ObjectId;
+  name: string;
+  bio?: string;
+  avatar?: ChatAvatar;
+  groupChat: boolean;
+  creator: PopulatedCreator;
+  admins?: Types.ObjectId[];
+  members: PopulatedMember[];
+  lastMessage?: ChatLastMessage;
+  deletedFor?: Types.ObjectId[];
+  clearedFor?: Array<{ user: Types.ObjectId; at: Date }>;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+/** Admin groups list row — creator + members populated. */
+export type AdminGroupListLean = {
+  _id: Types.ObjectId;
+  name: string;
+  bio?: string;
+  members: Array<{
+    _id: Types.ObjectId;
+    name?: string;
+    username?: string;
+    avatar?: ChatAvatar;
+  }>;
+  creator?: {
+    _id: Types.ObjectId;
+    name?: string;
+    username?: string;
+    avatar?: ChatAvatar;
+  };
+  createdAt: Date;
+};
+
+export type ListGroupsForAdminPageInput = {
+  limit: number;
+  before?: Date;
+  q?: string;
+  memberId?: string;
 };
 
 export type ChatListLastMessage = {
   _id?: string;
   content?: string;
-  createdAt?: Date;
+  createdAt?: string;
   type?: LastMessageType;
   sender?: {
     _id: string;
@@ -67,10 +145,17 @@ export type ChatListItem = {
   unreadCount: number;
 };
 
-export type ChatMembership = {
+export type UserChatWithLastMessage = {
   _id: Types.ObjectId;
   members: Types.ObjectId[];
   lastMessage?: ChatLastMessage;
+};
+
+/** Lean chat row for socket connect (room joins + DM presence). */
+export type JoinedChat = {
+  _id: Types.ObjectId;
+  members: Types.ObjectId[];
+  groupChat: boolean;
 };
 
 export type IChatReadFields = {
@@ -120,8 +205,112 @@ export type ChatNotificationInput = {
 
 export type RealtimeNotify = {
   event: string;
-  members: Array<string | { toString(): string }>;
+  chatId?: string;
+  members?: Array<string | { toString(): string }>;
+  /** Socket IDs belonging to this userId will be excluded from room emit. */
+  excludeUserId?: string;
   data?: unknown;
+};
+
+export type RealtimeNotificationsResult = {
+  notifications: RealtimeNotify[];
+};
+
+export type ChatMutationMessageResult = {
+  message: string;
+  memberIds?: string[];
+  notifications: RealtimeNotify[];
+};
+
+export type CreateGroupChatInput = {
+  name: string;
+  members: string[];
+  bio?: string;
+};
+
+export type ChatMutationResult = {
+  chat: ChatLean;
+  notifications: RealtimeNotify[];
+};
+
+export type PaginatedChatsResult = {
+  data: ChatListItem[];
+  totalPages: number;
+};
+
+export type CreateGroupChatServiceInput = {
+  userId: string;
+  input: CreateGroupChatInput;
+  avatarFile?: import('./message.js').UploadableFile;
+};
+
+export type UpdateGroupDetailsServiceInput = {
+  userId: string;
+  chatId: string;
+  input: UpdateGroupDetailsInput;
+  avatarFile?: import('./message.js').UploadableFile;
+};
+
+export type AddGroupMembersInput = {
+  userId: string;
+  chatId: string;
+  members: string[];
+};
+
+export type RemoveGroupMemberInput = {
+  userId: string;
+  chatId: string;
+  memberToBeRemoved: string;
+};
+
+export type SetGroupMemberAdminInput = {
+  userId: string;
+  chatId: string;
+  memberId: string;
+  makeAdmin: boolean;
+};
+
+export type LeaveGroupInput = {
+  userId: string;
+  chatId: string;
+  newCreatorId?: string;
+};
+
+export type DeleteGroupInput = {
+  userId: string;
+  chatId: string;
+};
+
+export type GetMyChatsInput = {
+  userId: string;
+  page: number;
+};
+
+export type FindChatsInput = {
+  userId: string;
+  userIds: string[];
+  notifications: ChatNotificationInput[];
+};
+
+export type GetChatDetailsInput = {
+  userId: string;
+  chatId: string;
+  populate: boolean;
+};
+
+export type MarkChatReadInput = {
+  userId: string;
+  chatId: string;
+  lastReadMessageId?: string;
+};
+
+export type MarkAllChatsReadInput = {
+  userId: string;
+};
+
+export type GetChatMediaInput = {
+  userId: string;
+  chatId: string;
 };
 
 export type MarkChatReadResult = {
@@ -150,6 +339,8 @@ export type ChatSharedContent = {
     url: string;
     name: string;
     fileType: string;
+    messageId: string;
+    senderId: string;
   }>;
   links: ChatSharedLink[];
 };
@@ -174,6 +365,7 @@ export type ChatLean = {
   admins?: Types.ObjectId[];
   members: Types.ObjectId[];
   lastMessage?: ChatLastMessage;
+  clearedFor?: Array<{ user: Types.ObjectId; at: Date }>;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -191,9 +383,9 @@ export type DirectChatMembers = {
 export type FriendChatPopulated = {
   _id: Types.ObjectId;
   members: Array<{
-    _id: { toString(): string };
+    _id: Types.ObjectId;
     name: string;
-    avatar?: { url?: string };
+    avatar?: ChatAvatar;
   }>;
 };
 

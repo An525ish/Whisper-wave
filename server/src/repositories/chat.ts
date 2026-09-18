@@ -3,11 +3,16 @@ import type {
   ChatLastMessage,
   ChatLean,
   ChatMembersOnly,
-  ChatMembership,
+  ChatDetailsPopulated,
+  JoinedChat,
+  UserChatWithLastMessage,
   ChatWithMembersPopulated,
   CreateChatInput,
   DirectChatMembers,
   FriendChatPopulated,
+  MyChatPageLean,
+  AdminGroupListLean,
+  ListGroupsForAdminPageInput,
   UpdateChatPatch,
 } from '../types/chat.js';
 
@@ -43,25 +48,32 @@ export const findDirectChatsForMember = async (
 export const findMyChatsPage = async (
   userId: string,
   skip: number,
-  limit: number
-) =>
-  Chat.find({ members: userId })
+  limit: number,
+): Promise<MyChatPageLean[]> =>
+  Chat.find({ members: userId, deletedFor: { $nin: [userId] } })
     .populate('members', 'name username email avatar')
     .populate({ path: 'lastMessage.sender', select: 'name' })
     .sort({ updatedAt: -1 })
     .skip(skip)
     .limit(limit)
-    .lean();
+    .lean<MyChatPageLean[]>();
 
 export const countForMember = async (userId: string): Promise<number> =>
-  Chat.countDocuments({ members: userId });
+  Chat.countDocuments({ members: userId, deletedFor: { $nin: [userId] } });
 
-export const findMembershipsForMember = async (
+export const findUserChatsWithLastMessage = async (
   userId: string
-): Promise<ChatMembership[]> =>
+): Promise<UserChatWithLastMessage[]> =>
   Chat.find({ members: userId })
     .select('_id members lastMessage')
-    .lean<ChatMembership[]>();
+    .lean<UserChatWithLastMessage[]>();
+
+export const findJoinedChatsForConnect = async (
+  userId: string
+): Promise<JoinedChat[]> =>
+  Chat.find({ members: userId })
+    .select('_id members groupChat')
+    .lean<JoinedChat[]>();
 
 export const findByIdsForMemberPopulated = async (
   userId: string,
@@ -74,11 +86,13 @@ export const findByIdsForMemberPopulated = async (
     .populate('members', 'name avatar')
     .lean<ChatWithMembersPopulated[]>();
 
-export const findByIdPopulated = async (id: string) =>
+export const findByIdPopulated = async (
+  id: string,
+): Promise<ChatDetailsPopulated | null> =>
   Chat.findById(id)
     .populate('members', 'name avatar bio lastSeen')
     .populate('creator', 'name avatar')
-    .lean();
+    .lean<ChatDetailsPopulated>();
 
 export const updateById = async (
   id: string,
@@ -90,7 +104,9 @@ export const updateLastMessage = async (
   id: string,
   lastMessage: ChatLastMessage
 ): Promise<void> => {
-  await Chat.findByIdAndUpdate(id, { lastMessage });
+  // Clear deletedFor so anyone who hid this chat sees it again when a new message arrives
+  // $set: deletedFor: [] restores the chat for anyone who deleted it when a new message arrives
+  await Chat.findByIdAndUpdate(id, { $set: { lastMessage, deletedFor: [] } });
 };
 
 export const clearLastMessage = async (id: string): Promise<void> => {
@@ -152,17 +168,10 @@ const adminGroupFilter = (q?: string, memberId?: string): Record<string, unknown
 export const countGroupsForAdmin = async (q?: string, memberId?: string): Promise<number> =>
   Chat.countDocuments(adminGroupFilter(q, memberId));
 
-export const listGroupsForAdminPage = async ({
-  limit,
-  before,
-  q,
-  memberId,
-}: {
-  limit: number;
-  before?: Date;
-  q?: string;
-  memberId?: string;
-}) => {
+export const listGroupsForAdminPage = async (
+  input: ListGroupsForAdminPageInput,
+): Promise<AdminGroupListLean[]> => {
+  const { limit, before, q, memberId } = input;
   const filter: Record<string, unknown> = { ...adminGroupFilter(q, memberId) };
   if (before) filter.createdAt = { $lt: before };
 
@@ -171,11 +180,11 @@ export const listGroupsForAdminPage = async ({
     .limit(limit)
     .populate('creator', 'name username avatar')
     .populate('members', 'name username avatar')
-    .lean();
+    .lean<AdminGroupListLean[]>();
 };
 
 /** @deprecated Use listGroupsForAdminPage */
-export const listGroupsForAdmin = async () =>
+export const listGroupsForAdmin = async (): Promise<AdminGroupListLean[]> =>
   listGroupsForAdminPage({ limit: 50 });
 
 export const removeMemberFromAllGroups = async (userId: string): Promise<void> => {

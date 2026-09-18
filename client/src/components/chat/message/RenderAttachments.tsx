@@ -1,6 +1,7 @@
 import {
   fileData,
   fileFormat,
+  isGifFile,
   type FileFormatKind,
 } from '@/utils/fileFormat';
 import CircularLoader from '@/components/ui/loaders/CircularLoader';
@@ -20,9 +21,12 @@ type RenderAttachmentsProps = {
   type?: string;
   size?: number;
   isUploading?: boolean;
+  isHd?: boolean;
   overlay?: ReactNode;
   /** Stretch tile to parent width (multi-attachment grid). */
   fill?: boolean;
+  /** WhatsApp-style album tile — no outer radius, fills grid cell. */
+  album?: boolean;
   onDownload?: (e: MouseEvent) => void;
 };
 
@@ -42,10 +46,14 @@ const formatBytes = (bytes?: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const tileClass = (fill?: boolean) =>
-  `relative aspect-4/3 overflow-hidden rounded-2xl bg-[#0c1014] ${
+const tileClass = (fill?: boolean, album?: boolean) => {
+  if (album) {
+    return 'relative h-full w-full min-h-0 overflow-hidden bg-[#0c1014]';
+  }
+  return `relative aspect-4/3 overflow-hidden rounded-2xl bg-[#0c1014] ${
     fill ? 'w-full' : 'w-58 max-w-full'
   }`;
+};
 
 const mediaFillClass = 'absolute inset-0 h-full w-full object-cover';
 
@@ -95,6 +103,12 @@ const DownloadButton = ({
   );
 };
 
+const HdBadge = () => (
+  <span className="absolute bottom-2 left-2 z-10 rounded-sm bg-black/50 px-1 py-px font-sans text-[9px] font-black tracking-widest text-white/80 backdrop-blur-sm ring-1 ring-white/10">
+    HD
+  </span>
+);
+
 const RenderAttachments = ({
   fileType,
   url,
@@ -102,17 +116,20 @@ const RenderAttachments = ({
   type,
   size,
   isUploading,
+  isHd,
   overlay,
   fill = false,
+  album = false,
   onDownload,
 }: RenderAttachmentsProps) => {
-  const isImage = type?.startsWith('image/') || fileType === 'image';
+  const isGif = fileType === 'gif' || type === 'image/gif' || isGifFile(url, name);
+  const isImage = type?.startsWith('image/') || fileType === 'image' || isGif;
   const isVideo = type?.startsWith('video/') || fileType === 'video';
   const isAudio = type?.startsWith('audio/') || fileType === 'audio';
   const fileExtension = fileFormat(name);
 
   const withTile = (media: ReactNode, opts?: { play?: boolean }) => (
-    <div className={tileClass(fill)}>
+    <div className={tileClass(fill, album)}>
       {media}
       {opts?.play ? <PlayBadge /> : null}
       {isUploading ? (
@@ -120,20 +137,23 @@ const RenderAttachments = ({
           <CircularLoader />
         </div>
       ) : null}
-      <BottomFade>{overlay}</BottomFade>
+      {album ? null : <BottomFade>{overlay}</BottomFade>}
     </div>
   );
 
   if (isImage) {
     return withTile(
-      <RetryableMediaImage
-        url={url}
-        alt={name || 'attachment'}
-        transformWidth={320}
-        className={`${mediaFillClass} transition-opacity duration-300`}
-        wrapperClassName={mediaFillClass}
-        fallbackIconClassName="h-14 w-14"
-      />,
+      <>
+        <RetryableMediaImage
+          url={url}
+          alt={name || 'attachment'}
+          transformWidth={isGif ? undefined : 320}
+          className={`${mediaFillClass} transition-opacity duration-300`}
+          wrapperClassName={mediaFillClass}
+          fallbackIconClassName="h-14 w-14"
+        />
+        {isHd ? <HdBadge /> : null}
+      </>,
     );
   }
 

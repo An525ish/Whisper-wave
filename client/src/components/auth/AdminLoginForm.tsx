@@ -122,7 +122,7 @@ const AdminLogin = () => {
               Restricted
             </span>
           </div>
-          <h2 className="mt-1 font-display text-[1.65rem] leading-none tracking-tight text-white">
+          <h2 className="mt-1 font-semibold text-[1.65rem] leading-none tracking-tight text-white">
             Ops console
           </h2>
           <p className="mt-1.5 text-sm leading-relaxed text-body-300">

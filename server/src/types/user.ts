@@ -42,16 +42,6 @@ export type PublicUser = {
   bio?: string;
 };
 
-export type UpdateProfileInput = {
-  name?: string;
-  username?: string;
-  email?: string;
-  oldPassword?: string;
-  newPassword?: string;
-  avatar?: UserAvatar;
-  bio?: string;
-};
-
 export type SearchUserResult = {
   _id: Types.ObjectId;
   name: string;
