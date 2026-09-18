@@ -17,7 +17,8 @@ const renderThumbnail = (file: MediaFile, kind: ReturnType<typeof getMediaKindFr
         url={file.url ?? ''}
         alt={getMediaDisplayName({ name: file.name, url: file.url, publicId: file.publicId, fileType: file.fileType })}
         transformWidth={400}
-        className="aspect-square w-full bg-primary object-cover"
+        wrapperClassName="aspect-square w-full"
+        className="h-full w-full bg-primary object-cover"
         fallbackIconClassName="h-9 w-9"
       />
     )
@@ -26,7 +27,8 @@ const renderThumbnail = (file: MediaFile, kind: ReturnType<typeof getMediaKindFr
     return (
       <RetryableMediaVideo
         url={file.url ?? ''}
-        className="aspect-square w-full bg-primary object-cover"
+        wrapperClassName="aspect-square w-full"
+        className="h-full w-full bg-primary object-cover"
         fallbackIconClassName="h-9 w-9"
         muted playsInline preload="metadata"
       />
