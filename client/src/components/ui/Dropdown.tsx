@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import DropdownIcon from '@/components/ui/icons/Dropdown';
 import Image from '@/components/ui/Image';
 import type { DropdownOption } from '@/types/ui';
@@ -14,13 +14,25 @@ type DropdownProps = {
 const Dropdown = ({ options, name, avatarUrl, size = 'md' }: DropdownProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const compact = size === 'sm';
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
   };
 
   return (
-    <div className="relative inline-flex w-fit flex-col text-left">
+    <div ref={containerRef} className="relative inline-flex w-fit flex-col text-left">
       <button
         type="button"
         className="inline-flex max-w-44 items-center text-sm font-medium capitalize leading-none text-body-700 transition hover:text-body focus:outline-none"
@@ -69,9 +81,10 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md' }: DropdownProps) => {
           tabIndex={-1}
         >
           {options.map(({ label, Icon, handler }, index) => (
-            <p
+            <button
               key={index}
-              className="group flex cursor-pointer items-center whitespace-nowrap px-3 py-1.5 text-sm text-body-300 hover:text-body"
+              type="button"
+              className="group flex w-full cursor-pointer items-center whitespace-nowrap px-3 py-1.5 text-sm text-body-300 hover:text-body"
               role="menuitem"
               tabIndex={-1}
               id={`menu-item-${index}`}
@@ -84,7 +97,7 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md' }: DropdownProps) => {
                 <Icon className="mr-2 h-4 w-4 shrink-0 text-body-300 group-hover:fill-white group-hover:text-body" />
               ) : null}
               <span className="truncate">{label}</span>
-            </p>
+            </button>
           ))}
         </div>
       ) : null}

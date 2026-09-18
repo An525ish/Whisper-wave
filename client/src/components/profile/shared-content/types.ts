@@ -4,6 +4,8 @@ export type MediaFile = {
   name?: string;
   url?: string;
   fileType?: string;
+  messageId?: string;
+  senderId?: string;
 };
 
 export type SharedLink = {

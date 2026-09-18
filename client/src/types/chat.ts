@@ -18,6 +18,7 @@ export type ChatAttachment = {
   size?: number;
   public_id?: string;
   uploading?: boolean;
+  isHd?: boolean;
 };
 
 export type ChatSender = {
@@ -32,6 +33,8 @@ export type SharedMediaRow = {
   name?: string;
   url?: string;
   fileType?: string;
+  messageId?: string;
+  senderId?: string;
 };
 
 export type MediaResponse = {
@@ -64,6 +67,11 @@ export type ChatBoxData = {
   replyTo?: MessageReplyTo;
 };
 
+export type MessageReaction = {
+  emoji: string;
+  users: string[];
+};
+
 // --- Messages ---
 export type ChatMessage = ChatBoxData & {
   _id: string;
@@ -72,6 +80,7 @@ export type ChatMessage = ChatBoxData & {
   isDeleted?: boolean;
   editedAt?: string;
   replyTo?: MessageReplyTo;
+  reactions?: MessageReaction[];
 };
 
 export type MessagesPage = {
@@ -122,7 +131,8 @@ export type ChatReadPayload = {
   chatId: string;
   userId: string;
   lastReadAt: string;
-  lastReadMessageId?: string;
+  // Note: lastReadMessageId is NOT emitted by the server — per-message read-cursor
+  // is only available from the REST markChatRead response, not via socket.
 };
 
 export type MessageUpdatedPayload = {
@@ -137,6 +147,12 @@ export type MessagesDeletedPayload = {
 
 export type ChatClearedPayload = {
   chatId: string;
+};
+
+export type MessageReactionPayload = {
+  chatId: string;
+  messageId: string;
+  reactions: MessageReaction[];
 };
 
 export type SendAttachmentsResult = {
@@ -173,6 +189,7 @@ export type ChatRow = {
   members?: Array<string | { _id?: string }>;
   lastMessage?: ChatLastMessage | null;
   unreadCount?: number;
+  createdAt?: string;
 };
 
 export type ChatListEntry = {
@@ -190,7 +207,7 @@ export type ChatsResponse = {
 };
 
 export type FriendsResponse = {
-  data?: User[];
+  data?: Array<User & { chatId?: string }>;
 };
 
 export type CreateGroupResult = {
@@ -235,7 +252,7 @@ export type ChatSearchHit = {
   content?: string;
   createdAt: string;
   sender: { _id: string; name: string; avatar?: string };
-  attachments?: Array<{ name?: string; fileType?: string }>;
+  attachments?: Array<{ name?: string; fileType?: string; url?: string }>;
 };
 
 export type SearchMode = 'messages' | 'media' | 'links' | 'date';

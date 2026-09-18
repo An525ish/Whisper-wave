@@ -73,13 +73,20 @@ export const markChatRead = (
 
 export const markAllChatsRead = () => api.put('/chat/read-all');
 
-export const sendFriendRequest = (receiverId: unknown) =>
-  api.post('/friend-request/send-request', receiverId);
+export const sendFriendRequest = (body: { receiverId: string }) =>
+  api.post('/friend-request/send-request', body);
 
-export const handleFriendRequest = (body: unknown) =>
+export const handleFriendRequest = (body: { requestId: string; accept: boolean }) =>
   api.put('/friend-request/handle-request', body);
 
-export const sendAttachments = (body: FormData) =>
+export type CommitAttachmentsBody = {
+  chatId: string;
+  content?: string;
+  replyToMessageId?: string;
+  attachments: Array<{ key: string; originalName: string; mimeType: string; isHd?: boolean }>;
+};
+
+export const commitAttachments = (body: CommitAttachmentsBody) =>
   api.post('/message/send-attachments', body);
 
 export const sendGif = (body: {
@@ -87,7 +94,8 @@ export const sendGif = (body: {
   gifId: string;
   gifUrl: string;
   gifTitle?: string;
-  mimeType?: string;
+  /** Server accepts only these MIME types — matches sendGifSchema validator */
+  mimeType?: 'image/gif' | 'image/png' | 'image/webp' | 'image/jpeg';
   kind?: 'gif' | 'meme';
   replyToMessageId?: string;
 }) => api.post('/message/send-gif', body);
@@ -130,5 +138,20 @@ export const setMemberAdmin = (
   body: { memberId: string; makeAdmin: boolean },
 ) => api.put(`/chat/set-admin/${chatId}`, body);
 
-export const leaveGroup = (chatId: string) =>
-  api.delete(`/chat/leave-group/${chatId}`);
+export const leaveGroup = (chatId: string, body?: { newCreatorId?: string }) =>
+  api.delete(`/chat/leave-group/${chatId}`, body ?? {});
+
+export const deleteChatForMe = (chatId: string) =>
+  api.delete(`/chat/${chatId}/for-me`);
+
+export const clearChatForMe = (chatId: string) =>
+  api.delete(`/chat/${chatId}/clear-for-me`);
+
+export const unfriend = (chatId: string) =>
+  api.delete(`/friend-request/unfriend/${chatId}`);
+
+export const deleteGroup = (chatId: string) =>
+  api.delete(`/chat/delete-group/${chatId}`);
+
+export const getMessageReceipts = (messageId: string) =>
+  api.get(`/message/receipts/${messageId}`);

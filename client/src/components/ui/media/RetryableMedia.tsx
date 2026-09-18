@@ -38,7 +38,7 @@ export const RetryableMediaImage = ({
   style,
   ...props
 }: RetryableMediaImageProps) => {
-  const loaderRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const {
     src,
     showFallback,
@@ -48,11 +48,10 @@ export const RetryableMediaImage = ({
     handleError,
   } = useRetryableMediaSrc({ url, kind, transformWidth });
 
+  // If the browser already has the image cached, onLoad won't fire — check immediately.
   useEffect(() => {
-    const loader = loaderRef.current;
-    if (loader?.complete && loader.naturalWidth > 0) {
-      handleLoad();
-    }
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth > 0) handleLoad();
   }, [src, handleLoad]);
 
   if (showFallback) {
@@ -69,43 +68,37 @@ export const RetryableMediaImage = ({
     );
   }
 
-  if (isLoading) {
-    return (
-      <>
+  // Shimmer sits absolutely inside this shell. Call sites that pass only
+  // object-fit sizing on `className` must put box size (aspect/h/w) on
+  // `wrapperClassName`, or absolute inset-0 can climb to a distant relative
+  // ancestor (ProfilePanel) and paint the whole column.
+  const shellClass = ['relative block overflow-hidden', wrapperClassName]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <span className={shellClass} style={style}>
+      {isLoading ? (
         <MediaPlaceholder
           kind={kind}
           variant="loading"
-          className={wrapperClassName || className}
+          className="pointer-events-none absolute inset-0 z-0"
           iconClassName={fallbackIconClassName}
-        failedIllustrationClassName={failedIllustrationClassName}
-          style={style}
+          failedIllustrationClassName={failedIllustrationClassName}
           aria-label={alt ? `Loading ${alt}` : 'Loading media'}
         />
-        <img
-          ref={loaderRef}
-          src={src}
-          alt=""
-          aria-hidden
-          className="hidden"
-          decoding="async"
-          onLoad={handleLoad}
-          onError={handleError}
-        />
-      </>
-    );
-  }
-
-  return (
-    <img
-      {...props}
-      src={src}
-      alt={alt}
-      className={className}
-      style={style}
-      decoding="async"
-      onLoad={handleLoad}
-      onError={handleError}
-    />
+      ) : null}
+      <img
+        {...props}
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        className={`relative z-1 ${className} transition-opacity duration-300 motion-reduce:transition-none ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+        decoding="async"
+        onLoad={handleLoad}
+        onError={handleError}
+      />
+    </span>
   );
 };
 

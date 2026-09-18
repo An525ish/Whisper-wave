@@ -1,5 +1,8 @@
 import { AVATAR_FALLBACK } from '@/constants/app';
 import { useState, type ChangeEvent } from 'react';
+import toast from 'react-hot-toast';
+
+const MAX_AVATAR_BYTES = 10 * 1024 * 1024; // 10 MB — must match server
 
 type AvatarInputProps = {
   file?: File | null;
@@ -22,9 +25,13 @@ const CameraIcon = () => (
 const AvatarInput = ({ setFile }: AvatarInputProps) => {
   const [preview, setPreview] = useState<string>(AVATAR_FALLBACK);
 
+  const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const next = event.target.files?.[0];
     if (!next) return;
+    if (!ALLOWED_TYPES.has(next.type)) return; // accept attr already filters picker; server enforces too
+    if (next.size > MAX_AVATAR_BYTES) { toast.error('Avatar must be under 10 MB'); return; }
     setFile(next);
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -47,7 +54,7 @@ const AvatarInput = ({ setFile }: AvatarInputProps) => {
         <input
           id="auth-avatar"
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={handleChange}
           className="sr-only"
         />

@@ -8,7 +8,7 @@ import { useSignOutMutation } from '@/hooks/auth';
 import LeaveGroupIcon from '@/components/ui/icons/LeaveGroup';
 import { getFirstName } from '@/utils/helpers';
 import { useAuthStore } from '@/stores/auth';
-import { useNotificationsStore } from '@/stores/notifications';
+import { useNotificationsStore, selectTotalNotificationCount } from '@/stores/notifications';
 import { useProfileUiStore } from '@/stores/profile';
 import { useLocation } from 'react-router-dom';
 
@@ -17,22 +17,32 @@ type AccountBarProps = {
   /** full = both; account = avatar menu; notification = bell only */
   variant?: 'full' | 'account' | 'notification' | 'compact';
   overlayClassName?: string;
+  /** Override bell button chrome (e.g. match chat header menu buttons). */
+  notificationButtonClassName?: string;
+  /** Override bell glyph size — stroke icons often need a bump vs filled icons. */
+  notificationIconClassName?: string;
 };
+
+const defaultNotificationButtonClass =
+  'relative grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-border bg-primary transition active:bg-primary/70 md:h-10 md:w-10';
+
+const defaultNotificationIconClass = 'h-4 w-4 text-body-300 md:h-5 md:w-5';
 
 /** Notifications + account menu — profile column and list chrome. */
 const AccountBar = ({
   className = '',
   variant = 'full',
   overlayClassName = 'absolute inset-0 z-30',
+  notificationButtonClassName,
+  notificationIconClassName,
 }: AccountBarProps) => {
-  const [isNotification, setIsNotification] = useState(false);
+  const [notificationPath, setNotificationPath] = useState<string | null>(null);
   const notificationRef = useRef<HTMLDivElement | null>(null);
   const iconRef = useRef<HTMLButtonElement | null>(null);
   const location = useLocation();
+  const isNotificationOpen = notificationPath === location.pathname;
 
-  const totalNotificationCount = useNotificationsStore(
-    (s) => s.totalNotificationCount,
-  );
+  const totalNotificationCount = useNotificationsStore(selectTotalNotificationCount);
   const user = useAuthStore((s) => s.user);
   const openSelfProfile = useProfileUiStore((s) => s.openSelfProfile);
   const signOut = useSignOutMutation();
@@ -50,11 +60,6 @@ const AccountBar = ({
 
   const isFullscreenOverlay = overlayClassName.includes('fixed');
 
-  // Close the panel when navigating into a chat (e.g. from a notification link).
-  useEffect(() => {
-    setIsNotification(false);
-  }, [location.pathname]);
-
   const handleLogout = async () => {
     try {
       await signOut.mutateAsync();
@@ -70,11 +75,13 @@ const AccountBar = ({
   };
 
   const handleNotificationToggle = () => {
-    setIsNotification((prev) => !prev);
+    setNotificationPath((prev) =>
+      prev === location.pathname ? null : location.pathname,
+    );
   };
 
   useEffect(() => {
-    if (isFullscreenOverlay) return;
+    if (isFullscreenOverlay || !isNotificationOpen) return;
 
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -83,7 +90,7 @@ const AccountBar = ({
         iconRef.current &&
         !iconRef.current.contains(e.target as Node)
       ) {
-        setIsNotification(false);
+        setNotificationPath(null);
       }
     };
 
@@ -91,7 +98,7 @@ const AccountBar = ({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isFullscreenOverlay]);
+  }, [isFullscreenOverlay, isNotificationOpen]);
 
   const options = [
     {
@@ -106,13 +113,15 @@ const AccountBar = ({
     <button
       type="button"
       ref={iconRef}
-      className="relative grid h-10 w-10 cursor-pointer place-items-center rounded-full border border-border bg-primary transition active:bg-primary/70"
+      className={notificationButtonClassName ?? defaultNotificationButtonClass}
       onClick={handleNotificationToggle}
       aria-label="Notifications"
-      aria-expanded={isNotification}
+      aria-expanded={isNotificationOpen}
     >
       <NotificationIcon
-        className={`h-5 w-5 text-body-300 ${isNotification ? 'text-body' : ''}`}
+        className={`${notificationIconClassName ?? defaultNotificationIconClass} ${
+          isNotificationOpen ? 'text-body' : ''
+        }`}
       />
       {totalNotificationCount > 0 ? (
         <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 animate-pulse rounded-full border-2 border-red-dark bg-red" />
@@ -130,18 +139,18 @@ const AccountBar = ({
   );
 
   const notificationOverlay =
-    isNotification && showNotification ? (
+    isNotificationOpen && showNotification ? (
       isFullscreenOverlay ? (
         <NotificationDialog
-          isNotification={isNotification}
-          onClose={() => setIsNotification(false)}
+          isNotification={isNotificationOpen}
+          onClose={() => setNotificationPath(null)}
           variant="fullscreen"
         />
       ) : (
         <div ref={notificationRef} className={overlayClassName}>
           <NotificationDialog
-            isNotification={isNotification}
-            onClose={() => setIsNotification(false)}
+            isNotification={isNotificationOpen}
+            onClose={() => setNotificationPath(null)}
             variant="panel"
           />
         </div>

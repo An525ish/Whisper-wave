@@ -20,9 +20,6 @@ export const generateAccessToken = (id: string): string =>
 /** Opaque random token — only its SHA-256 hash is stored in the DB. */
 export const generateRefreshToken = (): string => randomBytes(64).toString('hex');
 
-/** @deprecated Replaced by generateAccessToken. Kept temporarily to avoid import errors during migration. */
-export const generateToken = generateAccessToken;
-
 export const verifyToken = (token: string): TokenPayload => {
   try {
     const payload = jwt.verify(token, env.ACCESS_TOKEN_SECRET) as TokenPayload;

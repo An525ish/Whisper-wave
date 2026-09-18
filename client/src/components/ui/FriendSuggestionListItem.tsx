@@ -1,27 +1,19 @@
 import AvatarCard from '@/components/ui/AvatarCard';
-import { useEffect, useState } from 'react';
 import type { FriendSuggestion } from '@/types';
 
 type FriendSuggestionListItemProps = {
   data: FriendSuggestion;
+  isSending?: boolean;
   handleAddFriend: (id: string) => void;
 };
 
 const FriendSuggestionListItem = ({
   data,
+  isSending = false,
   handleAddFriend,
 }: FriendSuggestionListItemProps) => {
   const { avatar, name, _id, isRequested } = data;
-  const [isSent, setIsSent] = useState(isRequested);
-
-  useEffect(() => {
-    setIsSent(isRequested);
-  }, [isRequested]);
-
-  const handleClick = (id: string) => {
-    setIsSent(true);
-    handleAddFriend(id);
-  };
+  const disabled = isRequested || isSending;
 
   return (
     <div className="flex items-center gap-2 rounded-2xl px-2 py-2 transition hover:bg-gradient-row-hover">
@@ -31,15 +23,31 @@ const FriendSuggestionListItem = ({
       </p>
       <button
         type="button"
-        onClick={() => handleClick(_id)}
-        disabled={isSent}
-        className={`inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3.5 text-[12px] font-semibold transition ${
-          isSent
+        onClick={() => handleAddFriend(_id)}
+        disabled={disabled}
+        aria-busy={isSending}
+        className={`relative inline-flex h-8 shrink-0 items-center justify-center rounded-full px-3.5 text-[12px] font-semibold transition ${
+          isRequested
             ? 'bg-gradient-green text-white'
-            : 'bg-green/10 text-green ring-1 ring-inset ring-green/30 hover:bg-green/20 enabled:active:scale-[0.98]'
+            : isSending
+              ? 'bg-green/10 text-green/60 ring-1 ring-inset ring-green/20'
+              : 'bg-green/10 text-green ring-1 ring-inset ring-green/30 hover:bg-green/20 enabled:active:scale-[0.98]'
         } disabled:cursor-default`}
       >
-        {isSent ? 'Sent' : 'Add'}
+        {isSending ? (
+          <>
+            <span className="invisible select-none" aria-hidden>
+              Add
+            </span>
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            </span>
+          </>
+        ) : isRequested ? (
+          'Sent'
+        ) : (
+          'Add'
+        )}
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 import Image from '@/components/ui/Image';
 import MembersIcon from '@/components/ui/icons/Members';
+import { AVATAR_ONLINE_DOT_POSITION_CLASS } from '@/constants/app';
 import LiveDot from './LiveDot';
 import type { AdminActivityUser } from '@/types/admin';
 
@@ -17,7 +18,9 @@ const OnlineAvatar = ({ user }: { user: AdminActivityUser }) => (
           displayWidth={96}
         />
       </div>
-      <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-green" />
+      <span
+        className={`absolute h-3 w-3 rounded-full border-2 border-background bg-green ${AVATAR_ONLINE_DOT_POSITION_CLASS}`}
+      />
     </div>
     <p className="w-full truncate text-center text-[10px] leading-tight text-body-300/70">
       {user.name.split(' ')[0]}
@@ -39,7 +42,7 @@ const OnlinePanel = ({ users, count, extra }: OnlinePanelProps) => (
           <LiveDot />
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-green">Presence</p>
         </div>
-        <p className="mt-2 font-display text-3xl leading-none tabular-nums text-body">
+        <p className="mt-2 font-semibold text-3xl leading-none tabular-nums text-body">
           {count}
           <span className="ml-2 text-sm font-normal text-body-300">online</span>
         </p>

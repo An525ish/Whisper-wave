@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import {
-  deleteProfile,
   getProfile,
   searchUser,
   updateProfile,
@@ -13,11 +12,18 @@ export const userRouter = Router();
 userRouter.use(auth);
 
 userRouter.get('/get-profile', getProfile);
-userRouter.get('/search-user', searchLimiter, validate(searchUserQuerySchema, 'query'), searchUser);
+
+userRouter.get(
+  '/search-user', 
+  searchLimiter, 
+  validate(searchUserQuerySchema, 'query'), 
+  searchUser
+);
+
 userRouter.put(
   '/update-profile',
   avatarUpload,
   validate(updateProfileSchema),
   updateProfile
 );
-userRouter.delete('/delete-profile', deleteProfile);
+

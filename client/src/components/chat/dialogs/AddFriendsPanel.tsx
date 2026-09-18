@@ -1,7 +1,7 @@
 import EmptyState from '@/components/ui/EmptyState';
 import Searchbar from '@/components/ui/Searchbar';
 import CountBadge from '@/components/ui/CountBadge';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   useSearchUsersQuery,
   useSendFriendRequestMutation,
@@ -11,21 +11,16 @@ import useAsyncMutation from '@/hooks/shared/useAsyncMutation';
 import AvatarSkeleton from '@/components/ui/skeletons/AvatarSkeleton';
 import type { SearchUsersResponse } from '@/types/chat';
 import { SEARCH_DEBOUNCE_MS } from '@/constants/chat';
+import { useDebounce } from '@/hooks/shared/useDebounce';
 
 /** Add-friends body — used inside NewConnectDialog tabs. */
 const AddFriendsPanel = () => {
   const [searchText, setSearchText] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [sentRequests, setSentRequests] = useState<string[]>([]);
+  const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendFriendRequest] = useAsyncMutation(useSendFriendRequestMutation);
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedQuery(searchText.trim());
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchText]);
+  const debouncedQuery = useDebounce(searchText.trim(), SEARCH_DEBOUNCE_MS);
 
   const {
     data: searchResponse,
@@ -38,11 +33,14 @@ const AddFriendsPanel = () => {
     (searchResponse as SearchUsersResponse | undefined)?.data ?? [];
 
   const handleAddFriend = async (receiverId: string) => {
+    setSendingId(receiverId);
     try {
-      await sendFriendRequest('Sending Friend Request', { receiverId });
+      await sendFriendRequest(null, { receiverId });
       setSentRequests((prev) => [...prev, receiverId]);
     } catch {
-      setSentRequests((prev) => prev.filter((id) => id !== receiverId));
+      // error toast handled by useAsyncMutation
+    } finally {
+      setSendingId(null);
     }
   };
 
@@ -130,6 +128,7 @@ const AddFriendsPanel = () => {
                     isRequested:
                       user.isRequested || sentRequests.includes(user._id),
                   }}
+                  isSending={sendingId === user._id}
                   handleAddFriend={handleAddFriend}
                 />
               ))}

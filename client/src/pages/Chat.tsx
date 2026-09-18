@@ -9,6 +9,7 @@ import { useMediaQuery } from '@/hooks/shared/useMediaQuery';
 import { useMessageJump } from '@/hooks/chat';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { CHAT_HEADER_FADE_CLASS } from '@/constants/chat';
 
 const Chat = () => {
   const { chatId } = useParams();
@@ -51,6 +52,7 @@ const Chat = () => {
     setDeletableSelectedCount(0);
     setIsEditingMessage(false);
     setIsFetchingOlder(false);
+    setProfileOpen(false);
   }, [chatId]);
 
   const handleJumpToMessage = useCallback(
@@ -103,11 +105,11 @@ const Chat = () => {
 
   return (
     <AppWrapper>
-      <div className="relative flex h-full min-h-0 flex-col bg-background md:bg-transparent md:pt-1">
+      <div className="relative flex h-full min-h-0 flex-col overflow-x-clip bg-background md:bg-transparent md:pt-1">
         {/* Soft top fade so scrolled messages dissolve under the floating header */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 z-20 h-[calc(max(0.5rem,env(safe-area-inset-top))+5.25rem)] bg-linear-to-b from-[rgb(33,26,42)]/50 from-25% via-[rgb(33,26,42)]/22 to-transparent md:top-1 md:h-28 md:rounded-t-xl"
+          className={`pointer-events-none absolute inset-x-0 top-0 z-20 bg-linear-to-b from-[rgb(33,26,42)]/50 from-25% via-[rgb(33,26,42)]/22 to-transparent md:top-1 md:rounded-t-xl ${CHAT_HEADER_FADE_CLASS}`}
         />
         <OlderMessagesLoader visible={isFetchingOlder && !searchOpen} />
         <div className={`pointer-events-none absolute inset-x-0 top-0 z-30 md:top-1 ${

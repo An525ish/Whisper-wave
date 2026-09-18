@@ -122,7 +122,7 @@ const UserDetailPanel = ({ userId, onClose }: UserDetailPanelProps) => {
               </div>
             </div>
 
-            <h2 className="mt-5 font-display text-2xl leading-tight tracking-tight text-body">
+            <h2 className="mt-5 font-semibold text-2xl leading-tight tracking-tight text-body">
               {isLoading ? (
                 <span className="inline-block h-7 w-36 animate-pulse rounded bg-border/25" />
               ) : (
@@ -192,7 +192,16 @@ const UserDetailPanel = ({ userId, onClose }: UserDetailPanelProps) => {
           onClose={() => setConfirmImpersonate(false)}
           handleConfirmationModal={({ accept }) => {
             setConfirmImpersonate(false);
-            if (accept) impersonate(userId);
+            if (accept) {
+              // Open blank tab synchronously (user gesture context) — async onSuccess would be blocked
+              const tab = window.open('', '_blank');
+              impersonate(userId, {
+                onSuccess: () => {
+                  if (tab) tab.location.href = '/';
+                  else window.open('/', '_blank');
+                },
+              });
+            }
           }}
         />
       )}

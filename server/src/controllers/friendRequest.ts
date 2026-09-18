@@ -1,8 +1,10 @@
 import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import type { ValidatedRequest } from '../middlewares/validate.js';
-import { flushNotifications, friendRequestService } from '../services/index.js';
+import { flushNotifications, friendRequestService, joinUsersToChatRoom, leaveUsersFromChatRoom } from '../services/index.js';
+import { REFETCH_CHATS } from '../constants/socket-events.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import { param } from '../utils/http.js';
 import type { GetMyFriendsQuery } from '../validators/request.js';
 
 const getIo = (req: { app: { get: (key: string) => unknown } }): Server | undefined =>
@@ -10,7 +12,10 @@ const getIo = (req: { app: { get: (key: string) => unknown } }): Server | undefi
 
 export const sendRequest: RequestHandler = catchAsync(async (req, res) => {
   const { receiverId } = req.body as { receiverId: string };
-  const result = await friendRequestService.sendRequest(req.userId!, receiverId);
+  const result = await friendRequestService.sendRequest({
+    userId: req.userId!,
+    receiverId,
+  });
   flushNotifications(getIo(req), result.notifications);
   res.status(200).json({
     success: true,
@@ -23,11 +28,23 @@ export const handleRequest: RequestHandler = catchAsync(async (req, res) => {
     requestId: string;
     accept: boolean;
   };
-  const result = await friendRequestService.handleRequest(
-    req.userId!,
+  const result = await friendRequestService.handleRequest({
+    userId: req.userId!,
     requestId,
-    accept
-  );
+    accept,
+  });
+
+  if (accept && result.data?.chatId && result.data?.senderId) {
+    const io = getIo(req);
+    const chatId = result.data.chatId;
+    await joinUsersToChatRoom(io!, chatId, [
+      req.userId!,
+      String(result.data.senderId),
+    ]);
+    flushNotifications(io, [
+      { event: REFETCH_CHATS, chatId, data: { chatId } },
+    ]);
+  }
 
   res.status(200).json({
     success: true,
@@ -47,6 +64,20 @@ export const getNotifications: RequestHandler = catchAsync(async (req, res) => {
 
 export const getMyfriends: RequestHandler = catchAsync(async (req, res) => {
   const { chatId } = (req as ValidatedRequest<GetMyFriendsQuery>).validatedQuery;
-  const data = await friendRequestService.getMyFriends(req.userId!, chatId);
+  const data = await friendRequestService.getMyFriends({
+    userId: req.userId!,
+    chatId,
+  });
   res.status(200).json({ success: true, data });
+});
+
+export const unfriend: RequestHandler = catchAsync(async (req, res) => {
+  const chatId = param(req.params.chatId);
+  const result = await friendRequestService.unfriend(req.userId!, chatId);
+  const io = getIo(req);
+  if (io && result.memberIds?.length) {
+    flushNotifications(io, result.notifications);
+    await leaveUsersFromChatRoom(io, chatId, result.memberIds);
+  }
+  res.status(200).json({ success: true, message: result.message });
 });

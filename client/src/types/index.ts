@@ -40,6 +40,10 @@ export type ContextMenuState = {
   visible: boolean;
   position: ContextMenuPosition;
   options: ContextMenuOption[];
+  /** Optional node rendered above the options list (e.g. emoji reaction strip) */
+  header?: ReactNode;
+  /** Hide the options list while an expanded header control is open (e.g. emoji picker). */
+  hideOptions?: boolean;
 };
 
 export type ErrorEntry = {
@@ -54,4 +58,6 @@ export type SharedMediaRow = {
   name?: string;
   url?: string;
   fileType?: string;
+  messageId?: string;
+  senderId?: string;
 };

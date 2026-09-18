@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ChangeEvent, type MouseEvent } from 'react'
 import toast from 'react-hot-toast'
 import { useParams } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
@@ -9,6 +9,7 @@ import {
   useUpdateGroupDetailsMutation,
 } from '@/hooks/chat'
 import { useUpdateProfileMutation } from '@/hooks/auth'
+import { useDeleteMessageMutation, useForwardMessagesMutation } from '@/hooks/chat/useMessageMutations'
 import useAsyncMutation from '@/hooks/shared/useAsyncMutation'
 import useErrors from '@/hooks/shared/useError'
 import { useSocket } from '@/socket/SocketProvider'
@@ -46,6 +47,8 @@ export type ViewerMediaFile = {
   name?: string;
   publicId?: string;
   fileType?: string;
+  messageId?: string;
+  senderId?: string;
 };
 
 const resolveAvatarSrc = (
@@ -105,6 +108,15 @@ export type UseProfilePanelReturn = {
   openSharedSheet: (tab: SharedContentTab) => void
   openImageViewerForFile: (file: MediaFile) => void
   handleFileAction: (e: MouseEvent, url: string | undefined, fileName: string | undefined) => Promise<void>
+  viewerForwardMsgId: string | null
+  viewerDeleteMsgId: string | null
+  handleViewerForward: (messageId: string) => void
+  handleViewerDelete: (messageId: string) => void
+  confirmViewerDelete: () => Promise<void>
+  handleViewerForwardToChat: (targetChatIds: string[]) => Promise<void>
+  forwardIsPending: boolean
+  setViewerForwardMsgId: (id: string | null) => void
+  setViewerDeleteMsgId: (id: string | null) => void
   startNameEdit: () => void
   cancelNameEdit: () => void
   saveName: () => Promise<boolean>
@@ -136,6 +148,8 @@ export const useProfilePanel = (
 
   const [viewerOpen, setViewerOpen] = useState(false)
   const [initialImageIndex, setInitialImageIndex] = useState(0)
+  const [viewerForwardMsgId, setViewerForwardMsgId] = useState<string | null>(null)
+  const [viewerDeleteMsgId, setViewerDeleteMsgId] = useState<string | null>(null)
   const [sharedSheetOpen, setSharedSheetOpen] = useState(false)
   const [sharedSheetTab, setSharedSheetTab] = useState<SharedContentTab>('photos')
   const [editingBio, setEditingBio] = useState(false)
@@ -146,11 +160,13 @@ export const useProfilePanel = (
 
   const [updateProfile, { isLoading: isUpdatingProfile }] = useAsyncMutation(useUpdateProfileMutation)
   const [updateGroup, { isLoading: isUpdatingGroup }] = useAsyncMutation(useUpdateGroupDetailsMutation)
+  const deleteMutation = useDeleteMessageMutation()
+  const forwardMutation = useForwardMessagesMutation()
 
-  const openSharedSheet = (tab: SharedContentTab) => {
+  const openSharedSheet = useCallback((tab: SharedContentTab) => {
     setSharedSheetTab(tab)
     setSharedSheetOpen(true)
-  }
+  }, [])
 
   const { data: profileDetails, isLoading, error, isError } = useChatDetailsQuery(
     { id: chatId, populate: true },
@@ -161,10 +177,14 @@ export const useProfilePanel = (
     { skip: !chatId || showSelfProfile },
   )
 
-  useErrors([{ error, isError }, { mediaError, isMediaError }])
+  useErrors([{ error, isError }, { error: mediaError, isError: isMediaError }])
 
-  const newAttachmentListener = useCallback(() => { refetch() }, [refetch])
-  useSocketEvent(socket, { [SOCKET_EVENTS.NEW_ATTACHMENT]: newAttachmentListener, [SOCKET_EVENTS.NEW_MESSAGE]: newAttachmentListener })
+  const newAttachmentListener = useCallback((...args: unknown[]) => {
+    const res = args[0] as { chatId?: string } | undefined
+    // Only refetch if the attachment belongs to the currently open chat
+    if (res?.chatId && res.chatId === chatId) refetch()
+  }, [refetch, chatId])
+  useSocketEvent(socket, { [SOCKET_EVENTS.NEW_ATTACHMENT]: newAttachmentListener })
 
   useEffect(() => {
     return () => { if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview) }
@@ -197,22 +217,64 @@ export const useProfilePanel = (
   const canEdit = isOwnProfile || isGroupCreator || isGroupAdmin
   const isSaving = isUpdatingProfile || isUpdatingGroup
 
-  const { attachments: mediaData, links: sharedLinks } = normalizeSharedContent((media as MediaResponse | undefined)?.data)
-  const mediaFiles = mediaData.filter((f) => f.fileType !== 'document')
-  const docFiles = mediaData.filter((f) => f.fileType === 'document')
+  const { attachments: mediaData, links: sharedLinks } = useMemo(
+    () => normalizeSharedContent((media as MediaResponse | undefined)?.data),
+    [media],
+  )
+  const mediaFiles = useMemo(() => mediaData.filter((f) => f.fileType !== 'document'), [mediaData])
+  const docFiles   = useMemo(() => mediaData.filter((f) => f.fileType === 'document'),  [mediaData])
 
-  const viewerMediaFiles: ViewerMediaFile[] = mediaFiles
-    .filter((f): f is MediaFile & { url: string } => Boolean(f.url))
-    .map((f) => ({ _id: f._id ?? f.publicId ?? f.url, url: f.url, name: f.name, publicId: f.publicId, fileType: f.fileType }))
+  const viewerMediaFiles: ViewerMediaFile[] = useMemo(
+    () => mediaFiles
+      .filter((f): f is MediaFile & { url: string } => Boolean(f.url))
+      .map((f) => ({ _id: f._id ?? f.publicId ?? f.url, url: f.url, name: f.name, publicId: f.publicId, fileType: f.fileType, messageId: f.messageId, senderId: f.senderId })),
+    [mediaFiles],
+  )
 
-  const openImageViewerForFile = (file: MediaFile) => {
+  const handleViewerForward = useCallback((messageId: string) => {
+    setViewerOpen(false)
+    setViewerForwardMsgId(messageId)
+  }, [])
+
+  const handleViewerDelete = useCallback((messageId: string) => {
+    setViewerOpen(false)
+    setViewerDeleteMsgId(messageId)
+  }, [])
+
+const confirmViewerDelete = useCallback(async () => {
+    if (!viewerDeleteMsgId || !chatId) return
+    try {
+      await deleteMutation.mutateAsync({ messageId: viewerDeleteMsgId, chatId })
+    } catch {
+      toast.error('Failed to delete message')
+    } finally {
+      setViewerDeleteMsgId(null)
+    }
+  }, [viewerDeleteMsgId, chatId, deleteMutation])
+
+  const handleViewerForwardToChat = useCallback(async (targetChatIds: string[]) => {
+    if (!chatId || !viewerForwardMsgId || targetChatIds.length === 0) return
+    try {
+      await Promise.all(
+        targetChatIds.map((targetChatId) =>
+          forwardMutation.mutateAsync({ targetChatId, sourceChatId: chatId, messageIds: [viewerForwardMsgId] })
+        )
+      )
+      setViewerForwardMsgId(null)
+      toast.success('Forwarded')
+    } catch {
+      toast.error('Failed to forward')
+    }
+  }, [chatId, viewerForwardMsgId, forwardMutation])
+
+  const openImageViewerForFile = useCallback((file: MediaFile) => {
     const index = viewerMediaFiles.findIndex(
       (item) => item.url === file.url || (file._id && item._id === file._id) || (file.publicId && item._id === file.publicId),
     )
     if (index >= 0) { setInitialImageIndex(index); setViewerOpen(true) }
-  }
+  }, [viewerMediaFiles])
 
-  const handleFileAction = async (e: MouseEvent, url: string | undefined, fileName: string | undefined) => {
+  const handleFileAction = useCallback(async (e: MouseEvent, url: string | undefined, fileName: string | undefined) => {
     e.preventDefault()
     if (!url) return
     if (['pdf'].includes(fileFormat(url))) {
@@ -226,17 +288,17 @@ export const useProfilePanel = (
         link.href = blobUrl
         link.download = fileName ?? 'download'
         link.click()
-        window.URL.revokeObjectURL(url)
+        window.URL.revokeObjectURL(blobUrl)
       } catch {
         toast.error('Download Failed')
       }
     }
-  }
+  }, [])
 
-  const startNameEdit = () => { setNameDraft(name ?? ''); setEditingName(true); setEditingBio(false) }
-  const cancelNameEdit = () => { setEditingName(false); setNameDraft(name ?? '') }
+  const startNameEdit = useCallback(() => { setNameDraft(name ?? ''); setEditingName(true); setEditingBio(false) }, [name])
+  const cancelNameEdit = useCallback(() => { setEditingName(false); setNameDraft(name ?? '') }, [name])
 
-  const saveName = async (): Promise<boolean> => {
+  const saveName = useCallback(async (): Promise<boolean> => {
     const nextName = nameDraft.trim()
     if (!nextName) { toast.error(groupChat ? 'Group name is required' : 'Name is required'); return false }
     if (isOwnProfile) {
@@ -247,15 +309,15 @@ export const useProfilePanel = (
     }
     if (!chatId) return false
     const formData = new FormData(); formData.append('name', nextName)
-    const result = await updateGroup('Updating group name...', { chatId, body: formData })
+    const result = await updateGroup(null, { chatId, body: formData })
     if (result !== null) { setEditingName(false); return true }
     return false
-  }
+  }, [nameDraft, groupChat, isOwnProfile, chatId, updateProfile, updateGroup])
 
-  const startBioEdit = () => { setBioDraft(bio ?? ''); setEditingBio(true); setEditingName(false) }
-  const cancelBioEdit = () => { setEditingBio(false); setBioDraft(bio ?? '') }
+  const startBioEdit = useCallback(() => { setBioDraft(bio ?? ''); setEditingBio(true); setEditingName(false) }, [bio])
+  const cancelBioEdit = useCallback(() => { setEditingBio(false); setBioDraft(bio ?? '') }, [bio])
 
-  const saveBio = async (): Promise<boolean> => {
+  const saveBio = useCallback(async (): Promise<boolean> => {
     const nextBio = bioDraft.trim()
     if (isOwnProfile) {
       const formData = new FormData(); formData.append('bio', nextBio)
@@ -265,24 +327,25 @@ export const useProfilePanel = (
     }
     if (!chatId) return false
     const formData = new FormData(); formData.append('bio', nextBio)
-    const result = await updateGroup('Updating group bio...', { chatId, body: formData })
+    const result = await updateGroup(null, { chatId, body: formData })
     if (result !== null) { setEditingBio(false); return true }
     return false
-  }
+  }, [bioDraft, isOwnProfile, chatId, updateProfile, updateGroup])
 
   const showSelfExitActions = viewSelfProfile && Boolean(chatId)
 
-  const handleCancelSelfProfile = () => {
+  const handleCancelSelfProfile = useCallback(() => {
     setNameDraft(name ?? ''); setBioDraft(bio ?? '')
     setEditingName(false); setEditingBio(false)
     if (showSelfExitActions) closeSelfProfile()
-  }
+  }, [name, bio, showSelfExitActions, closeSelfProfile])
 
-  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file || !canEdit) return
-    if (!file.type.startsWith('image/')) { toast.error('Please choose an image file'); return }
+    const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+    if (!ALLOWED_AVATAR_TYPES.has(file.type)) { toast.error('Use JPEG, PNG, WebP, or GIF'); return }
     if (avatarPreview?.startsWith('blob:')) URL.revokeObjectURL(avatarPreview)
     const previewUrl = URL.createObjectURL(file)
     setAvatarPreview(previewUrl)
@@ -293,9 +356,9 @@ export const useProfilePanel = (
       return
     }
     if (!chatId) return
-    await updateGroup('Updating group photo...', { chatId, body: formData })
+    await updateGroup(null, { chatId, body: formData })
     setAvatarPreview(null); URL.revokeObjectURL(previewUrl)
-  }
+  }, [canEdit, avatarPreview, isOwnProfile, chatId, updateProfile, updateGroup])
 
   const avatarSrc = avatarPreview ?? resolveAvatarSrc(rawAvatar as string | string[] | { url?: string } | undefined)
 
@@ -310,5 +373,9 @@ export const useProfilePanel = (
     startNameEdit, cancelNameEdit, saveName, startBioEdit, cancelBioEdit, saveBio,
     handleCancelSelfProfile, handleAvatarChange,
     setViewerOpen, setSharedSheetOpen, isLoading, viewSelfProfile,
+    viewerForwardMsgId, viewerDeleteMsgId,
+    handleViewerForward, handleViewerDelete, confirmViewerDelete, handleViewerForwardToChat,
+    forwardIsPending: forwardMutation.isPending,
+    setViewerForwardMsgId, setViewerDeleteMsgId,
   }
 }

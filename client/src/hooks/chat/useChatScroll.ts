@@ -42,6 +42,11 @@ export function useChatScroll({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const didInitialScrollRef = useRef(false);
   const isNearBottomRef = useRef(true);
+  // Refs so the scroll handler reads the latest values without re-registering on every page fetch
+  const hasNextPageRef = useRef(hasNextPage);
+  const isFetchingNextPageRef = useRef(isFetchingNextPage);
+  useEffect(() => { hasNextPageRef.current = hasNextPage; }, [hasNextPage]);
+  useEffect(() => { isFetchingNextPageRef.current = isFetchingNextPage; }, [isFetchingNextPage]);
   const scrollIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
@@ -214,7 +219,7 @@ export function useChatScroll({
       updateStickyDate();
       if (root.scrollTop > 80) return;
       if (jumpScrollActiveRef.current) return;
-      if (!hasNextPage || isFetchingNextPage) return;
+      if (!hasNextPageRef.current || isFetchingNextPageRef.current) return;
       const prevHeight = root.scrollHeight;
       const prevTop = root.scrollTop;
       void fetchNextPage().then(() => {
@@ -230,7 +235,7 @@ export function useChatScroll({
 
     root.addEventListener('scroll', onScroll, { passive: true });
     return () => root.removeEventListener('scroll', onScroll);
-  }, [chatId, fetchNextPage, hasNextPage, isFetchingNextPage, markScrolling, updateNearBottom, updateStickyDate]);
+  }, [chatId, fetchNextPage, markScrolling, updateNearBottom, updateStickyDate]);
 
   // Initial scroll to bottom
   useEffect(() => {

@@ -11,9 +11,14 @@ const MessageBody = ({ msg, onImageOpen }: MessageBodyProps) => {
   const content = msg.content?.trim();
   const attachments = msg.attachments ?? [];
   const hasAttachments = attachments.length > 0;
+  const deleted = Boolean(msg.isDeleted);
 
   return (
-    <div className="rounded-2xl border border-border/55 bg-primary/20 shadow-sm">
+    <div
+      className={`rounded-2xl border shadow-sm ${
+        deleted ? 'border-red/25 bg-red/5' : 'border-border/55 bg-primary/20'
+      }`}
+    >
       {hasAttachments && (
         <div className="flex flex-wrap gap-2 p-3">
           {attachments.map((att, index) => (
@@ -38,7 +43,13 @@ const MessageBody = ({ msg, onImageOpen }: MessageBodyProps) => {
           <span className="text-body-300/35">&rdquo;</span>
         </p>
       ) : !hasAttachments ? (
-        <p className="px-3.5 py-2.5 text-sm italic text-body-300/40">Empty message</p>
+        <p
+          className={`px-3.5 py-2.5 text-sm italic ${
+            deleted ? 'text-red/75' : 'text-body-300/40'
+          }`}
+        >
+          {deleted ? 'Deleted message' : 'Empty message'}
+        </p>
       ) : null}
     </div>
   );

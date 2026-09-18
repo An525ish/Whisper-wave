@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { MediaFile } from '@/components/ui/image-viewer/ImageViewer';
 import type { UserFilterOption } from '@/types/admin';
 import { ADMIN_MIN_SEARCH_LEN } from '@/constants/admin/attachments';
 import { SEARCH_DEBOUNCE_MS } from '@/constants/app';
-import { useAdminAttachmentsQuery } from '@/hooks/admin';
+import { useDebounce } from '@/hooks/shared/useDebounce';
+import { useAdminAttachmentsQuery, useDeleteAdminAttachmentsMutation } from '@/hooks/admin';
 import type { FlatItem, AttachmentKindFilter } from '@/types/admin';
 import {
   buildLinkItems,
@@ -18,19 +19,36 @@ import {
 export function useAttachmentsPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [kindFilter, setKindFilter] = useState<AttachmentKindFilter>('all');
   const [senderFilter, setSenderFilter] = useState<UserFilterOption | null>(null);
   const [viewerMediaFiles, setViewerMediaFiles] = useState<MediaFile[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    const id = setTimeout(
-      () => setDebouncedSearch(searchText.length >= ADMIN_MIN_SEARCH_LEN ? searchText : ''),
-      SEARCH_DEBOUNCE_MS,
-    );
-    return () => clearTimeout(id);
-  }, [searchText]);
+  // Selection state
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  const { mutate: bulkDelete, isPending: isDeleting } = useDeleteAdminAttachmentsMutation();
+
+  const toggleSelect = useCallback((msgId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(msgId)) next.delete(msgId);
+      else next.add(msgId);
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setIsSelectMode(false);
+  }, []);
+
+  const debouncedSearch = useDebounce(
+    searchText.length >= ADMIN_MIN_SEARCH_LEN ? searchText : '',
+    SEARCH_DEBOUNCE_MS,
+  );
 
   const isSearchPending = searchText !== debouncedSearch;
   const showMinSearchHint = searchText.length > 0 && searchText.length < ADMIN_MIN_SEARCH_LEN;
@@ -45,13 +63,13 @@ export function useAttachmentsPage() {
     refetch,
   } = useAdminAttachmentsQuery(debouncedSearch, senderFilter?._id ?? '', kindFilter);
 
-  const pages = data?.pages ?? [];
-  const matchTotal = pages[0]?.total ?? 0;
+  const matchTotal = data?.pages[0]?.total ?? 0;
   const hasFilter = Boolean(debouncedSearch || senderFilter || kindFilter !== 'all');
 
+  // Derive `pages` inside each memo so the array ref doesn't defeat memoization
   const flatItems = useMemo(
-    () => flattenAttachmentItems(pages, kindFilter),
-    [pages, kindFilter],
+    () => flattenAttachmentItems(data?.pages ?? [], kindFilter),
+    [data, kindFilter],
   );
 
   const mediaItems = useMemo(
@@ -62,8 +80,35 @@ export function useAttachmentsPage() {
   const docItems = useMemo(() => filterDocItems(flatItems), [flatItems]);
 
   const linkItems = useMemo(
-    () => buildLinkItems(pages, kindFilter),
-    [pages, kindFilter],
+    () => buildLinkItems(data?.pages ?? [], kindFilter),
+    [data, kindFilter],
+  );
+
+  // Derive all selectable message IDs from the currently loaded items
+  const allSelectableIds = useMemo(() => {
+    const fromFlat = flatItems.map((i) => i.msg._id);
+    const fromLinks = linkItems.map((i) => i.msg._id);
+    return [...new Set([...fromFlat, ...fromLinks])];
+  }, [flatItems, linkItems]);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(allSelectableIds));
+  }, [allSelectableIds]);
+
+  const showConfirmDelete = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    setIsConfirmOpen(true);
+  }, [selectedIds.size]);
+
+  const handleConfirm = useCallback(
+    (accept: boolean) => {
+      setIsConfirmOpen(false);
+      if (!accept) return;
+      bulkDelete([...selectedIds], {
+        onSuccess: () => clearSelection(),
+      });
+    },
+    [bulkDelete, clearSelection, selectedIds],
   );
 
   const handleMediaClick = useCallback(
@@ -126,5 +171,17 @@ export function useAttachmentsPage() {
     showLinks,
     isEmpty,
     sentinelEnabled,
+    // selection
+    isSelectMode,
+    setIsSelectMode,
+    selectedIds,
+    toggleSelect,
+    selectAll,
+    clearSelection,
+    allSelectableIds,
+    showConfirmDelete,
+    isConfirmOpen,
+    handleConfirm,
+    isDeleting,
   };
 }

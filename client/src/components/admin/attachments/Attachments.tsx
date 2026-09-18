@@ -1,8 +1,10 @@
+import ConfirmationModal from '@/components/ui/modal/confirmation-modal/ConfirmationModal';
 import ImageViewer from '@/components/ui/image-viewer/ImageViewer';
 import Searchbar from '@/components/ui/Searchbar';
 import AttachmentsContent from './feed/AttachmentsContent';
 import AttachmentsStats from './stats/AttachmentsStats';
 import KindFilterTabs from './feed/KindFilterTabs';
+import SelectionBar from './feed/SelectionBar';
 import { useAttachmentsPage } from '@/hooks/admin';
 
 const Attachments = () => {
@@ -38,6 +40,17 @@ const Attachments = () => {
     showLinks,
     isEmpty,
     sentinelEnabled,
+    isSelectMode,
+    setIsSelectMode,
+    selectedIds,
+    toggleSelect,
+    selectAll,
+    clearSelection,
+    allSelectableIds,
+    showConfirmDelete,
+    isConfirmOpen,
+    handleConfirm,
+    isDeleting,
   } = useAttachmentsPage();
 
   return (
@@ -46,7 +59,7 @@ const Attachments = () => {
         <header className="flex shrink-0 flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue">Console</p>
-            <h1 className="mt-1 font-display text-3xl leading-none tracking-tight text-body sm:text-4xl">
+            <h1 className="mt-1 font-semibold text-3xl leading-none tracking-tight text-body sm:text-4xl">
               Media &amp; Files
             </h1>
             <p className="mt-2 text-sm text-body-300">
@@ -57,7 +70,13 @@ const Attachments = () => {
             className="w-full sm:w-72"
             searchText={searchText}
             setSearchText={setSearchText}
-            placeholder={kindFilter === 'links' ? 'Search links…' : 'Search by filename…'}
+            placeholder={
+              kindFilter === 'links'
+                ? 'Search links…'
+                : kindFilter === 'deleted'
+                  ? 'Search deleted files or links…'
+                  : 'Search by filename…'
+            }
             expandable={false}
           />
         </header>
@@ -84,6 +103,11 @@ const Attachments = () => {
             searchText={searchText}
             showMinSearchHint={showMinSearchHint}
             onClearSearch={() => setSearchText('')}
+            isSelectMode={isSelectMode}
+            onSelectToggle={() => {
+              if (isSelectMode) clearSelection();
+              else setIsSelectMode(true);
+            }}
           />
 
           <AttachmentsContent
@@ -107,6 +131,9 @@ const Attachments = () => {
             onMediaClick={handleMediaClick}
             onLoadMore={() => void fetchNextPage()}
             onRetry={() => void refetch()}
+            isSelectMode={isSelectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
           />
         </section>
       </div>
@@ -116,6 +143,27 @@ const Attachments = () => {
           mediaFiles={viewerMediaFiles}
           initialIndex={viewerIndex}
           onClose={closeViewer}
+        />
+      )}
+
+      <SelectionBar
+        count={selectedIds.size}
+        total={allSelectableIds.length}
+        isDeleting={isDeleting}
+        onSelectAll={selectAll}
+        onClear={clearSelection}
+        onDelete={showConfirmDelete}
+      />
+
+      {isConfirmOpen && (
+        <ConfirmationModal
+          title={`Delete ${selectedIds.size} item${selectedIds.size === 1 ? '' : 's'}?`}
+          description="The messages and their R2 files will be permanently deleted. This cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="danger"
+          onClose={() => handleConfirm(false)}
+          handleConfirmationModal={({ accept }) => handleConfirm(accept)}
         />
       )}
     </>

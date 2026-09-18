@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import AvatarSkeleton from '@/components/ui/skeletons/AvatarSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
@@ -25,6 +26,10 @@ const ChatList = ({
   const parentRef = useRef<HTMLDivElement | null>(null);
   const selfId = user?._id ? String(user._id) : '';
   const prevFirstIdRef = useRef<string | undefined>(undefined);
+  const { chatId: activeChatId } = useParams();
+
+  // O(1) online lookup — array scan per item was O(n*m)
+  const onlineSet = useMemo(() => new Set(onlineUserIds), [onlineUserIds]);
 
   // Scroll to top whenever the leading chat changes (new message reordered it).
   useEffect(() => {
@@ -39,13 +44,13 @@ const ChatList = ({
     getScrollElement: () => parentRef.current,
     estimateSize: () => 80,
     gap: 8,
-    overscan: 6,
+    overscan: 4,
   });
 
   return (
     <div
       ref={parentRef}
-      className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2 scrollbar-hide"
+      className="flex h-full min-h-0 flex-col gap-2 overflow-x-hidden overflow-y-auto p-2 scrollbar-hide"
     >
       {isLoading ? (
         Array(8)
@@ -60,15 +65,14 @@ const ChatList = ({
         >
           {virtualizer.getVirtualItems().map((item) => {
             const data = chats[item.index];
-            const { avatar, name, _id, groupChat, members, lastMessage, unreadCount } =
-              data;
-            const peerIds = normalizeMemberIds(members).filter(
-              (id) => id !== selfId,
+            const { avatar, name, _id, groupChat, members, lastMessage, unreadCount } = data;
+            const avatarUrls = (Array.isArray(avatar) ? avatar : avatar ? [avatar] : []).filter(
+              (url): url is string => Boolean(url),
             );
-            const isOnline =
-              !groupChat &&
-              peerIds.some((id) => onlineUserIds.includes(id));
+            const peerIds = normalizeMemberIds(members).filter((id) => id !== selfId);
+            const isOnline = !groupChat && peerIds.some((id) => onlineSet.has(id));
             const isTyping = Boolean(typingChatIds[_id]);
+            const isActive = activeChatId === _id;
 
             return (
               <div
@@ -76,20 +80,19 @@ const ChatList = ({
                 data-index={item.index}
                 ref={virtualizer.measureElement}
                 className="absolute left-0 top-0 w-full"
-                style={{
-                  transform: `translateY(${item.start}px)`,
-                }}
+                style={{ transform: `translateY(${item.start}px)` }}
               >
                 <ChatListItem
-                  avatar={Array.isArray(avatar) ? avatar : avatar ? [avatar] : []}
+                  avatar={avatarUrls}
                   name={name ?? ''}
                   groupChat={groupChat}
                   isOnline={isOnline}
                   isTyping={isTyping}
+                  isActive={isActive}
                   unreadCount={unreadCount}
                   id={_id}
                   lastMessage={lastMessage}
-                  currentUserId={user?._id ?? ''}
+                  currentUserId={selfId}
                 />
               </div>
             );

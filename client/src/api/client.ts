@@ -1,4 +1,5 @@
 import { BASE_URL } from '@/constants/app';
+import { useAuthStore } from '@/stores/auth';
 
 export class ApiError extends Error {
   status: number;
@@ -64,17 +65,21 @@ function extractMessage(payload: unknown): string {
   return 'Request failed';
 }
 
+/** Single-flight refresh — rotation deletes the old hash; parallel 401s must share one call. */
+let refreshInFlight: Promise<boolean> | null = null;
+
 /** Attempt a silent token refresh. Returns true if successful. */
 async function tryRefresh(): Promise<boolean> {
-  try {
-    const res = await fetch(buildUrl('/auth/refresh'), {
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(buildUrl('/auth/refresh'), {
       method: 'POST',
       credentials: 'include',
-    });
-    return res.ok;
-  } catch {
-    return false;
+    })
+      .then((res) => res.ok)
+      .catch(() => false)
+      .finally(() => { refreshInFlight = null; });
   }
+  return refreshInFlight;
 }
 
 async function request<T>(
@@ -104,6 +109,8 @@ async function request<T>(
       if (refreshed) {
         return request<T>(endpoint, options, true);
       }
+      // Refresh failed — session is dead. Clear auth state so the app redirects to /auth.
+      useAuthStore.getState().clear();
     }
 
     throw new ApiError(extractMessage(payload), response.status, payload);

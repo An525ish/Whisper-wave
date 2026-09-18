@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ADMIN_MIN_SEARCH_LEN } from '@/constants/admin/groups';
 import { SEARCH_DEBOUNCE_MS } from '@/constants/app';
+import { useDebounce } from '@/hooks/shared/useDebounce';
 import { useAdminGroupsQuery, useAdminStatsQuery } from '@/hooks/admin';
 import type { AdminGroupRow, UserFilterOption } from '@/types/admin';
 import { sumSeries } from '@/utils/admin/dashboard';
@@ -8,16 +9,10 @@ import { sumSeries } from '@/utils/admin/dashboard';
 export function useGroupsPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchText, setSearchText] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [memberFilter, setMemberFilter] = useState<UserFilterOption | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<AdminGroupRow | null>(null);
 
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearch(searchText.trim());
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timeoutId);
-  }, [searchText]);
+  const debouncedSearch = useDebounce(searchText.trim(), SEARCH_DEBOUNCE_MS);
 
   const querySearch =
     debouncedSearch.length >= ADMIN_MIN_SEARCH_LEN ? debouncedSearch : '';

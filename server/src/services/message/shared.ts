@@ -2,7 +2,7 @@ import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
 import * as userRepo from '../../repositories/user.js';
 import type { LastMessageType } from '../../types/index.js';
-import type { MessageRecord, MessageReplyTo } from '../../types/message.js';
+import type { MessageForClient, MessageRecord, MessageReplyTo, MessageReplyToClient } from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
 
 export const MESSAGE_PAGE_SIZE = 20;
@@ -26,7 +26,9 @@ const mapSenderAvatar = (sender: PopulatedSender) => {
   };
 };
 
-const serializeReplyToClient = (replyTo?: MessageReplyTo) => {
+export const serializeReplyToClient = (
+  replyTo?: MessageReplyTo
+): MessageReplyToClient | undefined => {
   if (!replyTo) return undefined;
 
   return {
@@ -71,18 +73,7 @@ export const buildReplySnapshot = async (
 
 export const formatMessageForClient = async (
   message: MessageRecord
-): Promise<{
-  _id: string;
-  content?: string;
-  attachments: MessageRecord['attachments'];
-  createdAt: string;
-  updatedAt: string;
-  isDeleted?: boolean;
-  editedAt?: string;
-  replyTo?: ReturnType<typeof serializeReplyToClient>;
-  sender: { _id: string; name: string; avatar: string };
-  readBy: string[];
-}> => {
+): Promise<MessageForClient> => {
   const senderDoc = await userRepo.findByIdNameAvatar(String(message.sender));
 
   return {

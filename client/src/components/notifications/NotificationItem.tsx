@@ -6,7 +6,6 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import type { ApiSuccess } from '@/types';
 import type {
   MessageNotifyItem,
   FriendRequestNotifyItemProps,
@@ -69,6 +68,8 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
   );
 };
 
+type Phase = 'idle' | 'loading-accept' | 'loading-decline' | 'accepted' | 'declined' | 'exiting';
+
 export const FriendRequestNotifyItem = ({
   notification,
 }: FriendRequestNotifyItemProps) => {
@@ -82,27 +83,25 @@ export const FriendRequestNotifyItem = ({
         : undefined;
 
   const timeAgo = useRelativeTime(createdAt);
-  const [clickedButton, setClickedButton] = useState<
-    'accept' | 'decline' | null
-  >(null);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [hidden, setHidden] = useState(false);
 
   const handleFriendRequest = useHandleFriendRequestMutation();
 
   const handleRequest = async (accept: boolean) => {
-    setClickedButton(accept ? 'accept' : 'decline');
-
+    if (phase !== 'idle') return;
+    setPhase(accept ? 'loading-accept' : 'loading-decline');
     try {
-      const res = (await handleFriendRequest.mutateAsync({
-        requestId: _id,
-        accept,
-      })) as ApiSuccess;
-      if (res?.success) {
-        toast.success(res?.message || 'Request Handled');
-      }
+      await handleFriendRequest.mutateAsync({ requestId: _id, accept });
+      const settled = accept ? 'accepted' : 'declined';
+      setPhase(settled);
+      setTimeout(() => {
+        setPhase('exiting');
+        setTimeout(() => setHidden(true), 350);
+      }, 750);
     } catch (error: unknown) {
-      setClickedButton(null);
-      const message =
-        error instanceof Error ? error.message : 'An error occurred';
+      setPhase('idle');
+      const message = error instanceof Error ? error.message : 'An error occurred';
       toast.error(message);
     }
   };
@@ -111,48 +110,71 @@ export const FriendRequestNotifyItem = ({
     { error: handleFriendRequest.error, isError: handleFriendRequest.isError },
   ]);
 
-  const busy = !!clickedButton;
+  if (hidden) return null;
+
+  const isLoading = phase === 'loading-accept' || phase === 'loading-decline';
+  const isExiting = phase === 'exiting';
+  const settled = phase === 'accepted' || phase === 'declined';
 
   return (
-    <div className="rounded-2xl px-2 py-2.5 transition hover:bg-gradient-row-hover">
-      <div className="flex items-center gap-2">
-        <AvatarCard avatars={[avatarSrc]} avatarClassName="shadow-none" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="truncate text-sm font-medium text-white">{name}</p>
-            {timeAgo ? (
-              <p className="shrink-0 text-[11px] text-body-300">{timeAgo}</p>
-            ) : null}
+    <div
+      style={{
+        maxHeight: isExiting ? 0 : 120,
+        opacity: isExiting ? 0 : 1,
+        overflow: 'hidden',
+        transition: 'max-height 0.35s ease, opacity 0.25s ease',
+      }}
+    >
+      <div className="rounded-2xl px-2 py-2.5 transition hover:bg-gradient-row-hover">
+        <div className="flex items-center gap-2">
+          <AvatarCard avatars={[avatarSrc]} avatarClassName="shadow-none" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="truncate text-sm font-medium text-white">{name}</p>
+              {timeAgo ? (
+                <p className="shrink-0 text-[11px] text-body-300">{timeAgo}</p>
+              ) : null}
+            </div>
+            {settled ? (
+              <p className={`mt-0.5 text-xs font-medium ${phase === 'accepted' ? 'text-green' : 'text-body-300'}`}>
+                {phase === 'accepted' ? '✓ Connected' : 'Request ignored'}
+              </p>
+            ) : (
+              <p className="mt-0.5 text-xs text-body-700">Wants to connect</p>
+            )}
           </div>
-          <p className="mt-0.5 text-xs text-body-700">Wants to connect</p>
         </div>
-      </div>
 
-      <div className="mt-2.5 flex gap-2 pl-1">
-        <button
-          type="button"
-          onClick={() => handleRequest(true)}
-          disabled={busy}
-          className={`inline-flex h-8 flex-1 items-center justify-center rounded-full text-[12px] font-semibold transition ${
-            clickedButton === 'accept'
-              ? 'bg-gradient-green text-white'
-              : 'bg-green/10 text-green ring-1 ring-inset ring-green/30 hover:bg-green/20 enabled:active:scale-[0.98]'
-          } disabled:cursor-default`}
-        >
-          Accept
-        </button>
-        <button
-          type="button"
-          onClick={() => handleRequest(false)}
-          disabled={busy}
-          className={`inline-flex h-8 flex-1 items-center justify-center rounded-full text-[12px] font-semibold transition ${
-            clickedButton === 'decline'
-              ? 'bg-white/8 text-body-300'
-              : 'text-body-300 ring-1 ring-inset ring-white/12 hover:bg-white/6 hover:text-body enabled:active:scale-[0.98]'
-          } disabled:cursor-default`}
-        >
-          Ignore
-        </button>
+        {!settled ? (
+          <div className="mt-2.5 flex gap-2 pl-1">
+            <button
+              type="button"
+              onClick={() => void handleRequest(true)}
+              disabled={isLoading}
+              className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full bg-green/10 text-[12px] font-semibold text-green ring-1 ring-inset ring-green/30 transition hover:bg-green/20 enabled:active:scale-[0.98] disabled:cursor-default disabled:opacity-60"
+            >
+              {phase === 'loading-accept' ? (
+                <>
+                  <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Accept
+                </>
+              ) : 'Accept'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleRequest(false)}
+              disabled={isLoading}
+              className="inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full text-[12px] font-semibold text-body-300 ring-1 ring-inset ring-white/12 transition hover:bg-white/6 hover:text-body enabled:active:scale-[0.98] disabled:cursor-default disabled:opacity-60"
+            >
+              {phase === 'loading-decline' ? (
+                <>
+                  <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Ignore
+                </>
+              ) : 'Ignore'}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

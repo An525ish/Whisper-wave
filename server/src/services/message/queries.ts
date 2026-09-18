@@ -1,26 +1,23 @@
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
-import type { MessageListItem } from '../../types/index.js';
+import type {
+  GetMessageContextInput,
+  GetMessageContextResult,
+  GetMessagesInput,
+  GetMessagesResult,
+  MessageListItem,
+  MessagePopulatedSender,
+} from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
 import { MESSAGE_PAGE_SIZE } from './shared.js';
 
 export const getMessages = async (
-  userId: string,
-  chatId: string,
-  page: number
-): Promise<{
-  groupChat: boolean;
-  data: MessageListItem[];
-  totalPages: number;
-}> => {
+  input: GetMessagesInput
+): Promise<GetMessagesResult> => {
+  const { userId, chatId, page } = input;
   const skip = (page - 1) * MESSAGE_PAGE_SIZE;
 
-  const [chat, messages, totalMessages] = await Promise.all([
-    chatRepo.findByIdLean(chatId),
-    messageRepo.findByChatPage(chatId, skip, MESSAGE_PAGE_SIZE),
-    messageRepo.countByChat(chatId),
-  ]);
-
+  const chat = await chatRepo.findByIdLean(chatId);
   if (!chat) throw new AppError(400, 'No chat found');
 
   const isMember = chat.members.some(
@@ -30,15 +27,19 @@ export const getMessages = async (
     throw new AppError(401, 'You are not authenticated to access the resource');
   }
 
-  type PopulatedSender = {
-    _id: unknown;
-    name?: string;
-    avatar?: string | { url?: string };
-  };
+  const clearedAt = chat.clearedFor?.find(
+    (e) => e.user.toString() === userId.toString()
+  )?.at;
+
+  const [messages, totalMessages] = await Promise.all([
+    messageRepo.findByChatPage(chatId, skip, MESSAGE_PAGE_SIZE, clearedAt),
+    messageRepo.countByChat(chatId, clearedAt),
+  ]);
+
   type PopulatedChat = { _id: { toString(): string }; groupChat?: boolean };
 
-  const data = [...messages].reverse().map((message) => {
-    const sender = message.sender as unknown as PopulatedSender;
+  const data: MessageListItem[] = [...messages].reverse().map((message) => {
+    const sender = message.sender as unknown as MessagePopulatedSender;
     const populatedChat = message.chat as unknown as PopulatedChat;
     const avatar =
       typeof sender.avatar === 'string'
@@ -47,7 +48,7 @@ export const getMessages = async (
 
     return {
       ...message,
-      chat: populatedChat._id,
+      chat: String(populatedChat._id),
       sender: {
         _id: String(sender._id),
         name: sender.name || 'Unknown',
@@ -64,10 +65,9 @@ export const getMessages = async (
 };
 
 export const getMessageContext = async (
-  userId: string,
-  chatId: string,
-  messageId: string
-): Promise<{ data: MessageListItem[]; page: number; totalPages: number }> => {
+  input: GetMessageContextInput
+): Promise<GetMessageContextResult> => {
+  const { userId, chatId, messageId } = input;
   const msg = await messageRepo.findByIdLean(messageId);
   if (!msg || msg.chat.toString() !== chatId) {
     throw new AppError(404, 'Message not found');
@@ -79,6 +79,6 @@ export const getMessageContext = async (
   ]);
 
   const page = Math.floor(newerCount / MESSAGE_PAGE_SIZE) + 1;
-  const result = await getMessages(userId, chatId, page);
+  const result = await getMessages({ userId, chatId, page });
   return { data: result.data, page, totalPages: result.totalPages };
 };

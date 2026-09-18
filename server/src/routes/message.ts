@@ -6,6 +6,7 @@ import {
   editMessage,
   forwardMessages,
   getMessageContext,
+  getMessageReceipts,
   getMessages,
   jumpToDate,
   listActiveDates,
@@ -14,7 +15,6 @@ import {
   sendGif,
 } from '../controllers/message.js';
 import {
-  attachmentsUpload,
   auth,
   searchLimiter,
   validate,
@@ -66,7 +66,6 @@ messageRouter.post(
 );
 messageRouter.post(
   '/send-attachments',
-  attachmentsUpload,
   validate(sendAttachmentsSchema),
   sendAttachments
 );
@@ -83,3 +82,4 @@ messageRouter.patch(
   editMessage
 );
 messageRouter.delete('/:messageId', deleteMessage);
+messageRouter.get('/receipts/:messageId', getMessageReceipts);
