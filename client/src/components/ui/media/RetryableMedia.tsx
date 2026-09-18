@@ -68,33 +68,37 @@ export const RetryableMediaImage = ({
     );
   }
 
-  // Render shimmer behind + actual img always mounted (opacity-0 → opacity-100 on load).
-  // Avoids the blank flash caused by unmounting the placeholder and mounting the img separately.
+  // Shimmer sits absolutely inside this shell. Call sites that pass only
+  // object-fit sizing on `className` must put box size (aspect/h/w) on
+  // `wrapperClassName`, or absolute inset-0 can climb to a distant relative
+  // ancestor (ProfilePanel) and paint the whole column.
+  const shellClass = ['relative block overflow-hidden', wrapperClassName]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <>
-      {isLoading && (
+    <span className={shellClass} style={style}>
+      {isLoading ? (
         <MediaPlaceholder
           kind={kind}
           variant="loading"
-          className={`absolute inset-0 ${wrapperClassName}`}
+          className="pointer-events-none absolute inset-0 z-0"
           iconClassName={fallbackIconClassName}
           failedIllustrationClassName={failedIllustrationClassName}
-          style={style}
           aria-label={alt ? `Loading ${alt}` : 'Loading media'}
         />
-      )}
+      ) : null}
       <img
         {...props}
         ref={imgRef}
         src={src}
         alt={alt}
-        className={`${className} transition-opacity duration-300 motion-reduce:transition-none ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-        style={style}
+        className={`relative z-1 ${className} transition-opacity duration-300 motion-reduce:transition-none ${isLoading ? 'opacity-0' : 'opacity-100'}`}
         decoding="async"
         onLoad={handleLoad}
         onError={handleError}
       />
-    </>
+    </span>
   );
 };
 

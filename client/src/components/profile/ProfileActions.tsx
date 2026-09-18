@@ -41,14 +41,18 @@ const renderMediaThumbnail = (file: MediaFile) => {
     return (
       <RetryableMediaImage
         url={file.url ?? ''} alt={getMediaDisplayName({ name: file.name, url: file.url, publicId: file.publicId, fileType: file.fileType })}
-        className="w-full aspect-5/4 bg-primary rounded-lg object-cover" fallbackIconClassName="h-10 w-10"
+        wrapperClassName="aspect-5/4 w-full rounded-lg"
+        className="h-full w-full bg-primary object-cover"
+        fallbackIconClassName="h-10 w-10"
       />
     )
   }
   if (kind === 'video') {
     return (
       <RetryableMediaVideo
-        url={file.url ?? ''} className="w-full aspect-5/4 bg-primary object-cover rounded-lg"
+        url={file.url ?? ''}
+        wrapperClassName="aspect-5/4 w-full rounded-lg"
+        className="h-full w-full bg-primary object-cover"
         fallbackIconClassName="h-10 w-10" muted playsInline preload="metadata"
       />
     )
@@ -79,7 +83,7 @@ const ProfileActions = ({
             : mediaFiles.slice(0, 6).map((file, index) => (
                 <button type="button" key={file._id ?? file.publicId ?? file.url ?? index}
                   onClick={() => openImageViewerForFile(file)}
-                  className="overflow-hidden rounded-lg ring-1 ring-border/50 hover:ring-green/40 hover:opacity-90 transition duration-200 p-0"
+                  className="relative overflow-hidden rounded-lg ring-1 ring-border/50 hover:ring-green/40 hover:opacity-90 transition duration-200 p-0"
                 >
                   {renderMediaThumbnail(file)}
                 </button>
