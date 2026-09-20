@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useScrollReveal } from '@/hooks/landing/useScrollReveal';
+import HoloMesh from '@/components/landing/ui/HoloMesh';
 import { cn } from '@/utils/cn';
 
 type SafetyBeat = 0 | 1 | 2;
@@ -365,12 +366,12 @@ const SafetySection = () => {
       aria-label="Safety"
       className="relative isolate overflow-hidden bg-background px-[clamp(16px,4vw,40px)] py-[clamp(80px,14vh,140px)] font-lw-body text-lw-text"
     >
-      <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-        <div className="absolute left-[4%] top-[22%] size-[min(70vw,540px)] rounded-full opacity-75 mix-blend-screen blur-[70px] bg-[radial-gradient(circle,rgba(139,107,255,0.45),transparent_62%)]" />
-        <div className="absolute bottom-[8%] right-[10%] size-[min(55vw,400px)] rounded-full opacity-50 mix-blend-screen blur-[80px] bg-[radial-gradient(circle,rgba(53,224,200,0.3),transparent_66%)]" />
-        <div className="absolute left-1/2 top-0 h-px w-[min(80%,42rem)] -translate-x-1/2 bg-[linear-gradient(90deg,transparent,rgba(182,164,255,0.5),rgba(53,224,200,0.4),transparent)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_40%_40%,transparent_48%,rgba(13,9,18,0.7)_100%)]" />
-      </div>
+      {/* Shared mesh grid — texture carried from the hero, no coloured glow */}
+      <HoloMesh blobs={false} className="absolute inset-0 z-0" />
+      <div
+        className="pointer-events-none absolute left-1/2 top-0 z-[1] h-px w-[min(80%,42rem)] -translate-x-1/2 bg-[linear-gradient(90deg,transparent,rgba(182,164,255,0.5),rgba(53,224,200,0.4),transparent)]"
+        aria-hidden
+      />
       <div className="lw-grain pointer-events-none absolute inset-0 z-[1] opacity-[0.045] mix-blend-overlay" aria-hidden />
 
       <div className="relative z-[2] mx-auto grid w-full max-w-[1200px] items-center gap-[clamp(36px,6vw,72px)] min-[900px]:grid-cols-[0.95fr_1.05fr]">

@@ -1,4 +1,4 @@
-import HeroAtmosphere from '@/components/landing/ui/HeroAtmosphere';
+import HoloMesh from '@/components/landing/ui/HoloMesh';
 import HeroCopy from '@/components/landing/ui/HeroCopy';
 import GlassPane from '@/components/landing/ui/GlassPane';
 import { useMatchArc } from '@/hooks/landing/useMatchArc';
@@ -17,15 +17,18 @@ const DemoSection = () => {
       aria-label="How Whisper Wave works"
       className="relative isolate overflow-hidden bg-background px-[clamp(16px,4vw,40px)] py-[clamp(72px,12vh,120px)] font-lw-body text-lw-text antialiased"
     >
-      <HeroAtmosphere />
+      {/* Shared mesh grid — texture carried from the hero, no coloured glow */}
+      <HoloMesh blobs={false} className="absolute inset-0 z-0" />
+      <div className="lw-grain pointer-events-none absolute inset-0 z-[1] opacity-[0.04] mix-blend-overlay" aria-hidden />
 
-      {/* Section label */}
-      <div className="relative z-[2] mx-auto mb-12 max-w-[1200px] text-center">
-        <p className="font-lw-mono text-[0.72rem] uppercase tracking-[0.26em] text-lw-teal-2">
+      {/* Section label — kept quiet so the rotating headline below leads */}
+      <div className="relative z-[2] mx-auto mb-12 flex max-w-[640px] flex-col items-center gap-2.5 text-center">
+        <p className="inline-flex items-center gap-2 font-lw-mono text-[0.72rem] uppercase tracking-[0.26em] text-lw-teal-2">
+          <span className="size-1.5 rounded-full bg-lw-teal shadow-[0_0_6px_var(--color-lw-teal)] motion-safe:animate-lw-blink" />
           watch it happen
         </p>
-        <h2 className="mt-3 font-lw-display text-[clamp(1.85rem,3.5vw,2.8rem)] font-normal tracking-[-0.03em] text-lw-text">
-          This is the product. Right here.
+        <h2 className="font-lw-body text-[clamp(1rem,1.7vw,1.2rem)] font-normal leading-relaxed text-lw-text-dim">
+          No sign-up to look around — here&apos;s the whole thing, playing out live.
         </h2>
       </div>
 

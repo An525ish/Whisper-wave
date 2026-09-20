@@ -180,38 +180,38 @@ type CopyBlock = {
  */
 const COPY: Record<LeftBeat, CopyBlock> = {
   searching: {
-    kicker: 'anonymous queue',
+    kicker: 'no names here',
     line1: 'Meet a stranger.',
-    line2: 'Ditch the résumé.',
-    accent: 'résumé.',
+    line2: 'No profile to polish.',
+    accent: 'polish.',
     body: [
-      'No bio. No algo. No main-character bit.',
-      'Pick a vibe name, drop in cold,',
-      'talk to whoever shows up next.',
+      'No bio, no feed, no performing.',
+      'Pick a name, drop in, and',
+      'talk to whoever’s there.',
     ],
     cta: 'Find a stranger',
   },
   chatting: {
-    kicker: 'live whisper',
-    line1: 'Say the weird bit.',
-    line2: 'Skip if it’s mid.',
-    accent: 'mid.',
+    kicker: 'a live line',
+    line1: 'Say the real thing.',
+    line2: 'Leave if it’s not it.',
+    accent: 'not it.',
     body: [
-      'No receipts. No feed. No “u up?” lore.',
-      'Vibe if it’s clicking. Skip if not.',
-      'That person can vanish forever.',
+      'No history, no receipts, no pressure.',
+      'Stay while it feels good,',
+      'let go when it doesn’t.',
     ],
     cta: 'Find a stranger',
   },
   spark: {
-    kicker: 'mutual vibe',
-    line1: 'Okay... it’s mutual.',
-    line2: 'Don’t ghost now.',
-    accent: 'ghost',
+    kicker: 'a mutual spark',
+    line1: 'Turns out, it’s mutual.',
+    line2: 'Stay if you want.',
+    accent: 'Stay',
     body: [
-      'Anonymous just became a real person.',
-      'Connect if you want to keep the DM,',
-      'or wave bye and rewrite history.',
+      'The stranger just became someone.',
+      'Keep the conversation if it clicks,',
+      'or let it fade — no trace.',
     ],
     cta: 'Keep this vibe',
   },
@@ -315,7 +315,7 @@ const HeroCopy = ({ phase }: Props) => {
       </div>
 
       {/* Headline — two lines, sized to fill the column */}
-      <h1
+      <h3
         className="relative mb-6 grid w-full font-lw-display text-[clamp(2.65rem,5.2vw,4.05rem)] font-normal leading-[1.06] tracking-[-0.03em] text-lw-text max-[520px]:text-[clamp(2.2rem,9vw,2.9rem)]"
         aria-live="polite"
       >
@@ -340,7 +340,7 @@ const HeroCopy = ({ phase }: Props) => {
             </span>
           );
         })}
-      </h1>
+      </h3>
 
       {/* Subheader — three lines, same box every beat */}
       <div className="relative mb-9 grid w-full max-w-[34rem] max-[900px]:mx-auto">
@@ -369,7 +369,7 @@ const HeroCopy = ({ phase }: Props) => {
         <Link
           to="/auth"
           className={cn(
-            'lw-sheen group inline-flex min-w-[12.5rem] items-center justify-center gap-2.5 rounded-[15px] border border-white-pure/20 px-[26px] py-[15px]',
+            'lw-sheen group inline-flex min-w-[12.5rem] items-center justify-center gap-2.5 rounded-full border border-white-pure/20 px-[26px] py-[15px]',
             'text-[1.02rem] font-semibold text-white-pure no-underline',
             isSpark
               ? 'bg-[linear-gradient(135deg,var(--color-lw-spark)_0%,#017a4a_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_14px_34px_-12px_var(--lw-spark-glow)]'
