@@ -1,5 +1,5 @@
 import LandingNav from '@/components/landing/LandingNav';
-import SplashHero from '@/components/landing/SplashHero';
+import TranscriptHero from '@/components/landing/TranscriptHero';
 import HeroSection from '@/components/landing/HeroSection';
 import SafetySection from '@/components/landing/SafetySection';
 import FinalCTASection from '@/components/landing/FinalCTASection';
@@ -10,7 +10,7 @@ const Landing = () => {
     <div className="landing-page">
       <LandingNav />
       <main>
-        <SplashHero />
+        <TranscriptHero />
         <HeroSection />
         <SafetySection />
         <FinalCTASection />
