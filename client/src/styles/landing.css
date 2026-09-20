@@ -60,15 +60,46 @@
   --animate-lw-bloom: lw-bloom 1.6s ease-out;
   --animate-lw-typing: lw-typing 1.2s ease-in-out infinite;
   --animate-lw-pop: lw-pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-lw-radar: lw-radar 2.1s ease-out infinite;
+  --animate-lw-sweep: lw-sweep 2.8s linear infinite;
+  --animate-lw-merge-left: lw-merge-left 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-lw-merge-right: lw-merge-right 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-lw-fuse-in: lw-fuse-in 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) 0.45s both;
+  --animate-lw-orbit: lw-orbit 32s linear infinite;
+  --animate-lw-shard: lw-shard 2.8s ease-out infinite;
+  --animate-lw-vanish-loop: lw-vanish-loop 4.5s ease-in-out infinite;
+  --animate-lw-shield-draw: lw-shield-draw 1.4s ease-out both;
 }
 
 /* ============================================================
    KEYFRAMES
    ============================================================ */
-@keyframes lw-ripple {
-  0% { transform: scale(0.32); opacity: 0; }
-  12% { opacity: 0.55; }
-  100% { transform: scale(1); opacity: 0; }
+@keyframes lw-orbit {
+  to { transform: rotate(360deg); }
+}
+@keyframes lw-shard {
+  0% {
+    opacity: 0.85;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 24px), var(--dy, -28px)) scale(0.25);
+  }
+}
+@keyframes lw-vanish-loop {
+  0%, 18% { opacity: 1; filter: blur(0); transform: scale(1); }
+  42%, 100% { opacity: 0; filter: blur(5px); transform: scale(0.92); }
+}
+@keyframes lw-shield-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes lw-drift {
+  0%   { opacity: 0;    transform: translateY(0)     scale(0.95); }
+  8%   { opacity: 0.18; }
+  45%  { opacity: 0.12; transform: translateY(-14px) scale(1);    }
+  88%  { opacity: 0.08; }
+  100% { opacity: 0;    transform: translateY(-26px) scale(0.95); }
 }
 @keyframes lw-signal {
   to { stroke-dashoffset: -16; }
@@ -114,13 +145,34 @@
   from { opacity: 0; transform: translateY(6px) scale(0.97); }
   to { opacity: 1; transform: none; }
 }
+@keyframes lw-radar {
+  0% { transform: scale(0.42); opacity: 0.55; }
+  70%, 100% { transform: scale(1); opacity: 0; }
+}
+@keyframes lw-sweep {
+  to { transform: rotate(360deg); }
+}
+@keyframes lw-merge-left {
+  0% { transform: translateX(-58px) scale(1); opacity: 1; }
+  55% { transform: translateX(0) scale(0.92); opacity: 1; }
+  100% { transform: translateX(0) scale(0.55); opacity: 0; }
+}
+@keyframes lw-merge-right {
+  0% { transform: translateX(58px) scale(1); opacity: 1; }
+  55% { transform: translateX(0) scale(0.92); opacity: 1; }
+  100% { transform: translateX(0) scale(0.55); opacity: 0; }
+}
+@keyframes lw-fuse-in {
+  0% { transform: scale(0.4) rotate(-14deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
 
 /* ============================================================
    COMPOSITE UTILITIES
    Single-purpose treatments that would be unreadable inline.
    ============================================================ */
 
-/* Iridescent violet→teal gradient text (brand mark, accents). */
+/* Iridescent violet→teal gradient text (brand accents). */
 @utility lw-iri {
   background: linear-gradient(100deg, var(--color-lw-violet-2), var(--color-lw-teal));
   -webkit-background-clip: text;
@@ -128,9 +180,7 @@
   color: transparent;
 }
 
-/* Frosted glass material: layered translucency, saturating
-   backdrop blur, and a four-stop shadow (depth + inner light).
-   Layout/size/radius stay as utilities on the element. */
+/* Frosted glass — violet liquid-glass chrome (earlier look). */
 @utility lw-glass {
   background: linear-gradient(
     158deg,

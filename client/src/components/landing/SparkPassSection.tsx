@@ -117,6 +117,7 @@ const SparkPassSection = () => {
   return (
     <section
       ref={ref}
+      id="spark"
       className={`spark-pass${isVisible ? ' spark-pass--visible' : ''}`}
       aria-label="Spark Pass"
     >

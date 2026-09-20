@@ -18,3 +18,6 @@ export type ChatMessage = {
   isVibe?: boolean;
   isMutual?: boolean;
 };
+
+/** Hero Match Arc — the page's opening story beats. */
+export type MatchArcPhase = 'searching' | 'matched' | 'chatting' | 'spark';
