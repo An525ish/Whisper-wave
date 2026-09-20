@@ -84,6 +84,8 @@
   --animate-lw-arc: lw-arc 4.5s ease-in-out infinite;
   --animate-lw-orbit-rev: lw-orbit-rev 46s linear infinite;
   --animate-lw-rise: lw-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-lw-focus-l: lw-focus-l 2.6s ease-in infinite;
+  --animate-lw-focus-r: lw-focus-r 2.6s ease-in infinite;
 }
 
 /* ============================================================
@@ -109,6 +111,18 @@
 @keyframes lw-rise {
   from { opacity: 0; transform: translateY(16px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* CTA waves: two light bands sweep in from the left/right edges and converge,
+   focusing on the button's center (`left` animated → no transform conflict). */
+@keyframes lw-focus-l {
+  0% { left: 0%; opacity: 0; }
+  50% { opacity: 0.85; }
+  100% { left: 50%; opacity: 0; }
+}
+@keyframes lw-focus-r {
+  0% { left: 100%; opacity: 0; }
+  50% { opacity: 0.85; }
+  100% { left: 50%; opacity: 0; }
 }
 @keyframes lw-shard {
   0% {

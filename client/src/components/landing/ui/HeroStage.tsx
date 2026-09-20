@@ -86,16 +86,8 @@ const HeroStage = () => (
       ))}
     </div>
 
-    {/* floating glass chips */}
-    <div
-      className="pointer-events-none absolute right-[2%] top-[8%] motion-safe:animate-lw-float"
-      aria-hidden
-    >
-      <div className="flex items-center gap-1.5 rounded-full border border-lw-line bg-lw-ink/75 px-3 py-1.5 font-lw-body text-[0.68rem] font-semibold tracking-[0.02em] text-lw-text-dim backdrop-blur-md shadow-[0_10px_24px_rgba(0,0,0,0.35)]">
-        <span className="size-1.5 rounded-full bg-lw-teal shadow-[0_0_6px_var(--color-lw-teal)] motion-safe:animate-lw-blink" />
-        quietly online
-      </div>
-    </div>
+    {/* floating glass chip (the "quietly online" presence now sits on the
+        top-right crowd avatar itself — see AnonCrowd) */}
     <div
       className="pointer-events-none absolute bottom-[24%] left-[-2%] motion-safe:animate-lw-float"
       style={{ animationDelay: '1.4s' }}
