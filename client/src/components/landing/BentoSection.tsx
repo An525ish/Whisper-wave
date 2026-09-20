@@ -1,4 +1,6 @@
 import { useScrollReveal } from '@/hooks/landing/useScrollReveal';
+import HoloMesh from '@/components/landing/ui/HoloMesh';
+import IncognitoGlyph from '@/components/landing/ui/IncognitoGlyph';
 import { cn } from '@/utils/cn';
 
 /**
@@ -52,20 +54,6 @@ const Tag = ({ children, className }: { children: React.ReactNode; className?: s
   </span>
 );
 
-/* Anonymous identity tile — reused from the loop's visual vocabulary. */
-const Monogram = ({ tone, children }: { tone: 'violet' | 'teal'; children: React.ReactNode }) => (
-  <span
-    className={cn(
-      'grid size-10 place-items-center rounded-xl font-lw-mono text-sm font-bold',
-      tone === 'violet'
-        ? 'bg-lw-violet/15 text-lw-violet-2 shadow-[0_0_0_1px_rgba(139,107,255,0.3)]'
-        : 'bg-lw-teal/15 text-lw-teal-2 shadow-[0_0_0_1px_rgba(53,224,200,0.3)]',
-    )}
-  >
-    {children}
-  </span>
-);
-
 /* ── Tile 1 · Zero profile (violet, tall left pillar) ────────────────────── */
 const NON_IDENTITY = ['real name', 'photo', 'phone number', 'socials'] as const;
 
@@ -76,6 +64,19 @@ const ZeroProfileTile = ({ visible }: { visible: boolean }) => (
     className="min-[960px]:col-start-1 min-[960px]:row-start-1 min-[960px]:row-span-2"
   >
     <Tag className="text-lw-violet-2/80">zero profile</Tag>
+
+    {/* The "you" here — a faceless avatar with a redacted name card */}
+    <div className="mt-6 flex items-center gap-3.5" aria-hidden>
+      <span className="lw-rim relative grid size-14 shrink-0 place-items-center rounded-2xl border border-lw-violet/40 bg-lw-violet/10">
+        <IncognitoGlyph color="#b6a4ff" className="size-[56%]" />
+      </span>
+      <div className="flex flex-col gap-2">
+        <span className="relative h-2.5 w-28 overflow-hidden rounded-full bg-lw-violet/25">
+          <span className="absolute inset-0 bg-[repeating-linear-gradient(90deg,rgba(139,107,255,0.55)_0_6px,transparent_6px_11px)]" />
+        </span>
+        <span className="h-2 w-16 rounded-full bg-white-pure/10" />
+      </div>
+    </div>
 
     {/* Everything you DON'T hand over — struck-through identity chips */}
     <div className="mt-6 flex flex-wrap gap-2" aria-hidden>
@@ -112,6 +113,17 @@ const DISSOLVE_BRIGHT = new Set([1, 5, 11]); // the three payoff words
 const GoneTile = ({ visible }: { visible: boolean }) => (
   <Tile visible={visible} delay={80} className="min-[960px]:col-start-2 min-[960px]:row-start-1">
     <Tag>skip = gone forever</Tag>
+
+    {/* a stranger dissolving — no trace */}
+    <div className="mt-4 flex items-center gap-3" aria-hidden>
+      <span className="grid size-11 place-items-center rounded-full border border-white-pure/15 bg-white-pure/[0.04] motion-safe:animate-lw-vanish-loop">
+        <IncognitoGlyph color="#b6a4ff" className="size-[58%]" />
+      </span>
+      <span className="font-lw-mono text-[0.6rem] uppercase tracking-[0.14em] text-lw-text-faint">
+        no trace left
+      </span>
+    </div>
+
     <p
       className="mt-5 font-lw-display text-[clamp(1.35rem,2.4vw,1.85rem)] font-medium leading-[1.32] tracking-[-0.01em]"
       aria-label="They vanish. Real stakes. Pure magic. No second chances. Just this moment."
@@ -144,15 +156,32 @@ const ConnectionsTile = ({ visible }: { visible: boolean }) => (
     <Tag className="text-lw-spark/80">real connections</Tag>
 
     {/* two anonymous identities → the mutual spark → a real DM */}
-    <div className="mt-7 flex flex-col items-center gap-3" aria-hidden>
-      <div className="flex items-center gap-3">
-        <Monogram tone="violet">M</Monogram>
-        <span className="grid size-9 place-items-center rounded-full border border-lw-spark/40 bg-lw-spark/[0.12] text-sm text-lw-spark [filter:drop-shadow(0_0_8px_var(--lw-spark-glow))]">
-          ✦
+    <div className="mt-7 flex flex-col items-center gap-4" aria-hidden>
+      <div className="relative flex items-center">
+        {/* connecting thread behind the pair */}
+        <span className="absolute inset-x-6 top-1/2 h-px -translate-y-1/2 bg-[linear-gradient(90deg,rgba(139,107,255,0.5),rgba(1,195,109,0.6),rgba(53,224,200,0.5))]" />
+
+        {/* violet anonymous */}
+        <span className="lw-rim relative grid size-12 place-items-center rounded-2xl border border-lw-violet/40 bg-lw-violet/10">
+          <IncognitoGlyph color="#b6a4ff" className="size-[56%]" />
         </span>
-        <Monogram tone="teal">B</Monogram>
+
+        {/* the mutual spark */}
+        <span className="relative z-[1] mx-1.5 grid size-10 place-items-center">
+          <span className="absolute inset-0 rounded-full border border-lw-spark/40 motion-safe:animate-lw-radar" />
+          <span className="grid size-9 place-items-center rounded-full border border-lw-spark/50 bg-lw-spark/[0.14] text-[0.95rem] text-lw-spark [filter:drop-shadow(0_0_10px_var(--lw-spark-glow))]">
+            ✦
+          </span>
+        </span>
+
+        {/* teal you */}
+        <span className="lw-rim relative grid size-12 place-items-center rounded-2xl border border-lw-teal/40 bg-lw-teal/10">
+          <IncognitoGlyph color="#86f2e4" className="size-[56%]" />
+        </span>
       </div>
+
       <span className="inline-flex items-center gap-1.5 rounded-full border border-lw-spark/30 bg-lw-spark/10 px-3 py-1 font-lw-mono text-[0.62rem] uppercase tracking-[0.12em] text-lw-spark">
+        <span className="size-1 rounded-full bg-lw-spark shadow-[0_0_6px_var(--lw-spark-glow)]" />
         DM unlocked
       </span>
     </div>
@@ -248,31 +277,42 @@ const BentoSection = () => {
       aria-label="Why Whisper Wave"
       className="relative isolate overflow-hidden bg-background px-[clamp(16px,4vw,40px)] py-[clamp(72px,12vh,140px)] font-lw-body text-lw-text"
     >
-      {/* Hairline seam from the section above */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-lw-line)_30%,rgba(139,107,255,0.35)_50%,var(--color-lw-line)_70%,transparent)]" />
+      {/* Shared mesh grid — texture carried from the hero, no coloured glow */}
+      <HoloMesh blobs={false} className="absolute inset-0 z-0" />
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-px bg-[linear-gradient(90deg,transparent,var(--color-lw-line)_30%,rgba(139,107,255,0.35)_50%,var(--color-lw-line)_70%,transparent)]"
+        aria-hidden
+      />
+      <div className="lw-grain pointer-events-none absolute inset-0 z-[1] opacity-[0.045] mix-blend-overlay" aria-hidden />
 
-      {/* Ambient glow — violet upper-left, teal lower-right (the journey again) */}
-      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
-        <div className="absolute left-[12%] top-[8%] size-[40vw] max-w-[560px] rounded-full opacity-40 mix-blend-screen blur-[90px] bg-[radial-gradient(circle,rgba(139,107,255,0.4),transparent_64%)]" />
-        <div className="absolute bottom-[4%] right-[8%] size-[36vw] max-w-[520px] rounded-full opacity-30 mix-blend-screen blur-[90px] bg-[radial-gradient(circle,rgba(53,224,200,0.32),transparent_66%)]" />
-      </div>
+      <header className="relative z-[2] mx-auto mb-[clamp(36px,6vh,64px)] max-w-[1180px]">
+        {/* big faint "not-equal" watermark — literally "built different" */}
+        <span
+          className="pointer-events-none absolute -top-10 right-0 select-none font-lw-display text-[10rem] italic leading-none text-lw-violet-2/[0.07] max-[720px]:hidden"
+          aria-hidden
+        >
+          ≠
+        </span>
 
-      <header className="relative mx-auto mb-[clamp(36px,6vh,64px)] max-w-[1180px]">
-        <p className="flex items-center gap-3 font-lw-mono text-[0.72rem] uppercase tracking-[0.22em] text-lw-text-faint">
-          <span className="h-px w-8 bg-lw-line" />
+        <p className="relative flex items-center gap-3 font-lw-mono text-[0.72rem] uppercase tracking-[0.22em] text-lw-text-faint">
+          <span className="inline-flex gap-1" aria-hidden>
+            <span className="size-1.5 rounded-full bg-lw-violet-2/80" />
+            <span className="size-1.5 rounded-full bg-lw-teal/80 motion-safe:animate-lw-blink" />
+          </span>
           built different
         </p>
-        <h2 className="mt-4 font-lw-display text-[clamp(2.1rem,5vw,3.4rem)] font-medium leading-[1.05] tracking-[-0.02em] text-lw-text">
+        <h2 className="relative mt-4 font-lw-display text-[clamp(2.1rem,5vw,3.4rem)] font-medium leading-[1.05] tracking-[-0.02em] text-lw-text">
           Why Whisper Wave.
         </h2>
-        <p className="mt-3 max-w-[52ch] text-[clamp(0.95rem,1.6vw,1.08rem)] leading-relaxed text-lw-text-dim">
-          No profiles to perform, no feed to scroll, no score to chase. Every choice here protects one thing — a real moment between two strangers.
+        <p className="relative mt-4 max-w-[52ch] text-[clamp(0.95rem,1.6vw,1.08rem)] leading-relaxed text-lw-text-dim">
+          No profiles to perform, no feed to scroll, no score to chase. Every choice here protects one
+          thing — a real moment between two strangers.
         </p>
       </header>
 
       <div
         ref={ref}
-        className="relative mx-auto grid max-w-[1180px] gap-4 min-[720px]:grid-cols-2 min-[960px]:grid-cols-[1fr_1.4fr_1fr]"
+        className="relative z-[2] mx-auto grid max-w-[1180px] gap-4 min-[720px]:grid-cols-2 min-[960px]:grid-cols-[1fr_1.4fr_1fr]"
       >
         <ZeroProfileTile visible={isVisible} />
         <GoneTile visible={isVisible} />
