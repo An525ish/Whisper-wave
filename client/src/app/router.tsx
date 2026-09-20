@@ -91,6 +91,13 @@ const appRoutes = [
     element: <Navigate to="/" replace />,
   },
   {
+    path: '/spark-pass',
+    lazy: async () => {
+      const module = await import('@/pages/SparkPass');
+      return { Component: module.default };
+    },
+  },
+  {
     path: '/admin',
     element: <AdminBootstrap />,
     children: [
