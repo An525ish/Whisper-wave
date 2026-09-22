@@ -15,17 +15,17 @@ const FinalCTASection = () => {
       </div>
 
       <div className="final-cta__inner">
-        <p className="final-cta__eyebrow">the last wave</p>
+        <p className="final-cta__eyebrow">someone&apos;s out there</p>
         <h2 className="final-cta__title font-display">
-          Ready to{' '}
-          <span className="final-cta__accent">disappear</span>?
+          Somebody out there{' '}
+          <span className="final-cta__accent">gets it</span>.
         </h2>
         <p className="final-cta__sub">
-          Pick a vibe name. Find someone. If it&apos;s a vibe — keep them.
+          Pick a name, say what you mean, and see who&apos;s on the other end. If it&apos;s a vibe, you keep them.
         </p>
 
         <Link to="/auth" className="final-cta__button">
-          <span>Find Someone</span>
+          <span>Meet a stranger</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path
               d="M5 12H19M12 5L19 12L12 19"
