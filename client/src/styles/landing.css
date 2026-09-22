@@ -20,6 +20,10 @@
   --color-lw-ink: #0d0912;
   --color-lw-ink-2: #140e20;
 
+  /* Unified landing canvas — the deep plum shared with the footer
+     (one knob for the whole page's base; sections paint `bg-lw-base`). */
+  --color-lw-base: #1a1520;
+
   --color-lw-violet: #8b6bff;
   --color-lw-violet-2: #b6a4ff;
   --color-lw-violet-deep: #5a3fd6;
@@ -86,6 +90,12 @@
   --animate-lw-rise: lw-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-lw-focus-l: lw-focus-l 2.6s ease-in infinite;
   --animate-lw-focus-r: lw-focus-r 2.6s ease-in infinite;
+}
+
+/* Unified deep base behind every landing section (insurance against any
+   sliver between sections; sections still paint their own `bg-lw-base`). */
+.landing-page {
+  background-color: var(--color-lw-base);
 }
 
 /* ============================================================
@@ -354,4 +364,47 @@
   .lw-sheen:hover::after {
     transform: translateX(120%);
   }
+}
+
+/* ============================================================
+   LEGAL PROSE — Terms / Privacy / Report abuse readable column
+   ============================================================ */
+.lw-legal section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.lw-legal h2 {
+  font-family: var(--font-lw-display);
+  font-size: clamp(1.25rem, 2.2vw, 1.5rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--color-lw-text);
+}
+
+.lw-legal p {
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.lw-legal ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-left: 1.2rem;
+}
+
+.lw-legal li {
+  list-style: disc;
+  line-height: 1.65;
+}
+
+.lw-legal a {
+  color: var(--color-lw-teal-2);
+  text-decoration: none;
+}
+
+.lw-legal a:hover {
+  text-decoration: underline;
 }

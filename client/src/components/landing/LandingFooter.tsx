@@ -1,19 +1,37 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+// Explore points at landing section ids. `href` is kept only as a no-JS
+// fallback; clicks are intercepted so the URL stays clean (no #hash) — we
+// smooth-scroll on the landing, or navigate home carrying the target in
+// router state when clicked from another page.
 const EXPLORE_LINKS = [
-  { id: 'how', label: 'How it works', href: '#how-it-works' },
-  { id: 'why', label: 'Why Whisper Wave', href: '#why' },
-  { id: 'safety', label: 'Safety', href: '#safety' },
+  { id: 'how', label: 'How it works' },
+  { id: 'why', label: 'Why Whisper Wave' },
+  { id: 'safety', label: 'Safety' },
 ] as const;
 
 const LEGAL_LINKS = [
-  { id: 'terms', label: 'Terms', href: '#terms' },
-  { id: 'privacy', label: 'Privacy', href: '#privacy' },
-  { id: 'report', label: 'Report abuse', href: '#report' },
+  { id: 'terms', label: 'Terms', to: '/terms' },
+  { id: 'privacy', label: 'Privacy', to: '/privacy' },
+  { id: 'report', label: 'Report abuse', to: '/report' },
 ] as const;
 
-const LandingFooter = () => (
-  <footer className="landing-footer">
+const LandingFooter = () => {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  const goToSection = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    if (pathname === '/') {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // navigate home; Landing reads state.scrollTo and scrolls after mount
+      navigate('/', { state: { scrollTo: id } });
+    }
+  };
+
+  return (
+    <footer className="landing-footer">
     <div className="landing-footer__inner">
       <div className="landing-footer__top">
         {/* brand + a one-line mission for a little substance */}
@@ -37,7 +55,12 @@ const LandingFooter = () => (
           <nav className="landing-footer__group" aria-label="Explore">
             <span className="landing-footer__grouptitle">Explore</span>
             {EXPLORE_LINKS.map((link) => (
-              <a key={link.id} href={link.href} className="landing-footer__link">
+              <a
+                key={link.id}
+                href={`/#${link.id}`}
+                onClick={(e) => goToSection(e, link.id)}
+                className="landing-footer__link"
+              >
                 {link.label}
               </a>
             ))}
@@ -46,9 +69,9 @@ const LandingFooter = () => (
           <nav className="landing-footer__group" aria-label="Legal">
             <span className="landing-footer__grouptitle">Legal</span>
             {LEGAL_LINKS.map((link) => (
-              <a key={link.id} href={link.href} className="landing-footer__link">
+              <Link key={link.id} to={link.to} className="landing-footer__link">
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
@@ -59,7 +82,8 @@ const LandingFooter = () => (
         <p className="landing-footer__copy">© 2026 Whisper Wave</p>
       </div>
     </div>
-  </footer>
-);
+    </footer>
+  );
+};
 
 export default LandingFooter;

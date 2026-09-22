@@ -98,6 +98,27 @@ const appRoutes = [
     },
   },
   {
+    path: '/terms',
+    lazy: async () => {
+      const module = await import('@/pages/legal/Terms');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/privacy',
+    lazy: async () => {
+      const module = await import('@/pages/legal/Privacy');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/report',
+    lazy: async () => {
+      const module = await import('@/pages/legal/ReportAbuse');
+      return { Component: module.default };
+    },
+  },
+  {
     path: '/admin',
     element: <AdminBootstrap />,
     children: [

@@ -24,7 +24,7 @@ const focusRing =
 const TranscriptHero = () => (
   <section
     aria-label="Whisper Wave — talk to a stranger, anonymously"
-    className="relative isolate flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-[clamp(16px,5vw,56px)] pb-16 pt-24 font-lw-body text-lw-text antialiased"
+    className="relative isolate flex min-h-screen flex-col items-center justify-center overflow-hidden bg-lw-base px-[clamp(16px,5vw,56px)] pb-16 pt-24 font-lw-body text-lw-text antialiased"
   >
     {/* ── Atmosphere ─────────────────────────────────────────────── */}
     <HoloMesh className="absolute inset-0 z-0" />
