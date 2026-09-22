@@ -26,6 +26,17 @@ const MOMENTS = [
   'a question that feels too dumb to ask',
 ] as const;
 
+// Each unsaid thing comes from a different stranger — vibe-name handles (never
+// real identities) in the brand's style, with staggered "time ago" so the
+// thread reads like a live room, not one person posting five times.
+const VOICES = [
+  { handle: 'midnight_fox', time: 'just now' },
+  { handle: 'paper_moth', time: '2m' },
+  { handle: 'quiet_tide', time: '4m' },
+  { handle: 'echo_ghost', time: '7m' },
+  { handle: 'slow_comet', time: '11m' },
+] as const;
+
 const MomentsSection = () => {
   const { ref, isVisible } = useScrollReveal<HTMLElement>(0.15);
 
@@ -150,7 +161,7 @@ const MomentsSection = () => {
                     {moment}
                   </span>
                   <span className="pl-1 font-lw-mono text-[0.58rem] tracking-[0.1em] text-lw-text-faint">
-                    anon_████ · just now
+                    {VOICES[i].handle} · {VOICES[i].time}
                   </span>
                 </span>
               </div>
