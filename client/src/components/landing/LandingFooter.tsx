@@ -1,9 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
-// Explore points at landing section ids. `href` is kept only as a no-JS
-// fallback; clicks are intercepted so the URL stays clean (no #hash) — we
-// smooth-scroll on the landing, or navigate home carrying the target in
-// router state when clicked from another page.
 const EXPLORE_LINKS = [
   { id: 'how', label: 'How it works' },
   { id: 'why', label: 'Why Whisper Wave' },
@@ -25,7 +21,6 @@ const LandingFooter = () => {
     if (pathname === '/') {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      // navigate home; Landing reads state.scrollTo and scrolls after mount
       navigate('/', { state: { scrollTo: id } });
     }
   };

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import LandingNav from '@/components/landing/LandingNav';
 import TranscriptHero from '@/components/landing/TranscriptHero';
 import MomentsSection from '@/components/landing/MomentsSection';
@@ -9,19 +9,26 @@ import SafetySection from '@/components/landing/SafetySection';
 import FinalCTASection from '@/components/landing/FinalCTASection';
 import LandingFooter from '@/components/landing/LandingFooter';
 
+type LandingState = { scrollTo?: string } | null;
+
 const Landing = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // When arriving from a footer "Explore" link on another page, scroll to the
-  // requested section once mounted — no #hash is put in the URL.
   useEffect(() => {
-    const id = (location.state as { scrollTo?: string } | null)?.scrollTo;
+    const id = (location.state as LandingState)?.scrollTo;
     if (!id) return;
+
+    // Wipe from history immediately — prevents re-scroll on refresh.
+    // Use '/' not '.' — relative "." on an index route becomes "?index".
+    navigate('/', { replace: true, state: null });
+
     const t = window.setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 80);
     return () => window.clearTimeout(t);
-  }, [location.state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount — state is read from location at mount time
 
   return (
     <div className="landing-page">
