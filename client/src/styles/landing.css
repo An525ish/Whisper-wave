@@ -288,23 +288,12 @@
   color: transparent;
 }
 
-/* Frosted glass — violet liquid-glass chrome (earlier look). */
-@utility lw-glass {
-  background: linear-gradient(
-    158deg,
-    rgba(255, 255, 255, 0.13),
-    rgba(255, 255, 255, 0.03) 42%,
-    rgba(139, 107, 255, 0.06)
-  );
-  backdrop-filter: blur(26px) saturate(155%);
-  -webkit-backdrop-filter: blur(26px) saturate(155%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow:
-    0 40px 90px -30px rgba(6, 3, 16, 0.9),
-    0 12px 40px -14px rgba(90, 63, 214, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-}
+/* NOTE: `lw-glass` moved out of `@utility` into `@layer components` below.
+   A content-detected `@utility` was getting tree-shaken from the production
+   build (the cards rendered with no fill), whereas a `@layer components` class
+   is always emitted — same as `.lw-rim`/`.lw-sheen`. It also now carries a
+   semi-opaque plum base so the panel reads as filled even if `backdrop-filter`
+   is inactive. */
 
 /* Fine-grain film to break up the gradients. */
 @utility lw-grain {
@@ -316,6 +305,28 @@
    Need a pseudo-element, so they can't be a flat utility.
    ============================================================ */
 @layer components {
+  /* Frosted glass — violet liquid-glass chrome. A semi-opaque plum base sits
+     UNDER the white sheen so the panel is visibly filled even where
+     backdrop-filter can't run; the blur enriches it where supported. */
+  .lw-glass {
+    background:
+      linear-gradient(
+        158deg,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.03) 42%,
+        rgba(139, 107, 255, 0.06)
+      ),
+      linear-gradient(158deg, rgba(42, 33, 56, 0.9), rgba(26, 20, 36, 0.94));
+    backdrop-filter: blur(26px) saturate(155%);
+    -webkit-backdrop-filter: blur(26px) saturate(155%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+      0 40px 90px -30px rgba(6, 3, 16, 0.9),
+      0 12px 40px -14px rgba(90, 63, 214, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  }
+
   /* Iridescent 1px rim drawn with the mask-composite border trick.
      Host element must be `relative` and set its own border-radius. */
   .lw-rim::after {
