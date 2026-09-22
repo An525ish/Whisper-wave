@@ -15,7 +15,7 @@ const DemoSection = () => {
     <section
       id="how"
       aria-label="How Whisper Wave works"
-      className="relative isolate overflow-hidden bg-background px-[clamp(16px,4vw,40px)] py-[clamp(72px,12vh,120px)] font-lw-body text-lw-text antialiased"
+      className="relative isolate overflow-hidden bg-lw-base px-[clamp(16px,4vw,40px)] py-[clamp(72px,12vh,120px)] font-lw-body text-lw-text antialiased"
     >
       {/* Shared mesh grid — texture carried from the hero, no coloured glow */}
       <HoloMesh blobs={false} className="absolute inset-0 z-0" />

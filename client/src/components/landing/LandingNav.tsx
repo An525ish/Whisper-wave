@@ -22,7 +22,7 @@ const LandingNav = () => {
         'fixed inset-x-0 top-0 z-50 flex justify-center border-b font-lw-body',
         'px-[clamp(16px,4vw,40px)] transition-[background-color,backdrop-filter,border-color,padding,box-shadow] duration-[400ms] ease-out',
         scrolled
-          ? 'border-lw-line-soft bg-background/80 py-[10px] shadow-[0_16px_40px_-24px_rgba(0,0,0,0.9)] backdrop-blur-[18px] backdrop-saturate-[1.4]'
+          ? 'border-lw-line-soft bg-lw-base/80 py-[10px] shadow-[0_16px_40px_-24px_rgba(0,0,0,0.9)] backdrop-blur-[18px] backdrop-saturate-[1.4]'
           : 'border-transparent py-[16px]',
       )}
     >
