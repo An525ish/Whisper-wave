@@ -5,11 +5,11 @@ import {
   type RouteObject,
 } from 'react-router-dom';
 import { lazy, Suspense, type ReactNode } from 'react';
-import { SocketProvider } from '@/socket/SocketProvider';
-import { useAuthStore } from '@/stores/auth';
+import { SocketProvider } from '@/shared/lib/socket/SocketProvider';
+import { useAuthStore } from '@/features/auth';
 import AdminWrapper from '@/layout/AdminWrapper';
-import AppLoader from '@/components/ui/loader/AppLoader';
-import { useAdminMeQuery } from '@/hooks/admin';
+import AppLoader from '@/shared/components/ui/loader/AppLoader';
+import { useAdminMeQuery } from '@/features/admin';
 import RouteError from '@/app/RouteError';
 
 const Landing = lazy(() => import('@/pages/Landing'));
@@ -140,42 +140,42 @@ const appRoutes = [
           {
             path: 'dashboard',
             lazy: async () => {
-              const module = await import('@/components/admin/dashboard/Dashboard');
+              const module = await import('@/features/admin/components/dashboard/Dashboard');
               return { Component: module.default };
             },
           },
           {
             path: 'users',
             lazy: async () => {
-              const module = await import('@/components/admin/users/Users');
+              const module = await import('@/features/admin/components/users/Users');
               return { Component: module.default };
             },
           },
           {
             path: 'messages',
             lazy: async () => {
-              const module = await import('@/components/admin/messages/Messages');
+              const module = await import('@/features/admin/components/messages/Messages');
               return { Component: module.default };
             },
           },
           {
             path: 'groups',
             lazy: async () => {
-              const module = await import('@/components/admin/groups/Groups');
+              const module = await import('@/features/admin/components/groups/Groups');
               return { Component: module.default };
             },
           },
           {
             path: 'activity',
             lazy: async () => {
-              const module = await import('@/components/admin/activity/Activity');
+              const module = await import('@/features/admin/components/activity/Activity');
               return { Component: module.default };
             },
           },
           {
             path: 'media',
             lazy: async () => {
-              const module = await import('@/components/admin/attachments/Attachments');
+              const module = await import('@/features/admin/components/attachments/Attachments');
               return { Component: module.default };
             },
           },

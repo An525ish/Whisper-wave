@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import LandingNav from '@/components/landing/LandingNav';
-import TranscriptHero from '@/components/landing/TranscriptHero';
-import MomentsSection from '@/components/landing/MomentsSection';
-import HeroSection from '@/components/landing/HeroSection';
-import BentoSection from '@/components/landing/BentoSection';
-import SafetySection from '@/components/landing/SafetySection';
-import FinalCTASection from '@/components/landing/FinalCTASection';
-import LandingFooter from '@/components/landing/LandingFooter';
+import { LandingNav } from '@/features/landing';
+import { TranscriptHero } from '@/features/landing';
+import { MomentsSection } from '@/features/landing';
+import { HeroSection } from '@/features/landing';
+import { BentoSection } from '@/features/landing';
+import { SafetySection } from '@/features/landing';
+import { FinalCTASection } from '@/features/landing';
+import { LandingFooter } from '@/features/landing';
 
 type LandingState = { scrollTo?: string } | null;
 

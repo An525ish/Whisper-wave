@@ -1,4 +1,4 @@
-import LegalPage from '@/components/landing/LegalPage';
+import { LegalPage } from '@/features/landing';
 
 const ReportAbuse = () => (
   <LegalPage

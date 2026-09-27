@@ -1,5 +1,5 @@
-import AdminLogin from '@/components/auth/AdminLoginForm';
-import AuthShell from '@/components/auth/AuthShell';
+import { AdminLoginForm as AdminLogin } from '@/features/auth';
+import { AuthShell } from '@/features/auth';
 
 export default function AdminAuth() {
   return (

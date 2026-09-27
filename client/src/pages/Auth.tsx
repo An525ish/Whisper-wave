@@ -1,7 +1,7 @@
-import AuthShell from '@/components/auth/AuthShell';
-import ForgotPassword from '@/components/auth/ForgotPasswordForm';
-import Login from '@/components/auth/LoginForm';
-import Register from '@/components/auth/RegisterForm';
+import { AuthShell } from '@/features/auth';
+import { ForgotPasswordForm as ForgotPassword } from '@/features/auth';
+import { LoginForm as Login } from '@/features/auth';
+import { RegisterForm as Register } from '@/features/auth';
 import { useState } from 'react';
 
 const PRODUCT_VOICE =

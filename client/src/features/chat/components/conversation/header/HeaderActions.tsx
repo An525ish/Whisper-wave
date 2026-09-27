@@ -1,0 +1,239 @@
+import PhoneCallIcon from '@/shared/components/ui/icons/PhoneCall';
+import ThreeDotsIcon from '@/shared/components/ui/icons/ThreeDots';
+import VideoCallIcon from '@/shared/components/ui/icons/VideoCall';
+import LeaveGroupIcon from '@/shared/components/ui/icons/LeaveGroup';
+import MembersIcon from '@/shared/components/ui/icons/Members';
+import SelectMessagesIcon from '@/shared/components/ui/icons/SelectMessages';
+import SearchIcon from '@/shared/components/ui/icons/Search';
+import ClearChatIcon from '@/shared/components/ui/icons/ClearChat';
+import TrashIcon from '@/shared/components/ui/icons/Trash';
+import { AccountBar } from '@/features/profile';
+import { type ReactNode, type RefObject } from 'react';
+
+const menuBtnClass =
+  'grid h-8 w-8 place-items-center rounded-full border text-body transition md:h-10 md:w-10';
+
+/** Filled icons (3-dot menu). */
+const menuIconClass =
+  'h-4 w-4 fill-current transition md:h-5 md:w-5';
+
+/** Stroke bell — slightly larger on mobile so it matches filled icons optically. */
+const headerBellIconClass =
+  'h-[1.125rem] w-[1.125rem] stroke-[1.75] text-body-300 transition md:h-5 md:w-5 md:stroke-[1.5]';
+
+type DefaultActionsProps = {
+  isDotsMenu: boolean;
+  searchOpen: boolean;
+  buttonRef: RefObject<HTMLButtonElement | null>;
+  menuRef: RefObject<HTMLDivElement | null>;
+  groupChat?: boolean;
+  canClearChat: boolean;
+  isLeaveGroupLoading: boolean;
+  isCreator?: boolean;
+  onToggle: () => void;
+  onOpenSearch: () => void;
+  onToggleSelectMode?: () => void;
+  onClearChat?: () => void;
+  onAddMember: () => void;
+  onLeaveGroup: () => void;
+  onDeleteGroup?: () => void;
+  onDeleteChat?: () => void;
+  onUnfriend?: () => void;
+  isDeleteGroupLoading?: boolean;
+  isDeleteChatLoading?: boolean;
+  isUnfriendLoading?: boolean;
+};
+
+type MenuRowProps = {
+  label: string;
+  icon: ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+  tone?: 'default' | 'accent' | 'danger';
+};
+
+const chipTone = {
+  default: 'bg-white/6 text-body-700 group-hover:bg-white/10 group-hover:text-body',
+  accent: 'bg-green/15 text-green group-hover:bg-green/25',
+  danger: 'bg-white/6 text-body-700 group-hover:bg-red/15 group-hover:text-red',
+} as const;
+
+const rowTone = {
+  default: 'text-body-700 hover:bg-white/6 hover:text-body',
+  accent: 'text-body hover:bg-green/10 hover:text-green',
+  danger: 'text-body-700 hover:bg-red/10 hover:text-red',
+} as const;
+
+const MenuRow = ({
+  label,
+  icon,
+  onClick,
+  disabled,
+  tone = 'default',
+}: MenuRowProps) => (
+  <button
+    type="button"
+    disabled={disabled}
+    onClick={onClick}
+    className={`group flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm transition disabled:opacity-45 ${rowTone[tone]}`}
+  >
+    <span
+      className={`grid h-6 w-6 shrink-0 place-items-center rounded-md transition ${chipTone[tone]}`}
+    >
+      {icon}
+    </span>
+    <span className={tone === 'accent' ? 'font-medium' : 'font-normal'}>
+      {label}
+    </span>
+  </button>
+);
+
+const HeaderActions = ({
+  isDotsMenu,
+  searchOpen,
+  buttonRef,
+  menuRef,
+  groupChat,
+  canClearChat,
+  isLeaveGroupLoading,
+  isCreator,
+  onToggle,
+  onOpenSearch,
+  onToggleSelectMode,
+  onClearChat,
+  onAddMember,
+  onLeaveGroup,
+  onDeleteGroup,
+  onDeleteChat,
+  onUnfriend,
+  isDeleteGroupLoading,
+  isDeleteChatLoading,
+  isUnfriendLoading,
+}: DefaultActionsProps) => (
+  <>
+    <div className="md:hidden">
+      <AccountBar
+        variant="notification"
+        overlayClassName="fixed inset-0 z-50"
+        notificationButtonClassName={`${menuBtnClass} border-white/15 text-body-300 active:bg-primary/40`}
+        notificationIconClassName={headerBellIconClass}
+      />
+    </div>
+
+    <button
+      type="button"
+      disabled
+      className={`${menuBtnClass} hidden border-border group hover:border-green-light md:grid`}
+      aria-label="Voice call (coming soon)"
+    >
+      <PhoneCallIcon className="h-5 w-5 transition group-hover:fill-green" />
+    </button>
+    <button
+      type="button"
+      disabled
+      className={`${menuBtnClass} hidden border-border group hover:border-green-light lg:grid`}
+      aria-label="Video call (coming soon)"
+    >
+      <VideoCallIcon className="h-5 w-5 transition group-hover:fill-green" />
+    </button>
+
+    <button
+      type="button"
+      ref={buttonRef}
+      onClick={onToggle}
+      className={`${menuBtnClass} ${
+        searchOpen || isDotsMenu
+          ? 'border-green/50 bg-green/10 text-green'
+          : 'border-white/15 group hover:border-green-light hover:text-white'
+      }`}
+      aria-label="Chat options"
+      aria-expanded={isDotsMenu}
+    >
+      <ThreeDotsIcon className={`${menuIconClass} group-hover:fill-green group-hover:text-green`} />
+    </button>
+
+    {isDotsMenu ? (
+      <div
+        ref={menuRef}
+        role="menu"
+        className="absolute right-0 top-12 z-40 w-48 origin-top-right animate-menu-pop overflow-hidden rounded-2xl border border-white/12 bg-[linear-gradient(165deg,rgba(48,38,60,0.97)_0%,rgba(28,22,38,0.98)_100%)] p-1 shadow-[0_18px_40px_rgba(0,0,0,0.45),0_0_0_1px_rgba(1,195,109,0.08)] backdrop-blur-xl md:right-2 md:top-14 motion-reduce:animate-none"
+      >
+        <div className="pointer-events-none absolute inset-x-3 top-0 h-px bg-linear-to-r from-transparent via-green/35 to-transparent" />
+
+        <MenuRow
+          label="Search chat"
+          tone="accent"
+          onClick={onOpenSearch}
+          icon={<SearchIcon className="h-3.5 w-3.5" />}
+        />
+
+        <div className="mx-2 my-0.5 h-px bg-white/8" />
+
+        <MenuRow
+          label="Select messages"
+          onClick={onToggleSelectMode}
+          icon={<SelectMessagesIcon className="h-3.5 w-3.5" />}
+        />
+
+        {canClearChat ? (
+          <MenuRow
+            label="Clear chat"
+            tone="danger"
+            onClick={onClearChat}
+            icon={<ClearChatIcon className="h-3.5 w-3.5" />}
+          />
+        ) : null}
+
+        {groupChat ? (
+          <>
+            <div className="mx-2 my-0.5 h-px bg-white/8" />
+            <MenuRow
+              label="Members"
+              onClick={onAddMember}
+              icon={<MembersIcon className="h-3.5 w-3.5" />}
+            />
+            <MenuRow
+              label="Leave group"
+              tone="danger"
+              onClick={onLeaveGroup}
+              disabled={isLeaveGroupLoading}
+              icon={<LeaveGroupIcon className="h-3 w-3" />}
+            />
+            {isCreator && onDeleteGroup ? (
+              <MenuRow
+                label="Delete group"
+                tone="danger"
+                onClick={onDeleteGroup}
+                disabled={isDeleteGroupLoading}
+                icon={<TrashIcon className="h-3.5 w-3.5" />}
+              />
+            ) : null}
+          </>
+        ) : (
+          <>
+            {onDeleteChat ? (
+              <MenuRow
+                label="Delete chat"
+                tone="danger"
+                onClick={onDeleteChat}
+                disabled={isDeleteChatLoading}
+                icon={<TrashIcon className="h-3.5 w-3.5" />}
+              />
+            ) : null}
+            {onUnfriend ? (
+              <MenuRow
+                label="Unfriend"
+                tone="danger"
+                onClick={onUnfriend}
+                disabled={isUnfriendLoading}
+                icon={<LeaveGroupIcon className="h-3 w-3" />}
+              />
+            ) : null}
+          </>
+        )}
+      </div>
+    ) : null}
+  </>
+);
+
+export default HeaderActions;

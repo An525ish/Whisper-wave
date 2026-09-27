@@ -1,456 +1,324 @@
-# Whisper-wave Client — Claude Code Standards
+# Whisper-wave Client — Engineering Standards
 
-This file governs all code written or modified in `client/src/`. Read it in
-full before making any change. These rules match the `.cursorrules` file but
-with examples drawn from the actual codebase.
+**Read this file in full before writing or modifying anything in `client/src/`.**
+These rules are the single source of truth for how this codebase is structured
+and written. They are non-negotiable. If a change would violate a rule, fix the
+change — do not bend the rule. If a rule genuinely needs to change, update this
+file (and `.cursorrules`) in the same change so docs and code never drift.
+
+The mirror file `.cursorrules` contains the condensed version of these rules for
+Cursor. Keep the two in sync.
 
 ---
 
-## Project Snapshot — Feature-Slice Structure
+## 0. Golden Rules (the short version)
 
-```
+1. **Feature-sliced architecture.** Business code lives in `src/features/<domain>/`.
+   Generic, domain-agnostic code lives in `src/shared/`. Routes live in `src/pages/`.
+2. **One-way dependencies.** `pages → features → shared`. Never backwards, never sideways.
+   `shared/` must never import from `features/`. Features talk to each other only
+   through a feature's public API (`features/<domain>/index.ts`), and rarely.
+3. **Components render; hooks decide; utils compute; api fetches; stores hold state.**
+   No data fetching, business logic, or side effects inside a component body.
+4. **Every file earns its place.** You can look at any file and answer: *who owns
+   this, what may it depend on, and why would it change?* If you can't, it's in the
+   wrong folder.
+5. **Modern, current, idiomatic.** Use the latest stable patterns of the tools below.
+   No legacy React idioms, no deprecated APIs, no class components.
+6. **Max 350 lines per file.** Over the limit → extract.
+7. **Types, constants, and side-effect-free utils are never inlined ad hoc.** They
+   have designated homes (below).
+
+---
+
+## 1. Tech Stack — Use It the Modern Way
+
+This project runs a current, cutting-edge stack. Write code that matches it; do
+not reach for older patterns.
+
+| Concern            | Tool (pinned in package.json)              | Use it for |
+|--------------------|--------------------------------------------|------------|
+| UI                 | React 19 + TypeScript                      | Function components + hooks only |
+| Build/dev          | Vite 8                                      | ESM, `@/` alias, code-splitting |
+| Styling            | Tailwind CSS v4 (CSS-first `@theme`)        | Utilities; no runtime CSS-in-JS |
+| Server state       | TanStack Query v5                           | All fetching, caching, mutations |
+| Client state       | Zustand v5                                  | Cross-component UI/session state |
+| Forms + validation | react-hook-form v7 + Zod v4                 | All forms; Zod is the schema source of truth |
+| Routing            | react-router-dom v7                         | Route table in `app/router.tsx` |
+| Realtime           | socket.io-client v4                         | Via `shared/lib/socket` + `useSocketEvent` |
+| Dates              | dayjs                                       | No manual date math |
+| Types              | TypeScript (strict)                         | No `any`; prefer inference + `unknown` |
+
+Modern expectations that follow from this stack:
+- **Server data is never stored in `useState`/`useEffect`.** Use TanStack Query
+  (`useQuery`/`useMutation`/`useInfiniteQuery`). `useEffect` is for syncing with
+  non-React systems only (subscriptions, DOM, sockets), never for fetching.
+- **Forms use react-hook-form + a Zod schema** with `@hookform/resolvers`. The Zod
+  schema is the single definition of the shape and its validation.
+- **Prefer derivation over state.** Compute during render; reach for `useMemo`
+  only for provably expensive work. Don't mirror props/query data into state.
+- **Prefer composition and small components** over large conditional trees.
+- **Accessibility is a requirement, not a nice-to-have** (see §9).
+
+---
+
+## 2. Folder Structure — The Canonical Tree
+
+```text
 src/
-  features/
-    admin/
-      api/index.ts
-      components/         Dashboard.tsx, Groups.tsx, Messages.tsx, Users.tsx
-      hooks/index.ts
-      queryKeys.ts
-      store.ts
-      types.ts            ← ALL admin types live here
-    auth/
-      api/index.ts
-      components/         LoginForm.tsx, RegisterForm.tsx, ...
-      store.ts
-      validators.ts
-    chat/
-      api/index.ts
-      components/
-        dialogs/          AddFriendsPanel.tsx, CreateGroupPanel.tsx, ...
-        group/            AddMemberDialog.tsx
-        list/             ChatList.tsx, ChatListItem.tsx, ...
-        message/          ChatBox.tsx, MessageBubble.tsx, MessageContextMenu.tsx, ...
-        panel/            ChatHeader.tsx, ChatInput.tsx, ChatsViewPanel.tsx, ...
-          header/         DefaultActions.tsx, SelectModeActions.tsx
-          search/         SearchDatePicker.tsx, SearchFilters.tsx, SearchResultItem.tsx
-      hooks/
-        panelTypes.ts     ← reference file for domain type placement in hooks folder
-        useAddMember.ts
-        useChatMessages.ts
-        useChatQueries.ts
-        useChatScroll.ts
-        useChatSearch.ts
-        useDeleteActions.ts
-        useMessageActions.tsx
-        useMessageMutations.ts
-        useMessageQueries.ts
-        useMessageSelection.ts
-        ...
-      queryKeys.ts
-      stores/
-        chatClipboard.ts
-        chatClipboardUtils.ts
-        presence.ts
-      utils/
-        messageUtils.ts
-        unread.ts
-    notifications/
-      components/         NotificationDialog.tsx, NotificationItem.tsx, ...
-      store.ts
-    profile/
-      components/
-        shared-content/   FilesList.tsx, LinksList.tsx, MediaGrid.tsx
-                          types.ts  ← local scope types for shared-content sub-slice
-      hooks/              useProfilePanel.ts, useSharedContent.ts
-      store.ts
-  shared/
-    components/
-      attachment-menu/    AttachmentMenu.tsx, FilePreview.tsx
-      charts/             AreaChart.tsx, BarChart.tsx, DoughnutChart.tsx, ...
-      context-menu/       ContextMenu.tsx
-      emoji-menu/         EmojiMenu.tsx
-      icons/              AddMember.tsx, ArrowDown.tsx, ... (all SVG icon components)
-      image-viewer/       ImageViewer.tsx, ImageViewerNav.tsx, ...
-      loader/             AppLoader.tsx
-      media/              MediaPlaceholder.tsx, RetryableMedia.tsx
-      sidebar/            Sidebar.tsx, SidebarItem.tsx
-      skeletons/          AvatarSkeleton.tsx, ChatMessageSkeleton.tsx, SkeletonBox.tsx
-      tables/             Table.tsx
-      ui/
-        AvatarCard.tsx, AvatarInput.tsx, Button.tsx, DialogWrapper.tsx,
-        DotsMenu.tsx, Dropdown.tsx, EmptyState.tsx, InputField.tsx, ...
-        carousel/         Carousel.tsx
-        loaders/          CircularLoader.tsx
-        modal/            Modal.tsx, confirmation-modal/ConfirmationModal.tsx
-        swipeable-tabs/   Tab.tsx, TabView.tsx
-    constants/
-      app.ts              BASE_URL, MAX_FILES, SEARCH_DEBOUNCE_MS, ...
-      routes.ts
-      socketEvents.ts
-      uploadConfig.ts
-    hooks/
-      useAsyncMutation.ts
-      useContextMenu.ts
-      useError.ts
-      useMediaQuery.ts
-      useRetryableMediaSrc.ts
-      useSocketEvent.ts
-    types/
-      index.ts            barrel re-exports
-      user.ts             User, Avatar, ApiSuccess, MessageNotification, AdminStats
-      icon.ts             IconProps
-      ui.ts               (target) shared UI shape types — TabItem, EmptyStateConfig, etc.
-      media.ts            (target) MediaFile, PhotoFilter, SharedLink
-      socket.ts           (target) socket payload types — NewMessagePayload, etc.
-  pages/
-    Auth.tsx, Chat.tsx, Home.tsx, PageNotFound.tsx
-    admin/AdminAuth.tsx
-  layout/
-    AppWrapper.tsx, AdminWrapper.tsx
-  app/
-    providers.tsx, queryClient.ts, router.tsx, RouteError.tsx
-  socket/
-    SocketProvider.tsx
-  api/
-    client.ts             axios instance
+├── app/                      # Composition root ONLY. No business logic.
+│   ├── router.tsx            #   route table (lazy-load heavy areas: admin, landing)
+│   ├── providers.tsx         #   QueryClientProvider, SocketProvider, Helmet, Toaster
+│   ├── queryClient.ts
+│   └── RouteError.tsx
+│
+├── pages/                    # Route entries. THIN. Compose features; hold no logic.
+│   ├── Home.tsx  Chat.tsx  Auth.tsx  Landing.tsx  SparkPass.tsx  PageNotFound.tsx
+│   ├── admin/AdminAuth.tsx
+│   └── legal/Privacy.tsx  Terms.tsx  ReportAbuse.tsx
+│
+├── layout/                   # App-shell layout wrappers (AppWrapper, AdminWrapper)
+│
+├── features/                 # THE BUSINESS FUNCTIONALITY — one folder per domain
+│   └── <domain>/             #   auth · chat · admin · profile · notifications · landing
+│       ├── api/              #   axios calls for this domain — no logic, no UI
+│       ├── components/       #   this domain's React components (may nest by sub-area)
+│       ├── hooks/            #   useXxxQueries / useXxxMutations / useXxx
+│       ├── stores/           #   zustand store(s) for this domain  (or store.ts)
+│       ├── utils/            #   pure, side-effect-free functions  (or utils.ts)
+│       ├── constants.ts      #   domain constants (or constants/)
+│       ├── types.ts          #   ALL data-model types for this domain
+│       └── index.ts          #   PUBLIC API — the ONLY entry other slices may import
+│
+├── shared/                   # Domain-AGNOSTIC. Must NOT import from features/.
+│   ├── components/
+│   │   ├── ui/               #   primitives: Button, InputField, Modal, Dropdown, ...
+│   │   ├── icons/  charts/  skeletons/  media/  image-viewer/  sidebar/  tables/
+│   ├── hooks/                #   useDebounce, useMediaQuery, useContextMenu, useSocketEvent
+│   ├── lib/                  #   framework glue to the outside world
+│   │   ├── api/client.ts     #     the axios instance + interceptors
+│   │   └── socket/           #     SocketProvider + socket client
+│   ├── constants/            #   app.ts, routes.ts, socketEvents.ts, uploadConfig.ts
+│   ├── types/                #   user.ts, icon.ts, media.ts, socket.ts, ui.ts, index.ts (barrel)
+│   └── utils/                #   cn, helpers, fileFormat, imageCompression, highlight, ...
+│
+├── assets/                   # static images/svgs imported by code
+├── styles/                   # global css (index.css entry, landing.css tokens)
+├── main.tsx                  # app bootstrap
+└── vite-env.d.ts
 ```
+
+**No other top-level folders under `src/`.** No feature code in `pages/`, `app/`,
+or `layout/`. No domain code in `shared/`.
+
+### Which layer does a new file belong to?
+- Is it specific to one product area (chat, auth, admin, profile, notifications, landing)?
+  → `features/<that-domain>/…`
+- Is it generic and reusable by any area, knowing nothing about the domain?
+  → `shared/…`
+- Is it a URL the user navigates to? → `pages/…` (and it just composes features).
+- Is it app wiring (router/providers/query client)? → `app/…`
 
 ---
 
-## Rule 1 — Folder Structure
+## 3. Dependency Rules — This *is* the Architecture
 
-New features go under `features/{domain}/` with the full slice:
-`api/`, `components/`, `hooks/`, `stores/`, `utils/`, `types.ts`.
+Folders are cosmetic; these boundaries are the real design. Enforce them.
 
-Do not create feature folders anywhere else. Do not put business logic in
-`pages/`. Page components are routing entry points only.
+```text
+        pages  ──▶  features  ──▶  shared
+                      │              ▲
+                      └──────────────┘   (features may use shared; never the reverse)
+```
+
+1. **`shared/` never imports from `features/` or `pages/`.** If something in
+   `shared/` needs domain knowledge, it isn't shared — move it into the owning
+   feature. A `Button` knows nothing about auth, chat, or notifications.
+2. **A feature never imports another feature's internals.** Cross-feature use goes
+   through the target feature's public API only: `import { useSession } from '@/features/auth'`
+   — never `import ... from '@/features/auth/hooks/useAuthMutations'`. Keep such
+   cross-feature edges few; if two features share a lot, the shared part probably
+   belongs in `shared/`.
+3. **`pages/` compose features and layout; they contain no business logic.** A page
+   wires components together and reads route params. If a page grows logic, push it
+   into a feature hook.
+4. **Truly cross-cutting things live in `shared/`**: the `User` type, the session
+   hook, `ApiSuccess`, socket payload types, the axios client, UI primitives.
+
+> If you catch yourself importing `@/features/x/...` from inside `shared/`, stop —
+> that is the #1 architecture smell and always means the file is misplaced.
 
 ---
 
-## Rule 2 — Type & Interface Placement
+## 4. Feature Public API — `index.ts`
 
-### CORRECT — Props type in component file (only allowed type)
-
-```tsx
-// features/chat/components/message/MessageBubble.tsx
-type Props = {
-  message: ChatMessage;
-  isMine: boolean;
-};
-
-const MessageBubble = ({ message, isMine }: Props) => {
-  ...
-};
-```
-
-### CORRECT — Private Params interface in a hook file
+Every feature exposes a barrel `index.ts` that re-exports only what the outside
+world is allowed to use (pages and, rarely, other features):
 
 ```ts
-// features/chat/hooks/useMessageActions.tsx
-interface Params {
-  chatId: string | undefined;
-  user: SocketUser;
-  canModerateGroup: boolean;
-  allMessages: ChatMessage[];
-  selectedIds: Set<string>;
-  setSelectedIds: React.Dispatch<React.SetStateAction<Set<string>>>;
-}
+// features/auth/index.ts
+export { default as LoginForm } from './components/LoginForm';
+export { useSession } from './hooks/useSession';
+export { useAuthStore } from './store';
+export type { AuthUser } from './types';
 ```
 
-### CORRECT — Data model types in the domain types.ts
-
-```ts
-// features/chat/hooks/panelTypes.ts  ← reference for this pattern
-// All ChatMessage, ChatRow, MessagesPage, etc. live here, not in components.
-export type ChatMessage = { _id: string; content?: string; ... };
-```
-
-### WRONG — Reusable type defined in a component file
-
-```tsx
-// BAD: MessageContextMenu.tsx exports MessageContextMenuOption
-export type MessageContextMenuOption = {
-  id: string;
-  label: string;
-  onClick: () => void;
-};
-// This type is used by other modules — it must live in features/chat/types.ts
-```
-
-### WRONG — Type defined in a hook and imported elsewhere
-
-```ts
-// BAD: defining ChatRow in a hook and importing it from there
-// Move it to features/chat/types.ts or shared/types/
-```
-
-### Where each type lives in this project
-
-| Type                                        | File                                        |
-|---------------------------------------------|---------------------------------------------|
-| `ChatMessage`, `ChatRow`, `MessagesPage`    | `features/chat/hooks/panelTypes.ts`         |
-| `NewMessagePayload`, `ChatReadPayload`, ... | `shared/types/socket.ts` (move from panelTypes when refactoring) |
-| `AdminUserRow`, `AdminGroupRow`             | `features/admin/types.ts`                   |
-| `User`, `Avatar`, `ApiSuccess`              | `shared/types/user.ts`                      |
-| `IconProps`                                 | `shared/types/icon.ts`                      |
-| `MediaFile`, `PhotoFilter`, `SharedLink`    | `shared/types/media.ts`                     |
-| Shared UI shapes (tab items, empty states)  | `shared/types/ui.ts`                        |
+- Outsiders import from `@/features/auth` — never reach into subpaths.
+- Inside the same feature, use relative imports (`./`, `../`) freely; do not import
+  your own feature via `@/features/...`.
+- Do not export a feature's internal helpers/components that no one outside needs.
 
 ---
 
-## Rule 3 — Constants & Config
+## 5. Type & Interface Placement — STRICT
 
-### CORRECT
+- The only type allowed inside a `.tsx` component file is its own `type Props = {…}`,
+  directly above the component. Nothing else.
+- A hook `.ts` file may contain a single private `interface Params {…}` for its own
+  argument bag. All other types live in a types file.
+- All reusable/data-model types live in:
 
-```ts
-// shared/constants/app.ts
-export const SEARCH_DEBOUNCE_MS = 450 as const;
-export const MAX_FILES = 5 as const;
-export const MAX_GROUP_NAME_LENGTH = 60 as const;
-```
+| Type category               | Home                              |
+|-----------------------------|-----------------------------------|
+| Domain data models          | `features/<domain>/types.ts`      |
+| Shared UI shapes (TabItem…) | `shared/types/ui.ts`              |
+| Media/file types            | `shared/types/media.ts`           |
+| Socket payloads             | `shared/types/socket.ts`          |
+| `User`, `Avatar`, `ApiSuccess` | `shared/types/user.ts`         |
+| `IconProps`                 | `shared/types/icon.ts`            |
 
-```ts
-// shared/constants/uploadConfig.ts
-export const UPLOAD_CONFIG = { ... } as const;
-```
-
-### WRONG
-
-```tsx
-// BAD — magic number directly in a component or hook
-const timer = setTimeout(fn, 1200);
-const MAX = 5;
-```
+Never export a reusable type from a component or hook file and import it elsewhere.
+Prefer `type` aliases; use `interface` only for the private hook `Params` bag or
+when declaration-merging is genuinely needed. No `any` — use `unknown` + narrowing.
 
 ---
 
-## Rule 4 — Separation of Concerns
+## 6. Separation of Concerns — Where Each Concern Lives
 
-### CORRECT — component calls hooks, renders JSX only
+| Concern                | Where                                            |
+|------------------------|--------------------------------------------------|
+| Rendering / JSX        | component (`.tsx`) — presentational, no fetching |
+| Data fetching          | `hooks/useXxxQueries.ts` (TanStack `useQuery`)   |
+| Mutations              | `hooks/useXxxMutations.ts` (TanStack `useMutation`) |
+| Derived/computed UI    | `hooks/useXxx.ts`                                |
+| Pure transforms        | `utils/…` (no hooks, no toast, no navigate, no I/O) |
+| HTTP calls             | `features/<domain>/api/…` (calls the shared axios client) |
+| Query keys             | `features/<domain>/hooks/queryKeys.ts`           |
+| Global client state    | `stores/…` (zustand)                             |
+| Route wiring           | `app/router.tsx`                                 |
+
+A component body should read like a description of the UI: call hooks at the top,
+return JSX. If there is a `useEffect` doing a fetch, a `.then()`, or a non-trivial
+`useCallback` with business rules, extract it to a hook.
 
 ```tsx
+// GOOD — component calls hooks, renders JSX
 const ChatList = () => {
   const { chats, isLoading } = useChatQueries();
   const { handleSelect } = useChatListActions();
-
-  return (
-    <ul>
-      {chats.map((chat) => (
-        <ChatListItem key={chat._id} chat={chat} onSelect={handleSelect} />
-      ))}
-    </ul>
-  );
+  if (isLoading) return <ChatListSkeleton />;
+  return <ul>{chats.map((c) => <ChatListItem key={c._id} chat={c} onSelect={handleSelect} />)}</ul>;
 };
 ```
 
-### WRONG — business logic inside a component
-
-```tsx
-// BAD
-const ChatList = () => {
-  const [chats, setChats] = useState([]);
-  useEffect(() => {
-    fetchChats().then(setChats);
-  }, []);
-  const handleSelect = useCallback((id: string) => {
-    // logic here
-  }, []);
-  ...
-};
-// Extract useEffect + useState to useChatQueries hook
-// Extract handleSelect to useChatListActions hook
-```
-
-| Concern              | Where it lives                              |
-|----------------------|---------------------------------------------|
-| Data fetching        | `hooks/useXxxQueries.ts` (react-query)      |
-| Mutations            | `hooks/useXxxMutations.ts`                  |
-| Derived/computed UI  | `hooks/useXxx.ts`                           |
-| Pure transforms      | `utils/xxxUtils.ts`                         |
-| API calls            | `api/index.ts`                              |
-| Global client state  | `stores/xxx.ts` (zustand)                   |
+Pure utilities have **no side effects** — no `toast`, no `navigate`, no network,
+no hooks. Side effects belong in hooks or event handlers.
 
 ---
 
-## Rule 5 — File Size
+## 7. State Management Rules
 
-350 lines maximum. Over the limit: extract.
-- Large component → split into sub-components in the same `components/` folder.
-- Large hook → split into focused hooks (e.g., `useChatScroll` + `useChatMessages`).
-
-Reference: `features/chat/hooks/` already demonstrates this correctly — scroll,
-messages, queries, mutations, and selection are separate files.
+- **Server/remote data → TanStack Query only.** Never `useState` + `useEffect` +
+  `fetch`. Co-locate query keys in `hooks/queryKeys.ts`. Use `useInfiniteQuery`
+  for paginated feeds, `useMutation` with cache updates/invalidation for writes.
+- **Client/UI/session state → Zustand.** One store per concern; selectors to avoid
+  needless re-renders. Do not put server data in Zustand.
+- **Local, ephemeral state → `useState`/`useReducer`** inside the component.
+- **Realtime → `useSocketEvent`** (in `shared/hooks`) subscribing to constants from
+  `shared/constants/socketEvents.ts`; socket handlers update the Query cache/stores,
+  they don't hold their own copies of data.
 
 ---
 
-## Rule 6 — Pure Utilities — No Side Effects
+## 8. Forms & Validation
+
+Every form uses **react-hook-form + Zod**:
 
 ```ts
-// CORRECT — features/chat/utils/messageUtils.ts
-export const groupMessagesByDay = (messages: ChatMessage[]): TimelineItem[] => {
-  // pure transform, no toast, no navigate, no hooks
-};
+const schema = z.object({ email: z.string().email(), password: z.string().min(8) });
+type Values = z.infer<typeof schema>;
+const form = useForm<Values>({ resolver: zodResolver(schema) });
 ```
 
-```ts
-// WRONG
-export const deleteAndNotify = (id: string) => {
-  deleteMessage(id);
-  toast.success('Deleted'); // NO — side effects not allowed in utils
-  navigate('/chat');        // NO
-};
-```
+- The Zod schema is the single source of truth for shape + rules; derive the TS
+  type with `z.infer`. Keep schemas in the feature (`features/<domain>/…`).
+- No manual `onChange` validation ladders; let RHF + Zod handle it.
 
 ---
 
-## Rule 7 — Context Menu Pattern
+## 9. Modern Coding Standards
 
-Reference implementation: `shared/hooks/useContextMenu.ts` +
-`shared/components/context-menu/ContextMenu.tsx`
+- **React 19, function components + hooks only.** No class components, no legacy
+  lifecycle, no `defaultProps`. Respect the Rules of Hooks (top-level, unconditional).
+- **`useEffect` is a last resort** and only for synchronizing with external systems
+  (DOM, sockets, subscriptions). Never fetch data in it. Always clean up.
+- **Prefer derivation, composition, and early returns** over deep conditionals.
+- **Async/await with real error handling.** No unhandled promises; surface failures
+  through Query error states / `useError`, not swallowed catches.
+- **Accessibility:** semantic elements; every interactive control is keyboard-usable
+  and focusable; icon-only buttons get `aria-label`; decorative SVGs get `aria-hidden`;
+  visible focus states; respect `prefers-reduced-motion` for animations.
+- **No `console.log/warn/error` in committed code.** Remove them; do not comment out.
+- **No dead code, no commented-out blocks, no unused exports.**
+- **Path alias `@/`** for all cross-layer imports; relative imports only within the
+  same feature/folder.
+- **File size ≤ 350 lines.** Over → split: big component into sub-components in the
+  same `components/` folder; big hook into focused hooks.
+- **Naming:**
 
-```ts
-// CORRECT — each option carries its own onClick
-const options: ContextMenuOption[] = [
-  { label: 'Reply',   icon: <ReplyIcon />,   onClick: () => onReply(message._id) },
-  { label: 'Copy',    icon: <CopyIcon />,    onClick: () => onCopy(message._id) },
-  { label: 'Delete',  icon: <TrashIcon />,   onClick: () => onDelete(message._id), danger: true },
-];
-```
-
-```ts
-// WRONG — string dispatch
-const handleMenuAction = (action: string) => {
-  if (action === 'reply') onReply(id);  // NO
-};
-```
-
-`ContextMenu` and `MessageContextMenu` already follow the correct pattern —
-use them as the reference.
-
----
-
-## Rule 8 — Exports from Component Files
-
-```tsx
-// CORRECT — only export the component (and Props if a direct parent needs it)
-type Props = { label: string };
-const Button = ({ label }: Props) => <button>{label}</button>;
-export default Button;
-// Props type export is acceptable only when the direct parent file imports it.
-```
-
-```tsx
-// WRONG — MessageContextMenu.tsx currently exports MessageContextMenuOption
-// That type is used in other files, so it must move to features/chat/types.ts
-export type MessageContextMenuOption = { ... }; // move this out
-```
+| Thing              | Convention           | Example                        |
+|--------------------|----------------------|--------------------------------|
+| Components/files   | PascalCase           | `MessageBubble.tsx`            |
+| Hooks              | camelCase + `use`    | `useChatScroll.ts`             |
+| Utilities          | camelCase            | `groupMessagesByDay`           |
+| Scalar constants   | SCREAMING_SNAKE_CASE | `MAX_FILES`, `SEARCH_DEBOUNCE_MS` |
+| Folders            | kebab-case           | `context-menu/`, `image-viewer/` |
+| Types/type files   | PascalCase / camelCase file | `types.ts`, `ChatMessage` |
 
 ---
 
-## Rule 9 — Custom Hooks
+## 10. Playbooks
 
-```ts
-// CORRECT
-export const useChatScroll = (...) => { ... };   // features/chat/hooks/useChatScroll.ts
-export const useContextMenu = (...) => { ... };  // shared/hooks/useContextMenu.ts
-```
+### Add a new feature
+1. Create `features/<domain>/` with `api/ components/ hooks/ stores/ utils/ types.ts index.ts`
+   (omit folders you genuinely don't need yet — don't scaffold empty ones).
+2. Put all data-model types in `types.ts` immediately.
+3. Export the feature's public surface from `index.ts`.
+4. Register the route in `app/router.tsx` (lazy-load if heavy).
+5. New socket events → add name constants to `shared/constants/socketEvents.ts`.
 
-```ts
-// WRONG — not prefixed with 'use'
-export const chatScroll = (...) => { ... };
-export const getChatScroll = (...) => { ... };
-```
+### Add a shared component
+1. Place it in the right `shared/components/<category>/` folder (create a kebab-case
+   category folder if none fits).
+2. Local `type Props = {…}` in the file; reusable shapes go to `shared/types/ui.ts`.
+3. It must stay domain-agnostic — receives data via props, never imports a feature.
 
-All hooks in `features/chat/hooks/` are correct references: `useChatMessages`,
-`useChatScroll`, `useDeleteActions`, `useMessageSelection`, etc.
-
----
-
-## Rule 10 — Naming Conventions
-
-| Thing              | Convention             | Example                              |
-|--------------------|------------------------|--------------------------------------|
-| Components         | PascalCase             | `MessageBubble.tsx`, `AvatarCard.tsx`|
-| Hooks              | camelCase + `use`      | `useChatScroll.ts`                   |
-| Utility functions  | camelCase              | `formatFileSize`, `groupMessagesByDay`|
-| Constants (scalar) | SCREAMING_SNAKE_CASE   | `MAX_FILES`, `SEARCH_DEBOUNCE_MS`    |
-| Constants (object) | SCREAMING_SNAKE_CASE   | `UPLOAD_CONFIG`                      |
-| Folders            | kebab-case             | `context-menu/`, `image-viewer/`, `swipeable-tabs/` |
-| Type/util files    | camelCase or lowercase | `types.ts`, `messageUtils.ts`        |
+### Before you consider a change done
+- No file exceeds 350 lines; no `console.*`; no `any`; no `shared → features` import.
+- Run **`npm run typecheck`** and **`npm run lint`** — both must pass.
+- New logic that isn't trivially obvious gets a test or a manual-verification note.
 
 ---
 
-## Rule 11 — No console.log
+## 11. Anti-Patterns — Do Not Do These
 
-No `console.log`, `console.warn`, or `console.error` in committed code.
-Delete them, do not comment them out.
+- Fetching in `useEffect`/`useState` instead of TanStack Query.
+- Business logic, `.then()` chains, or heavy `useCallback`s inside a component.
+- A `shared/` file importing from `@/features/...`.
+- Reaching into another feature's internals instead of its `index.ts`.
+- Reusable types exported from component/hook files.
+- Magic numbers/strings inline instead of `shared/constants` or a feature constant.
+- Files over 350 lines; God-components; barrel files that re-export everything.
+- `console.*`, commented-out code, `any`, deprecated React APIs, class components.
 
----
 
-## Rule 12 — Admin Types Isolation
-
-```ts
-// CORRECT — features/admin/types.ts
-export type AdminUserRow = { _id: string; name?: string; ... };
-export type AdminGroupRow = { _id: string; members?: unknown[]; ... };
-export type AdminMessageRow = { _id: string; content?: string; ... };
-```
-
-```tsx
-// WRONG — AdminUserRow defined inside Users.tsx or any component
-type AdminUserRow = { ... }; // NO — move to features/admin/types.ts
-```
-
----
-
-## How to Add a New Feature
-
-1. Create `src/features/{domain}/` with the full slice structure:
-   ```
-   features/my-feature/
-     api/index.ts       # API calls
-     components/        # .tsx files, one component per file
-     hooks/             # useXxx.ts files
-     stores/            # zustand stores if needed
-     utils/             # pure functions
-     types.ts           # ALL types for this feature
-   ```
-2. Put all data-model types in `types.ts` immediately — do not define them
-   inline in components or hooks.
-3. Register the route in `src/app/router.tsx`.
-4. If the feature adds socket events, add event name constants to
-   `shared/constants/socketEvents.ts`.
-5. If the feature adds upload constraints, add to `shared/constants/uploadConfig.ts`.
-
----
-
-## How to Add a New Shared Component
-
-1. Create the file in the appropriate sub-folder of `shared/components/`.
-   - UI primitives → `shared/components/ui/`
-   - Icons → `shared/components/icons/`
-   - Skeletons → `shared/components/skeletons/`
-   - New category → create a new `kebab-case/` folder
-2. Define the component's props as a local `type Props = { ... }` inside the
-   component file.
-3. If the props shape is reused by other components, extract the type to
-   `shared/types/ui.ts` and import it from there.
-4. Use `IconProps` from `shared/types/icon.ts` for all SVG icon components.
-5. Export only the component as the default export.
-
----
-
-## Reference Files
-
-| Pattern                        | Reference file                                          |
-|--------------------------------|--------------------------------------------------------|
-| Domain types placement         | `features/chat/hooks/panelTypes.ts`                    |
-| Private hook Params interface  | `features/chat/hooks/useMessageActions.tsx` (Params)   |
-| Context menu options with onClick | `shared/hooks/useContextMenu.ts` + `shared/components/context-menu/ContextMenu.tsx` |
-| Zustand store                  | `features/chat/stores/chatClipboard.ts`                |
-| Pure utility functions         | `features/chat/utils/messageUtils.ts`                  |
-| Admin types isolation          | `features/admin/types.ts`                              |
-| Shared scalar constants        | `shared/constants/app.ts`                              |
-| Socket event constants         | `shared/constants/socketEvents.ts`                     |
-| Shared user types              | `shared/types/user.ts`                                 |
-| Icon component + IconProps     | `shared/components/icons/Reply.tsx` + `shared/types/icon.ts` |

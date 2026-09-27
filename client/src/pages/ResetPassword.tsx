@@ -1,10 +1,10 @@
-import AuthField from '@/components/auth/AuthField';
-import AuthShell from '@/components/auth/AuthShell';
-import AuthSubmit from '@/components/auth/AuthSubmit';
-import { useResetPasswordMutation } from '@/hooks/auth';
-import type { ResetPasswordForm } from '@/types/auth';
-import { validateConfirmPassword, validatePassword } from '@/utils/authValidators';
-import { toErrorMessage } from '@/utils/helpers';
+import { AuthField } from '@/features/auth';
+import { AuthShell } from '@/features/auth';
+import { AuthSubmit } from '@/features/auth';
+import { useResetPasswordMutation } from '@/features/auth';
+import type { ResetPasswordForm } from '@/features/auth';
+import { validateConfirmPassword, validatePassword } from '@/features/auth';
+import { toErrorMessage } from '@/shared/utils/helpers';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
