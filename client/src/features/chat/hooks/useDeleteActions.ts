@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { isValidMessageId } from '@/shared/utils/helpers';
-import type { ChatMessage } from '@/features/chat/types/chat';
+import type { ChatMessage, ConfirmDeleteState } from '@/features/chat/types/chat';
 import {
   useClearChatForMeMutation,
   useDeleteManyMessagesMutation,
@@ -40,9 +40,7 @@ export function useDeleteActions({
   const clearChatMutation = useClearChatForMeMutation();
 
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<
-    null | { type: 'one'; messageId: string } | { type: 'many' }
-  >(null);
+  const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState>(null);
 
   const deleteOneMessage = useCallback(
     async (messageId: string) => {

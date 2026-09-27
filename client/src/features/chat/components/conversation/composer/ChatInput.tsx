@@ -1,7 +1,8 @@
 import AttachmentMenu from "@/features/chat/components/conversation/composer/attachment-menu/AttachmentMenu";
-import FilePreview from "@/features/chat/components/conversation/composer/attachment-menu/FilePreview";
+import ComposerFilePreviews from "@/features/chat/components/conversation/composer/ComposerFilePreviews";
 import ComposerLinkPreview from "@/features/chat/components/conversation/composer/ComposerLinkPreview";
 import ComposerPicker from "@/features/chat/components/conversation/composer/ComposerPicker";
+import TextHighlightMirror from "@/features/chat/components/conversation/composer/TextHighlightMirror";
 import ClipIcon from "@/shared/components/ui/icons/Clip";
 import EmojiIcon from "@/shared/components/ui/icons/Emoji";
 import SendIcon from "@/shared/components/ui/icons/Send";
@@ -45,86 +46,6 @@ type ChatInputProps = {
     imageQuality?: ImageQuality;
     setImageQuality?: Dispatch<SetStateAction<ImageQuality>>;
 } & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'className'>;
-
-const renderFilePreviews = (
-    attachments: File[],
-    handleRemoveFile: (file: File) => void,
-    imageQuality: ImageQuality,
-    setImageQuality: Dispatch<SetStateAction<ImageQuality>> | undefined,
-) => {
-    const hasCompressibleImage = attachments.some(
-        (f) => f.type.startsWith('image/') && f.type !== 'image/gif',
-    );
-    return (
-        <div className="absolute bottom-14 left-0 right-auto z-50 mb-2 flex max-w-[calc(100vw-1rem)] overflow-hidden rounded-lg border border-border/70 bg-background-alt shadow-lg md:max-w-md">
-            {/* Vertical HD strip — left edge of the panel */}
-            {hasCompressibleImage && setImageQuality ? (
-                <button
-                    type="button"
-                    role="switch"
-                    aria-checked={imageQuality === 'hd'}
-                    aria-label={imageQuality === 'hd' ? 'HD on' : 'HD off'}
-                    onClick={() => setImageQuality(imageQuality === 'hd' ? 'standard' : 'hd')}
-                    className={`relative flex w-7 shrink-0 flex-col items-center justify-center gap-2.5 overflow-hidden border-r transition-all duration-300 active:opacity-70 ${
-                        imageQuality === 'hd'
-                            ? 'border-green/20 bg-gradient-to-b from-green/20 via-green/10 to-transparent'
-                            : 'border-border/30 bg-transparent'
-                    }`}
-                >
-                    {/* Left-edge glow bar */}
-                    <span className={`absolute inset-y-5 left-0 w-[2px] rounded-r-full transition-all duration-300 ${
-                        imageQuality === 'hd'
-                            ? 'bg-green shadow-[0_0_8px_3px_rgba(1,195,109,0.5)] opacity-100'
-                            : 'opacity-0'
-                    }`} />
-
-                    {/* Dot indicator */}
-                    <span className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
-                        imageQuality === 'hd'
-                            ? 'bg-green shadow-[0_0_6px_2px_rgba(1,195,109,0.7)]'
-                            : 'bg-white/15'
-                    }`} />
-
-                    {/* "HD" — vertical writing mode, reads top → bottom */}
-                    <span
-                        style={{ writingMode: 'vertical-lr' }}
-                        className={`text-[11px] font-black tracking-[0.12em] leading-none transition-all duration-300 ${
-                            imageQuality === 'hd' ? 'text-green' : 'text-white/25'
-                        }`}
-                    >
-                        HD
-                    </span>
-                </button>
-            ) : null}
-            {/* Thumbnail scroll row */}
-            <div className="flex flex-nowrap gap-2 overflow-x-auto overscroll-x-contain p-2 scrollbar-hide">
-                {attachments.map((file) => (
-                    <FilePreview
-                        key={`${file.name}-${file.size}-${file.lastModified}`}
-                        file={file}
-                        onRemove={handleRemoveFile}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-};
-
-/** Mirror layer — stacked in the same grid cell as the textarea. Typography only; no min-height. */
-const TextHighlightMirror = ({ parts, className }: { parts: ReturnType<typeof splitTextByUrls>; className: string }) => (
-    <div
-        aria-hidden
-        className={`pointer-events-none col-start-1 row-start-1 overflow-hidden whitespace-pre-wrap wrap-break-word ${className}`}
-    >
-        {parts.map((part, i) =>
-            part.type === 'url' ? (
-                <span key={i} className="text-[#53bdeb]">{part.value}</span>
-            ) : (
-                <span key={i} className="text-transparent">{part.value}</span>
-            ),
-        )}
-    </div>
-);
 
 const ChatInput = ({
     className,
@@ -308,7 +229,14 @@ const ChatInput = ({
 
     return (
         <div ref={rootRef} className="relative w-full">
-            {!editMode && attachments.length > 0 && renderFilePreviews(attachments, handleRemoveFile, imageQuality, setImageQuality)}
+            {!editMode && attachments.length > 0 ? (
+                <ComposerFilePreviews
+                    attachments={attachments}
+                    onRemoveFile={handleRemoveFile}
+                    imageQuality={imageQuality}
+                    setImageQuality={setImageQuality}
+                />
+            ) : null}
             <div className={`flex min-w-0 flex-1 flex-col ${hasReply ? 'overflow-hidden rounded-3xl shadow-[0_10px_36px_rgba(0,0,0,0.28),0_0_0_1px_rgba(1,195,109,0.14)]' : ''}`}>
                 {replySlot}
                 <div className="flex min-w-0 items-end gap-2">

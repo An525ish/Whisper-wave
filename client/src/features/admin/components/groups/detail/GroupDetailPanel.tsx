@@ -6,6 +6,7 @@ import TrashIcon from '@/shared/components/ui/icons/Trash';
 import { useDeleteAdminGroupMutation, useRemoveGroupMemberMutation } from '@/features/admin/hooks';
 import type { AdminGroupMember, AdminGroupRow } from '@/features/admin/types';
 import { formatGroupCreated } from '@/features/admin/utils/groups';
+import { getInitial } from '@/shared/utils/helpers';
 
 type GroupDetailPanelProps = {
   group: AdminGroupRow;
@@ -57,7 +58,7 @@ const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
                 <div className="absolute inset-0 scale-110 rounded-2xl bg-gold/20 blur-xl" aria-hidden />
                 <div className="relative flex h-24 w-24 items-center justify-center rounded-2xl bg-linear-to-br from-gold/25 to-gold/5 ring-[3px] ring-gold/25 ring-offset-2 ring-offset-background">
                   <span className="font-semibold text-3xl font-bold text-gold">
-                    {(group.name?.trim()?.[0] ?? 'G').toUpperCase()}
+                    {getInitial(group.name ?? '', 'G')}
                   </span>
                 </div>
               </div>

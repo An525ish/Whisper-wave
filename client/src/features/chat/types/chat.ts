@@ -121,6 +121,12 @@ export type ConversationPanelHandle = {
   copySelected: () => void;
 };
 
+// --- Delete confirmation state (shared by delete actions + the dialog host) ---
+export type ConfirmDeleteState =
+  | { type: 'one'; messageId: string }
+  | { type: 'many' }
+  | null;
+
 // --- Socket payloads ---
 export type NewMessagePayload = {
   chatId: string;

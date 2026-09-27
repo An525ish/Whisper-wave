@@ -2,6 +2,7 @@ import CloseIcon from '@/shared/components/ui/icons/Close';
 import ReplyIcon from '@/shared/components/ui/icons/Reply';
 import type { MessageReplyTo } from '@/features/chat/types/chat';
 import { isReplyImagePreview } from '@/features/chat/utils/chat';
+import { getInitial } from '@/shared/utils/helpers';
 
 type ReplyComposerBarProps = {
   senderName: string;
@@ -19,7 +20,7 @@ const ReplyBar = ({
   const showThumb =
     previewAttachment?.url &&
     isReplyImagePreview(previewAttachment.fileType, previewAttachment.url);
-  const initial = senderName.trim().charAt(0).toUpperCase() || '?';
+  const initial = getInitial(senderName);
 
   return (
     <div

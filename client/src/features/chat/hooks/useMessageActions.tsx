@@ -20,7 +20,7 @@ import SelectMessagesIcon from '@/shared/components/ui/icons/SelectMessages';
 import TrashIcon from '@/shared/components/ui/icons/Trash';
 import ReadReceipt from '@/shared/components/ui/icons/ReadReceipt';
 import type { Avatar } from '@/shared/types';
-import type { ChatMessage } from '@/features/chat/types/chat';
+import type { ChatMessage, ConfirmDeleteState } from '@/features/chat/types/chat';
 
 const clearTextSelection = () => {
   window.getSelection()?.removeAllRanges();
@@ -293,9 +293,7 @@ export function useMessageActions({
   );
 
   // External ref so delete actions can set confirmDelete
-  const [confirmDelete, setConfirmDelete] = useState<
-    null | { type: 'one'; messageId: string } | { type: 'many' }
-  >(null);
+  const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState>(null);
 
   useEffect(() => { onEditingChange?.(isEditing); }, [isEditing, onEditingChange]);
 
@@ -313,17 +311,30 @@ export function useMessageActions({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [clearReply, replyingTo]);
 
+  // Grouped by concern so consumers destructure a handful of namespaced objects
+  // (edit / reply / forward / contextMenu / confirm / receipt) instead of ~28 flat
+  // fields. The inner values are still the same stable useCallback/useState refs,
+  // so prop identity and memoization downstream are unaffected.
   return {
-    editingMessageId, isEditing, cancelEdit, startEditMessage, saveEdit,
-    replyingTo, startReply, clearReply,
-    forwardOpen, setForwardOpen, forwardMessageIds, setForwardMessageIds,
-    openForwardDialog, handleForwardToChat, forwardIsPending: forwardMutation.isPending,
-    copyMessagesByIds, openMessageContextMenu, openMessageContextMenuFromTouch,
-    menuState, hideContextMenu,
-    confirmClearOpen, setConfirmClearOpen, confirmDelete, setConfirmDelete,
-    deletableSelectedIds, canDeleteMessage, canInteractMessage,
-    editIsPending: editMessageMutation.isPending,
-    receiptMessage, setReceiptMessage,
+    edit: {
+      editingMessageId, isEditing, editIsPending: editMessageMutation.isPending,
+      cancelEdit, startEditMessage, saveEdit,
+    },
+    reply: { replyingTo, startReply, clearReply },
+    forward: {
+      forwardOpen, setForwardOpen, forwardMessageIds, setForwardMessageIds,
+      openForwardDialog, handleForwardToChat, forwardIsPending: forwardMutation.isPending,
+    },
+    contextMenu: {
+      menuState, hideContextMenu,
+      openMessageContextMenu, openMessageContextMenuFromTouch,
+    },
+    confirm: { confirmClearOpen, setConfirmClearOpen, confirmDelete, setConfirmDelete },
+    receipt: { receiptMessage, setReceiptMessage },
+    copyMessagesByIds,
+    deletableSelectedIds,
+    canInteractMessage,
+    canDeleteMessage,
     toggleReaction,
   };
 }

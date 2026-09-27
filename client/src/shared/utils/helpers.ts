@@ -186,8 +186,26 @@ export const normalizeMediaAttachments = (
   return data.attachments ?? [];
 };
 
-export const getInitial = (label: string): string =>
-  (label.trim()[0] || '?').toUpperCase();
+export const getInitial = (label: string, fallback = '?'): string =>
+  (label.trim()[0] || fallback).toUpperCase();
+
+/**
+ * Normalizes the several shapes an avatar field arrives in (a URL string, an
+ * array of URLs, or a `{ url }` object) down to a single usable src, or
+ * `undefined` when there's nothing to show. Pure — safe to use anywhere.
+ */
+export const resolveAvatarSrc = (
+  rawAvatar: string | string[] | { url?: string } | undefined,
+): string | undefined => {
+  if (!rawAvatar) return undefined;
+  if (typeof rawAvatar === 'string') return rawAvatar;
+  if (Array.isArray(rawAvatar)) {
+    const first = rawAvatar.find((item) => typeof item === 'string' && item);
+    return typeof first === 'string' ? first : undefined;
+  }
+  if (typeof rawAvatar === 'object' && 'url' in rawAvatar) return rawAvatar.url;
+  return undefined;
+};
 
 /** Converts any caught value into a human-readable message for toast/UI. */
 export const toErrorMessage = (error: unknown, fallback = 'Something went wrong'): string =>

@@ -16,6 +16,7 @@ import SuggestionListItem from '@/features/chat/components/list/SuggestionListIt
 import { useNavigate } from 'react-router-dom';
 import AvatarSkeleton from '@/shared/components/ui/skeletons/AvatarSkeleton';
 import { AVATAR_FALLBACK } from '@/shared/constants/app';
+import { getInitial } from '@/shared/utils/helpers';
 import type { FriendsResponse, CreateGroupResult } from '@/features/chat/types/chat';
 
 type CreateGroupPanelProps = {
@@ -112,7 +113,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
   const canCreate =
     groupname.trim().length > 0 && selectedMembers.length >= 2;
 
-  const initial = groupname.trim().charAt(0).toUpperCase();
+  const initial = getInitial(groupname, '');
   const showInitial = !avatarPreview && Boolean(initial);
   const selectedCount = selectedMembers.length;
 

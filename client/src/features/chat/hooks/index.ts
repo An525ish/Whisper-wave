@@ -4,6 +4,8 @@ export * from './useChatMessages';
 export * from './useChatQueries';
 export * from './useChatScroll';
 export * from './useChatSearch';
+export * from './useConversationSend';
+export * from './useConversationHeaderActions';
 export * from './useDeleteActions';
 export * from './useFriendMutations';
 export * from './useGroupMutations';
