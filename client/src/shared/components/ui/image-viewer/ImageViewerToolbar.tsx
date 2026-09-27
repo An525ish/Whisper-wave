@@ -2,9 +2,9 @@ import type { MediaFile } from '@/shared/types/media';
 import ImageViewerIcon from '@/shared/components/ui/image-viewer/ImageViewerIcons';
 import ForwardIcon from '@/shared/components/ui/icons/Forward';
 import TrashIcon from '@/shared/components/ui/icons/Trash';
-import toast from 'react-hot-toast';
 import { getMediaDisplayName } from '@/shared/utils/fileFormat';
 import { formatDateFromObjectId } from '@/shared/utils/helpers';
+import useFileDownload from '@/shared/hooks/useFileDownload';
 
 const CloseIcon = () => (
   <svg viewBox="0 0 20 20" fill="none" aria-hidden className="h-4 w-4">
@@ -53,21 +53,11 @@ const ImageViewerToolbar = ({
 }: ImageViewerToolbarProps) => {
   const displayName = getMediaDisplayName(currentMedia);
   const dateLabel = formatDateFromObjectId(currentMedia?.messageId ?? currentMedia?._id);
+  const { downloadFile } = useFileDownload();
 
-  const handleDownload = async () => {
+  const handleDownload = () => {
     if (!currentMedia?.url) return;
-    try {
-      const file = await fetch(currentMedia.url);
-      const blob = await file.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = displayName || 'download';
-      link.click();
-      window.URL.revokeObjectURL(url);
-    } catch {
-      toast.error('Download Failed');
-    }
+    void downloadFile(currentMedia.url, displayName);
   };
 
   return (
@@ -100,7 +90,7 @@ const ImageViewerToolbar = ({
         ) : null}
 
         {currentMedia ? (
-          <ActionBtn onClick={() => { void handleDownload(); }} label="Download">
+          <ActionBtn onClick={handleDownload} label="Download">
             <ImageViewerIcon name="download" className="h-4 w-4 fill-current" />
           </ActionBtn>
         ) : null}

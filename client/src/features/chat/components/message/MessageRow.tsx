@@ -6,7 +6,7 @@ import ImageViewer, {
   type MediaFile,
 } from '@/shared/components/ui/image-viewer/ImageViewer';
 import ImageViewerReplyBar from '@/features/chat/components/ImageViewerReplyBar';
-import toast from 'react-hot-toast';
+import useFileDownload from '@/shared/hooks/useFileDownload';
 import { useState, type MouseEvent } from 'react';
 import MessageBubble from '@/features/chat/components/message/MessageBubble';
 import type {
@@ -58,6 +58,7 @@ const MessageRow = ({
   const [galleryOverride, setGalleryOverride] = useState<MediaFile[] | null>(null);
 
   const user = useAuthStore((s) => s.user);
+  const { downloadFile } = useFileDownload();
   const sameSender = String(sender._id) === String(user?._id ?? '');
   const currentTime = dayjs(createdAt).format('hh:mm A');
   const displayName = sameSender
@@ -108,18 +109,7 @@ const MessageRow = ({
   const downloadAttachment = async (attachment: ChatAttachment) => {
     const url = attachment.url || attachment.tempUrl;
     if (!url || attachment.uploading) return;
-    try {
-      const file = await fetch(url);
-      const blob = await file.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = attachment.name ?? 'download';
-      link.click();
-      window.URL.revokeObjectURL(blobUrl);
-    } catch {
-      toast.error('Download Failed');
-    }
+    await downloadFile(url, attachment.name);
   };
 
   const handleFileAction = async (e: MouseEvent, attachment: ChatAttachment) => {
@@ -133,7 +123,7 @@ const MessageRow = ({
     }
     // resolveAttachmentKind maps PDFs to 'doc'; check MIME/name directly
     if (/pdf/i.test(attachment.type ?? '') || /\.pdf$/i.test(attachment.name ?? '')) {
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
       return;
     }
     await downloadAttachment(attachment);

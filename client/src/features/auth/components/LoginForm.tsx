@@ -23,8 +23,8 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
   } = useForm<LoginForm>({
     mode: 'onChange',
     defaultValues: {
-      username: 'Cleveland6',
-      password: 'password123',
+      username: '',
+      password: '',
     },
   });
 

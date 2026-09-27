@@ -12,6 +12,13 @@ import { ProfileHeader } from '@/features/profile';
 import { ProfilePanel } from '@/features/profile';
 import { ProfileSheet } from '@/features/profile';
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
+import { TYPING_STALE_MS } from '@/shared/constants/app';
+import type {
+  NewMessageAlertPayload,
+  OnlineUsersPayload,
+  UserPresencePayload,
+  TypingPayload,
+} from '@/shared/types/socket';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -19,28 +26,11 @@ type AppWrapperProps = {
   children: ReactNode;
 };
 
-type NewMessageAlertPayload = {
-  chatId: string;
-};
-
-type OnlineUsersPayload = {
-  userIds: string[];
-};
-
-type UserPresencePayload = {
-  userId: string;
-  lastSeen?: string;
-};
-
-type TypingPayload = {
-  chatId: string;
-};
-
+// A NEW_MESSAGE socket frame carries more, but here we only read chatId to clear
+// the typing indicator. The full payload is a chat-domain type in chat/types.
 type NewMessagePayload = {
   chatId: string;
 };
-
-const TYPING_STALE_MS = 3500;
 
 const AppWrapper = ({ children }: AppWrapperProps) => {
   const socket = useSocket();

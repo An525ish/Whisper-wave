@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSocket } from '@/shared/lib/socket/SocketProvider';
+import { SOCKET_EVENTS } from '@/shared/constants/socket';
 import ChatInput from '@/features/chat/components/conversation/composer/ChatInput';
 import * as chatApi from '@/features/chat/api/chat';
 import type { GifItem } from '@/features/chat/api/gif';
@@ -19,7 +20,7 @@ const ImageViewerReplyBar = ({ chatId, replyToMessageId }: ImageViewerReplyBarPr
   const handleSubmit = () => {
     const trimmed = message.trim();
     if (!trimmed) return;
-    socket.emit('NEW_MESSAGE', { message: trimmed, chatId, replyToMessageId });
+    socket.emit(SOCKET_EVENTS.NEW_MESSAGE, { message: trimmed, chatId, replyToMessageId });
     setMessage('');
   };
 

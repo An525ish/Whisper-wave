@@ -12,6 +12,9 @@ const Modal = ({ children, onClose }: ModalProps) => {
   const innerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Remember what was focused so we can restore it when the modal closes.
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
     // Scroll lock
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -48,6 +51,8 @@ const Modal = ({ children, onClose }: ModalProps) => {
     return () => {
       document.body.style.overflow = prev;
       document.removeEventListener('keydown', handleKeyDown);
+      // Restore focus to the element that opened the modal.
+      previouslyFocused?.focus?.();
     };
   }, [onClose]);
 

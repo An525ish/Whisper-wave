@@ -60,7 +60,13 @@ export const validateFiles = (
 
 export const getLocalStorage = <T>(key: string): T | null => {
   const stored = localStorage.getItem(key);
-  return stored ? (JSON.parse(stored) as T) : null;
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as T;
+  } catch {
+    // Corrupted / non-JSON value — treat as absent rather than throwing.
+    return null;
+  }
 };
 
 export const setLocalStorage = <T>(key: string, value: T): void => {

@@ -28,6 +28,10 @@ Cursor. Keep the two in sync.
 6. **Max 350 lines per file.** Over the limit → extract.
 7. **Types, constants, and side-effect-free utils are never inlined ad hoc.** They
    have designated homes (below).
+8. **Don't Repeat Yourself.** A type, constant, or piece of logic is defined in
+   exactly one place and imported everywhere else. Before writing anything, check
+   whether it already exists. Copy-paste of a shape, a value, or a behavior is a
+   defect — extract it (see §12).
 
 ---
 
@@ -320,5 +324,44 @@ const form = useForm<Values>({ resolver: zodResolver(schema) });
 - Magic numbers/strings inline instead of `shared/constants` or a feature constant.
 - Files over 350 lines; God-components; barrel files that re-export everything.
 - `console.*`, commented-out code, `any`, deprecated React APIs, class components.
+- **Re-declaring a type/constant that already exists** (e.g. copying a socket
+  payload shape or a timing constant into a component instead of importing it).
+- **Copy-pasting logic or JSX** across files instead of extracting a shared hook,
+  util, or component (see §12).
+
+---
+
+## 12. Don't Repeat Yourself — Single Source of Truth
+
+Duplication is one of the most expensive defects in this codebase: when the same
+shape, value, or behavior lives in two places, the two copies drift, and a fix in
+one is silently missed in the other. Every fact has exactly one home.
+
+**Before adding a type, constant, util, hook, or component, search for it first.**
+If something close already exists, reuse or extend it — do not paste a second copy.
+
+- **Types:** never re-declare a type that already lives in a types file. Import it.
+  If two files need the same shape, it belongs in the appropriate `types.ts`
+  (per §5), and both import it. A type defined for a component's own `Props` is the
+  only local exception.
+- **Constants:** timing values, storage keys, image paths, thresholds, tab configs,
+  etc. are defined once in `shared/constants/` (cross-cutting) or a feature's
+  `constants` (domain-specific), then imported. Never re-type the literal.
+- **Logic:** if the same computation or side effect appears in ≥2 places, extract
+  it — a pure transform to `utils/`, a stateful/side-effecting behavior to a hook
+  (e.g. `useFileDownload`, `useEscapeKey`). Utils stay side-effect-free (§6); shared
+  behavior with effects is a hook.
+- **UI:** repeated markup/layout (drawers, panels, dialogs, cards, empty states)
+  becomes a shared component or a render-prop wrapper (e.g. `SlideOverPanel`),
+  parameterized by props — not copied per usage.
+- **Single source, then re-export.** When consumers already import a symbol from
+  file A but its true home should be file B, define it in B and have A re-export it,
+  so existing import paths keep resolving without a wide sweep.
+
+**Judgment:** DRY is about a single source of truth for one concept, not about
+collapsing every superficially-similar line. Two values that are equal today but
+change for different reasons are not duplication — keep them separate. Extract when
+the things are the *same thing*, not merely similar-looking.
+
 
 

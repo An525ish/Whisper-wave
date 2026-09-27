@@ -1,6 +1,5 @@
-/** Minimum query length before admin group search hits the API. */
-export const ADMIN_MIN_SEARCH_LEN = 2;
+import { NO_MEMBERS_IMAGE } from '@/shared/constants/app';
 
-export const GROUP_DETAIL_PANEL_TRANSITION_MS = 320;
+export { ADMIN_MIN_SEARCH_LEN } from './common';
 
-export const GROUPS_EMPTY_IMAGE = '/images/no-member.svg';
+export const GROUPS_EMPTY_IMAGE = NO_MEMBERS_IMAGE;

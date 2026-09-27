@@ -92,7 +92,7 @@ const BottomSheet = ({
         <div className="pointer-events-none absolute inset-x-8 top-0 h-24 bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.14),transparent_70%)]" />
         <div
           ref={handleRef}
-          className={`mx-auto mt-2.5 h-1 w-10 shrink-0 cursor-grab rounded-full bg-border/80 active:cursor-grabbing ${
+          className={`mx-auto mt-2.5 h-1 w-10 shrink-0 cursor-grab touch-none rounded-full bg-border/80 active:cursor-grabbing ${
             sideCardOnDesktop ? 'lg:hidden' : ''
           }`}
         />

@@ -1,7 +1,6 @@
 import type { AttachmentKindFilter } from '@/features/admin/types';
 
-/** Minimum query length before admin list search hits the API. */
-export const ADMIN_MIN_SEARCH_LEN = 2;
+export { ADMIN_MIN_SEARCH_LEN } from './common';
 
 export const ATTACHMENT_KIND_TABS: { id: AttachmentKindFilter; label: string }[] = [
   { id: 'all', label: 'All Media' },

@@ -12,9 +12,6 @@ export const MEDIA_FAILED_ILLUSTRATIONS = {
   video: '/icons/media-error-video.svg',
 } as const;
 
-/** @deprecated Use MEDIA_FAILED_ILLUSTRATIONS[kind] */
-export const MEDIA_FAILED_ILLUSTRATION = MEDIA_FAILED_ILLUSTRATIONS.image;
-
 export type MediaPlaceholderVariant = 'loading' | 'retrying' | 'failed';
 
 export type RetryableMediaKind = keyof typeof MEDIA_FALLBACK_ICONS;

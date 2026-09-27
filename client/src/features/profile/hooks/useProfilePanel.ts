@@ -3,17 +3,16 @@ import toast from 'react-hot-toast'
 import { useParams } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth'
 import { useProfileUiStore } from '@/features/profile/store'
-import { useChatDetailsQuery, useGetMediaQuery, useUpdateGroupDetailsMutation, } from '@/features/chat'
+import { useChatDetailsQuery, useGetMediaQuery, useUpdateGroupDetailsMutation, useDeleteMessageMutation, useForwardMessagesMutation } from '@/features/chat'
 import { useUpdateProfileMutation } from '@/features/auth'
-import { useDeleteMessageMutation, useForwardMessagesMutation } from '@/features/chat'
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation'
 import useErrors from '@/shared/hooks/useError'
+import useFileDownload from '@/shared/hooks/useFileDownload'
 import { useSocket } from '@/shared/lib/socket/SocketProvider'
 import useSocketEvent from '@/shared/hooks/useSocketEvent'
 import { fileFormat } from '@/shared/utils/fileFormat'
 import { SOCKET_EVENTS } from '@/shared/constants/socket'
-import type { SharedContentTab } from '@/features/profile/components/shared-content/types'
-import type { MediaFile, SharedLink } from '@/features/profile/components/shared-content/types'
+import type { SharedContentTab, MediaFile, SharedLink } from '@/features/profile/components/shared-content/types'
 
 type ProfileMember = {
   _id?: string;
@@ -158,6 +157,7 @@ export const useProfilePanel = (
   const [updateGroup, { isLoading: isUpdatingGroup }] = useAsyncMutation(useUpdateGroupDetailsMutation)
   const deleteMutation = useDeleteMessageMutation()
   const forwardMutation = useForwardMessagesMutation()
+  const { downloadFile } = useFileDownload()
 
   const openSharedSheet = useCallback((tab: SharedContentTab) => {
     setSharedSheetTab(tab)
@@ -273,23 +273,12 @@ const confirmViewerDelete = useCallback(async () => {
   const handleFileAction = useCallback(async (e: MouseEvent, url: string | undefined, fileName: string | undefined) => {
     e.preventDefault()
     if (!url) return
-    if (['pdf'].includes(fileFormat(url))) {
-      window.open(url, '_blank')
+    if (fileFormat(url) === 'pdf') {
+      window.open(url, '_blank', 'noopener,noreferrer')
     } else {
-      try {
-        const res = await fetch(url)
-        const blob = await res.blob()
-        const blobUrl = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = blobUrl
-        link.download = fileName ?? 'download'
-        link.click()
-        window.URL.revokeObjectURL(blobUrl)
-      } catch {
-        toast.error('Download Failed')
-      }
+      await downloadFile(url, fileName)
     }
-  }, [])
+  }, [downloadFile])
 
   const startNameEdit = useCallback(() => { setNameDraft(name ?? ''); setEditingName(true); setEditingBio(false) }, [name])
   const cancelNameEdit = useCallback(() => { setEditingName(false); setNameDraft(name ?? '') }, [name])

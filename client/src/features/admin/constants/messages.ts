@@ -1,7 +1,6 @@
 import type { AdminMessageStatusFilter } from '@/features/admin/types';
 
-/** Minimum query length before admin message search hits the API. */
-export const ADMIN_MIN_SEARCH_LEN = 2;
+export { ADMIN_MIN_SEARCH_LEN } from './common';
 
 export const MESSAGES_EMPTY_IMAGE = '/images/no-meme.svg';
 

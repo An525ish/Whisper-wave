@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router-dom';
-
-const RELOAD_KEY = 'ww:chunk-reload-at';
-const RELOAD_COOLDOWN_MS = 15_000;
+import { RELOAD_KEY, RELOAD_COOLDOWN_MS } from '@/shared/constants/app';
 
 function isStaleChunkError(error: unknown): boolean {
   const message =
@@ -33,12 +31,14 @@ const RouteError = () => {
   }, [staleChunk]);
 
   const status = isRouteErrorResponse(error) ? error.status : null;
-  const detail =
-    error instanceof Error
+  // Never surface a raw thrown Error message in production (can leak internal
+  // paths/identifiers); route-response statusText is safe, and full detail is
+  // kept in development for debugging.
+  const detail = isRouteErrorResponse(error)
+    ? error.statusText
+    : import.meta.env.DEV && error instanceof Error
       ? error.message
-      : isRouteErrorResponse(error)
-        ? error.statusText
-        : 'Something went wrong';
+      : 'Something went wrong';
 
   if (staleChunk) {
     return (
@@ -48,6 +48,20 @@ const RouteError = () => {
           <p className="mt-2 text-sm text-body-300">
             A newer version is available. Refreshing…
           </p>
+          {/* Fallback controls in case the auto-reload cooldown is active and
+              the page can't refresh itself — otherwise the user is stuck here. */}
+          <div className="mt-8 flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="rounded-3xl bg-gradient-action-button-green px-5 py-2.5 text-sm font-medium text-body"
+            >
+              Reload
+            </button>
+            <Link to="/" className="text-sm font-medium text-green hover:text-green/85">
+              Go home
+            </Link>
+          </div>
         </div>
       </main>
     );

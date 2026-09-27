@@ -9,7 +9,7 @@ import { SocketProvider } from '@/shared/lib/socket/SocketProvider';
 import { useAuthStore } from '@/features/auth';
 import AdminWrapper from '@/layout/AdminWrapper';
 import AppLoader from '@/shared/components/ui/loader/AppLoader';
-import { useAdminMeQuery } from '@/features/admin';
+import { useAdminMeQuery, adminRouteLoaders } from '@/features/admin';
 import RouteError from '@/app/RouteError';
 
 const Landing = lazy(() => import('@/pages/Landing'));
@@ -30,9 +30,12 @@ function ProtectedRoutes({
 
 function AuthedLayout() {
   const user = useAuthStore((s) => s.user);
+  // Guard before mounting SocketProvider so an unauthenticated visitor never
+  // opens a socket connection for the render cycle before redirecting.
+  if (!user) return <Navigate to="/auth" replace />;
   return (
     <SocketProvider>
-      <ProtectedRoutes allow={Boolean(user)} />
+      <Outlet />
     </SocketProvider>
   );
 }
@@ -137,48 +140,12 @@ const appRoutes = [
       {
         element: <AdminAuthed />,
         children: [
-          {
-            path: 'dashboard',
-            lazy: async () => {
-              const module = await import('@/features/admin/components/dashboard/Dashboard');
-              return { Component: module.default };
-            },
-          },
-          {
-            path: 'users',
-            lazy: async () => {
-              const module = await import('@/features/admin/components/users/Users');
-              return { Component: module.default };
-            },
-          },
-          {
-            path: 'messages',
-            lazy: async () => {
-              const module = await import('@/features/admin/components/messages/Messages');
-              return { Component: module.default };
-            },
-          },
-          {
-            path: 'groups',
-            lazy: async () => {
-              const module = await import('@/features/admin/components/groups/Groups');
-              return { Component: module.default };
-            },
-          },
-          {
-            path: 'activity',
-            lazy: async () => {
-              const module = await import('@/features/admin/components/activity/Activity');
-              return { Component: module.default };
-            },
-          },
-          {
-            path: 'media',
-            lazy: async () => {
-              const module = await import('@/features/admin/components/attachments/Attachments');
-              return { Component: module.default };
-            },
-          },
+          { path: 'dashboard', lazy: adminRouteLoaders.dashboard },
+          { path: 'users', lazy: adminRouteLoaders.users },
+          { path: 'messages', lazy: adminRouteLoaders.messages },
+          { path: 'groups', lazy: adminRouteLoaders.groups },
+          { path: 'activity', lazy: adminRouteLoaders.activity },
+          { path: 'media', lazy: adminRouteLoaders.media },
         ],
       },
     ],

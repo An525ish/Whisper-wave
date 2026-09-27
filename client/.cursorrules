@@ -87,7 +87,31 @@ react-hook-form v7 + Zod v4 · react-router v7 · socket.io-client v4 · dayjs.
 
 ---
 
-## 5. Quality Bar
+## 5. DRY — Single Source of Truth
+
+Duplication is a defect: copies drift and fixes get missed. Every type, constant,
+and behavior has exactly ONE home; everything else imports it. **Search before you
+write** — if it exists, reuse or extend it, never paste a second copy.
+
+- **Types:** never re-declare a shape that already lives in a types file (e.g. a
+  socket payload). Import it. Shared shapes go to the right `types.ts` per §4.
+- **Constants:** timing values, storage keys, image paths, thresholds, tab configs →
+  defined once in `shared/constants/` or a feature's `constants`, then imported.
+  Never re-type the literal.
+- **Logic:** same computation/side-effect in ≥2 places → extract. Pure transform →
+  `utils/`; stateful/side-effecting behavior → a hook (e.g. `useFileDownload`,
+  `useEscapeKey`). Utils stay side-effect-free.
+- **UI:** repeated markup (drawers, panels, dialogs, cards, empty states) → a shared
+  component or render-prop wrapper (e.g. `SlideOverPanel`), parameterized by props.
+- **Re-export to avoid sweeps:** define a symbol in its true home and re-export it
+  from the old path so existing imports keep resolving.
+- **Judgment:** DRY means one source of truth per concept, not collapsing every
+  similar-looking line. Values equal today but changing for different reasons are
+  not duplication — keep them separate.
+
+---
+
+## 6. Quality Bar
 
 - **≤ 350 lines/file.** Over → split into sub-components / focused hooks.
 - No `console.*`, no commented-out code, no dead code, no unused exports.
@@ -101,7 +125,7 @@ react-hook-form v7 + Zod v4 · react-router v7 · socket.io-client v4 · dayjs.
 
 ---
 
-## 6. Adding Code
+## 7. Adding Code
 
 - **New feature** → `features/<domain>/` with `api/ components/ hooks/ stores/ utils/
   types.ts index.ts`; put types in `types.ts` up front; expose surface via `index.ts`;

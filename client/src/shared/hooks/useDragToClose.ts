@@ -75,8 +75,8 @@ export function useDragToClose({
     const dy = e.touches[0].clientY - gesture.current.startY;
     gesture.current.deltaY = dy;
     setTranslate(dy);
-    // Prevent page scroll while dragging down
-    if (dy > 4) e.preventDefault();
+    // Page scroll is prevented via `touch-action: none` on the drag handle;
+    // calling e.preventDefault() here is a no-op (React listeners are passive).
   }, [setTranslate]);
 
   const onTouchEnd = useCallback(() => {

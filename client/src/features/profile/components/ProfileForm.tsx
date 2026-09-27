@@ -33,6 +33,7 @@ export const ProfileNameBlock = ({
           onChange={(e) => setNameDraft(e.target.value.slice(0, nameMaxLength))}
           maxLength={nameMaxLength}
           autoFocus
+          aria-label={groupChat && !showSelfProfile ? 'Group name' : 'Name'}
           onKeyDown={(e) => {
             if (e.key === 'Enter') { e.preventDefault(); void saveName() }
             if (e.key === 'Escape') cancelNameEdit()
@@ -125,6 +126,7 @@ export const ProfileBioSection = ({
             rows={isSheet ? 2 : 3}
             maxLength={bioMaxLength}
             autoFocus
+            aria-label={groupChat && !showSelfProfile ? 'Group bio' : 'Bio'}
             onKeyDown={(e) => { if (e.key === 'Escape') cancelBioEdit() }}
             placeholder={groupChat && !showSelfProfile ? 'Add a group bio' : 'Write something about yourself'}
             className="w-full resize-none bg-transparent px-1.5 py-1 text-sm leading-relaxed text-body outline-none placeholder:text-body-300"

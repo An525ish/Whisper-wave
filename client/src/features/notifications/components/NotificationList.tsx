@@ -6,32 +6,14 @@ import {
   NotificationItem,
 } from '@/features/notifications/components/NotificationItem';
 import { useNotificationsStore } from '@/features/notifications/store';
+import type {
+  FoundChatNotification,
+  NotificationsResponse,
+} from '@/features/notifications/types';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import AvatarSkeleton from '@/shared/components/ui/skeletons/AvatarSkeleton';
 import EmptyState from '@/shared/components/ui/EmptyState';
 import CountBadge from '@/shared/components/ui/CountBadge';
-
-type FoundChatNotification = {
-  _id: string;
-  name?: string;
-  avatar?: string[];
-  notificationCount?: number;
-  timestamp?: string | number;
-};
-
-type FriendRequestRow = {
-  id?: string;
-  _id: string;
-  createdAt?: string;
-  sender: {
-    name?: string;
-    avatar?: string;
-  };
-};
-
-type NotificationsResponse = {
-  data?: FriendRequestRow[];
-};
 
 export const NotificationList = () => {
   const messageNotifications = useNotificationsStore(

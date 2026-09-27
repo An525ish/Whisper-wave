@@ -13,6 +13,12 @@ export const VIEWPORT_PADDING = 8 as const;
 export const RELOAD_KEY = 'ww:chunk-reload-at' as const;
 export const RELOAD_COOLDOWN_MS = 15_000 as const;
 
+/** Exit-animation duration for right-side detail slide-over panels. */
+export const DETAIL_PANEL_TRANSITION_MS = 320 as const;
+
+/** Empty-state illustration shown when a member/user/group list is empty. */
+export const NO_MEMBERS_IMAGE = '/images/no-member.svg' as const;
+
 /** Shared fallback when a user/group avatar is missing or fails to load. */
 export const AVATAR_FALLBACK = '/icons/no-dp.svg' as const;
 

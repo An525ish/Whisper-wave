@@ -1,4 +1,5 @@
 import {
+  lazy, Suspense,
   useCallback, useEffect, useImperativeHandle, useMemo, useState,
   type ChangeEvent, type KeyboardEvent, type Ref,
 } from 'react';
@@ -6,6 +7,7 @@ import { useLongPress } from '@/shared/hooks/useLongPress';
 import { useQueryClient } from '@tanstack/react-query';
 import useErrors from '@/shared/hooks/useError';
 import { useSocket } from '@/shared/lib/socket/SocketProvider';
+import { SOCKET_EVENTS } from '@/shared/constants/socket';
 import {
   useChatDetailsQuery, useChatMessages, useChatScroll, useDeleteActions,
   useMessageActions, useMessageSelection,
@@ -27,10 +29,10 @@ import { isValidMessageId, normalizeMemberIds } from '@/shared/utils/helpers';
 import ChatBox from '@/features/chat/components/message/MessageRow';
 import MessageReactions from '@/features/chat/components/message/MessageReactions';
 import ChatInput from '@/features/chat/components/conversation/composer/ChatInput';
-import { lazy, Suspense } from 'react';
 const ForwardDialog = lazy(() => import('@/features/chat/components/dialogs/ForwardDialog'));
 import type {
-  ChatDetailsResponse, ChatMessage, MediaResponse, SharedMediaRow,
+  ChatDetailsResponse, ChatMessage, ConversationPanelHandle,
+  MediaResponse, SharedMediaRow,
 } from '@/features/chat/types/chat';
 import type { MediaFile } from '@/shared/components/ui/image-viewer/ImageViewer';
 import { isOutgoingMessageRead, buildReplySnapshot, getReplyPreviewText } from '@/features/chat/utils/chat';
@@ -39,12 +41,9 @@ import ReplyComposerBar from '@/features/chat/components/conversation/composer/R
 import ChatDayLabel from '@/features/chat/components/conversation/ChatDayLabel';
 import { CHAT_HEADER_OFFSET_CLASS, CHAT_HEADER_TOP_CLASS } from '@/features/chat/constants/chat';
 
-export type ConversationPanelHandle = {
-  clearChat: () => void;
-  deleteSelected: () => void;
-  forwardSelected: () => void;
-  copySelected: () => void;
-};
+// Single source of truth lives in features/chat/types/chat.ts; re-exported here
+// so existing consumers importing from ConversationPanel keep resolving.
+export type { ConversationPanelHandle };
 
 type ChatsViewPanelProps = {
   ref?: Ref<ConversationPanelHandle>;
@@ -231,7 +230,7 @@ useImperativeHandle(ref, () => ({
       const pendingId = `pending-${Date.now()}`;
       setLiveMessages((prev) => [...prev, { _id: pendingId, content: trimmed, sender: { _id: user?._id ?? '', name: user?.name ?? '', avatar: user?.avatar as Avatar | undefined }, createdAt: new Date().toISOString(), replyTo: replySnapshot }]);
       setMessage(''); clearReply();
-      socket.emit('NEW_MESSAGE', { message: trimmed, chatId, replyToMessageId });
+      socket.emit(SOCKET_EVENTS.NEW_MESSAGE, { message: trimmed, chatId, replyToMessageId });
       scrollToBottom(); return;
     }
 
