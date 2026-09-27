@@ -27,8 +27,6 @@ export const refreshCookieOptions: CookieOptions = {
 
 export const corsOptions: CorsOptions = {
   origin: [
-    'http://localhost:5173',
-    'http://localhost:4173',
     ...(env.CLIENT_URL ? [env.CLIENT_URL] : []),
   ],
   credentials: true,

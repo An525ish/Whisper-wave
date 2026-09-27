@@ -5,7 +5,7 @@ import * as userRepo from '../repositories/user.js';
 export type { UploadableFile } from '../types/message.js';
 
 export const getClientBaseUrl = (): string =>
-  env.CLIENT_URL || 'http://localhost:5173';
+  env.CLIENT_URL;
 
 /** Socket.IO room name for a connected chat. */
 export const chatRoom = (chatId: string): string => `chat:${chatId}`;
