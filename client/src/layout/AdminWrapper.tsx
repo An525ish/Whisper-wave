@@ -1,6 +1,6 @@
-import { ADMIN_NAV_ITEMS } from '@/components/ui/sidebar/adminNavItems';
-import Sidebar from '@/components/ui/sidebar/Sidebar';
-import SidebarItem from '@/components/ui/sidebar/SidebarItem';
+import { ADMIN_NAV_ITEMS } from '@/features/admin';
+import { Sidebar } from '@/features/admin';
+import { SidebarItem } from '@/features/admin';
 import { Outlet } from 'react-router-dom';
 
 const AdminWrapper = () => (

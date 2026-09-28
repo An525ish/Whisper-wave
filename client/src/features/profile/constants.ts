@@ -1,0 +1,57 @@
+import type { ComponentType } from 'react';
+import type { IconProps } from '@/shared/types';
+import type { SharedContentTab, PhotoFilter } from '@/features/profile/components/shared-content/types';
+import ImagesIcon from '@/shared/components/ui/icons/Images';
+import FilesIcon from '@/shared/components/ui/icons/FilesIcon';
+import LinkIcon from '@/shared/components/ui/icons/Link';
+import GridAllIcon from '@/shared/components/ui/icons/GridAll';
+import VideosIcon from '@/shared/components/ui/icons/Video';
+import AudiosIcon from '@/shared/components/ui/icons/Audio';
+
+export type TabIcon = ComponentType<IconProps>;
+
+export type SharedContentTabConfig = {
+  id: SharedContentTab;
+  label: string;
+  hint: string;
+  Icon: TabIcon;
+  strokeOnly?: boolean;
+};
+
+export type PhotoFilterConfig = {
+  key: PhotoFilter;
+  label: string;
+  Icon: TabIcon;
+  strokeOnly?: boolean;
+};
+
+export const SHARED_CONTENT_TABS: SharedContentTabConfig[] = [
+  { id: 'photos',      label: 'Images', hint: 'Photos, videos & audio',   Icon: ImagesIcon },
+  { id: 'attachments', label: 'Files',  hint: 'Documents & downloads',    Icon: FilesIcon  },
+  { id: 'links',       label: 'Links',  hint: 'URLs shared in chat',      Icon: LinkIcon, strokeOnly: true },
+];
+
+export const PHOTO_FILTER_OPTIONS: PhotoFilterConfig[] = [
+  { key: 'all',   label: 'All',    Icon: GridAllIcon, strokeOnly: true },
+  { key: 'image', label: 'Photos', Icon: ImagesIcon },
+  { key: 'video', label: 'Videos', Icon: VideosIcon  },
+  { key: 'audio', label: 'Audio',  Icon: AudiosIcon  },
+];
+
+type EmptyProfileBioContext = {
+  showSelfProfile: boolean;
+  groupChat?: boolean;
+};
+
+export const emptyProfileBioCopy = ({
+  showSelfProfile,
+  groupChat,
+}: EmptyProfileBioContext): string => {
+  if (groupChat && !showSelfProfile) {
+    return 'No story yet — this group’s still finding its rhythm.';
+  }
+  if (showSelfProfile) {
+    return 'Still a whisper. Tap edit when you’re ready to make waves.';
+  }
+  return 'All mystery, no spoilers. They’re keeping it low-key.';
+};

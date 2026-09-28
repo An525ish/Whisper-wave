@@ -1,0 +1,99 @@
+import { useMemo } from 'react';
+import { useAdminStatsQuery } from '@/features/admin/hooks';
+import type { AdminStats } from '@/features/admin/types';
+import type { DashboardMetric } from '@/features/admin/types';
+import {
+  buildCompositionSegments,
+  formatDashboardUpdated,
+  onlinePercent,
+  pendingRequestsHint,
+  sumSeries,
+  weekHint,
+} from '@/features/admin/utils/dashboard';
+
+export function useDashboardPage() {
+  const { data, dataUpdatedAt } = useAdminStatsQuery();
+  const stats: AdminStats | undefined = data?.stats;
+
+  const seriesLabels = stats?.seriesLabels ?? [];
+  const newUsersSeries = stats?.newUsersSeries ?? [];
+  const googleUsersSeries = stats?.googleUsersSeries ?? [];
+  const emailUsersSeries = stats?.emailUsersSeries ?? [];
+  const messagesSeries = stats?.messagesSeries ?? [];
+  const groupsSeries = stats?.groupsSeries ?? [];
+  const requestsSeries = stats?.requestsSeries ?? [];
+
+  const { weekUsers, weekMessages, weekGroups, weekRequests } = useMemo(
+    () => ({
+      weekUsers: sumSeries(newUsersSeries),
+      weekMessages: sumSeries(messagesSeries),
+      weekGroups: sumSeries(groupsSeries),
+      weekRequests: sumSeries(requestsSeries),
+    }),
+    [newUsersSeries, messagesSeries, groupsSeries, requestsSeries],
+  );
+  const totalUsers = stats?.users ?? 0;
+  const onlineUsers = stats?.onlineUsers ?? 0;
+  const onlinePct = onlinePercent(onlineUsers, totalUsers);
+
+  const metrics = useMemo<DashboardMetric[]>(
+    () => [
+      {
+        key: 'users',
+        label: 'Total users',
+        value: stats?.users?.toLocaleString() ?? '—',
+        accent: 'text-blue',
+        hint: weekHint(weekUsers, 'signups'),
+      },
+      {
+        key: 'groups',
+        label: 'Groups',
+        value: stats?.groups?.toLocaleString() ?? '—',
+        accent: 'text-gold',
+        hint: weekHint(weekGroups, 'new groups'),
+      },
+      {
+        key: 'online',
+        label: 'Online now',
+        value: stats?.onlineUsers?.toLocaleString() ?? '—',
+        accent: 'text-green',
+        hint: `${onlinePct}% of all users`,
+      },
+      {
+        key: 'messages',
+        label: 'Messages',
+        value: stats?.messages?.toLocaleString() ?? '—',
+        accent: 'text-[#ff7b85]',
+        hint: weekHint(weekMessages, 'sent'),
+      },
+      {
+        key: 'pending',
+        label: 'Pending',
+        value: stats?.pendingRequests?.toLocaleString() ?? '—',
+        accent: 'text-yellow',
+        hint: pendingRequestsHint(stats?.pendingRequests ?? 0, weekRequests),
+      },
+    ],
+    [stats, weekUsers, weekGroups, onlinePct, weekMessages, weekRequests],
+  );
+
+  const composition = useMemo(() => buildCompositionSegments(stats), [stats]);
+  const lastUpdated = useMemo(() => formatDashboardUpdated(dataUpdatedAt), [dataUpdatedAt]);
+
+  return {
+    metrics,
+    seriesLabels,
+    newUsersSeries,
+    googleUsersSeries,
+    emailUsersSeries,
+    messagesSeries,
+    groupsSeries,
+    requestsSeries,
+    weekUsers,
+    weekMessages,
+    composition,
+    lastUpdated,
+    onlineUsers,
+    totalUsers,
+  };
+}

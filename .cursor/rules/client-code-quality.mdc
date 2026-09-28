@@ -11,6 +11,15 @@ alwaysApply: false
 - All app code is `.ts` / `.tsx` (`allowJs` off). Shared shapes live in `types/`.
 - Prefer named Props types on components; avoid `any` unless at a hard boundary (`unknown` + narrow).
 
+## DRY — single source of truth
+
+- Every type, constant, and behavior is defined once and imported everywhere else. Search before writing; if it exists, reuse or extend it — never paste a second copy.
+- Never re-declare a type that already lives in a `types/` file (e.g. socket payloads). Import it.
+- Timing values, storage keys, image paths, thresholds, tab configs → one home in `shared/constants/` or a feature `constants`, then imported. No re-typed literals.
+- Same logic in ≥2 places → extract: pure transform to `utils/`, side-effecting/stateful behavior to a hook (`useFileDownload`, `useEscapeKey`). Repeated markup → a shared component or render-prop wrapper (`SlideOverPanel`).
+- To relocate a symbol without a wide sweep, define it in its true home and re-export from the old path.
+- Judgment: one source per concept, not collapsing every similar-looking line. Values equal today but changing for different reasons stay separate.
+
 ## Data fetching
 
 ```ts

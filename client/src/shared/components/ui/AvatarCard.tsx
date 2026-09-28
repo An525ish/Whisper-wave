@@ -1,0 +1,57 @@
+import Image from '@/shared/components/ui/Image';
+import { AVATAR_ONLINE_DOT_POSITION_CLASS } from '@/shared/constants/app';
+
+type AvatarCardProps = {
+  avatars?: Array<string | null | undefined>;
+  max?: number;
+  avatarClassName?: string;
+  showOnline?: boolean;
+  showLoading?: boolean;
+};
+
+const AvatarCard = ({ avatars, max = 3, avatarClassName, showOnline = false, showLoading = false }: AvatarCardProps) => {
+  const list = (avatars ?? []).filter((src) => Boolean(src));
+  const shown = (list.length > 0 ? list : [null]).slice(0, Math.min(max, list.length || 1));
+  const stacked = shown.length > 1;
+
+  return (
+    <div className="relative mx-1 flex items-center md:mx-2">
+      {shown.map((src, index) => (
+        <div
+          key={`${src ?? 'avatar'}-${index}`}
+          className={`relative shrink-0 first:ml-0 ${
+            stacked
+              ? '-ml-5 md:-ml-6'
+              : '-ml-3 md:-ml-4'
+          }`}
+          style={{ zIndex: shown.length - index }}
+        >
+          <div
+            className={`overflow-hidden rounded-full border-2 border-border bg-border/25 shadow-md ${
+              stacked
+                ? 'h-11 w-11 md:h-12 md:w-12'
+                : 'h-11 w-11 md:h-12 md:w-12'
+            } ${avatarClassName ?? ''}`}
+          >
+            {/* 96px covers 48px at 2× DPR — dpr_auto in the transform handles retina */}
+            <Image
+              src={src}
+              alt="avatar-icon"
+              className="h-full w-full"
+              displayWidth={96}
+              showLoading={showLoading}
+            />
+          </div>
+          {showOnline && index === 0 ? (
+            <span
+              className={`absolute z-10 h-3 w-3 rounded-full border-2 border-background bg-green ${AVATAR_ONLINE_DOT_POSITION_CLASS}`}
+              aria-hidden
+            />
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default AvatarCard;

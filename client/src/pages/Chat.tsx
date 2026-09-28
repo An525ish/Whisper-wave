@@ -1,15 +1,15 @@
 import AppWrapper from '@/layout/AppWrapper';
-import ChatHeader from '@/components/chat/conversation/header/ConversationHeader';
-import ChatSearch from '@/components/chat/conversation/search/MessageSearch';
-import ChatsViewPanel, { type ConversationPanelHandle } from '@/components/chat/conversation/ConversationPanel';
-import OlderMessagesLoader from '@/components/chat/conversation/OlderMessagesLoader';
-import AddMemberDialog from '@/components/chat/dialogs/AddMemberDialog';
-import ProfileSheet from '@/components/profile/ProfileSheet';
-import { useMediaQuery } from '@/hooks/shared/useMediaQuery';
-import { useMessageJump } from '@/hooks/chat';
+import { ConversationHeader as ChatHeader } from '@/features/chat';
+import { MessageSearch as ChatSearch } from '@/features/chat';
+import { ConversationPanel as ChatsViewPanel, type ConversationPanelHandle } from '@/features/chat';
+import { OlderMessagesLoader } from '@/features/chat';
+import { AddMemberDialog } from '@/features/chat';
+import { ProfileSheet } from '@/features/profile';
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
+import { useMessageJump } from '@/features/chat';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CHAT_HEADER_FADE_CLASS } from '@/constants/chat';
+import { CHAT_HEADER_FADE_CLASS } from '@/features/chat';
 
 const Chat = () => {
   const { chatId } = useParams();

@@ -1,8 +1,8 @@
 import { RouterProvider } from 'react-router-dom';
-import { useProfileQuery } from '@/hooks/chat';
-import { useAuthStore } from '@/stores/auth';
-import AppLoader from '@/components/ui/loader/AppLoader';
-import AppToaster from '@/components/ui/AppToaster';
+import { useProfileQuery } from '@/features/chat';
+import { useAuthStore } from '@/features/auth';
+import AppLoader from '@/shared/components/ui/loader/AppLoader';
+import AppToaster from '@/shared/components/ui/AppToaster';
 import { router } from '@/app/router';
 import '@/App.css';
 

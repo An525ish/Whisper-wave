@@ -1,6 +1,6 @@
-import LandingNav from '@/components/landing/LandingNav';
-import SparkPassSection from '@/components/landing/SparkPassSection';
-import LandingFooter from '@/components/landing/LandingFooter';
+import { LandingNav } from '@/features/landing';
+import { SparkPassSection } from '@/features/landing';
+import { LandingFooter } from '@/features/landing';
 
 const SparkPassPage = () => (
   <div className="landing-page">

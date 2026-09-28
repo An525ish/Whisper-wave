@@ -1,0 +1,289 @@
+import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft'
+import { useChatSearch } from '@/features/chat/hooks/useChatSearch'
+import SearchFilters from '@/features/chat/components/conversation/search/SearchFilters'
+import SearchResultItem from '@/features/chat/components/conversation/search/SearchResultItem'
+import SearchDatePicker from '@/features/chat/components/conversation/search/SearchDatePicker'
+import EmptyState from '@/shared/components/ui/EmptyState'
+import dayjs from 'dayjs'
+import type { ChatSearchHit, SearchMode } from '@/features/chat/types/chat'
+import { SEARCH_MODES as MODES, DATE_PRESETS } from '@/features/chat/constants/chat'
+
+export type { ChatSearchHit }
+
+type ChatSearchProps = {
+  chatId?: string
+  open: boolean
+  onClose: () => void
+  onJumpToMessage: (messageId: string, query: string, options?: { closeSearch?: boolean }) => void
+}
+
+const SearchGlyph = ({ className = 'h-3.5 w-3.5' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+    <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.7" />
+    <path d="m16.2 16.2 4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+)
+
+const SEARCH_EMPTY = {
+  messages: {
+    image: '/images/no-personal-chat.svg',
+    idle: 'Type to search this chat',
+    empty: 'No matching messages',
+  },
+  media: {
+    image: '/images/no-media.svg',
+    idle: 'No media yet',
+    empty: 'No media matches',
+  },
+  links: {
+    image: '/images/no-link.svg',
+    idle: 'No links yet',
+    empty: 'No links match',
+  },
+} as const
+
+const searchEmptyTitle = (
+  mode: SearchMode,
+  query: string,
+  kind: 'idle' | 'empty',
+) => {
+  if (mode === 'date') return 'Every chat has a yesterday.'
+  const copy = SEARCH_EMPTY[mode]
+  if (kind === 'empty' && query) return `Nothing for “${query}”`
+  return copy[kind]
+}
+
+const ModeIcon = ({ mode, className = 'h-4 w-4' }: { mode: SearchMode; className?: string }) => {
+  if (mode === 'messages') return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M7 8.5h10M7 12h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M5.5 4.5h13A2.5 2.5 0 0 1 21 7v8a2.5 2.5 0 0 1-2.5 2.5H11l-4.2 3.2a.6.6 0 0 1-1-.45V17.5H5.5A2.5 2.5 0 0 1 3 15V7a2.5 2.5 0 0 1 2.5-2.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  )
+  if (mode === 'media') return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="3.5" y="5" width="17" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="9" cy="10" r="1.5" fill="currentColor" />
+      <path d="m7.5 16.5 3.2-3.4 2.3 2.2 2.6-3.1 3.4 4.3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+  if (mode === 'links') return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M9.5 14.5 7.8 16.2a3.2 3.2 0 0 1-4.5-4.5L7 8a3.2 3.2 0 0 1 4.5 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M14.5 9.5 16.2 7.8a3.2 3.2 0 1 1 4.5 4.5L17 16a3.2 3.2 0 0 1-4.5 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="m10 14 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="4" y="5" width="16" height="15" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8 3.5v3M16 3.5v3M4 9.5h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+const MessageSearch = ({ chatId, open, onClose, onJumpToMessage }: ChatSearchProps) => {
+  const {
+    inputRef,
+    entered,
+    mode,
+    draft,
+    setDraft,
+    query,
+    from,
+    setFrom,
+    selectedDate,
+    setSelectedDate,
+    activeIndex,
+    dateJumpNote,
+    hits,
+    total,
+    isFetching,
+    isError,
+    searchEnabled,
+    isGroup,
+    fromOptions,
+    presetActiveSet,
+    presetDatesFetched,
+    jumpRelative,
+    jumpToHit,
+    handleKeyDown,
+    handleModeChange,
+    handleJumpToSelectedDate,
+    jumping,
+    userId,
+  } = useChatSearch({ chatId, open, onClose, onJumpToMessage })
+
+  if (!open) return null
+
+  const modeIndex = Math.max(0, MODES.findIndex((m) => m.id === mode))
+  const activeMode = MODES[modeIndex]
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="chat-search-title">
+      <button type="button" aria-label="Close search"
+        className={`absolute inset-0 bg-black/55 backdrop-blur-[6px] transition-opacity duration-300 motion-reduce:transition-none ${entered ? 'opacity-100' : 'opacity-0'}`}
+        onClick={onClose}
+      />
+      <div
+        className={`relative flex h-[min(760px,calc(100dvh-1.5rem))] w-full max-w-105 flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-background/95 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${entered ? 'scale-100 opacity-100' : 'scale-[0.98] opacity-0'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="pointer-events-none absolute inset-x-8 top-0 h-24 bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.14),transparent_70%)]" />
+
+        <header className="relative shrink-0 px-4 pb-3 pt-3 sm:px-5">
+          <div className="mb-4 flex h-10 items-center gap-2">
+            <button type="button" onClick={onClose}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border/80 bg-background-alt/60 text-body transition hover:border-green/40 hover:bg-primary/80 hover:text-white"
+              aria-label="Close"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div className="flex min-h-10 min-w-0 flex-1 flex-col justify-center gap-0.5">
+              <h2 id="chat-search-title" className="truncate text-[15px] font-semibold leading-tight tracking-tight text-white">
+                Find in chat
+              </h2>
+              <p className="truncate text-xs leading-tight text-body-300">
+                {activeMode.hint}
+                {searchEnabled ? <span className="text-body-700"> · {isFetching && total === 0 ? '…' : `${total} found`}</span> : null}
+              </p>
+            </div>
+            {searchEnabled ? (
+              <div className="flex h-10 items-center overflow-hidden rounded-full border border-border/70 bg-background-alt/50 p-0.5">
+                <button type="button" className="grid h-8 w-8 place-items-center rounded-full text-body-300 transition hover:bg-primary/70 hover:text-body disabled:opacity-30"
+                  onClick={() => jumpRelative(-1)} disabled={total === 0} aria-label="Previous match">
+                  <ChevronLeft className="h-4 w-4 rotate-90" />
+                </button>
+                <span className="min-w-10 px-1 text-center text-[11px] font-semibold tabular-nums text-body">
+                  {total === 0 ? '0' : activeIndex < 0 ? `–/${total}` : `${activeIndex + 1}/${total}`}
+                </span>
+                <button type="button" className="grid h-8 w-8 place-items-center rounded-full text-body-300 transition hover:bg-primary/70 hover:text-body disabled:opacity-30"
+                  onClick={() => jumpRelative(1)} disabled={total === 0} aria-label="Next match">
+                  <ChevronLeft className="h-4 w-4 -rotate-90" />
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="relative" role="tablist" aria-label="Search categories">
+            <div className="absolute inset-x-0 bottom-0 h-px bg-border/45" aria-hidden />
+            <div className="pointer-events-none absolute bottom-0 z-10 h-0.5 rounded-full bg-linear-to-r from-green-gradFrom via-green to-green-gradTo transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{ width: `calc(100% / ${MODES.length})`, left: `calc(${modeIndex} * 100% / ${MODES.length})` }} aria-hidden />
+            <div className="grid grid-cols-4">
+              {MODES.map((tab) => {
+                const selected = mode === tab.id
+                return (
+                  <button key={tab.id} type="button" role="tab" aria-selected={selected}
+                    onClick={() => handleModeChange(tab.id)}
+                    className={`relative inline-flex h-11 w-full items-center justify-center gap-1.5 pb-2.5 transition-colors duration-200 ${selected ? 'text-green' : 'text-body-300 hover:text-body'}`}
+                  >
+                    <ModeIcon mode={tab.id} className={`h-4 w-4 shrink-0 transition ${selected ? 'text-green' : 'text-body-300'}`} />
+                    <span className="truncate text-[11px] font-medium leading-none sm:text-xs">{tab.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {mode !== 'date' ? (
+            <div className="mt-3 space-y-2.5">
+              <div className="group/search relative flex h-10 items-center gap-2.5 rounded-full border border-[rgba(235,236,236,0.28)] bg-background/80 px-3 shadow-[inset_0_1px_0_rgba(235,236,236,0.08)] transition focus-within:border-[rgba(235,236,236,0.45)] focus-within:bg-background focus-within:shadow-[0_0_18px_rgba(235,236,236,0.07)]">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/80 text-body-300 transition group-focus-within/search:text-green">
+                  <SearchGlyph />
+                </span>
+                <input ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={handleKeyDown}
+                  placeholder={mode === 'media' ? 'Filter media…' : mode === 'links' ? 'Filter links…' : 'Search messages…'}
+                  className="min-w-0 flex-1 border-0 bg-transparent py-0 text-sm text-body placeholder:text-body-300/80 outline-none"
+                  aria-label="Search in conversation"
+                />
+              </div>
+              <SearchFilters mode={mode} isGroup={isGroup} fromOptions={fromOptions} from={from} onFromChange={setFrom} />
+            </div>
+          ) : null}
+        </header>
+
+        {mode !== 'date' ? (
+          <div className="mx-4 h-px shrink-0 bg-border/60 sm:mx-5" />
+        ) : null}
+
+        <div className={`min-h-0 flex-1 overscroll-contain px-4 sm:px-5 ${mode === 'date' ? 'overflow-hidden pt-4 sm:pt-5' : 'overflow-y-auto scrollbar-hide py-3 sm:py-4'}`}>
+          {mode === 'date' ? (
+            <div className="flex h-full min-h-0 flex-col pb-3 sm:pb-4">
+              <div className="mb-3.5 flex shrink-0 justify-center gap-1.5">
+                {DATE_PRESETS.map((preset) => {
+                  const iso = dayjs().subtract(preset.daysAgo, 'day').format('YYYY-MM-DD')
+                  const selected = selectedDate === iso
+                  const hasMessages = !presetDatesFetched || presetActiveSet.has(iso)
+                  return (
+                    <button key={preset.id} type="button" disabled={!hasMessages} onClick={() => setSelectedDate(iso)}
+                      className={`rounded-full px-3 py-1.5 text-center text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-35 ${selected ? 'bg-green/25 text-green ring-1 ring-inset ring-green/35' : 'border border-border/70 bg-primary/40 text-body-700 hover:border-green/35 hover:text-body'}`}
+                    >
+                      {preset.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <SearchDatePicker chatId={chatId} value={selectedDate} onChange={setSelectedDate}
+                  onJump={handleJumpToSelectedDate} jumping={jumping} statusNote={dateJumpNote} enabled={open && mode === 'date'} />
+              </div>
+              <div className="mt-4 flex shrink-0 justify-center sm:mt-5">
+                <img
+                  src="/images/no-dates.svg"
+                  alt="Every chat has a yesterday."
+                  className="h-24 w-auto sm:h-28"
+                />
+              </div>
+            </div>
+          ) : !searchEnabled ? (
+            <EmptyState
+              className="h-full min-h-36"
+              imageSrc={SEARCH_EMPTY[mode].image}
+              imageAlt=""
+              imageClassName="w-28 opacity-80 sm:w-32"
+              titleClassName="mt-3 text-center text-sm font-medium text-body-700"
+              title={searchEmptyTitle(mode, query, 'idle')}
+            />
+          ) : isFetching && total === 0 ? (
+            <div className="space-y-2 py-1">
+              {[0, 1, 2, 3].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-primary/35" />)}
+            </div>
+          ) : isError ? (
+            <p className="py-10 text-center text-sm text-body-300">Couldn't search right now</p>
+          ) : total === 0 ? (
+            <EmptyState
+              className="h-full min-h-36"
+              imageSrc={SEARCH_EMPTY[mode].image}
+              imageAlt=""
+              imageClassName="w-28 opacity-80 sm:w-32"
+              titleClassName="mt-3 text-center text-sm font-medium text-body-700"
+              title={searchEmptyTitle(mode, query, 'empty')}
+            />
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {[...hits].reverse().map((hit) => {
+                const chronologicalIndex = hits.findIndex((row) => row._id === hit._id)
+                const isActive = chronologicalIndex === activeIndex
+                const mine = String(hit.sender._id) === userId
+                return (
+                  <SearchResultItem
+                    key={hit._id}
+                    hit={hit}
+                    isActive={isActive}
+                    mine={mine}
+                    query={query}
+                    mode={mode}
+                    draft={draft}
+                    onClick={() => jumpToHit(chronologicalIndex, { closeSearch: true })}
+                  />
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default MessageSearch
