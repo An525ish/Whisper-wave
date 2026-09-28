@@ -24,9 +24,9 @@ type AccountBarProps = {
 };
 
 const defaultNotificationButtonClass =
-  'relative grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-border bg-primary transition active:bg-primary/70 md:h-10 md:w-10';
+  'relative grid h-10 w-10 cursor-pointer place-items-center rounded-full border border-border bg-primary transition active:bg-primary/70';
 
-const defaultNotificationIconClass = 'h-4 w-4 text-body-300 md:h-5 md:w-5';
+const defaultNotificationIconClass = 'h-5 w-5 text-body-300';
 
 /** Notifications + account menu — profile column and list chrome. */
 const AccountBar = ({

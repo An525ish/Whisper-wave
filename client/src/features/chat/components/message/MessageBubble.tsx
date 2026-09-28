@@ -120,12 +120,15 @@ const MessageBubble = ({
     </span>
   );
 
-  const showBubbleTimestamp = !mediaOnly;
+  const showBubbleTimestamp = !mediaOnly && !linkOnly && links.length === 0;
   const useMediaAlbum = isMediaAlbumEligible(attachments, resolveKind);
   const mediaTimestamp = renderTimestamp(
     `pointer-events-none absolute bottom-0 right-0.5 z-2 ${attachmentTimeClass}`,
   );
   const fileTimestamp = renderTimestamp(`pointer-events-none ${attachmentTimeClass}`);
+  const linkTimestamp = renderTimestamp(
+    `pointer-events-none absolute bottom-1.5 right-1.5 z-10 ${attachmentTimeClass}`,
+  );
 
   if (isDeleted) {
     return (
@@ -250,9 +253,11 @@ const MessageBubble = ({
           {linkOnly ? (
             <div className="relative min-w-0 w-full px-0.5">
               {links.map((link, index) => (
-                <LinkPreview key={link.url} link={link} variant={linkVariant} lead={index === 0} />
+                <div key={link.url} className="relative">
+                  <LinkPreview link={link} variant={linkVariant} lead={index === 0} />
+                  {index === links.length - 1 ? linkTimestamp : null}
+                </div>
               ))}
-              <div className="mt-1 text-right leading-none">{timeReserve}</div>
             </div>
           ) : hasText ? (
             <div className={`relative ${hasAttachments ? 'px-2 pt-0.5' : ''}`}>
@@ -263,14 +268,15 @@ const MessageBubble = ({
               {links.length > 0 ? (
                 <>
                   {links.map((link, index) => (
-                    <LinkPreview
-                      key={link.url}
-                      link={link}
-                      variant={linkVariant}
-                      lead={index === 0 && !content}
-                    />
+                    <div key={link.url} className="relative">
+                      <LinkPreview
+                        link={link}
+                        variant={linkVariant}
+                        lead={index === 0 && !content}
+                      />
+                      {index === links.length - 1 ? linkTimestamp : null}
+                    </div>
                   ))}
-                  <div className="mt-1 text-right leading-none">{timeReserve}</div>
                 </>
               ) : null}
             </div>
