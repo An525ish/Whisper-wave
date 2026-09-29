@@ -117,7 +117,15 @@ const ConversationPanel = ({
     return rows
       .filter((f) => Boolean(f.url))
       .filter((f) => { const k = getMediaKindFromFile(f); return k === 'image' || k === 'video'; })
-      .map((f) => ({ _id: f._id ?? f.publicId ?? f.url!, url: f.url!, name: f.name, publicId: f.publicId, fileType: f.fileType }));
+      .map((f) => ({
+        _id: f._id ?? f.publicId ?? f.url!,
+        url: f.url!,
+        name: f.name,
+        publicId: f.publicId,
+        fileType: f.fileType,
+        messageId: f.messageId,
+        senderId: f.senderId,
+      }));
   }, [mediaData]);
 
   const { deleteOneMessage, deleteSelectedMessages, handleClearChat } = useDeleteActions({
@@ -237,7 +245,7 @@ useImperativeHandle(ref, () => ({
         ) : null}
         {showScrollToBottom ? (
           <button type="button" onClick={() => scrollToBottom(true)} aria-label="Scroll to latest messages"
-            className={`absolute right-3 z-20 grid h-10 w-10 place-items-center rounded-full border border-border/80 bg-primary/95 text-body shadow-[0_6px_20px_rgba(0,0,0,0.35)] transition hover:border-green/40 hover:bg-background-alt hover:text-green md:right-4 ${attachments.length > 0 ? 'bottom-20 md:bottom-24' : 'bottom-[max(0.75rem,env(safe-area-inset-bottom))] md:bottom-4'}`}>
+            className={`absolute right-3 z-20 grid h-12 w-12 place-items-center rounded-full border border-border/80 bg-primary/95 text-body shadow-[0_6px_20px_rgba(0,0,0,0.35)] transition hover:border-green/40 hover:bg-background-alt hover:text-green md:right-4 md:h-10 md:w-10 ${attachments.length > 0 ? 'bottom-20 md:bottom-24' : 'bottom-[max(0.75rem,env(safe-area-inset-bottom))] md:bottom-4'}`}>
             <DoubleChevronDown className="h-4 w-4" />
           </button>
         ) : null}

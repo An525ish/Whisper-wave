@@ -120,13 +120,13 @@ const MessageSearch = ({ chatId, open, onClose, onJumpToMessage }: ChatSearchPro
   const activeMode = MODES[modeIndex]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="chat-search-title">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="chat-search-title">
       <button type="button" aria-label="Close search"
         className={`absolute inset-0 bg-black/55 backdrop-blur-[6px] transition-opacity duration-300 motion-reduce:transition-none ${entered ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
       />
       <div
-        className={`relative flex h-[min(760px,calc(100dvh-1.5rem))] w-full max-w-105 flex-col overflow-hidden rounded-[1.75rem] border border-border/70 bg-background/95 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${entered ? 'scale-100 opacity-100' : 'scale-[0.98] opacity-0'}`}
+        className={`relative flex h-[min(760px,calc(100dvh-1.5rem))] w-full max-w-105 flex-col overflow-hidden rounded-t-[1.75rem] border border-border/70 bg-background/95 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:rounded-[1.75rem] ${entered ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-6 scale-[0.98] opacity-0 sm:translate-y-0'}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="pointer-events-none absolute inset-x-8 top-0 h-24 bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.14),transparent_70%)]" />

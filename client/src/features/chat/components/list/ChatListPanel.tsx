@@ -31,11 +31,11 @@ const ChatListPanel = () => {
       {!isNewOpen ? (
         <button
           type="button"
-          className="group absolute bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] right-4 z-20 grid h-14 w-14 place-items-center rounded-full border border-green-light/40 bg-gradient-green shadow-lg shadow-green/20 transition active:scale-95 md:bottom-7 md:right-6 md:h-auto md:w-auto md:border-border md:bg-gradient-background md:p-3 md:shadow-none"
+          className="group absolute bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] right-4 z-20 grid h-auto w-auto place-items-center rounded-full border border-border bg-gradient-background p-3 shadow-none transition active:scale-95 md:bottom-7 md:right-6"
           onClick={() => openNew('friends')}
           aria-label="Add friends or create group"
         >
-          <AddMemberIcon className="h-7 w-7 fill-white transition md:h-8 md:w-8 md:fill-green" />
+          <AddMemberIcon className="h-8 w-8 fill-green transition" />
         </button>
       ) : null}
 

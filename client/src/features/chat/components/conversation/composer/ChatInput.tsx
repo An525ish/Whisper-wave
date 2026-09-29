@@ -211,12 +211,12 @@ const ChatInput = ({
 
     const rowMinClass = compact ? COMPOSER_ROW_MIN_CLASS_COMPACT : COMPOSER_ROW_MIN_CLASS;
     const sendSizeClass = compact ? COMPOSER_SEND_SIZE_CLASS_COMPACT : COMPOSER_SEND_SIZE_CLASS;
-    const textareaMinClass = compact ? 'min-h-8' : 'min-h-11';
+    const textareaMinClass = compact ? 'min-h-9' : 'min-h-11';
 
     // Match line-height + vertical padding to COMPOSER_ROW_MIN_PX* so placeholder sits
     // centered in one row; unlike leading-11, a fixed ~22px line-height stays natural when wrapped.
     const textareaTypographyClass = compact
-        ? 'px-1 md:px-2 text-sm leading-5 py-1.5'
+        ? 'px-1 md:px-2 text-sm leading-5 py-2'
         : 'px-1 md:px-2 text-[16px] md:text-sm leading-[22px] py-[11px]';
 
     const textareaClassName = [
@@ -249,17 +249,15 @@ const ChatInput = ({
                             />
                         )}
                         {!editMode && isEmojiClicked && (
-                            <div className="absolute bottom-14 left-0 z-30 max-w-[calc(100vw-1rem)]">
-                                <ComposerPicker
-                                    triggerRef={emojiIconRef}
-                                    setMessage={setMessageWithDismissSync}
-                                    onClose={() => setIsEmojiOpen(false)}
-                                    onGifSelect={(gif) => {
-                                        onGifSelect?.(gif);
-                                        setIsEmojiOpen(false);
-                                    }}
-                                />
-                            </div>
+                            <ComposerPicker
+                                triggerRef={emojiIconRef}
+                                setMessage={setMessageWithDismissSync}
+                                onClose={() => setIsEmojiOpen(false)}
+                                onGifSelect={(gif) => {
+                                    onGifSelect?.(gif);
+                                    setIsEmojiOpen(false);
+                                }}
+                            />
                         )}
                         <div className={`flex h-full w-full min-w-0 flex-col overflow-hidden border ${
                             hasReply ? 'rounded-b-3xl rounded-t-none border-t-0 border-green/15 bg-primary/50 md:bg-primary/30' : 'rounded-3xl'
@@ -282,11 +280,11 @@ const ChatInput = ({
                                 <span ref={emojiIconRef} className="shrink-0">
                                     <button
                                         type="button"
-                                        className={`grid place-items-center rounded-full transition active:bg-background/40 ${compact ? 'h-7 w-7' : 'h-10 w-10'}`}
+                                        className={`grid place-items-center rounded-full transition active:bg-background/40 ${compact ? 'h-9 w-9' : 'h-10 w-10'}`}
                                         onClick={() => setIsEmojiOpen(prev => !prev)}
                                         aria-label="Emoji"
                                     >
-                                        <EmojiIcon className={compact ? 'h-4 w-4 hover:fill-body' : 'h-5 w-5 hover:fill-body'} />
+                                        <EmojiIcon className={compact ? 'h-4.5 w-4.5 hover:fill-body' : 'h-5 w-5 hover:fill-body'} />
                                     </button>
                                 </span>
                             ) : null}

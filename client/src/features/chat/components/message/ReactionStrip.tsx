@@ -40,7 +40,7 @@ export const REACTION_SURFACE_CLASS =
   'rounded-full border border-border bg-primary shadow-[0_2px_8px_rgba(0,0,0,0.28)]';
 
 const emojiBtnClass = (reacted: boolean) =>
-  `grid h-9 w-9 shrink-0 place-items-center rounded-full transition-colors duration-150 hover:bg-white/10 active:scale-95 ${
+  `grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors duration-150 hover:bg-white/10 active:scale-95 ${
     reacted ? 'bg-white/15' : ''
   }`;
 
@@ -117,7 +117,7 @@ const ReactionStrip = ({ reactions, myUserId, onReact, onClose, onPickerOpenChan
           ref={moreBtnRef}
           type="button"
           onClick={togglePicker}
-          className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-body-300 transition-colors hover:bg-white/10 hover:text-body ${
+          className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-body-300 transition-colors hover:bg-white/10 hover:text-body ${
             pickerOpen ? 'bg-white/10 text-body' : ''
           }`}
           aria-label="More emojis"

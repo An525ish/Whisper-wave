@@ -10,14 +10,19 @@ import TrashIcon from '@/shared/components/ui/icons/Trash';
 import { AccountBar } from '@/features/profile';
 import { type ReactNode, type RefObject } from 'react';
 
+/** Desktop-only header buttons (voice/video call). */
 const menuBtnClass =
-  'grid h-8 w-8 place-items-center rounded-full border text-body transition md:h-10 md:w-10';
+  'grid h-10 w-10 place-items-center rounded-full border text-body transition';
+
+/** Compact header icon buttons on mobile (bell, 3-dot). */
+const headerIconBtnClass =
+  'grid h-9 w-9 place-items-center rounded-full border text-body transition md:h-10 md:w-10';
 
 /** Filled icons (3-dot menu). */
 const menuIconClass =
   'h-4 w-4 fill-current transition md:h-5 md:w-5';
 
-/** Stroke bell — slightly larger on mobile so it matches filled icons optically. */
+/** Stroke bell icon size. */
 const headerBellIconClass =
   'h-[1.125rem] w-[1.125rem] stroke-[1.75] text-body-300 transition md:h-5 md:w-5 md:stroke-[1.5]';
 
@@ -115,7 +120,7 @@ const HeaderActions = ({
       <AccountBar
         variant="notification"
         overlayClassName="fixed inset-0 z-50"
-        notificationButtonClassName={`${menuBtnClass} border-white/15 text-body-300 active:bg-primary/40`}
+        notificationButtonClassName={`${headerIconBtnClass} border-white/15 text-body-300 active:bg-primary/40`}
         notificationIconClassName={headerBellIconClass}
       />
     </div>
@@ -141,7 +146,7 @@ const HeaderActions = ({
       type="button"
       ref={buttonRef}
       onClick={onToggle}
-      className={`${menuBtnClass} ${
+      className={`${headerIconBtnClass} ${
         searchOpen || isDotsMenu
           ? 'border-green/50 bg-green/10 text-green'
           : 'border-white/15 group hover:border-green-light hover:text-white'

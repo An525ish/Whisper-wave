@@ -79,11 +79,7 @@ const MessageRow = ({
     );
 
     if (matchIndex >= 0) {
-      // Stamp messageId so delete/forward work for this item
-      const stamped = sharedGalleryFiles.map((f, i) =>
-        i === matchIndex ? { ...f, messageId: chatData._id ?? undefined, senderId: String(sender._id) } : f,
-      );
-      setGalleryOverride(stamped);
+      setGalleryOverride(null);
       setGalleryIndex(matchIndex);
       return;
     }

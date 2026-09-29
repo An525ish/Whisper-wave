@@ -84,7 +84,7 @@ const ForgotPassword = ({ setIsForget }: ForgotPasswordProps) => {
             </AuthSubmit>
             <button
               type="button"
-              className="text-center text-sm text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
+              className="inline-flex items-center justify-center py-2.5 text-sm text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
               onClick={() => setIsForget(false)}
             >
               ← Back to sign in

@@ -75,8 +75,9 @@ const MediaGrid = ({ files, query, photoFilter, onOpenPhoto }: MediaGridProps) =
             className="group relative overflow-hidden rounded-xl ring-1 ring-border/45 transition hover:ring-green/45 hover:shadow-[0_8px_24px_rgba(1,195,109,0.12)]"
           >
             {renderThumbnail(file, kind)}
-            <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent opacity-0 transition group-hover:opacity-100" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 p-1.5 opacity-0 transition group-hover:opacity-100">
+            {/* Gradient + info strip: always visible on touch, hover-only on pointer devices */}
+            <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent opacity-100 transition [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1 p-1.5 opacity-100 transition [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
               <span className="truncate text-[10px] font-medium text-white/90">{getMediaDisplayName(file)}</span>
               <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-black/45 text-white backdrop-blur-sm">
                 <ExpandIcon className="h-3.5 w-3.5" />

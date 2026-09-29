@@ -212,7 +212,7 @@ const ConversationHeader = ({
                 <button
                   type="button"
                   onClick={onCancelSelect}
-                  className="inline-flex h-9 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
+                  className="inline-flex h-11 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
                   aria-label="Cancel selection"
                 >
                   <ChevronLeft className="h-5 w-5" />
@@ -221,7 +221,7 @@ const ConversationHeader = ({
                 <Link
                   to="/"
                   replace
-                  className="inline-flex h-9 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
+                  className="inline-flex h-11 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
                   aria-label="Back to chats"
                 >
                   <ChevronLeft className="h-5 w-5" />

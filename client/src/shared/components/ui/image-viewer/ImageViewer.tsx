@@ -270,8 +270,8 @@ const ImageViewer = ({
         <RetryableMediaVideo
           key={currentMedia.url}
           url={currentMedia.url}
-          wrapperClassName="flex w-full max-w-full items-center justify-center"
-          className="max-h-[min(78dvh,680px)] max-w-full rounded-2xl object-contain shadow-[0_24px_64px_rgba(0,0,0,0.6)] sm:max-h-[min(68vh,680px)]"
+          wrapperClassName="flex h-full max-h-full w-full max-w-full items-center justify-center"
+          className="max-h-full max-w-full rounded-2xl object-contain shadow-[0_24px_64px_rgba(0,0,0,0.6)]"
           fallbackIconClassName={galleryFallbackIconClass}
           controls
           playsInline
@@ -301,7 +301,7 @@ const ImageViewer = ({
       // Gesture container — non-passive listeners attached via useEffect
       <div
         ref={gestureRef}
-        className="flex min-h-[min(60vh,580px)] w-full max-w-full items-center justify-center overflow-hidden"
+        className="flex h-full max-h-full w-full max-w-full items-center justify-center overflow-hidden"
         style={{ cursor: scale > 1 ? (isGesturing ? 'grabbing' : 'grab') : 'default' }}
       >
         <RetryableMediaImage
@@ -309,8 +309,8 @@ const ImageViewer = ({
           url={currentMedia.url}
           transformWidth={currentIsGif ? undefined : 1400}
           alt={displayName}
-          wrapperClassName="flex w-full max-w-full items-center justify-center"
-          className="max-h-[min(78dvh,680px)] max-w-full select-none rounded-2xl object-contain shadow-[0_24px_72px_rgba(0,0,0,0.55)] sm:max-h-[min(68vh,680px)]"
+          wrapperClassName="flex h-full max-h-full w-full max-w-full items-center justify-center"
+          className="max-h-full max-w-full select-none rounded-2xl object-contain shadow-[0_24px_72px_rgba(0,0,0,0.55)]"
           fallbackIconClassName={galleryFallbackIconClass}
           style={{
             transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,

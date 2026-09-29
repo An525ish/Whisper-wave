@@ -1929,8 +1929,9 @@
   }
 
   .auth-otp__cell {
-    width: 2.35rem;
-    height: 2.9rem;
+    /* Keep height above 44px; shrink width only enough to fit 6 cells on SE */
+    width: 2.65rem;
+    height: 3rem;
     font-size: 1.15rem;
   }
 }

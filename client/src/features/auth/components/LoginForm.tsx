@@ -74,7 +74,7 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
         <div className="-mt-0.5 flex justify-end">
           <button
             type="button"
-            className="text-xs text-body-300 underline-offset-4 transition hover:text-green hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
+            className="inline-flex items-center py-2.5 text-xs text-body-300 underline-offset-4 transition hover:text-green hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
             onClick={() => setIsForget(true)}
           >
             Forgot password?
