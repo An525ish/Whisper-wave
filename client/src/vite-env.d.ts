@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_BASE_URL: string;
+  /** Public Google OAuth client id; unset → Google sign-in is hidden. */
+  readonly VITE_GOOGLE_CLIENT_ID?: string;
 }
 
 interface ImportMeta {

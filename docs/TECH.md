@@ -229,24 +229,23 @@ Controllers parse `req`/`res`, call services, set cookies/status. Services never
 
 ### Client layout (Phase 1)
 
+Feature-sliced: `pages → features → shared` (shared never imports features). Full standards: `client/CLAUDE.md`. Cursor mirrors: `.cursor/rules/client-architecture.mdc`, `client-code-quality.mdc`.
+
 ```
 client/src/
-  app/          providers, router, queryClient
-  api/          fetch client + resource functions (no React)
-  stores/       Zustand (auth, admin, notifications)
-  features/     domain hooks (api, admin)
-  socket/       Socket.IO provider
-  types/        shared TS types
-  pages/        route screens
-  components/   presentational UI
-  layout/       AppWrapper / AdminWrapper
+  app/                 providers, router, queryClient, RouteError
+  pages/               thin route entries (compose features)
+  layout/              AppWrapper / AdminWrapper
+  features/<domain>/   auth · chat · admin · profile · notifications · landing
+                       api/ components/ hooks/ stores/ utils/ types.ts index.ts
+  shared/              domain-agnostic UI, hooks, constants, types, lib/api (fetch), lib/socket
+  assets/  styles/  main.tsx
 ```
 
-- Server state → TanStack Query. Client/UI state → Zustand. No Redux/axios.
+- Server state → TanStack Query. Client/UI state → Zustand. Cross-feature imports only via `features/<domain>/index.ts`.
 - Admin auth: httpOnly `adminToken` cookie; `ADMIN_SECRET` never in `VITE_*`.
-- Cursor rules: `client-architecture.mdc`, `client-code-quality.mdc`.
 
-Cursor rules enforcing this live in `.cursor/rules/` (`acknowledge-rules`, `server-architecture`, `server-code-quality`, `client-architecture`, `client-code-quality`, `product-and-cost`).
+Cursor rules live in `.cursor/rules/` (`acknowledge-rules`, `server-architecture`, `server-code-quality`, `client-architecture`, `client-code-quality`, `product-and-cost`).
 
 When we start Phase 2, add a short “Phase 2 backend” section here (Redis keys, `/anon` events) instead of inventing a new stack.
 
@@ -261,6 +260,7 @@ When we start Phase 2, add a short “Phase 2 backend” section here (Redis key
 | Aug 2026 | Mongo for permanent data, Redis later for ephemeral match | Product + cost + speed |
 | Aug 2026 | No Redis / Stripe / paid moderation in Phase 1 | $0 now; add when the feature exists |
 | Aug 2026 | In-memory presence `Map` in Phase 1, swap file later | Same code shape, zero extra infra |
-| Aug 2026 | Client: TanStack Query + Zustand (drop Redux/axios) | Lighter server-state model; matches latest majors |
+| Aug 2026 | Client: TanStack Query + Zustand (drop Redux) | Lighter server-state model; matches latest majors |
+| Sep 2026 | Client: feature-sliced (`features/` + `shared/`), fetch via `shared/lib/api` | Align Cursor rules + CLAUDE.md; one-way deps |
 | Aug 2026 | Client latest majors (React 19, Vite 8, RR7, Tailwind 4) | Same dependency policy as server |
 | Aug 2026 | Admin `adminToken` cookie + `ADMIN_SECRET` | Real admin auth without leaking secret to Vite |

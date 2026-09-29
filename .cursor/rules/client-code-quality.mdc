@@ -1,53 +1,73 @@
 ---
-description: TypeScript and quality habits for Whisper Wave client
-globs: client/**/*.{ts,tsx,js,jsx}
+description: Client stack, DRY, errors/toasts, CSS, env, quality bar
+globs: client/**/*.{ts,tsx,js,jsx,css}
 alwaysApply: false
 ---
 
 # Client Code Quality
 
-## TypeScript
+Condensed from `client/CLAUDE.md`. Keep in sync when either changes.
 
-- All app code is `.ts` / `.tsx` (`allowJs` off). Shared shapes live in `types/`.
-- Prefer named Props types on components; avoid `any` unless at a hard boundary (`unknown` + narrow).
+## Stack — current idioms only
+
+React 19 · TS (strict) · Vite 8 · Tailwind v4 · TanStack Query v5 · Zustand v5 ·
+react-hook-form v7 + Zod v4 · react-router v7 · socket.io-client v4 · dayjs ·
+shared fetch client (`shared/lib/api/client`).
+
+- Server data → TanStack Query. **Never** `useState`+`useEffect`+fetch for API data.
+- Client/UI/session state → Zustand (selectors; no server data inside).
+- Forms → react-hook-form + Zod schemas in the feature (`authValidators`-style field
+  `validate` / schema helpers). Schema is source of truth; prefer `z.infer`. Do not
+  invent a second validation stack.
+- `useEffect` only for external systems (DOM/socket/subscriptions); always clean up.
+- Realtime → `useSocketEvent` + `shared/constants/socket.ts`; handlers update Query
+  cache/stores, not local copies.
+- Function components + hooks only. No class components, deprecated APIs, or `any`.
+- Do not add paid analytics/Sentry without TECH.md approval.
+
+## Errors & toasts
+
+- Query / load errors → `useErrors` (`shared/hooks/useError`).
+- Mutations that need a loading toast → `useAsyncMutation`.
+- One-off UX validation messages → `toast.*` in a **hook** (not deep leaf UI, not pages).
+- Avoid double-toasting the same failure.
+
+## Env
+
+Allowlist only: `VITE_BASE_URL`, `VITE_GOOGLE_CLIENT_ID` (public; may be unset → feature no-ops).
+Every `VITE_*` must be declared on `ImportMetaEnv` in `vite-env.d.ts`. No secrets in `VITE_*`.
+Cookies only (`credentials: 'include'`); no access tokens in `localStorage`.
+No `dangerouslySetInnerHTML` for user content.
+
+## CSS homes
+
+- App tokens / `@theme` / shared utilities → root entry CSS (`index.css` today). **Do not
+  keep appending** large feature blobs here — extract or colocate.
+- Landing-only tokens/classes (`lw-*`) → `styles/landing.css` only.
+- One-off composites → small colocated CSS next to the component (e.g. carousel).
+- Don't add new rules to legacy `App.css` without consolidating into the homes above.
 
 ## DRY — single source of truth
 
-- Every type, constant, and behavior is defined once and imported everywhere else. Search before writing; if it exists, reuse or extend it — never paste a second copy.
-- Never re-declare a type that already lives in a `types/` file (e.g. socket payloads). Import it.
-- Timing values, storage keys, image paths, thresholds, tab configs → one home in `shared/constants/` or a feature `constants`, then imported. No re-typed literals.
-- Same logic in ≥2 places → extract: pure transform to `utils/`, side-effecting/stateful behavior to a hook (`useFileDownload`, `useEscapeKey`). Repeated markup → a shared component or render-prop wrapper (`SlideOverPanel`).
-- To relocate a symbol without a wide sweep, define it in its true home and re-export from the old path.
-- Judgment: one source per concept, not collapsing every similar-looking line. Values equal today but changing for different reasons stay separate.
+**Search before you write** — reuse or extend, never paste a second copy.
 
-## Data fetching
+- Types / constants / logic / UI: one home; extract at ≥2 usages.
+- Re-export from old path when relocating to avoid wide sweeps.
+- Judgment: one source per concept — equal-today-but-different-reasons ≠ duplication.
 
-```ts
-// ✅ api/ is pure
-export async function getProfile() {
-  return api.get<ProfileResponse>('/user/get-profile');
-}
+## Quality bar
 
-// ❌ fetch inside a presentational component
-```
-
-- Mutations invalidate precise query keys.
-- Socket handlers update Query cache or Zustand — not both for the same fact.
-
-## Security
-
-- Never put secrets in `VITE_*` env vars.
-- Cookies only (`credentials: 'include'`); no access tokens in `localStorage`.
-- Do not `console.log` full API error bodies in production paths.
-- No `dangerouslySetInnerHTML` for user content.
+- **≤ 350 lines/file.** Over → split.
+- No `console.*`, commented-out code, dead code, or unused exports.
+- A11y: semantic HTML, keyboard controls, `aria-label` on icon buttons, `aria-hidden`
+  on decorative SVGs, visible focus, honor `prefers-reduced-motion`.
+- Path alias `@/` for cross-layer imports; relative only within a feature/folder.
+- Naming: Components PascalCase; hooks `useX`; utils camelCase; scalars SCREAMING_SNAKE_CASE; folders kebab-case.
+- Before done: `npm run typecheck` and `npm run lint` must pass.
 
 ## Performance
 
 - Virtualize long chat/message lists.
 - Subscribe to narrow Zustand slices.
 - Keep admin/chart code in lazy routes / manual chunks.
-
-## Dependencies
-
-- Latest majors (React 19, Vite 8, RR7, Tailwind 4, TQ, Zustand, Zod 4).
-- Do not add paid analytics/Sentry without TECH.md approval.
+- Mutations invalidate precise query keys; socket handlers update Query *or* Zustand for a given fact — not both.
