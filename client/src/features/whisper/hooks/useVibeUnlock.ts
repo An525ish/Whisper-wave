@@ -15,21 +15,28 @@ const TICK_MS = 5000;
 export function useVibeUnlock(
   messages: AnonMessage[],
   matchedAt: number | null,
-  opts: { likeSent: boolean; mutualLike: boolean; partnerVibed: boolean }
+  opts: {
+    likeSent: boolean;
+    mutualLike: boolean;
+    partnerVibed: boolean;
+    /** The partner left — the thread can no longer become a connection. */
+    ended: boolean;
+  }
 ) {
   const [now, setNow] = useState(() => Date.now());
   const vibeUnlocked = isVibeUnlocked(messages, matchedAt, now);
 
   useEffect(() => {
-    if (vibeUnlocked) return;
+    if (vibeUnlocked || opts.ended) return;
     const id = window.setInterval(() => setNow(Date.now()), TICK_MS);
     return () => window.clearInterval(id);
-  }, [vibeUnlocked]);
+  }, [vibeUnlocked, opts.ended]);
 
   return {
     vibeUnlocked,
     showVibePrompt:
       vibeUnlocked &&
+      !opts.ended &&
       !opts.likeSent &&
       !opts.mutualLike &&
       !opts.partnerVibed,

@@ -7,7 +7,15 @@ export type VibeTag = string;
 
 export type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
 
-export type AnonMatchStatus = 'idle' | 'joining' | 'waiting' | 'matched' | 'connected';
+export type AnonMatchStatus =
+  | 'idle'
+  | 'joining'
+  | 'waiting'
+  | 'matched'
+  /** Partner left. The thread stays readable, the composer is replaced, and the
+   *  socket stays warm so re-matching is immediate. Not the same as `idle`. */
+  | 'partner_left'
+  | 'connected';
 
 /**
  * Delivery state for an outgoing bubble.

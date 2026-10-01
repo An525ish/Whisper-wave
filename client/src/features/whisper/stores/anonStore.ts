@@ -28,6 +28,8 @@ type AnonState = {
   mutualVibeDismissed: boolean;
   partnerVibed: boolean;
   matchedAt: number | null;
+  /** "Stay here" was chosen, so the partner-left prompt collapsed to a bar. */
+  partnerLeftPromptDismissed: boolean;
 
   messages: AnonMessage[];
 
@@ -44,12 +46,21 @@ type AnonState = {
   setMatch: (sessionId: string, partnerName: string, partnerTags: VibeTag[]) => void;
   clearSession: () => void;
   /**
-   * The partner left or disconnected. Returns to the picker with no banner —
-   * a full-width notice box for "they moved on" is louder than the event
-   * deserves, and the user already knows (they either pressed skip or watched
-   * the chat go quiet).
+   * The partner left or disconnected.
+   *
+   * Deliberately NOT `clearSession`: the thread stays readable and the header
+   * keeps their alias, because the conversation already happened and throwing it
+   * away is more jarring than the event that ended it. Only the state that can no
+   * longer be true is dropped — the like/connect handshake is dead once they are
+   * gone. `matchedAt` is kept for the end-of-thread summary.
+   *
+   * Moving to `partner_left` rather than `idle` also keeps the socket connected
+   * (the lifecycle hook connects whenever status isn't `idle`), so finding
+   * someone new doesn't cost a fresh handshake.
    */
-  endSessionFromPartner: () => void;
+  markPartnerLeft: () => void;
+  /** "Stay here" — collapse the prompt to a one-line bar. Thread still readable. */
+  dismissPartnerLeftPrompt: () => void;
   setSocketConnected: (connected: boolean) => void;
   setSessionNotice: (notice: string | null) => void;
   setError: (message: string | null) => void;
@@ -80,6 +91,7 @@ const sessionFields = {
   mutualVibeDismissed: false,
   partnerVibed: false,
   matchedAt: null as number | null,
+  partnerLeftPromptDismissed: false,
   messages: [] as AnonMessage[],
   chatId: null as string | null,
   connectionId: null as string | null,
@@ -123,12 +135,19 @@ export const useAnonStore = create<AnonState>((set, get) => ({
 
   clearSession: () => set({ ...sessionFields }),
 
-  endSessionFromPartner: () =>
+  markPartnerLeft: () =>
     set({
-      ...sessionFields,
-      status: 'idle',
+      status: 'partner_left',
       sessionNotice: null,
+      // The handshake is over — a like sent to someone who has left can never
+      // come back, so offering the heart or the "open DM" CTA would be a lie.
+      likeSent: false,
+      mutualLike: false,
+      connectToken: null,
+      partnerVibed: false,
     }),
+
+  dismissPartnerLeftPrompt: () => set({ partnerLeftPromptDismissed: true }),
 
   setSocketConnected: (socketConnected) => set({ socketConnected }),
 

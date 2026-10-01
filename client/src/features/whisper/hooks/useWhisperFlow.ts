@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAnonStore } from '../stores/anonStore';
 import { useAnonSocket } from './useAnonSocket';
 import { useAnonChat } from './useAnonChat';
 import { usePartnerTyping } from './useAnonSocketLifecycle';
+import { usePartnerLeftPrompt } from './usePartnerLeftPrompt';
 import { useWhisperConnectResume } from './useWhisperConnectResume';
 import {
   useJoinQueueMutation,
@@ -59,6 +60,18 @@ export function useWhisperFlow() {
     emitTypingStop
   );
 
+  // "Find someone new" from the partner-left state. Identical to skip: end our
+  // side, re-enter the queue. `ANON_NEXT` already handles a session the server
+  // has torn down, so this is safe whether or not the partner's exit was clean.
+  const findSomeoneNew = useCallback(() => {
+    track(ANALYTICS.WHISPER_NEXT, { from: 'partner_left' });
+    sendNext();
+  }, [sendNext]);
+
+  const { showPrompt: partnerLeftPromptExpanded } = usePartnerLeftPrompt(findSomeoneNew);
+
+  const dismissPartnerLeftPrompt = useAnonStore((s) => s.dismissPartnerLeftPrompt);
+
   // A real DM exists (we completed, or CONNECTION_READY arrived because the
   // partner completed) — drop into it.
   useEffect(() => {
@@ -69,11 +82,13 @@ export function useWhisperFlow() {
   }, [status, chatId, navigate]);
 
   // Browser back must not silently destroy a live match — step back to the
-  // waiting room instead of leaving /whisper entirely.
+  // waiting room instead of leaving /whisper entirely. `partner_left` counts as
+  // live: there is still a readable thread on screen.
   useEffect(() => {
-    if (status !== 'matched' && status !== 'waiting') return;
+    if (status !== 'matched' && status !== 'waiting' && status !== 'partner_left') return;
     const onPop = () => {
-      if (useAnonStore.getState().status === 'matched') sendNext();
+      const current = useAnonStore.getState().status;
+      if (current === 'matched' || current === 'partner_left') sendNext();
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -115,6 +130,10 @@ export function useWhisperFlow() {
       socketConnected,
       sessionNotice,
       error,
+      partnerLeft: status === 'partner_left',
+      partnerLeftPromptExpanded,
+      onFindSomeoneNew: findSomeoneNew,
+      onStayOnEndedThread: dismissPartnerLeftPrompt,
       onDraftChange: handleDraftChange,
       onSend: (content: string) => {
         sendMessage(content);

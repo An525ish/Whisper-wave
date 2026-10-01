@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import AnonChatHeader from './AnonChatHeader';
 import AnonMessageList from './AnonMessageList';
 import AnonComposer from './AnonComposer';
+import PartnerLeftPrompt from './PartnerLeftPrompt';
 import MutualVibeModal from './MutualVibeModal';
 import ReportSheet from './ReportSheet';
 import {
@@ -39,6 +40,11 @@ type Props = {
   socketConnected: boolean;
   sessionNotice: string | null;
   error: string | null;
+  /** Partner left: the composer is replaced by the find-someone prompt. */
+  partnerLeft: boolean;
+  partnerLeftPromptExpanded: boolean;
+  onFindSomeoneNew: () => void;
+  onStayOnEndedThread: () => void;
   onDraftChange: (value: string) => void;
   onSend: (content: string) => void;
   onLike: () => void;
@@ -94,11 +100,16 @@ export default function AnonChatRoom({
   onCloseMutualModal,
   onOpenMutualModal,
   onDismissError,
+  partnerLeft,
+  partnerLeftPromptExpanded,
+  onFindSomeoneNew,
+  onStayOnEndedThread,
 }: Props) {
   const { vibeUnlocked, showVibePrompt } = useVibeUnlock(messages, matchedAt, {
     likeSent,
     mutualLike,
     partnerVibed,
+    ended: partnerLeft,
   });
 
   // Local, dismissible mirrors. The underlying facts (partner liked, prompt
@@ -208,12 +219,21 @@ export default function AnonChatRoom({
         <MutualBar onOpen={onOpenMutualModal} />
       )}
 
-      <AnonComposer
-        draft={draft}
-        overLimit={overLimit}
-        onDraftChange={onDraftChange}
-        onSend={handleSend}
-      />
+      {partnerLeft ? (
+        <PartnerLeftPrompt
+          expanded={partnerLeftPromptExpanded}
+          partnerName={partnerName}
+          onFindSomeoneNew={onFindSomeoneNew}
+          onStay={onStayOnEndedThread}
+        />
+      ) : (
+        <AnonComposer
+          draft={draft}
+          overLimit={overLimit}
+          onDraftChange={onDraftChange}
+          onSend={handleSend}
+        />
+      )}
 
       {connectToken && (
         <MutualVibeModal

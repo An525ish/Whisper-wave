@@ -18,6 +18,7 @@ import { io } from 'socket.io-client';
 
 const BASE = 'http://localhost:8080';
 const ALIAS = process.env.PARTNER_ALIAS ?? 'BlueStatic';
+const EXIT_MS = Number(process.env.PARTNER_EXIT_MS ?? 22_000);
 const TAGS = ['deep talks', 'music'];
 const SCENARIO = process.argv[2] ?? 'chat';
 
@@ -88,4 +89,4 @@ function say(content) {
 setTimeout(() => {
   socket.close();
   process.exit(0);
-}, SCENARIO === 'leave' ? 16_000 : 22_000);
+}, EXIT_MS);

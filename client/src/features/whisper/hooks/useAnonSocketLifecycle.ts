@@ -174,10 +174,11 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Optio
           reason,
         });
       }
-      // Silent: no banner, no toast. The partner vanishing is visible in the
-      // UI itself, and a toast over a screen that is already changing is noise.
-      // The user just taps "Enter the void" again with the same alias.
-      store().endSessionFromPartner();
+      // Stay in the thread: the conversation is still readable and the user
+      // decides whether to move on. `partner_left` keeps the socket connected
+      // (this hook connects whenever status isn't `idle`), so finding someone
+      // new costs no fresh handshake.
+      store().markPartnerLeft();
       typingRef.current(false);
     });
 

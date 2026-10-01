@@ -46,7 +46,10 @@ export default function Whisper() {
     return <WaitingRoom {...waiting} />;
   }
 
-  if (status === 'matched' || status === 'connected') {
+  // `partner_left` stays on the chat surface: the thread is still readable and the
+  // composer has been replaced by the find-someone prompt. Ejecting to the picker
+  // would throw away a conversation that already happened.
+  if (status === 'matched' || status === 'connected' || status === 'partner_left') {
     return <AnonChatRoom {...chat} />;
   }
 
