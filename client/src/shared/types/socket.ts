@@ -26,6 +26,16 @@ export type AnonMessageAck = {
   /** Echoes the client-supplied idempotency key so the bubble can be settled. */
   id?: string;
   reason?: string;
+  /**
+   * Machine-readable failure class. `reason` is prose written for people and
+   * would drift if the client tried to pattern-match it; this is the part the
+   * client branches on.
+   *
+   * `session_ended` means the server no longer considers this a live match —
+   * the client uses it to stop pretending the thread is still going rather than
+   * leaving the user in a chat that can never accept another word.
+   */
+  code?: 'session_ended';
 };
 
 export type BufferedAnonMessage = {

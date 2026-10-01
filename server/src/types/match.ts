@@ -150,7 +150,22 @@ export type BufferedAnonMessage = {
 };
 
 /** Server → client ack for `ANON_MESSAGE`. */
-export type AnonMessageAck = { ok: boolean; id?: string; reason?: string };
+/**
+ * Ack for `ANON_MESSAGE`.
+ *
+ * `reason` is prose for humans and may be reworded freely. `code` is the part the
+ * client branches on — matching the prose would couple the two sides to wording.
+ * `session_ended` means the server no longer considers this a live match, which
+ * the client uses to stop presenting a dead thread as a working chat.
+ *
+ * Mirrors `AnonMessageAck` in `client/src/shared/types/socket.ts`.
+ */
+export type AnonMessageAck = {
+  ok: boolean;
+  id?: string;
+  reason?: string;
+  code?: 'session_ended';
+};
 
 export type SocketAck = (res: AnonMessageAck) => void;
 

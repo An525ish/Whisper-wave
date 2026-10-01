@@ -59,7 +59,19 @@ export function useAnonSocket(
         .timeout(ACK_TIMEOUT_MS)
         .emit(ANON_MESSAGE, { content, id }, (err: Error | null, res: AnonMessageAck) => {
           if (err) return settle('failed', TIMEOUT_REASON);
+
+          // The server saying "this session is over" is the one definitive proof
+          // we get that our view of the match is stale. Without this the client
+          // keeps rendering a live chat whose every message fails forever, and
+          // the user has no way to learn the thread is dead — `MATCH_DISCONNECTED`
+          // is the normal signal and it can be missed.
+          //
+          // Settle the bubble first so the text they typed is visibly unsent,
+          // then hand them the find-someone prompt.
           settle(res?.ok ? 'sent' : 'failed', res?.reason);
+          if (res?.code === 'session_ended') {
+            useAnonStore.getState().markPartnerLeft();
+          }
         });
     },
     [socketRef]

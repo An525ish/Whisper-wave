@@ -52,22 +52,42 @@ retained for an hour after it ends.
 #### ⚠️ Follow-up found while testing: no disconnect reconciliation
 
 Observed live: the server had ended the session while the client still showed
-`matched`. The client never re-entered the queue and was permanently stuck —
-a dead `matched` state with no recovery and no way for the user to get out.
+`matched`. The client kept rendering a working chat whose every message failed
+forever, with nothing telling the user the thread was over.
 
-This is **not** specific to the partner-left state; it affects any path where a
+This was **not** specific to the partner-left state; it affects any path where a
 `MATCH_DISCONNECTED` is missed (flaky emit, reconnect race, dropped room join).
-Whatever the root cause, the client currently has no defence.
 
-| Fix | Notes |
-|-----|-------|
-| Reconcile on suspicion | The client already re-emits `ANON_REQUEUE` on every socket `connect`. Add the same when the client is `matched` but receives nothing, or when the socket reconnects into a `matched` state and `MATCH_FOUND` doesn't replay. |
-| Server-side belt and braces | `POST /api/match/join` could return "you are already matched" instead of silently re-queueing, so the client can self-correct |
-| Verify the emit path | Not yet established whether `notifyMatchEnded` reached the room or the client dropped the listener. Needs one controlled two-client run with the socket lifecycle instrumented. |
+✅ **Fixed — client now self-heals from three independent signals.** None of them
+polling, so none of them cost a request on a healthy connection:
 
-**Until this is fixed, treat the partner-left state as unverified in production.**
-It renders correctly and handles the event when it arrives; the gap is what
-happens when it doesn't.
+1. **Server-authoritative `code` on rejection.** `ANON_MESSAGE`'s ack and
+   `MATCH_ERROR` now carry `code: 'session_ended'` alongside the prose `reason`.
+   Previously the only way to recognise a dead session was to pattern-match
+   `reason`, which couples the client to server wording.
+2. **Ack path** — a rejected send settles the bubble as failed (so the typed text
+   is visibly unsent) and then transitions to `partner_left`.
+3. **`MATCH_ERROR` path** — covers likes and typing, where there is no ack.
+4. **Reconnect** — already present: the client re-emits `ANON_REQUEUE` on every
+   socket `connect`, and the server answers with either a `MATCH_FOUND` replay or
+   a fresh queue entry.
+
+Verified live by forcing the exact desync (flipping the session to `ending` in
+Redis with **no** disconnect emitted, via `server/scripts/dev-desync.mjs`): the
+client showed a live chat, the next send flipped it to the partner-left prompt,
+and the 4 s auto-requeue returned it to the queue. **The user is never stranded.**
+
+#### Still open: why the disconnect was missed
+
+The reconciliation makes the missed event *survivable*, but the underlying cause
+is still unidentified. Worth one instrumented two-client run to find out, because
+if `notifyMatchEnded` is silently failing then the *normal* partner-left path is
+also broken and only the fallback is carrying it.
+
+| Step | Notes |
+|------|-------|
+| Instrument `notifyMatchEnded` | Log the target room and the number of sockets `fetchSockets()` finds in it |
+| Check the join race | `emitMatchFound` sets `socket.sessionId` **after** emitting `MATCH_FOUND`; if a skip arrives in between, `ANON_NEXT` reads `session.sessionId` as `undefined` and never notifies |
 
 ### C — Signed-in users can whisper
 

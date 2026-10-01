@@ -195,11 +195,22 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Optio
     });
 
     // Surface on-screen rather than swallowing it on non-picker screens.
-    socket.on(MATCH_ERROR, (data: { message: string }) => {
-      const message = data?.message ?? 'Something went wrong.';
-      store().setError(message);
-      errorRef.current(message);
-    });
+    socket.on(
+      MATCH_ERROR,
+      (data: { message: string; code?: 'session_ended' }) => {
+        const message = data?.message ?? 'Something went wrong.';
+        store().setError(message);
+        errorRef.current(message);
+
+        // The server has told us our view of the match is stale. Reconciliation:
+        // without this the user keeps typing into a chat that can never deliver,
+        // with no indication it is over. See `markPartnerLeft` in the store.
+        if (data?.code === 'session_ended') {
+          store().markPartnerLeft();
+          typingRef.current(false);
+        }
+      }
+    );
 
     // The server has no identity for us (24 h card lapsed, or a long-dead
     // session). Go back to the picker instead of spinning forever.

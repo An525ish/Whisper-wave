@@ -52,8 +52,18 @@ const typingLimiter = makeSocketRateLimiter(12, 10_000);
 /** Requeue spam guard — one at a time is plenty. */
 const requeueLimiter = makeSocketRateLimiter(3, 15_000);
 
-const emitError = (socket: AnonSocket, message: string): void => {
-  socket.emit(MATCH_ERROR, { message });
+/**
+ * Tell the client something went wrong.
+ *
+ * `code` is the machine-readable half. `message` is prose and is allowed to
+ * change; the client must never branch on it, only on `code`.
+ */
+const emitError = (
+  socket: AnonSocket,
+  message: string,
+  code?: 'session_ended'
+): void => {
+  socket.emit(MATCH_ERROR, { message, code });
 };
 
 /** Pull a Socket.IO ack callback out of the extra handler arguments. */
@@ -154,9 +164,13 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
       } catch (err) {
         // Session gone / not a participant / not active — the client needs to
         // know so it can mark the bubble failed rather than hang on 'sending'.
+        //
+        // `code` is what the client branches on. Without it the only way for the
+        // client to recognise a dead session is to pattern-match the prose, which
+        // drifts the moment either side rewords an error.
         const message = err instanceof Error ? err.message : 'Message not sent';
-        ack?.({ ok: false, id, reason: message });
-        emitError(socket, message);
+        ack?.({ ok: false, id, reason: message, code: 'session_ended' });
+        emitError(socket, message, 'session_ended');
         return;
       }
 
