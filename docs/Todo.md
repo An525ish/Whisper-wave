@@ -137,13 +137,30 @@ Three decisions worth knowing:
   `setMatch`, and the panel says so.
 - **No server call on edit.** `POST /api/match/join` overwrites the Redis
   identity card wholesale on the next join, so updating the store is sufficient.
-- **The CTA sits above the thread summary, not below it.** In a 20rem column it
+- **The CTA sits above the thread summary, not below it.** In a narrow rail it
   lands under the fold and is simply never seen — the panel's whole job is that
   pitch.
 
-⚠️ **Not verified at mobile width.** The `< lg` bottom-sheet path is written to
-mirror the logged-in app exactly but has only been checked at desktop. Worth one
-narrow-viewport pass before calling D done.
+**Layout contract.** `--acr-column` and `--acr-gutter` are declared once on
+`.acr-shell` and consumed by three separate stylesheets, so the header, the
+thread and the composer cannot drift apart. Verified at 1306px: all three
+resolve to left 109 / right 813. The header is `pointer-events: none` with the
+card re-enabling it, so the invisible full-width wrapper can't eat clicks meant
+for the chat.
+
+Panel width is `24rem` — wider than the logged-in pane (which splits a
+three-column layout) because this room has only two columns.
+
+Verified at `lg` (column) and by forcing the breakpoint to exercise the `< lg`
+bottom-sheet path: sheet renders with the `isSheet` treatment (no
+`bg-background-alt` card of its own), the mobile FAB sits at 800–840px against a
+composer starting at 877px, so it covers neither.
+
+⚠️ **Found while testing, not fixed:** the panel's elapsed timer reads "Just met"
+after a reconnect even for a thread that has been going an hour. `MATCH_FOUND`
+carries no `createdAt`, so a resumed session resets `matchedAt` to now. Blocks
+E2 (thread expiry) and E4 ("how it went"), which both need the real start time —
+either add `createdAt` to the `MATCH_FOUND` payload or read it from the session.
 
 ### E — Differentiators (free, in value order)
 

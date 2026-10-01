@@ -10,8 +10,15 @@
    ============================================================ */
 
 /* Row shell: the conversation plus, at `lg`, the identity column. Below that the
-   panel becomes a sheet, so this stays a single column and nothing shifts. */
+   panel becomes a sheet, so this stays a single column and nothing shifts.
+
+   `--acr-column` is the conversation's reading column. Declared once here so the
+   header, the thread and the composer all resolve to the same width — they are
+   three separate stylesheets and would otherwise drift apart. */
 .acr-shell {
+  --acr-column: 44rem;
+  --acr-gutter: 0.85rem;
+
   position: relative;
   display: flex;
   height: 100dvh;
@@ -32,7 +39,9 @@
     var(--color-background);
 }
 
-/* Identity column — hidden until the logged-in app would show its profile pane. */
+/* Identity column — hidden until the logged-in app would show its profile pane.
+   Wider than the logged-in pane (which splits a three-column layout) because this
+   room only has two columns, and the vibe presets need the room. */
 .acr-profile {
   display: none;
 }
@@ -40,10 +49,10 @@
 @media (min-width: 1024px) {
   .acr-profile {
     display: flex;
-    width: 20rem;
+    width: 24rem;
     flex-shrink: 0;
     flex-direction: column;
-    padding: 0.5rem 0.75rem 0.75rem 0;
+    padding: 0.75rem 0.85rem 0.85rem 0;
   }
 }
 
@@ -151,11 +160,23 @@
 
 /* ── Header ─────────────────────────────────────────────────── */
 
+/* Sits in the same reading column as the thread and the composer, so the three
+   share one left and right edge instead of the header floating full-bleed above
+   a narrower conversation. */
 .acr-header {
   position: absolute;
   z-index: 30;
-  inset-inline: 0.65rem;
+  inset-inline: 0;
   top: max(0.55rem, env(safe-area-inset-top));
+  padding-inline: var(--acr-gutter);
+  pointer-events: none;
+}
+
+.acr-header > * {
+  pointer-events: auto;
+  width: 100%;
+  max-width: var(--acr-column);
+  margin-inline: auto;
 }
 
 .acr-header__card {

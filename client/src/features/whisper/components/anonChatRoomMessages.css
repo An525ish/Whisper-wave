@@ -20,16 +20,17 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: calc(max(0.55rem, env(safe-area-inset-top)) + 5.35rem) 0.85rem 0.5rem;
+  padding: calc(max(0.55rem, env(safe-area-inset-top)) + 5.35rem)
+    var(--acr-gutter, 0.85rem)
+    0.5rem;
   scrollbar-width: none;
 }
 
-/* Reading column. The anonymous room is full-bleed, so without a cap the thread
-   and the composer each stretch the whole viewport and stop reading as one
-   conversation. Must stay equal to `--acr-column` in anonChatRoomControls.css. */
+/* Reading column — resolves to `--acr-column` on `.acr-shell`, which the header
+   and composer use too, so all three share one set of edges. */
 .acr-scroll > * {
   width: 100%;
-  max-width: 46rem;
+  max-width: var(--acr-column, 44rem);
   margin-inline: auto;
 }
 

@@ -28,6 +28,7 @@ export default function AnonProfileHost() {
 
   const panel = (
     <AnonProfilePanel
+      variant={wide ? 'column' : 'sheet'}
       displayName={identity.displayName}
       vibeTags={identity.vibeTags}
       gender={identity.gender}
