@@ -45,6 +45,30 @@ Do **not** eject to the picker. Add status `'partner_left'`.
 - **Keep report available** on the finished thread — today report-after-leaving
   is impossible, so being matched and dropped makes someone unreportable.
 
+✅ **Shipped.** No server change was needed: `ANON_NEXT` already tolerates a
+session the server has torn down, and reports still resolve against the session
+retained for an hour after it ends.
+
+#### ⚠️ Follow-up found while testing: no disconnect reconciliation
+
+Observed live: the server had ended the session while the client still showed
+`matched`. The client never re-entered the queue and was permanently stuck —
+a dead `matched` state with no recovery and no way for the user to get out.
+
+This is **not** specific to the partner-left state; it affects any path where a
+`MATCH_DISCONNECTED` is missed (flaky emit, reconnect race, dropped room join).
+Whatever the root cause, the client currently has no defence.
+
+| Fix | Notes |
+|-----|-------|
+| Reconcile on suspicion | The client already re-emits `ANON_REQUEUE` on every socket `connect`. Add the same when the client is `matched` but receives nothing, or when the socket reconnects into a `matched` state and `MATCH_FOUND` doesn't replay. |
+| Server-side belt and braces | `POST /api/match/join` could return "you are already matched" instead of silently re-queueing, so the client can self-correct |
+| Verify the emit path | Not yet established whether `notifyMatchEnded` reached the room or the client dropped the listener. Needs one controlled two-client run with the socket lifecycle instrumented. |
+
+**Until this is fixed, treat the partner-left state as unverified in production.**
+It renders correctly and handles the event when it arrives; the gap is what
+happens when it doesn't.
+
 ### C — Signed-in users can whisper
 
 **The blocking gap: there is no `userId` anywhere in the anon runtime.**
