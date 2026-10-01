@@ -10,6 +10,49 @@ export const REDIS_KEYS = {
   likes: (sessionId: string) => `match:likes:${sessionId}`,
   messages: (sessionId: string) => `match:messages:${sessionId}`,
   blocked: (anonId: string) => `match:blocked:${anonId}`,
+  /**
+   * userId → SET of the anon sessionIds that account currently holds.
+   *
+   * A signed-in user on a phone and a laptop is two anon identities, and
+   * `match:active:{anonId}` can only ever see one of them — so "is this account
+   * already in a whisper?" is unanswerable from the anonId side alone. This
+   * index is the cluster-shared answer, and it is what stops an account matching
+   * its own other device.
+   *
+   * Maintained in `createSession` / `endSession` / `deleteSession` and left to
+   * expire on its own if the process dies mid-session, so a stale entry can
+   * never outlive the session it points at by more than `TTL.session`.
+   */
+  userSessions: (userId: string) => `match:user:${userId}`,
+  /**
+   * userId → whisper attempts inside the current rolling window.
+   *
+   * Signed-in users only. Guests are never capped: they are the top of the
+   * funnel and a wall in front of them buys nothing.
+   */
+  userWhispers: (userId: string) => `match:whispers:${userId}`,
+  /**
+   * anonId → userId, written whenever both are known (queue join, match create).
+   *
+   * This is the link that lets a *block* written by an old caller that only
+   * knows anonIds still be mirrored onto the account's key. Without it, a block
+   * raised while someone was anonymous could not be re-applied to their account,
+   * and signing in would be a way to shed it. See `block.ts`.
+   *
+   * Never deleted: a stale link can only cause an *extra* block to be recorded,
+   * and losing one is the failure mode that matters. It expires with the anon
+   * cookie.
+   */
+  identityAlias: (anonId: string) => `match:alias:${anonId}`,
+  /**
+   * One SET per message: members are `anonId:reaction`.
+   *
+   * Redis, never Mongo — anon messages are deliberately not persisted, and
+   * reactions are part of the same private thread, so they must not outlive it.
+   * `messageId` is validated against `[A-Za-z0-9_-]` before it reaches a key.
+   */
+  reactions: (sessionId: string, messageId: string) =>
+    `match:reactions:${sessionId}:${messageId}`,
   /** anonId → active sessionId (socket reconnect / late MATCH_FOUND). */
   activeSession: (anonId: string) => `match:active:${anonId}`,
   /**
@@ -48,6 +91,28 @@ export const TTL = {
   session: 24 * 60 * 60, // 24 h
   /** Block list per anonId — soft block for the day. */
   blocked: 30 * 24 * 60 * 60, // 30 days
+  /**
+   * anonId → userId link. Outlives the queue entry but not the anon cookie, so
+   * a block raised in one match can still be mirrored onto the account in the
+   * next one.
+   */
+  identityAlias: 24 * 60 * 60, // 24 h — matches TTL.session and the anon cookie
+  /**
+   * Reactions on a single message. Same lifetime as the thread that holds them:
+   * when the thread can no longer be replayed, neither can its reactions.
+   */
+  reactions: 24 * 60 * 60, // 24 h
+  /**
+   * Signed-in users' rolling whisper window — one counter per account.
+   *
+   * The window opens on the account's *first* attempt and slides from there,
+   * rather than resetting at midnight. A synchronised reset dumps every user
+   * into the same instant, and that instant is the join-scan cost — the single
+   * most expensive moment in the system. Per-user windows are staggered by
+   * construction and cost one `INCR` (plus one `EXPIRE` on the opening attempt)
+   * instead of a read-modify-write.
+   */
+  whisperWindow: 24 * 60 * 60, // 24 h
   /** How many messages we buffer per session in Redis. */
   maxMessages: 50,
   /**

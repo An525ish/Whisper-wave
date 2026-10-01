@@ -1,4 +1,5 @@
 import { PARTNER_LEFT_AUTO_REQUEUE_MS } from '../hooks/usePartnerLeftPrompt';
+import { aliasFirstName } from '../utils/alias';
 import './partnerLeftPrompt.css';
 
 type Props = {
@@ -23,7 +24,7 @@ export default function PartnerLeftPrompt({
   onFindSomeoneNew,
   onStay,
 }: Props) {
-  const firstName = partnerName.trim().split(/\s+/)[0] || 'They';
+  const firstName = aliasFirstName(partnerName);
   const seconds = Math.round(PARTNER_LEFT_AUTO_REQUEUE_MS / 1000);
 
   if (!expanded) {

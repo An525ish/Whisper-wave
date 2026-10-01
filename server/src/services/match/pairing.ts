@@ -45,21 +45,25 @@ export const pairOrEnqueue = async (self: WaitingCard): Promise<PairResult> => {
   const sessionId = generateSessionId();
 
   try {
-    await createSession(
+    // Carries each side's account (when signed in) into the session, so a block
+    // raised later survives them signing in and a fresh anonId.
+    const created = await createSession({
       sessionId,
-      self.anonId,
-      partnerAnonId,
-      self.displayName,
-      partner.displayName,
-      self.vibeTags,
-      partner.vibeTags
-    );
+      anon1: self.anonId,
+      anon2: partnerAnonId,
+      name1: self.displayName,
+      name2: partner.displayName,
+      tags1: self.vibeTags,
+      tags2: partner.vibeTags,
+      ...(self.userId ? { userId1: self.userId } : {}),
+      ...(partner.userId ? { userId2: partner.userId } : {}),
+    });
 
     // Both are now IN a match, so neither should sit in the queue.
     // Identity cards are intentionally kept (so either can rejoin later).
     await Promise.all([dequeue(self.anonId), dequeue(partnerAnonId)]);
 
-    return { paired: true, sessionId, partner, self };
+    return { paired: true, sessionId, createdAt: created.createdAt, partner, self };
   } catch (err) {
     logger.error(
       { err, sessionId, anonId: self.anonId, partnerAnonId },

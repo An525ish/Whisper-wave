@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import type { AnonReaction } from '@/shared/types/socket';
 import AnonChatHeader from './AnonChatHeader';
 import AnonMessageList from './AnonMessageList';
 import AnonComposer from './AnonComposer';
 import PartnerLeftPrompt from './PartnerLeftPrompt';
+import ThreadSummaryCard from './ThreadSummaryCard';
+import Icebreakers from './Icebreakers';
 import AnonProfileHost from './AnonProfileHost';
+import { useThreadExtras } from '../hooks/useThreadExtras';
 import MutualVibeModal from './MutualVibeModal';
 import ReportSheet from './ReportSheet';
 import {
@@ -20,6 +24,7 @@ import { MAX_MESSAGE_LENGTH } from '../constants';
 import type { AnonMessage, VibeTag } from '../types';
 
 import './anonChatRoom.css';
+import './anonChatRoomHeader.css';
 import './anonChatRoomMessages.css';
 import './anonChatRoomControls.css';
 import './anonChatRoomPrompts.css';
@@ -46,6 +51,7 @@ type Props = {
   partnerLeftPromptExpanded: boolean;
   onFindSomeoneNew: () => void;
   onStayOnEndedThread: () => void;
+  onReact: (messageId: string, reaction: AnonReaction) => void;
   onDraftChange: (value: string) => void;
   onSend: (content: string) => void;
   onLike: () => void;
@@ -105,6 +111,7 @@ export default function AnonChatRoom({
   partnerLeftPromptExpanded,
   onFindSomeoneNew,
   onStayOnEndedThread,
+  onReact,
 }: Props) {
   const { vibeUnlocked, showVibePrompt } = useVibeUnlock(messages, matchedAt, {
     likeSent,
@@ -112,6 +119,14 @@ export default function AnonChatRoom({
     partnerVibed,
     ended: partnerLeft,
   });
+
+  const {
+    showIcebreakers,
+    prompts,
+    onShuffle,
+    onDismissIcebreakers,
+    summary,
+  } = useThreadExtras(partnerName, matchedAt);
 
   // Local, dismissible mirrors. The underlying facts (partner liked, prompt
   // eligibility) stay in the store; these only control what is on screen. The
@@ -191,7 +206,10 @@ export default function AnonChatRoom({
             partnerName={partnerName}
             messages={messages}
             partnerTyping={partnerTyping}
+            startedAt={matchedAt}
+            live={!partnerLeft}
             onRetry={onRetry}
+            onReact={onReact}
             bottomRef={bottomRef}
           />
         </main>
@@ -222,19 +240,38 @@ export default function AnonChatRoom({
         )}
   
         {partnerLeft ? (
-          <PartnerLeftPrompt
-            expanded={partnerLeftPromptExpanded}
-            partnerName={partnerName}
-            onFindSomeoneNew={onFindSomeoneNew}
-            onStay={onStayOnEndedThread}
-          />
+          summary ? (
+            <ThreadSummaryCard
+              summary={summary}
+              partnerAlias={partnerName}
+              onFindSomeoneNew={onFindSomeoneNew}
+              onSecondary={onStayOnEndedThread}
+              secondaryLabel="Stay and re-read it"
+            />
+          ) : (
+            <PartnerLeftPrompt
+              expanded={partnerLeftPromptExpanded}
+              partnerName={partnerName}
+              onFindSomeoneNew={onFindSomeoneNew}
+              onStay={onStayOnEndedThread}
+            />
+          )
         ) : (
-          <AnonComposer
-            draft={draft}
-            overLimit={overLimit}
-            onDraftChange={onDraftChange}
-            onSend={handleSend}
-          />
+          <>
+            {showIcebreakers && (
+              <Icebreakers
+                prompts={prompts}
+                onShuffle={onShuffle}
+                onDismiss={onDismissIcebreakers}
+              />
+            )}
+            <AnonComposer
+              draft={draft}
+              overLimit={overLimit}
+              onDraftChange={onDraftChange}
+              onSend={handleSend}
+            />
+          </>
         )}
   
         {connectToken && (

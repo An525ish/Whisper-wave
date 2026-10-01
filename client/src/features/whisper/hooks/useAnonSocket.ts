@@ -1,8 +1,19 @@
 import { useCallback } from 'react';
-import { ANON_MESSAGE, ANON_LIKE, ANON_NEXT, ANON_REQUEUE, ANON_TYPING_START, ANON_TYPING_STOP, type AnonMessageAck } from '@/shared/constants/anonEvents';
+import {
+  ANON_MESSAGE,
+  ANON_LIKE,
+  ANON_NEXT,
+  ANON_REACT,
+  ANON_REQUEUE,
+  ANON_TYPING_START,
+  ANON_TYPING_STOP,
+  type AnonMessageAck,
+  type AnonReaction,
+} from '@/shared/constants/anonEvents';
 import { useAnonSocketLifecycle, type AnonSocketRef } from './useAnonSocketLifecycle';
 import { useAnonStore } from '../stores/anonStore';
 import { isVibeUnlocked } from '../utils/isVibeUnlocked';
+import { ANALYTICS, track } from '@/shared/lib/analytics';
 import { ACK_TIMEOUT_MS } from '../constants';
 
 const newMessageId = (): string => {
@@ -18,6 +29,7 @@ type UseAnonSocketReturn = {
   sendLikeEvent: () => void;
   sendNext: () => void;
   requeue: () => void;
+  sendReaction: (messageId: string, reaction: AnonReaction) => void;
   retryMessage: (id: string) => void;
   emitTypingStart: () => void;
   emitTypingStop: () => void;
@@ -136,6 +148,29 @@ export function useAnonSocket(
     socketRef.current?.emit(ANON_REQUEUE, {});
   }, [socketRef]);
 
+  /**
+   * React to one message.
+   *
+   * Optimistic: the store applies the toggle immediately and `MATCH_REACTION`
+   * arrives back to BOTH participants, so the same store call settles our own tap
+   * from the server's answer rather than from a local guess. If the send fails
+   * outright there is nothing to undo — the optimistic state is overwritten by the
+   * next authoritative `MATCH_REACTION`, and a dead session lands on
+   * `markPartnerLeft` instead.
+   */
+  const sendReaction = useCallback(
+    (messageId: string, reaction: AnonReaction) => {
+      const socket = socketRef.current;
+      const state = useAnonStore.getState();
+      if (!socket?.connected || !state.sessionId || !messageId) return;
+
+      state.applyReaction(messageId, 'me', reaction);
+      track(ANALYTICS.WHISPER_REACTED, { reaction });
+      socket.emit(ANON_REACT, { messageId, reaction });
+    },
+    [socketRef]
+  );
+
   const emitTypingStart = useCallback(
     () => socketRef.current?.emit(ANON_TYPING_START, {}),
     [socketRef]
@@ -150,6 +185,7 @@ export function useAnonSocket(
     sendLikeEvent,
     sendNext,
     requeue,
+    sendReaction,
     retryMessage,
     emitTypingStart,
     emitTypingStop,

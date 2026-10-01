@@ -1,6 +1,10 @@
 import type { Namespace } from 'socket.io';
 import { MATCH_FOUND } from '../../constants/anon-events.js';
-import { getBufferedMessages, isParticipant } from '../../services/match/index.js';
+import {
+  getBufferedMessages,
+  getSessionReactions,
+  isParticipant,
+} from '../../services/match/index.js';
 import type { AnonSession, WaitingCard } from '../../types/match.js';
 import type { AnonSocket } from './types.js';
 
@@ -11,11 +15,13 @@ export const emitMatchFound = async (
   localAnonId: string,
   partnerAnonId: string,
   localCard: WaitingCard,
-  partnerCard: WaitingCard
+  partnerCard: WaitingCard,
+  createdAt: number
 ): Promise<void> => {
   // A brand-new session has no history, so there is nothing to replay.
   nsp.to(`anon:${localAnonId}`).emit(MATCH_FOUND, {
     sessionId,
+    createdAt,
     partner: {
       displayName: partnerCard.displayName,
       vibeTags: partnerCard.vibeTags,
@@ -25,6 +31,7 @@ export const emitMatchFound = async (
 
   nsp.to(`anon:${partnerAnonId}`).emit(MATCH_FOUND, {
     sessionId,
+    createdAt,
     partner: {
       displayName: localCard.displayName,
       vibeTags: localCard.vibeTags,
@@ -52,11 +59,17 @@ export const emitMatchFoundToSocket = async (
   const partnerName = isAnon1 ? session.name2 : session.name1;
   const partnerTags = isAnon1 ? session.tags2 : session.tags1;
   const bufferedMessages = await getBufferedMessages(session.sessionId);
+  const reactions = await getSessionReactions(session.sessionId, bufferedMessages);
 
   socket.sessionId = session.sessionId;
   socket.emit(MATCH_FOUND, {
     sessionId: session.sessionId,
+    // The thread's REAL start time, not now. Without it a resumed session resets
+    // the client's clock and a conversation that has been going an hour reports
+    // itself as "just met" — which also makes the 24 h expiry countdown lie.
+    createdAt: session.createdAt,
     partner: { displayName: partnerName, vibeTags: partnerTags },
     bufferedMessages,
+    reactions,
   });
 };

@@ -1,12 +1,7 @@
 import { AppError } from '../../utils/AppError.js';
 import { v4 as uuid } from 'uuid';
 import type { Gender, VibeTag, WaitingCard } from '../../types/match.js';
-import {
-  dequeue,
-  deleteWaitingCard,
-  reenqueue,
-  saveWaitingCard,
-} from './index.js';
+import { dequeue, deleteWaitingCard, reenqueue, saveWaitingCard } from './index.js';
 
 export type JoinQueueInput = {
   displayName: string;

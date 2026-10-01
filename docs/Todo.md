@@ -96,14 +96,45 @@ also broken and only the fallback is carrying it.
 have no user field. A signed-in user on `/whisper` holds two sockets with zero
 server-side link.
 
-1. `socket/anon/auth.ts` — optionally read `accessToken`, set `socket.userId`. Anonymous stays anonymous.
-2. `WaitingCard` + `AnonSession` — add optional `userId`.
-3. `queue.ts` — maintain `match:user:{userId}` → active sessionIds (cross-tab state, quota enforcement).
-4. **`services/match/block.ts` — the security item.** Blocking is `anonId`-scoped, so a report/block **does not survive the user signing up**. Store and check both keys.
-5. Skip the picker for signed-in users — derive the anon identity card from their account.
+✅ **Shipped.**
 
-`POST /connection/complete` needs no change: both sides arriving signed-in
-already works (`PendingConnection.sides[].userId` is nullable by design).
+| # | Change | Where |
+|---|--------|-------|
+| 1 | `/anon` auth also reads `accessToken`, attaches optional `socket.userId`. Anonymous stays anonymous — no cookie, a bad cookie, or an unknown user all still yield a working anon session | `socket/anon/auth.ts` |
+| 2 | Optional `userId` on `WaitingCard` and `AnonSession` (`userId1`/`userId2`) | `types/match.ts` |
+| 3 | `match:user:{userId}` index → active sessionIds, cleaned on session end | `keys.ts`, `session.ts` |
+| 4 | **Dual-key blocking** — see below | `block.ts` |
+| 5 | A signed-in account can no longer be matched against its own other device | `queue.ts` |
+
+⚠️ **The original plan's step 5 was wrong and was deliberately not done.** It said
+"skip the picker for signed-in users — derive the anon identity card from their
+account". That is a privacy regression: an anonymous chat must never default the
+alias to someone's real account name, because **the other party would then see
+it**. The client still picks an alias. `userId` is carried only for blocking,
+quota and cross-tab state, and never reaches `WaitingCard.displayName` or
+`MATCH_FOUND.partner`.
+
+#### The block fix — and its honest limit
+
+Blocking was `anonId`-scoped, so a report/block **did not survive the user signing
+up**: match someone, get reported, block them, sign in, be matched again.
+
+`blockAnonId`'s signature is unchanged — deliberately, because three call sites
+(`report.ts`, `admin/report.ts`, `moderation/autoReport.ts`) only ever know
+anonIds. Instead it now resolves both accounts from `match:alias:{anonId}` and
+writes the block to **every** identity each side has, so all three existing paths
+get dual-key blocks for free with no diff. `findBlockedCandidates` reads it back
+as the full cross-product — at most 4 `SISMEMBER`s per candidate, still one
+pipeline, still one round-trip, so the bounded cost of `tryMatchFromQueue` is
+unchanged.
+
+**Limit, stated plainly:** if *neither* side was signed in when the block was
+raised, no account id existed and there is nothing to attach it to. That is
+inherent to never persisting anon data. What the fix closes is the case above.
+
+⚠️ **`match:alias:{anonId}` is write-only and must never be deleted.** Nothing
+reads it back; it exists so `blockAnonId` can find an account. If those keys are
+`DEL`'d, blocks silently stop following accounts.
 
 ### D — Guest profile panel + visual convergence
 
@@ -178,12 +209,42 @@ either add `createdAt` to the `MATCH_FOUND` payload or read it from the session.
 
 | # | Feature | Cost | Note |
 |---|---------|------|------|
-| E1 | Vibe reactions on individual messages | 1 Redis set/message | PRODUCT.md already promises it; today it's heart + report only |
-| E2 | 24h thread expiry with visible countdown | TTL exists, invisible now | Also explains the 5-min buffer wipe that currently surprises people |
-| E3 | Icebreaker cards | Cheap | Raises conversation-start rate, which feeds the `VIBE_UNLOCK` gate |
-| E4 | "How it went" end-of-thread card | Nearly free | Doubles as the local-archive entry point |
-| E5 | Client-side whisper history (localStorage) | **Zero server cost, zero privacy surface** | Satisfies "I don't want to lose this" without archiving anything server-side |
-| E6 | Signed-in daily whisper counter | 1 INCR + 1 EXPIRE | Ship the counter now as an abuse lever; it becomes the paywall once billing exists |
+| E1 | Vibe reactions on individual messages | 1 Redis set/message | ✅ Shipped. `ANON_REACT` / `MATCH_REACTION`, 6 curated keys, server-side whitelist |
+| E2 | 24h thread expiry with visible countdown | TTL exists, invisible now | ✅ Shipped. Needs `createdAt`, now on both `MATCH_FOUND` paths |
+| E3 | Icebreaker cards | Cheap | ✅ Shipped. 14 prompts, hidden at 4+ messages so they stop competing |
+| E4 | "How it went" end-of-thread card | Nearly free | ✅ Shipped. Replaces the partner-left prompt once there is something to say |
+| E5 | Client-side whisper history (localStorage) | **Zero server cost, zero privacy surface** | ✅ Shipped. Capped at 20, device-local, aliases + tags only — never message content |
+| E6 | Signed-in daily whisper counter | 1 INCR + 1 EXPIRE | ✅ Shipped server-side (limit 30). Abuse lever now, paywall later |
+
+**E1 reaction rules** — one reaction per person per message; sending the same one
+again removes it; sending a different one replaces it. The store deliberately has
+**two** setters: `applyReaction` toggles (a local tap can't know the current
+state) and `setReaction` writes (the server's `added`/`removed` is authoritative).
+Using the toggle for both made the optimistic tap and its own broadcast cancel each
+other out — caught in the browser, not by inspection.
+
+**E6 quota** — enforced at the `/anon` handshake, not `POST /api/match/join`,
+because that route is guest-safe with no auth middleware and cannot see a
+`userId`. One Lua `INCR` with the `EXPIRE` inside the script on first increment
+only — a pipeline is not a transaction, and a lost race would leave a counter with
+no TTL, i.e. a permanently locked-out account. Rolling window, not midnight: a
+synchronised reset dumps every user into the same instant, straight onto the join
+scan. Refused attempts count, so "retry until under" can't escape. Guests are
+never capped.
+
+⚠️ **Follow-ups found while building E**
+- `validateSocket.ts`'s built-in failure acks are hardcoded to the *message*
+  vocabulary and carry no `code`, so a rate-limited or malformed `ANON_REACT` reaches
+  the client as bare prose. Same class of problem as the `session_ended` one.
+  `SocketEventOptions` wants optional per-event `messages` + `code`.
+- Per-socket rate limiters are still in-process, so N instances = N× the cap. Needs
+  a Redis-backed limiter before scaling out.
+- **Only `queue.integration.test.ts` may touch `match:queue:global`.** Test files
+  share one Redis and run concurrently; the suite already broke once on this.
+- `getUserActiveSessions` is an N+1 loop, fine at 1–2 sessions, pipeline it if the
+  per-account concurrency cap ever rises.
+- `hasMessage` on the reaction path `LRANGE`s and JSON-parses the whole buffer.
+  Bounded at 50, not on the hot path, but O(buffer).
 
 **Note:** vibe-aligned matching is **already live and free** —
 `vibePairScore` (`services/match/queue.ts`) scores candidates by shared tags and

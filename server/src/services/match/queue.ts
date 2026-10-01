@@ -1,7 +1,12 @@
 import { v4 as uuid } from 'uuid';
 import { getRedis } from '../../config/redis.js';
 import { logger } from '../../utils/logger.js';
-import type { MatchCandidate, VibeTag, WaitingCard } from '../../types/match.js';
+import type {
+  MatchCandidate,
+  MatchIdentity,
+  VibeTag,
+  WaitingCard,
+} from '../../types/match.js';
 import { REDIS_KEYS, TTL } from './keys.js';
 import { findBlockedCandidates } from './block.js';
 
@@ -29,6 +34,28 @@ export const getWaitingCard = async (anonId: string): Promise<WaitingCard | null
 };
 
 /**
+ * Attach (or clear) the signed-in account on an existing identity card.
+ *
+ * Called on every /anon connect, where the account is known. A signed-out socket
+ * CLEARS the link rather than leaving it: the anonId cookie is a 24 h
+ * credential, and a stale account on it would charge the next person to use that
+ * device this stranger's quota and blocks.
+ */
+export const setWaitingCardUser = async (
+  anonId: string,
+  userId: string | undefined
+): Promise<void> => {
+  const card = await getWaitingCard(anonId);
+  if (!card) return; // no identity card yet — nothing to attach the account to
+  if (card.userId === userId) return; // already correct; don't rewrite the TTL
+
+  const next: WaitingCard = { ...card };
+  if (userId) next.userId = userId;
+  else delete next.userId;
+  await saveWaitingCard(next);
+};
+
+/**
  * Keep the identity card alive without touching `joinedAt`.
  * Called on every message so an active session never ages out.
  */
@@ -44,6 +71,24 @@ export const touchWaitingCard = async (anonId: string): Promise<void> => {
 /** Forget an identity card entirely — only on an explicit queue exit. */
 export const deleteWaitingCard = async (anonId: string): Promise<void> => {
   await getRedis().del(REDIS_KEYS.waiting(anonId));
+};
+
+/**
+ * Persist `anonId → userId` so a block on this anonId can reach the account.
+ *
+ * The link is what makes a block survive the blocked person signing in: without
+ * it there is no way to attach an anonId-scoped block to an account.
+ */
+export const setIdentityAlias = async (
+  anonId: string,
+  userId: string | undefined
+): Promise<void> => {
+  const key = REDIS_KEYS.identityAlias(anonId);
+  if (!userId) {
+    await getRedis().del(key);
+    return;
+  }
+  await getRedis().set(key, userId, 'EX', TTL.identityAlias);
 };
 
 /** Push self onto the global queue. */
@@ -136,7 +181,9 @@ const claimCandidate = async (candidates: string[]): Promise<string | null> => {
  *
  * Cost per attempt is bounded by `CANDIDATE_SCAN_WINDOW` regardless of how many
  * people are waiting, in three round-trips: the window read, the identity-card
- * pipeline, the block pipeline.
+ * pipeline, the block pipeline. (The per-account whisper cap is NOT here — it runs
+ * once per queue entry, in the /anon connect handler, so the scan's cost stays a
+ * function of the window alone.)
  *
  * Returns the matched partner's anonId, or null if nobody suitable is waiting.
  */
@@ -161,16 +208,41 @@ export const tryMatchFromQueue = async (self: WaitingCard): Promise<string | nul
   candidates.forEach((id) => cardPipe.get(REDIS_KEYS.waiting(id)));
   const cardResults = await cardPipe.exec();
 
-  // Two block checks per candidate, batched into one round-trip.
-  const blocked = await findBlockedCandidates(self.anonId, candidates);
+  // A queue entry with no card is stale (card expired, or the enqueue failed) —
+  // it is not a person, so it must not be matched on or block-checked.
+  const identities: MatchIdentity[] = [];
+  const cards: (WaitingCard | null)[] = [];
+  candidates.forEach((anonId, i) => {
+    const raw = cardResults?.[i]?.[1] as string | null | undefined;
+    if (!raw) {
+      cards.push(null);
+      return;
+    }
+    const card = JSON.parse(raw) as WaitingCard;
+    cards.push(card);
+    identities.push({ anonId, userId: card.userId });
+  });
+
+  // Block checks batched into ONE round-trip — at most four SISMEMBERs per
+  // candidate, but always together. This is the check that used to make matching
+  // O(queue length), so "how many round-trips" matters far more here than "how
+  // many commands": the window bounds the commands, the pipeline bounds the
+  // round-trips.
+  const blocked = await findBlockedCandidates(
+    { anonId: self.anonId, userId: self.userId },
+    identities
+  );
 
   const eligible: MatchCandidate[] = [];
   candidates.forEach((anonId, i) => {
-    const raw = cardResults?.[i]?.[1] as string | null | undefined;
-    if (!raw) return; // no identity card — stale queue entry, skip
+    const card = cards[i];
+    if (!card) return; // stale queue entry
     if (blocked.has(anonId)) return;
-
-    const card = JSON.parse(raw) as WaitingCard;
+    // Never match an account with itself. A signed-in user on a phone and a
+    // laptop is two anonIds and one account, and the anonId filter above cannot
+    // see that — so without this the same person is handed their own other tab,
+    // and talks to themselves. Free: the card is already in hand.
+    if (self.userId && card.userId === self.userId) return;
     eligible.push({
       anonId,
       score: vibePairScore(self.vibeTags, card.vibeTags),

@@ -2,16 +2,39 @@ import dayjs from 'dayjs';
 import TypingDots from '@/shared/components/ui/typing-indicator/TypingDots';
 import { groupMessages } from '@/shared/utils/groupMessages';
 import { avatarGradient } from '../utils/vibeTag';
+import MessageReactionBar from './MessageReactionBar';
+import { useNowWhile } from '../hooks/useNowWhile';
+import type { AnonReaction } from '@/shared/types/socket';
 import type { AnonMessage } from '../types';
 
 const fmt = (ms: number): string => dayjs(ms).format('h:mm A');
+
+/**
+ * The thread's own lifetime. Redis holds the session for 24h from creation, so
+ * this is a real deadline, not decoration — and it is the one piece of urgency the
+ * anonymous layer has, since nothing here is saved.
+ */
+const THREAD_LIFETIME_MS = 24 * 60 * 60 * 1000;
+
+const expiryLabel = (msLeft: number): string => {
+  const mins = Math.floor(msLeft / 60_000);
+  if (mins < 1) return 'under a minute';
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.floor(mins / 60);
+  return hours < 24 ? `${hours}h ${mins % 60}m` : `${Math.floor(hours / 24)}d`;
+};
 
 type Props = {
   myName: string;
   partnerName: string;
   messages: AnonMessage[];
   partnerTyping: boolean;
+  /** Session start; drives the expiry line. Null hides it. */
+  startedAt: number | null;
+  /** False once the thread is over — no reacting on a dead conversation. */
+  live: boolean;
   onRetry: (id: string) => void;
+  onReact: (messageId: string, reaction: AnonReaction) => void;
   bottomRef: React.RefObject<HTMLDivElement | null>;
 };
 
@@ -27,11 +50,18 @@ export default function AnonMessageList({
   partnerName,
   messages,
   partnerTyping,
+  startedAt,
+  live,
   onRetry,
+  onReact,
   bottomRef,
 }: Props) {
   const showEmpty = messages.length === 0;
   const groups = groupMessages(messages, (msg) => msg.from);
+  // A countdown has to tick, so the clock lives in state — `Date.now()` in a
+  // render body is impure and the compiler rejects it.
+  const now = useNowWhile(live && Boolean(startedAt), 60_000);
+  const msLeft = startedAt ? startedAt + THREAD_LIFETIME_MS - now : 0;
 
   return (
     <>
@@ -42,6 +72,11 @@ export default function AnonMessageList({
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
           Ephemeral — gone when you leave
+          {live && startedAt && (
+            <span className="acr-ephemeral__expiry">
+              · vanishes in {expiryLabel(msLeft)}
+            </span>
+          )}
         </span>
       </div>
 
@@ -75,7 +110,7 @@ export default function AnonMessageList({
           return (
             <div
               key={msg.id}
-              className={`flex w-full ${isMe ? 'justify-end' : 'justify-start'}${joinedAbove ? '' : ' mt-[0.85rem]'}`}
+              className={`acr-row flex w-full ${isMe ? 'acr-row--me justify-end' : 'justify-start'}${joinedAbove ? '' : ' mt-[0.85rem]'}`}
             >
               <div
                 className={[
@@ -126,6 +161,14 @@ export default function AnonMessageList({
                   </button>
                 )}
               </div>
+
+              {/* Reactions live beside the bubble, not inside it, so the bubble's
+                  padding and its absolutely-positioned timestamp are untouched. */}
+              <MessageReactionBar
+                reactions={msg.reactions}
+                enabled={live && !failed && msg.delivery !== 'sending'}
+                onReact={(reaction) => onReact(msg.id, reaction)}
+              />
             </div>
           );
         })}

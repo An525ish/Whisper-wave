@@ -1,0 +1,117 @@
+/* Conversation starters — the compact, dismissible card above the composer.
+   Colocated per the CSS-homes rule: one-off composite, not a shared token.
+   Same idiom as partnerLeftPrompt.css: rounded card, green accent,
+   rgb(255 255 255 / 0.07) borders, 180ms transitions. */
+
+.ice {
+  flex-shrink: 0;
+  margin: 0 0.85rem 0.45rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  background: rgb(255 255 255 / 0.03);
+  animation: ice-rise 240ms ease-out;
+}
+
+.ice__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.3rem 0.35rem 0.3rem 0.7rem;
+}
+
+.ice__kicker {
+  margin: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(200 255 230 / 0.6);
+}
+
+.ice__tools {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.ice__tool {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: rgb(235 236 236 / 0.5);
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+
+.ice__tool:hover {
+  border-color: rgb(255 255 255 / 0.09);
+  background: rgb(255 255 255 / 0.05);
+  color: rgb(235 236 236 / 0.9);
+}
+
+.ice__icon {
+  display: block;
+}
+
+/* ── Prompts ─────────────────────────────────────────────────────────────── */
+
+.ice__list {
+  display: grid;
+  margin: 0;
+  padding: 0 0.7rem 0.65rem;
+  gap: 0.3rem;
+  list-style: none;
+}
+
+/* The green edge reads as "a line to pick up" without spending a bullet glyph
+   on the same row. */
+.ice__item {
+  border-left: 2px solid rgb(1 195 109 / 0.45);
+  border-radius: 0.35rem 0.7rem 0.7rem 0.35rem;
+  background: rgb(255 255 255 / 0.02);
+  padding: 0.35rem 0.55rem;
+  font-size: 0.775rem;
+  line-height: 1.35;
+  color: rgb(235 236 236 / 0.82);
+  animation: ice-rise 200ms ease-out;
+}
+
+/* A two-or-three item stagger. Enough to feel like a sequence, short enough
+   that the last prompt is never late to the conversation. */
+.ice__item:nth-child(2) { animation-delay: 45ms; }
+.ice__item:nth-child(3) { animation-delay: 90ms; }
+
+@keyframes ice-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Over dark glass the UA default outline is often invisible — make it explicit. */
+.ice :focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Purely decorative. With motion off the card simply appears. */
+  .ice,
+  .ice__item {
+    animation: none;
+  }
+
+  .ice__tool {
+    transition: none;
+  }
+}

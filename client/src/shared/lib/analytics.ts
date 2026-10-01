@@ -25,6 +25,7 @@ export const ANALYTICS = {
   WHISPER_MATCHED: 'whisper_matched',
   /** Outgoing message sent. */
   WHISPER_MESSAGE_SENT: 'whisper_message_sent',
+  WHISPER_REACTED: 'whisper_reacted',
   /** User tapped the like/vibe button. */
   WHISPER_LIKE_SENT: 'whisper_like_sent',
   /** Mutual like achieved — the top of the funnel. */

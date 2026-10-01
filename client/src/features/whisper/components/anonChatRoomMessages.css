@@ -64,6 +64,8 @@
 .acr-ephemeral span {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 0.35rem;
   border-radius: 999px;
   border: 1px solid rgb(255 255 255 / 0.07);
@@ -72,6 +74,14 @@
   font-size: 0.68rem;
   color: rgb(235 236 236 / 0.5);
   backdrop-filter: blur(8px);
+}
+
+/* The thread's real deadline. Redis holds the session 24h from creation, so this
+   is a countdown to something that actually happens — the only urgency the
+   anonymous layer has, since nothing here is saved. */
+.acr-ephemeral__expiry {
+  color: rgb(235 236 236 / 0.4);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Transient, non-blocking hint (e.g. "chat a little longer"). */

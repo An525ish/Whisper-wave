@@ -126,9 +126,9 @@ export type {
   GetMyFriendsInput,
 } from './friend-request.js';
 export type { LinkPreviewData } from './linkPreview.js';
-// `normalizeVibeTag` is a runtime value, so it needs a value re-export — the
-// `types/` barrel is the one place shared domain exports live.
-export { normalizeVibeTag } from './match.js';
+// `normalizeVibeTag` and `ANON_REACTIONS` are runtime values, so they need value
+// re-exports — the `types/` barrel is the one place shared domain exports live.
+export { normalizeVibeTag, ANON_REACTIONS } from './match.js';
 export type {
   // Vibe
   Gender,
@@ -136,6 +136,8 @@ export type {
   // Redis session state
   SessionStatus,
   AnonSession,
+  CreateSessionInput,
+  MatchIdentity,
   // Reveal flow
   ConnectTokenPayload,
   // Mongo document shapes
@@ -151,8 +153,17 @@ export type {
   PairResult,
   // Messaging
   BufferedAnonMessage,
+  AnonFailureCode,
   AnonMessageAck,
   SocketAck,
+  // Vibe reactions
+  AnonReaction,
+  AnonReactionAction,
+  AnonReactionAck,
+  AnonReactionEvent,
+  AnonMessageReactions,
+  AnonSessionReactions,
+  ReactionSocketAck,
   // Likes
   LikeResult,
   // Vibe eligibility

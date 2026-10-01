@@ -12,7 +12,6 @@ import {
   MATCH_TYPING_STOP,
   SOMEONE_VIBING,
   MUTUAL_LIKE,
-  MATCH_ERROR,
   MATCH_MESSAGE_REJECTED,
   MATCH_PARTNER_VIBED,
   SESSION_EXPIRED,
@@ -22,12 +21,15 @@ import {
   anonNoPayloadSchema,
 } from '../../validators/anon.js';
 import { emitMatchFound, emitMatchFoundToSocket } from './emitMatchFound.js';
+import { clearReactionLimiter, registerReactionHandler } from './reactionHandler.js';
 import {
   getSession,
   getActiveSessionId,
+  getUserActiveSessions,
   isParticipant,
   getPartner,
   getWaitingCard,
+  setWaitingCardUser,
   reenqueue,
   queueSize,
   recordLike,
@@ -36,39 +38,24 @@ import {
   handleSocketDrop,
   endSessionNow,
   acceptAnonMessage,
+  checkWhisperQuota,
   relayMessage,
   notifyMatchEnded,
   pairOrEnqueue,
   requireActiveParticipant,
 } from '../../services/match/index.js';
 import { logger } from '../../utils/logger.js';
+import { AppError } from '../../utils/AppError.js';
+import { ackOf, emitError, failureCodeFor } from './shared.js';
 import type { AnonSocket } from './types.js';
 import type { Namespace } from 'socket.io';
-import type { SocketAck, WaitingCard } from '../../types/match.js';
+import type { WaitingCard } from '../../types/match.js';
 const msgLimiter = makeSocketRateLimiter(20, 10_000);
 const likeLimiter = makeSocketRateLimiter(5, 30_000);
 /** Typing events are cheap but unvalidated traffic aimed at a partner — cap them. */
 const typingLimiter = makeSocketRateLimiter(12, 10_000);
 /** Requeue spam guard — one at a time is plenty. */
 const requeueLimiter = makeSocketRateLimiter(3, 15_000);
-
-/**
- * Tell the client something went wrong.
- *
- * `code` is the machine-readable half. `message` is prose and is allowed to
- * change; the client must never branch on it, only on `code`.
- */
-const emitError = (
-  socket: AnonSocket,
-  message: string,
-  code?: 'session_ended'
-): void => {
-  socket.emit(MATCH_ERROR, { message, code });
-};
-
-/** Pull a Socket.IO ack callback out of the extra handler arguments. */
-const ackOf = (rest: unknown[]): SocketAck | undefined =>
-  rest.find((a): a is SocketAck => typeof a === 'function');
 
 /**
  * On socket connect: resume an existing match, or (re)join the queue.
@@ -85,8 +72,33 @@ export const handleAnonConnect = async (
   // We're back — cancel any pending disconnect grace period.
   await clearPresence(anonId);
 
+  // Bind this anonId to the account that owns this connection, now that we know
+  // whether there is one. A signed-out socket CLEARS any link a previous signed-in
+  // one wrote, so signing out actually sheds the account — otherwise the next
+  // person to hold this anonId would inherit the previous one's blocks and
+  // quota. Done before the resume check so a match formed while signed in is
+  // still attributable afterwards.
+  await setWaitingCardUser(anonId, socket.userId);
+
   // 1. Resume an interrupted match (page refresh / flaky network).
   const activeSessionId = await getActiveSessionId(anonId);
+
+  // A signed-in account can hold several anon identities (phone + laptop), and
+  // the anonId pointer above can only ever see one of them — so without this
+  // check the same account gets matched into two live threads at once. Guests
+  // are unaffected, and a resumed match short-circuits before we get here.
+  if (!activeSessionId && socket.userId) {
+    const elsewhere = await getUserActiveSessions(socket.userId, anonId);
+    if (elsewhere.length > 0) {
+      emitError(
+        socket,
+        'You are already in a whisper on another device. Finish that one first.',
+        'already_matched'
+      );
+      return;
+    }
+  }
+
   if (activeSessionId) {
     const session = await getSession(activeSessionId);
     if (session?.status === 'active' && isParticipant(session, anonId)) {
@@ -96,6 +108,17 @@ export const handleAnonConnect = async (
   }
 
   // 2. Re-enter the queue with the identity we already hold.
+  //
+  //    Guests are never capped. Signed-in accounts are, and this is the first
+  //    point in the lifecycle where the account is known — the /anon handshake is
+  //    what reads the `accessToken` cookie. Costs one INCR, off the match scan,
+  //    so `tryMatchFromQueue`'s bounded cost is untouched.
+  const quota = await checkWhisperQuota(socket.userId);
+  if (quota instanceof AppError) {
+    emitError(socket, quota.message, 'quota_exceeded');
+    return;
+  }
+
   const card = await getWaitingCard(anonId);
   if (card) {
     await reenqueue(anonId);
@@ -131,7 +154,8 @@ const attemptPair = async (
     socket.anonId,
     result.partner.anonId,
     card,
-    result.partner
+    result.partner,
+    result.createdAt
   );
   logger.info({ sessionId: result.sessionId, anonId: socket.anonId }, 'Anon match created');
 };
@@ -150,6 +174,8 @@ const requeueSelf = async (socket: AnonSocket, nsp: Namespace): Promise<void> =>
 
 /** Register all inbound event handlers for a connected /anon socket. */
 export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void => {
+  registerReactionHandler(socket, nsp);
+
   // ── ANON_MESSAGE ──────────────────────────────────────────────────────────
   onSocketEvent(
     socket,
@@ -169,8 +195,9 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
         // client to recognise a dead session is to pattern-match the prose, which
         // drifts the moment either side rewords an error.
         const message = err instanceof Error ? err.message : 'Message not sent';
-        ack?.({ ok: false, id, reason: message, code: 'session_ended' });
-        emitError(socket, message, 'session_ended');
+        const code = failureCodeFor(err) ?? 'session_ended';
+        ack?.({ ok: false, id, reason: message, code });
+        emitError(socket, message, code);
         return;
       }
 
@@ -308,6 +335,7 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
     likeLimiter.remove(socket.id);
     typingLimiter.remove(socket.id);
     requeueLimiter.remove(socket.id);
+    clearReactionLimiter(socket.id);
 
     // Grace period: a dropped socket is not proof of departure.
     void handleSocketDrop(nsp, socket.anonId, socket.sessionId);

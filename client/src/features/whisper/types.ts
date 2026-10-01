@@ -3,6 +3,8 @@
  * `utils/`. This file is types only.
  */
 
+import type { AnonReaction } from '@/shared/types/socket';
+
 export type VibeTag = string;
 
 export type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
@@ -36,6 +38,16 @@ export type AnonMessage = {
   delivery?: DeliveryState;
   /** Populated when `delivery === 'failed'` so the UI can explain itself. */
   failureReason?: string;
+  /**
+   * Curated reactions on this bubble, keyed the same way as `from`. The server
+   * sends `{ anonId: AnonReaction[] }`; the socket layer maps each anonId to
+   * 'me'/'them' before it lands here, so the store never holds an anonId.
+   * At most one per side — sending a second replaces the first.
+   */
+  reactions?: {
+    me?: AnonReaction;
+    them?: AnonReaction;
+  };
 };
 
 export type JoinQueuePayload = {

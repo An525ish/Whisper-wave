@@ -1,0 +1,172 @@
+/* End-of-thread sign-off. Same idiom as partnerLeftPrompt.css: rounded card,
+   green accent, rgb(255 255 255 / 0.07) borders, 180ms transitions.
+   Colocated per the CSS-homes rule: one-off composite, not a shared token. */
+
+.tsc {
+  flex-shrink: 0;
+  border-top: 1px solid rgb(255 255 255 / 0.06);
+  background: linear-gradient(180deg, rgb(1 195 109 / 0.07), rgb(0 0 0 / 0.28));
+  padding: 0.95rem 0.85rem max(0.95rem, env(safe-area-inset-bottom));
+  backdrop-filter: blur(10px);
+  animation: tsc-rise 300ms ease-out;
+}
+
+.tsc__kicker {
+  margin: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(200 255 230 / 0.55);
+}
+
+.tsc__title {
+  margin: 0.3rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: rgb(235 236 236 / 0.95);
+}
+
+/* ── Two stat tiles, not a table ─────────────────────────────────────────── */
+
+.tsc__stats {
+  display: flex;
+  margin-top: 0.7rem;
+  gap: 0.5rem;
+}
+
+.tsc__stat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 0;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  background: rgb(255 255 255 / 0.03);
+  padding: 0.45rem 0.6rem;
+}
+
+.tsc__stat-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-green);
+}
+
+.tsc__stat-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(235 236 236 / 0.45);
+}
+
+.tsc__split {
+  margin: 0.4rem 0 0;
+  font-size: 0.7rem;
+  color: rgb(235 236 236 / 0.5);
+}
+
+.tsc__verdict {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgb(235 236 236 / 0.8);
+}
+
+/* ── Shared tags — same chip language as the chat header ─────────────────── */
+
+.tsc__tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  gap: 0.3rem;
+  list-style: none;
+}
+
+.tsc__tag {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-void-bright) 28%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-void) 20%, transparent),
+    rgb(1 195 109 / 0.08)
+  );
+  padding: 0.12rem 0.5rem;
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--color-void-bright) 55%, white);
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+
+.tsc__actions {
+  display: flex;
+  align-items: stretch;
+  margin-top: 0.85rem;
+  gap: 0.5rem;
+}
+
+.tsc__primary {
+  flex: 1;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(1 195 109 / 0.3);
+  background: rgb(1 195 109 / 0.1);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-green);
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+.tsc__primary:hover {
+  border-color: rgb(1 195 109 / 0.5);
+  background: rgb(1 195 109 / 0.16);
+}
+
+.tsc__secondary {
+  flex-shrink: 0;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  background: rgb(255 255 255 / 0.03);
+  padding: 0.55rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgb(235 236 236 / 0.6);
+  transition: color 180ms ease, border-color 180ms ease;
+}
+
+.tsc__secondary:hover {
+  border-color: rgb(255 255 255 / 0.2);
+  color: rgb(235 236 236 / 0.85);
+}
+
+/* Over dark glass the UA default outline is often invisible — make it explicit. */
+.tsc :focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+@keyframes tsc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Purely decorative. With motion off the card simply appears. */
+  .tsc {
+    animation: none;
+  }
+
+  .tsc__primary,
+  .tsc__secondary {
+    transition: none;
+  }
+}

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { AnonReaction } from '@/shared/types/socket';
 import type { AnonMatchStatus, AnonMessage, Gender, VibeTag } from '../types';
 
 type AnonState = {
@@ -51,7 +52,13 @@ type AnonState = {
     gender?: Gender
   ) => void;
   setStatus: (status: AnonMatchStatus) => void;
-  setMatch: (sessionId: string, partnerName: string, partnerTags: VibeTag[]) => void;
+  setMatch: (
+    sessionId: string,
+    partnerName: string,
+    partnerTags: VibeTag[],
+    /** The session's real start (Unix ms). Falls back to now if absent. */
+    startedAt?: number
+  ) => void;
   /**
    * Update the identity card in place (alias / vibes / gender).
    *
@@ -81,6 +88,15 @@ type AnonState = {
   markPartnerLeft: () => void;
   /** "Stay here" — collapse the prompt to a one-line bar. Thread still readable. */
   dismissPartnerLeftPrompt: () => void;
+  /**
+   * Refused before we ever entered a queue — another device already holds this
+   * account's match, or the daily allowance is spent.
+   *
+   * Drops back to the picker with the reason attached, because there is no thread
+   * to show it on and an in-chat banner would imply otherwise. Guests never reach
+   * this: neither condition can apply to an anonymous identity.
+   */
+  endAtDoor: (message: string) => void;
   setSocketConnected: (connected: boolean) => void;
   setSessionNotice: (notice: string | null) => void;
   setError: (message: string | null) => void;
@@ -96,8 +112,50 @@ type AnonState = {
   settleMessage: (id: string, delivery: 'sent' | 'failed', reason?: string) => void;
   /** Put a failed message back in flight. */
   retryMessage: (id: string) => AnonMessage | null;
+  /**
+   * Apply one curated reaction to a bubble.
+   *
+   * `side` is already resolved from the server's anonId by the socket layer.
+   * Sending the reaction a side already holds removes it (the server's toggle),
+   * and sending a different one replaces it — one reaction per person per
+   * message, by design, so a bubble can't turn into a sticker sheet.
+   */
+  applyReaction: (messageId: string, side: 'me' | 'them', reaction: AnonReaction) => void;
+  /**
+   * Set or clear one side's reaction from an **authoritative** server event.
+   *
+   * Distinct from `applyReaction` on purpose: that one toggles, because a local tap
+   * has no idea whether the reaction is already there. The server already decided,
+   * and it says which — so this must write the answer rather than invert it. Using
+   * the toggle for both makes the optimistic tap and its own broadcast cancel out.
+   */
+  setReaction: (
+    messageId: string,
+    side: 'me' | 'them',
+    reaction: AnonReaction | undefined
+  ) => void;
+  /** Bulk-apply on resume, where the server sends a whole session's reactions. */
+  setMessageReactions: (byMessageId: Record<string, AnonMessage['reactions']>) => void;
   setConnected: (chatId: string, connectionId: string) => void;
   reset: () => void;
+};
+
+/**
+ * Write one side's reaction onto a bubble.
+ *
+ * A cleared reaction is `delete`d rather than assigned `undefined`, so it doesn't
+ * linger as an explicit "nothing" that `Object.keys` and the UI would both treat as
+ * present.
+ */
+const setSide = (
+  message: AnonMessage,
+  side: 'me' | 'them',
+  reaction: AnonReaction | undefined
+): AnonMessage => {
+  const reactions: NonNullable<AnonMessage['reactions']> = { ...message.reactions };
+  if (reaction === undefined) delete reactions[side];
+  else reactions[side] = reaction;
+  return { ...message, reactions };
 };
 
 /** Everything that belongs to a single match and must not survive into the next. */
@@ -145,7 +203,7 @@ export const useAnonStore = create<AnonState>((set, get) => ({
   setIdentityFields: (displayName, vibeTags, gender) =>
     set({ displayName, vibeTags, gender }),
 
-  setMatch: (sessionId, partnerName, partnerTags) =>
+  setMatch: (sessionId, partnerName, partnerTags, startedAt) =>
     set({
       ...sessionFields,
       sessionId,
@@ -158,7 +216,9 @@ export const useAnonStore = create<AnonState>((set, get) => ({
       status: 'matched',
       sessionNotice: null,
       error: null,
-      matchedAt: Date.now(),
+      // The server's real session start, not `Date.now()` — a resumed session
+      // must keep the clock it already had.
+      matchedAt: startedAt || Date.now(),
     }),
 
   clearSession: () => set({ ...sessionFields }),
@@ -176,6 +236,15 @@ export const useAnonStore = create<AnonState>((set, get) => ({
     }),
 
   dismissPartnerLeftPrompt: () => set({ partnerLeftPromptDismissed: true }),
+
+  endAtDoor: (message) =>
+    set({
+      ...sessionFields,
+      status: 'idle',
+      error: message,
+      sessionNotice: null,
+      socketConnected: false,
+    }),
 
   setSocketConnected: (socketConnected) => set({ socketConnected }),
 
@@ -230,6 +299,29 @@ export const useAnonStore = create<AnonState>((set, get) => ({
     }));
     return target;
   },
+
+  applyReaction: (messageId, side, reaction) =>
+    set((s) => ({
+      messages: s.messages.map((m) =>
+        m.id === messageId
+          ? setSide(m, side, m.reactions?.[side] === reaction ? undefined : reaction)
+          : m
+      ),
+    })),
+
+  setReaction: (messageId, side, reaction) =>
+    set((s) => ({
+      messages: s.messages.map((m) =>
+        m.id === messageId ? setSide(m, side, reaction) : m
+      ),
+    })),
+
+  setMessageReactions: (byMessageId) =>
+    set((s) => ({
+      messages: s.messages.map((m) =>
+        byMessageId[m.id] === undefined ? m : { ...m, reactions: byMessageId[m.id] }
+      ),
+    })),
 
   setConnected: (chatId, connectionId) =>
     set({ chatId, connectionId, status: 'connected', sessionNotice: null }),

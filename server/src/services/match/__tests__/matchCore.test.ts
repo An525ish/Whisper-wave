@@ -4,9 +4,12 @@ import { REDIS_KEYS, TTL } from '../keys.js';
 import { meetsVibeGate, VIBE_UNLOCK } from '../vibeEligibility.js';
 import { vibePairScore } from '../queue.js';
 import { inspectMessage, shouldAutoReport } from '../moderation.js';
+import { anonReactionSchema } from '../reaction.js';
+import { ANON_REACTIONS } from '../../../types/match.js';
 describe('redis keys', () => {
   it('namespaces every key by feature so SCAN is safe', () => {
     const anon = 'anon-1';
+    const user = 'u-1';
     const session = 'sess-1';
     const keys = [
       REDIS_KEYS.queue,
@@ -15,12 +18,53 @@ describe('redis keys', () => {
       REDIS_KEYS.likes(session),
       REDIS_KEYS.messages(session),
       REDIS_KEYS.blocked(anon),
+      REDIS_KEYS.blocked(user),
       REDIS_KEYS.activeSession(anon),
       REDIS_KEYS.presence(anon),
+      REDIS_KEYS.userSessions(user),
+      REDIS_KEYS.userWhispers(user),
+      REDIS_KEYS.identityAlias(anon),
+      REDIS_KEYS.reactions(session, 'msg_1'),
     ];
     for (const key of keys) {
       assert.ok(key.startsWith('match:'), `${key} is not namespaced`);
     }
+  });
+
+  it('keeps a signed-in account off every anonId-scoped key', () => {
+    // The whole dual-identity scheme rests on this: a user's account id and
+    // their anonymous id must never land on the same key, or a block written for
+    // one is silently read as a block on the other.
+    const anon = 'anon-1';
+    const user = 'u-1';
+    assert.notEqual(REDIS_KEYS.blocked(anon), REDIS_KEYS.blocked(user));
+    assert.notEqual(REDIS_KEYS.userSessions(user), REDIS_KEYS.blocked(user));
+    assert.notEqual(REDIS_KEYS.userWhispers(user), REDIS_KEYS.userSessions(user));
+    assert.notEqual(REDIS_KEYS.identityAlias(anon), REDIS_KEYS.userSessions(user));
+  });
+
+  it('keeps the whisper window and the session index on separate keys', () => {
+    // Ending a match must not clear the daily count, and a window reset must not
+    // make a matched account look free.
+    const user = 'u-1';
+    assert.notEqual(REDIS_KEYS.userWhispers(user), REDIS_KEYS.userSessions(user));
+  });
+
+  it('never lets a message id escape the reactions namespace', () => {
+    // `reactions()` embeds a client-supplied id in a key. A colon or wildcard
+    // there would let one message address another message's reactions, or reach
+    // outside the `match:reactions:` prefix entirely. The Zod schema is the
+    // enforcement point; this pins the shape it relies on.
+    const key = REDIS_KEYS.reactions('sess-1', 'msg-1');
+    assert.equal(key, 'match:reactions:sess-1:msg-1');
+    assert.equal(key.split(':').length, 4);
+  });
+
+  it('bounds the signed-in account pointers and the reactions to the anon cookie', () => {
+    // Both hold account ids; both must not outlive the identity they describe.
+    assert.ok(TTL.identityAlias <= 24 * 60 * 60);
+    assert.ok(TTL.reactions <= 24 * 60 * 60);
+    assert.ok(TTL.whisperWindow <= 24 * 60 * 60);
   });
 
   it('keeps distinct concerns on distinct keys', () => {
@@ -114,6 +158,83 @@ describe('vibe overlap scoring', () => {
 
   it('never double counts a repeated tag', () => {
     assert.equal(vibePairScore(['music'], ['music', 'music']), 1);
+  });
+});
+
+describe('vibe reaction whitelist', () => {
+  it('accepts every curated reaction', () => {
+    for (const reaction of ANON_REACTIONS) {
+      const parsed = anonReactionSchema.safeParse({ messageId: 'msg-1', reaction });
+      assert.equal(parsed.success, true, `${reaction} should be accepted`);
+    }
+  });
+
+  it('rejects an emoji the client made up', () => {
+    // The whole point of a whitelist: the client cannot put an arbitrary glyph
+    // into someone else's bubble, which is a moderation surface with no
+    // moderation behind it.
+    for (const reaction of ['🔥', 'porn', 'slay ', 'SLAY', 'kill', '', '🫠🫠']) {
+      const parsed = anonReactionSchema.safeParse({ messageId: 'msg-1', reaction });
+      assert.equal(parsed.success, false, `${JSON.stringify(reaction)} must be rejected`);
+    }
+  });
+
+  it('rejects a reaction outside the set even when it is a real emoji', () => {
+    // A well-formed emoji is not a curated one. Real emoji the product has not
+    // chosen are still refused.
+    for (const reaction of ['💀', '👍', '❤️', '🙌']) {
+      if ((ANON_REACTIONS as readonly string[]).includes(reaction)) continue;
+      assert.equal(anonReactionSchema.safeParse({ messageId: 'msg-1', reaction }).success, false);
+    }
+  });
+
+  it('rejects a missing or malformed reaction', () => {
+    for (const payload of [
+      { messageId: 'msg-1' },
+      { reaction: 'fire' },
+      { messageId: 'msg-1', reaction: undefined },
+      {},
+    ]) {
+      assert.equal(anonReactionSchema.safeParse(payload).success, false, JSON.stringify(payload));
+    }
+  });
+
+  it('rejects a message id that could escape the reactions key namespace', () => {
+    // A crafted id is the only way to address another message's reaction set, or
+    // to write outside `match:reactions:` entirely.
+    for (const messageId of [
+      'a:b',
+      'match:reactions:sess-x',
+      '*',
+      '?',
+      'msg 1',
+      'msg/1',
+      'msg\n1',
+      "msg'1",
+      '',
+      'x'.repeat(65),
+    ]) {
+      const parsed = anonReactionSchema.safeParse({ messageId, reaction: 'fire' });
+      assert.equal(parsed.success, false, `${JSON.stringify(messageId)} must be rejected`);
+    }
+  });
+
+  it('accepts a realistic client-generated id', () => {
+    // Ids come from the client, so the safe shape has to be the one real clients
+    // produce (uuid, nanoid, timestamp+counter).
+    for (const messageId of ['a', 'msg-1', 'msg_1', '550e8400-e29b-41d4-a716-446655440000', '1'.repeat(64)]) {
+      assert.equal(
+        anonReactionSchema.safeParse({ messageId, reaction: 'fire' }).success,
+        true,
+        messageId
+      );
+    }
+  });
+
+  it('stays a small curated set, not an emoji keyboard', () => {
+    assert.ok(ANON_REACTIONS.length >= 3, 'too few to be a reaction bar');
+    assert.ok(ANON_REACTIONS.length <= 8, 'too many to be a curated set');
+    assert.equal(new Set(ANON_REACTIONS).size, ANON_REACTIONS.length, 'duplicate reaction key');
   });
 });
 

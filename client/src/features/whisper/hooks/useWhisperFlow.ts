@@ -56,8 +56,15 @@ export function useWhisperFlow() {
   const joinMutation = useJoinQueueMutation();
   const leaveMutation = useLeaveQueueMutation();
 
-  const { sendMessage, sendLikeEvent, sendNext, retryMessage, emitTypingStart, emitTypingStop } =
-    useAnonSocket(setPartnerTyping, setError);
+  const {
+    sendMessage,
+    sendLikeEvent,
+    sendNext,
+    sendReaction,
+    retryMessage,
+    emitTypingStart,
+    emitTypingStop,
+  } = useAnonSocket(setPartnerTyping, setError);
 
   const { draft, messages, handleDraftChange, clearDraft } = useAnonChat(
     emitTypingStart,
@@ -138,6 +145,7 @@ export function useWhisperFlow() {
       partnerLeftPromptExpanded,
       onFindSomeoneNew: findSomeoneNew,
       onStayOnEndedThread: dismissPartnerLeftPrompt,
+      onReact: sendReaction,
       onDraftChange: handleDraftChange,
       onSend: (content: string) => {
         sendMessage(content);

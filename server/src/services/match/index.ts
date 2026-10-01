@@ -9,8 +9,10 @@
 export {
   saveWaitingCard,
   getWaitingCard,
+  setWaitingCardUser,
   touchWaitingCard,
   deleteWaitingCard,
+  setIdentityAlias,
   enqueue,
   reenqueue,
   dequeue,
@@ -24,6 +26,7 @@ export {
   createSession,
   getSession,
   getActiveSessionId,
+  getUserActiveSessions,
   touchSession,
   isParticipant,
   getPartner,
@@ -55,3 +58,15 @@ export {
   shouldAutoReport,
   rejectionMessage,
 } from './moderation.js';
+export {
+  anonReactionSchema,
+  applyAnonReaction,
+  getMessageReactions,
+  getSessionReactions,
+} from './reaction.js';
+export {
+  DAILY_WHISPER_LIMIT,
+  checkWhisperQuota,
+  consumeWhisperQuota,
+  peekWhisperQuota,
+} from './quota.js';

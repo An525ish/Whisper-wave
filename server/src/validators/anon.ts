@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { ANON_MESSAGE_ID_MAX } from '../constants/anon-events.js';
+import { ANON_MESSAGE_ID_MAX, ANON_MESSAGE_ID_MAX_REACT } from '../constants/anon-events.js';
+import { ANON_REACTIONS } from '../types/match.js';
 
 /**
  * Zod schemas for inbound `/anon` socket payloads.
@@ -15,3 +16,21 @@ export const anonMessageSchema = z.object({
 
 /** Payload-less events still parse an optional empty object. */
 export const anonNoPayloadSchema = z.object({}).passthrough().optional();
+
+/**
+ * `ANON_REACT` payload.
+ *
+ * A whitelist, not a string: the client cannot push an arbitrary glyph into
+ * someone else's bubble, which in an unmoderated anonymous chat is a hole with
+ * nothing behind it. The message id is restricted to characters that are safe to
+ * embed in a Redis key, so a crafted id can never walk out of the
+ * `match:reactions:` namespace and address another message's set.
+ */
+export const anonReactionSchema = z.object({
+  messageId: z
+    .string()
+    .min(1)
+    .max(ANON_MESSAGE_ID_MAX_REACT)
+    .regex(/^[A-Za-z0-9_-]+$/, 'Message id may only contain letters, digits, - and _'),
+  reaction: z.enum(ANON_REACTIONS),
+});

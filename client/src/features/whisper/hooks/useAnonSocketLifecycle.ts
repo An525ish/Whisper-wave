@@ -16,11 +16,16 @@ import {
   MATCH_PARTNER_VIBED,
   SESSION_EXPIRED,
   CONNECTION_READY,
+  MATCH_REACTION,
+  type AnonFailureCode,
+  type AnonReactionEvent,
+  type AnonSessionReactions,
   type MatchFoundPayload,
   type QueueJoinedPayload,
   type MatchMessagePayload,
 } from '@/shared/constants/anonEvents';
 import { useAnonStore } from '../stores/anonStore';
+import type { AnonMessage } from '../types';
 import { ANALYTICS, track } from '@/shared/lib/analytics';
 
 type Options = {
@@ -97,6 +102,25 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Optio
       );
     };
 
+    /**
+     * Resolve a server-side `{ anonId: AnonReaction[] }` map into our
+     * `{ mine?, theirs? }` shape. The store never holds an anonId — that is a
+     * server-side identity and this thread is already relative by design.
+     */
+    const toSides = (byAnon: AnonSessionReactions): Record<string, AnonMessage['reactions']> => {
+      const myId = store().anonId;
+      const out: Record<string, AnonMessage['reactions']> = {};
+      for (const [messageId, byAnonId] of Object.entries(byAnon ?? {})) {
+        for (const [anonId, list] of Object.entries(byAnonId ?? {})) {
+          const first = list?.[0];
+          if (!first) continue;
+          const side = anonId === myId ? 'me' : 'them';
+          out[messageId] = { ...out[messageId], [side]: first };
+        }
+      }
+      return out;
+    };
+
     socket.on('connect', () => {
       store().setSocketConnected(true);
       if (store().sessionNotice === 'Reconnecting…') store().setSessionNotice(null);
@@ -126,13 +150,17 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Optio
 
     socket.on(MATCH_FOUND, (data: MatchFoundPayload) => {
       const state = store();
-      if (state.sessionId === data.sessionId && state.status === 'matched') {
-        applyBuffered(data.bufferedMessages);
-        state.setSessionNotice(null);
-        return;
-      }
-      state.setMatch(data.sessionId, data.partner.displayName, data.partner.vibeTags);
+      // `createdAt` is the session's real start on both the new-match and resume
+      // paths. Without it a reconnected thread reset its elapsed timer to "just
+      // met" and restarted its 24h expiry from zero.
+      state.setMatch(
+        data.sessionId,
+        data.partner.displayName,
+        data.partner.vibeTags,
+        data.createdAt
+      );
       applyBuffered(data.bufferedMessages);
+      if (data.reactions) state.setMessageReactions(toSides(data.reactions));
       track(ANALYTICS.WHISPER_MATCHED, {
         bufferSize: data.bufferedMessages?.length ?? 0,
         isResume: Boolean(state.sessionId),
@@ -150,6 +178,20 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Optio
 
     socket.on(MATCH_TYPING_START, () => typingRef.current(true));
     socket.on(MATCH_TYPING_STOP, () => typingRef.current(false));
+
+    // Emitted to BOTH participants, so this is the single settle path for the
+    // sender's optimistic tap and the partner's tap alike.
+    //
+    // `action` is honoured rather than re-toggled: the server already decided, and
+    // toggling its answer would cancel out our own optimistic tap.
+    socket.on(MATCH_REACTION, (data: AnonReactionEvent) => {
+      if (!data?.messageId || !data.reaction) return;
+      store().setReaction(
+        data.messageId,
+        data.anonId === store().anonId ? 'me' : 'them',
+        data.action === 'added' ? data.reaction : undefined
+      );
+    });
 
     // The partner liked. We record the fact even if we're not eligible to like
     // back yet — otherwise a like landing during the warm-up window was lost
@@ -197,18 +239,29 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Optio
     // Surface on-screen rather than swallowing it on non-picker screens.
     socket.on(
       MATCH_ERROR,
-      (data: { message: string; code?: 'session_ended' }) => {
+      (data: { message: string; code?: AnonFailureCode }) => {
         const message = data?.message ?? 'Something went wrong.';
-        store().setError(message);
-        errorRef.current(message);
 
-        // The server has told us our view of the match is stale. Reconciliation:
-        // without this the user keeps typing into a chat that can never deliver,
+        // Reconciliation: the server has told us our view of the match is stale.
+        // Without this the user keeps typing into a chat that can never deliver,
         // with no indication it is over. See `markPartnerLeft` in the store.
         if (data?.code === 'session_ended') {
           store().markPartnerLeft();
           typingRef.current(false);
+          return;
         }
+
+        // Refused at the door: another device holds this account's match, or the
+        // daily allowance is spent. Both mean "you are not in a queue", so the
+        // only honest place for them is the picker — an in-chat banner would
+        // imply there is something to talk to.
+        if (data?.code === 'already_matched' || data?.code === 'quota_exceeded') {
+          store().endAtDoor(message);
+          return;
+        }
+
+        store().setError(message);
+        errorRef.current(message);
       }
     );
 

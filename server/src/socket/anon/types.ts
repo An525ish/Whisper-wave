@@ -9,4 +9,10 @@ export type AnonSocket = Socket & {
   anonId: string;
   /** sessionId of the active match, if one exists. Set after MATCH_FOUND. */
   sessionId?: string;
+  /**
+   * Signed-in account behind this socket, when the `accessToken` cookie
+   * verified. Absent for every guest — anonymous stays fully anonymous, and a
+   * missing, malformed or unknown token all yield a working anon session.
+   */
+  userId?: string;
 };
