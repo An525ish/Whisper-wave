@@ -1,0 +1,35 @@
+/* ============================================================
+   WHISPER — shared entry-screen styles.
+
+   The `.whisper-cta` gradient and the entry CTA tokens are used by
+   more than one component, so they get one home rather than being
+   duplicated per component.
+   ============================================================ */
+
+/* Green→void diagonal. The void stop used to be pushed to 130% so the
+   two hues never actually met, leaving a muddy purple-black; this is
+   tuned so the blend is intentional. */
+.whisper-cta {
+  background: linear-gradient(
+    135deg,
+    var(--color-void) 0%,
+    var(--color-void-dark) 60%,
+    var(--color-void-gradTo) 100%
+  );
+  box-shadow:
+    0 8px 28px -8px var(--color-void-light),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+/* WaitingRoom also drives shared `auth-stage` animations via inline
+   styles, so neutralise them here for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-stage__chip,
+  .auth-stage__bar,
+  .auth-stage__chip-dot,
+  .auth-stage__signal span {
+    animation: none !important;
+  }
+
+  .whisper-cta { transition: none; }
+}

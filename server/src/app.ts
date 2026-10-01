@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { corsOptions } from './config/cors.js';
 import { isProd } from './config/env.js';
+import { redisHealth } from './config/redis.js';
 import { helmetOptions } from './config/helmet.js';
 import { globalErrorHandler } from './middlewares/index.js';
 import { registerRoutes } from './routes/index.js';
@@ -34,10 +35,14 @@ export const createApp = () => {
     })
   );
 
-  app.get('/health', (_req, res) => {
-    res.status(200).json({
-      status: 'ok',
+  app.get('/health', async (_req, res) => {
+    // Redis gates the whole anonymous layer, so report it. Mongo readiness is
+    // implicit: if it were down every API route would already be failing.
+    const redis = await redisHealth();
+    res.status(redis.ok ? 200 : 503).json({
+      status: redis.ok ? 'ok' : 'degraded',
       uptime: process.uptime(),
+      redis,
       timestamp: new Date().toISOString(),
     });
   });

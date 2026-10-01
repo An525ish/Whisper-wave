@@ -5,12 +5,10 @@ import { useResetPasswordMutation } from '@/features/auth';
 import type { ResetPasswordForm } from '@/features/auth';
 import { validateConfirmPassword, validatePassword } from '@/features/auth';
 import { toErrorMessage } from '@/shared/utils/helpers';
+import { PRODUCT_VOICE } from '@/shared/constants/app';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-
-const PRODUCT_VOICE =
-  'Anonymous when you want. Connected when it clicks.';
 
 export default function ResetPassword() {
   const [params] = useSearchParams();

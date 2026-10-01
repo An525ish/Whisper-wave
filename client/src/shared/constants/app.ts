@@ -2,6 +2,9 @@ export const BASE_URL: string = import.meta.env.VITE_BASE_URL;
 
 export const MAX_FILES = 5 as const;
 
+/** One source for the product tagline — previously duplicated in three files. */
+export const PRODUCT_VOICE = 'Anonymous when you want. Connected when it clicks.' as const;
+
 export const MAX_TEXTAREA_HEIGHT = 128 as const;
 export const SEARCH_DEBOUNCE_MS = 450 as const;
 export const MIN_GROUP_MEMBERS = 2 as const;

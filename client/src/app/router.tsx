@@ -94,6 +94,18 @@ const appRoutes = [
     element: <Navigate to="/" replace />,
   },
   {
+    // Guest-accessible. The phase spec asked for /whisper, /whisper/chat and
+    // /whisper/vibe; we use one route driven by store state because a refresh
+    // mid-chat would otherwise hit a cold route with no session to restore.
+    // Browser Back is handled in-page (see pages/Whisper.tsx) so it steps back
+    // to the waiting room instead of abandoning a live match.
+    path: '/whisper',
+    lazy: async () => {
+      const module = await import('@/pages/Whisper');
+      return { Component: module.default };
+    },
+  },
+  {
     path: '/spark-pass',
     lazy: async () => {
       const module = await import('@/pages/SparkPass');

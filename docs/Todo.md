@@ -43,7 +43,9 @@
 
 ---
 
-## Image & video loading fallbacks
+## Image & video loading fallbacks ✅ (partially done)
+
+**`Image.tsx` avatar shimmer:** done — `animate-pulse bg-border/25` skeleton during load, clean fade-in on `onLoad`, `AVATAR_FALLBACK` on error.
 
 **Verdict:** Good idea for **user media** (chat attachments, shared content, viewer) — not for every `<img>` in the app.
 
@@ -131,8 +133,15 @@ Decorative assets → inline `<img>` is fine.
 
 ---
 
-## Marketing landing page & legal pages
+## Marketing landing page & legal pages ✅ DONE
 
+Landing page, SparkPass pricing page, and all legal pages shipped in Phase 1. Route `/` shows landing for guests, redirects to chat for authed users. MarketingLayout + LandingFooter with footer links wired. OG meta tags in place.
+
+See `features/landing/` and `pages/legal/` for the full implementation.
+
+---
+
+<!--  ORIGINAL NOTES PRESERVED FOR REFERENCE:
 **Verdict:** Required before public launch — we currently have **no public landing** (`/` → authed chat, `/auth` → login). Guests need a story, trust signals, and legal coverage.
 
 ### Landing page (creative, on-brand)
@@ -209,6 +218,7 @@ Decorative assets → inline `<img>` is fine.
 - Full CMS for marketing copy.
 - Paid animation libraries or video CDN hero.
 - Localized legal pages (English first).
+-->
 
 ---
 
@@ -294,3 +304,40 @@ Run against **staging** or local Docker stack — never prod. Document hardware 
 ---
 
 _Add new items below as needed._
+
+---
+<!-- 
+## UI polish — small-screen gaps (found in Sep 2026 audit)
+
+These were identified in a full mobile UI/UX audit against iPhone SE (375×667px) and need to be fixed before Phase 2 launch.
+
+### P0 — Ship these immediately
+
+| Fix | File | Change |
+|-----|------|--------|
+| `text-[11px]` → `text-[12px]` throughout | `ChatListItem.tsx`, `MessageBubble.tsx`, `SearchResultItem.tsx`, `MessageSearch.tsx` | All 11px text is below Apple's 12px min legible size — replace every instance |
+
+### P1 — Before public launch
+
+| Fix | File | Why |
+|-----|------|-----|
+| Home empty state redesign | `pages/Home.tsx` | Flat background + `mix-blend-overlay` logo — no glow, no depth, logo may render invisible on dark background. Add radial green glow + change logo blend |
+| Profile panel top glow | `features/profile/components/ProfilePanel.tsx` | Interior is flat `bg-background-alt` with no accent — inconsistent with BottomSheet + MessageSearch which both have the `radial-gradient(ellipse_at_top,rgba(1,195,109,0.14),transparent_70%)` glow |
+| Auth panel mobile inner glow | `index.css` → `.auth-panel` mobile rules | Orbit ring and sheen are desktop-only; add a subtle `box-shadow: inset 0 0 40px rgba(1,195,109,0.06)` on mobile to partially compensate |
+| OTP input layout on SE | Auth OTP component | 6 cells × minimum width may overflow 375px — verify and use `max-w-[calc(6*(2.5rem+0.375rem))]` or gap-1.5 |
+
+### P2 — Polish pass
+
+| Fix | Why |
+|-----|-----|
+| Auth stage mobile redesign | Current state: 200px wide, chips/rings/wave all hidden, reads as "disabled feature". Replace with a simpler badge lockup (wordmark + single slow pulse ring) optimised for 120–160px |
+| Context menu overflow on small screens | Long menus can clip off bottom of viewport — add `max-h-[80vh] overflow-y-auto` |
+| Attachment menu (+ button) | Desktop-style popover at narrow widths — convert to BottomSheet on mobile |
+| ChatListItem `gap-1` → `gap-2` on mobile | 4px horizontal gap between avatar and text is too tight on touch |
+| Touch targets audit | Back button 36px, some header icons 32px — bump to 44px minimum per WCAG 2.5.5 |
+
+### P3 — Nice-to-have
+
+- Tablet (768–1024px): 2-column chat list + conversation side-by-side is already wired (`md:` breakpoints) — verify it looks right and doesn't have the "two narrow columns" problem
+- Admin routes: no mobile layout — add `AdminWrapper` mobile-aware padding
+- Landing page `TranscriptHero` CTA: `absolute bottom-[3%]` has no `env(safe-area-inset-bottom)` compensation — add `pb-[env(safe-area-inset-bottom)]` wrapper -->

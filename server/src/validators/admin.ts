@@ -8,6 +8,18 @@ export const adminIdParamSchema = z.object({
   id: z.string().min(1, 'ID is required'),
 });
 
+/** Moderation queue pagination. */
+export const adminReportsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(50),
+});
+
+/** Mark a report reviewed; optionally extend the block between the pair. */
+export const adminReportReviewSchema = z.object({
+  reviewed: z.boolean().default(true),
+  blockAnonId: z.boolean().default(false),
+});
+
 export const adminRemoveMemberParamSchema = z.object({
   id: z.string().min(1, 'Group ID is required'),
   userId: z.string().min(1, 'User ID is required'),

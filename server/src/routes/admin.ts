@@ -22,6 +22,10 @@ import {
 } from '../controllers/admin.js';
 import { authLimiter, requireAdmin, validate } from '../middlewares/index.js';
 import {
+  listReportsController,
+  reviewReportController,
+} from '../controllers/admin/report.js';
+import {
   adminActivityEventsQuerySchema,
   adminAttachmentsQuerySchema,
   adminDeleteAttachmentsSchema,
@@ -29,6 +33,8 @@ import {
   adminImpersonationLogsQuerySchema,
   adminLoginSchema,
   adminRemoveMemberParamSchema,
+  adminReportsQuerySchema,
+  adminReportReviewSchema,
   adminUsersQuerySchema,
   adminGroupsQuerySchema,
   adminMessagesQuerySchema,
@@ -77,6 +83,21 @@ adminRouter.get(
   requireAdmin,
   validate(adminActivityEventsQuerySchema, 'query'),
   getActivityEvents
+);
+
+// Moderation queue — abuse reports from the Whisper layer (user-submitted and
+// auto-filed by the content filter). Admin only.
+adminRouter.get(
+  '/reports',
+  requireAdmin,
+  validate(adminReportsQuerySchema, 'query'),
+  listReportsController
+);
+adminRouter.patch(
+  '/reports/:id',
+  requireAdmin,
+  validate(adminReportReviewSchema, 'body'),
+  reviewReportController
 );
 
 adminRouter.delete('/users/:id', requireAdmin, validate(adminIdParamSchema, 'params'), deleteUser);

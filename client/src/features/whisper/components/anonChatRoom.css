@@ -1,0 +1,264 @@
+/* ============================================================
+   WHISPER — AnonChatRoom (`.acr-*`)
+
+   Colocated per the CSS-homes rule: one-off composites live next to
+   the component that uses them, not appended to the root index.css.
+
+   Every hue resolves through an @theme token (`--color-void*`,
+   `--color-green`, `--color-background`, …) — no raw brand hex
+   literals, so retheming is a one-file change.
+   ============================================================ */
+
+.acr-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 50% at 50% -10%, var(--color-void-light), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 100% 100%, rgb(1 195 109 / 0.08), transparent 50%),
+    var(--color-background);
+}
+
+.acr-ambience {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.acr-ambience__glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(72px);
+  opacity: 0.55;
+}
+
+.acr-ambience__glow--a {
+  top: 18%;
+  left: -15%;
+  width: min(55vw, 420px);
+  height: min(55vw, 420px);
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-void) 35%, transparent) 0%, transparent 70%);
+  animation: acr-glow-drift 14s ease-in-out infinite alternate;
+}
+
+.acr-ambience__glow--b {
+  right: -18%;
+  bottom: 22%;
+  width: min(50vw, 380px);
+  height: min(50vw, 380px);
+  background: radial-gradient(circle, rgb(1 195 109 / 0.28) 0%, transparent 72%);
+  animation: acr-glow-drift 18s ease-in-out infinite alternate-reverse;
+}
+
+.acr-ambience__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.acr-ambience__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 85% 75% at 50% 45%, transparent 35%, rgb(0 0 0 / 0.45) 100%);
+}
+
+@keyframes acr-glow-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(12px, -18px) scale(1.06); }
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+
+.acr-header {
+  position: absolute;
+  z-index: 30;
+  inset-inline: 0.65rem;
+  top: max(0.55rem, env(safe-area-inset-top));
+}
+
+.acr-header__card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.15rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: linear-gradient(165deg, rgb(57 48 70 / 0.72) 0%, rgb(33 26 42 / 0.55) 100%);
+  box-shadow:
+    0 16px 40px rgb(0 0 0 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  padding: 0.5rem 0.65rem 0.5rem 0.35rem;
+}
+
+.acr-header__card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(1 195 109 / 0.45) 40%,
+    color-mix(in srgb, var(--color-void-bright) 35%, transparent) 60%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+.acr-back {
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  color: rgb(235 236 236 / 0.75);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.acr-back:hover {
+  background: rgb(255 255 255 / 0.06);
+  color: #fff;
+}
+
+.acr-avatar {
+  position: relative;
+  display: grid;
+  height: 2.85rem;
+  width: 2.85rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.12);
+}
+
+.acr-avatar__ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1px solid rgb(1 195 109 / 0.35);
+  opacity: 0.65;
+  animation: acr-avatar-ring 3s ease-in-out infinite;
+}
+
+@keyframes acr-avatar-ring {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.04); }
+}
+
+.acr-avatar__dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  height: 0.65rem;
+  width: 0.65rem;
+  border-radius: 999px;
+  border: 2px solid rgb(33 26 42 / 0.9);
+  background: var(--color-green);
+  box-shadow: 0 0 8px rgb(1 195 109 / 0.85);
+}
+
+.acr-avatar__dot--warn {
+  background: rgb(236 195 71 / 0.95);
+  box-shadow: 0 0 8px rgb(236 195 71 / 0.5);
+}
+
+.acr-name-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.acr-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.acr-pill {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.04);
+  padding: 0.1rem 0.45rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(235 236 236 / 0.5);
+}
+
+.acr-status {
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: rgb(1 195 109 / 0.9);
+}
+
+.acr-status--warn { color: rgb(250 220 140 / 0.95); }
+
+.acr-tags {
+  display: flex;
+  margin-top: 0.2rem;
+  gap: 0.35rem;
+  overflow: hidden;
+}
+
+.acr-tag {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-void-bright) 28%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-void) 20%, transparent),
+    rgb(1 195 109 / 0.08)
+  );
+  padding: 0.1rem 0.5rem;
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--color-void-bright) 55%, white);
+}
+
+.acr-wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 0.65rem;
+  margin-right: 0.25rem;
+  vertical-align: middle;
+}
+
+.acr-wave span {
+  display: block;
+  width: 2px;
+  border-radius: 1px;
+  background: rgb(1 195 109 / 0.85);
+  animation: acr-wave-bar 1.1s ease-in-out infinite;
+}
+
+.acr-wave span:nth-child(1) { height: 40%; animation-delay: 0s; }
+.acr-wave span:nth-child(2) { height: 100%; animation-delay: 0.15s; }
+.acr-wave span:nth-child(3) { height: 65%; animation-delay: 0.3s; }
+.acr-wave span:nth-child(4) { height: 85%; animation-delay: 0.08s; }
+
+@keyframes acr-wave-bar {
+  0%, 100% { transform: scaleY(0.45); opacity: 0.45; }
+  50% { transform: scaleY(1); opacity: 1; }
+}

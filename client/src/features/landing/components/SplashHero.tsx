@@ -340,7 +340,7 @@ const SplashHero = () => {
           {/* CTAs */}
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              to="/auth"
+              to="/whisper"
               className={cn(
                 'lw-sheen group inline-flex items-center gap-2 rounded-[14px] border border-white-pure/20 px-6 py-[13px]',
                 'text-[1rem] font-semibold text-white-pure no-underline',

@@ -31,6 +31,16 @@
   --color-green-light: #01c36d33;
   --color-green-dark: #1b3c37;
 
+  /* Secondary brand hue — the "void" side of the Whisper experience.
+     Previously this was hardcoded as rgb(90 63 214) / rgb(139 107 255) across
+     ~1500 lines of whisper CSS, which invented a second brand colour outside
+     the token system. It lives here now so it can be retoned in one place. */
+  --color-void: #5a3fd6;
+  --color-void-bright: #8b6bff;
+  --color-void-light: #5a3fd626;
+  --color-void-dark: #3d2b6e;
+  --color-void-gradTo: #017a4a;
+
   --color-red: #ff5863;
   --color-red-light: #ff586333;
   --color-red-dark: #4d2635;
@@ -2033,6 +2043,7 @@
   height: 1.15rem;
   flex-shrink: 0;
 }
+
 
 @media (prefers-reduced-motion: reduce) {
   .auth-ambience__glow--a,

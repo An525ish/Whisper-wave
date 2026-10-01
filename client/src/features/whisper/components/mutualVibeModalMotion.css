@@ -1,0 +1,22 @@
+/* ============================================================
+   WHISPER - MutualVibeModal: reduced-motion opt-outs
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .mvs-orbit,
+  .mvs-wave--you,
+  .mvs-wave--them,
+  .mvs-lock__person--you,
+  .mvs-lock__person--them,
+  .mvs-lock__name,
+  .mvs-lock__halo,
+  .mvs-headline,
+  .mvs-dock,
+  .mvs-kicker__dot {
+    animation: none !important;
+  }
+
+  .mvs-btn-primary:enabled:hover {
+    transform: none;
+  }
+}

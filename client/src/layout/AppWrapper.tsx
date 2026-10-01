@@ -5,6 +5,7 @@ import { useNotificationsStore } from '@/features/notifications';
 import { usePresenceStore } from '@/features/chat';
 import { useProfileUiStore } from '@/features/profile';
 import { useAuthStore } from '@/features/auth';
+import { useWhisperConnectResume } from '@/features/whisper';
 import { Title } from '@/features/notifications';
 import { GhostBanner } from '@/features/auth';
 import { ChatListPanel } from '@/features/chat';
@@ -20,7 +21,8 @@ import type {
   TypingPayload,
 } from '@/shared/types/socket';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 type AppWrapperProps = {
   children: ReactNode;
@@ -34,8 +36,13 @@ type NewMessagePayload = {
 
 const AppWrapper = ({ children }: AppWrapperProps) => {
   const socket = useSocket();
+  const navigate = useNavigate();
   const { chatId } = useParams();
   const isChatOpen = Boolean(chatId);
+
+  // Finish a Whisper "connect & reveal" if the guest just signed in and landed
+  // here (mounted in the authed shell, so it never touches the guest bundle).
+  useWhisperConnectResume();
   const isNarrowProfile = useMediaQuery('(max-width: 1023px)');
   const viewSelfProfile = useProfileUiStore((s) => s.viewSelfProfile);
   const closeSelfProfile = useProfileUiStore((s) => s.closeSelfProfile);
@@ -147,6 +154,18 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
     [markTyping],
   );
 
+  // A Whisper anon match was upgraded to a real DM while this user was on
+  // another screen (they signed in from the mutual-vibe prompt and completed
+  // first). Drop them into the freshly created chat.
+  const whisperConnectionReadyHandler = useCallback(
+    (res: { chatId?: string }) => {
+      if (!res.chatId) return;
+      toast('You’re connected — say hi ✨');
+      navigate(`/chat/${res.chatId}`);
+    },
+    [navigate],
+  );
+
   const events = useMemo(
     () => ({
       [SOCKET_EVENTS.NEW_MESSAGE_ALERT]: newMessageAlertHandler,
@@ -157,6 +176,7 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
       [SOCKET_EVENTS.START_TYPING]: startTypingHandler,
       [SOCKET_EVENTS.STOP_TYPING]: stopTypingHandler,
       [SOCKET_EVENTS.NEW_MESSAGE]: newMessageHandler,
+      [SOCKET_EVENTS.WHISPER_CONNECTION_READY]: whisperConnectionReadyHandler,
     }),
     [
       newMessageAlertHandler,
@@ -167,6 +187,7 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
       startTypingHandler,
       stopTypingHandler,
       newMessageHandler,
+      whisperConnectionReadyHandler,
     ],
   );
 

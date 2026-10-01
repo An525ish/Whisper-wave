@@ -1,0 +1,33 @@
+/* ============================================================
+   WHISPER — WaitingRoom (`wr-*` keyframes)
+
+   Colocated: these keyframes are referenced by inline `animation`
+   styles in WaitingRoom.tsx, which is why the component also
+   checks prefers-reduced-motion itself.
+   ============================================================ */
+
+@keyframes wr-ghost-fade {
+  0%, 100% { opacity: 0; transform: translateY(0); }
+  20%, 80% { opacity: 1; }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes wr-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes wr-bubble-l {
+  0%, 100% { transform: translate(-3px, 0) scale(1); }
+  50% { transform: translate(3px, -4px) scale(1.03); }
+}
+
+@keyframes wr-bubble-r {
+  0%, 100% { transform: translate(3px, 0) scale(1); }
+  50% { transform: translate(-3px, 4px) scale(1.03); }
+}
+
+@keyframes wr-dots {
+  0%, 80%, 100% { opacity: 0.25; transform: scaleY(0.6); }
+  40% { opacity: 1; transform: scaleY(1); }
+}

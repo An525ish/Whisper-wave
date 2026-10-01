@@ -45,6 +45,31 @@ export const findDirectChatsForMember = async (
     .select('members')
     .lean<DirectChatMembers[]>();
 
+/**
+ * Find the existing 1-1 chat between exactly two users, if there is one.
+ *
+ * Used by the Whisper connect flow so revealing identities never produces a
+ * duplicate DM when the two accounts already talk. Matched on exactly two
+ * members (a group chat that happens to contain both is not a DM).
+ */
+export const findDirectChatBetween = async (
+  userIdA: string,
+  userIdB: string
+): Promise<DirectChatMembers | null> => {
+  const [a, b] = [userIdA, userIdB].sort();
+  const candidates = await Chat.find({ groupChat: false, members: { $all: [a, b] } })
+    .select('members')
+    .lean<DirectChatMembers[]>();
+
+  return (
+    candidates.find(
+      (c) =>
+        c.members.length === 2 &&
+        c.members.map((m) => m.toString()).sort().join('_') === `${a}_${b}`
+    ) ?? null
+  );
+};
+
 export const findMyChatsPage = async (
   userId: string,
   skip: number,

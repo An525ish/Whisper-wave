@@ -149,6 +149,23 @@ DMs stay sender-only for edit/delete. Clear-all in DMs remains available to eith
 
 ---
 
+## Storage & CDN
+
+Media is stored on **Cloudflare R2** (S3-compatible object storage) and delivered via **ImageKit** CDN.
+
+- Raw R2 object key is what gets stored in the database (`publicId` field on attachments, `avatar` field on User)
+- `buildDeliveryUrl(key, mimeType)` constructs the ImageKit delivery URL at read time — images get `?tr=f-auto,q-auto`, everything else is raw delivery
+- Image resizing for thumbnails uses ImageKit URL params: `?tr=w-{n},f-auto,q-80`
+- GIFs bypass transforms entirely (raw delivery) to preserve animation
+- Client-side: `transformImage(url, width)` in `shared/utils/fileFormat.ts` handles the `tr=` query string — skipped when `url` is already transformed or when `transformWidth` is `undefined`
+
+**Why R2 + ImageKit instead of Cloudinary:**
+- R2: 10GB free storage, 1M Class A ops/month (no credit model, no transformation quota)
+- ImageKit: 20GB free bandwidth/month, transform via URL params (no SDK upload needed)
+- Zero-migration DB design: swapping CDN = change `IMAGEKIT_URL_ENDPOINT`, no data migration
+
+---
+
 ## Technical Architecture
 
 Full stack, cost, and “why this tool” live in [`TECH.md`](./TECH.md).
@@ -285,14 +302,24 @@ QUEUE_JOINED         {}
 
 ## Build Phases
 
-### Phase 1 — Foundation (Backend Refactor) — NOW — $0
-Refactor existing Whisper Wave server to production-grade TypeScript.
-This is the connected-layer foundation. All existing features cleaned up.
-See: `backend_prod_refactor_bcb4b8d9.plan.md` and [`TECH.md`](./TECH.md).
+### Phase 1 — Foundation — ✅ COMPLETE — $0
+Server refactored to production-grade TypeScript (services, repos, Zod, Helmet, rate limits, indexes, admin `adminToken`). Client on latest majors (React 19, Vite 8, RR7, TQ 5, Zustand 5, TW 4) with feature-sliced architecture.
 
-**Redis is not added.** Presence stays an in-memory `Map` (swappable later). Run locally. Atlas M0 + Cloudinary free only.
+**Also shipped in Phase 1 (beyond original scope):**
+- Marketing landing page with full design system (glass, grain, HoloMesh, clamp typography)
+- SparkPass pricing page (ticket card, feature table, tier comparison)
+- Legal pages (Terms, Privacy, Guidelines, Safety, Help, About, Cookies, Contact)
+- Notification system
+- Profile system (panel, sheet, shared media grid, edit + avatar upload)
+- Group roles enforced end-to-end (creator / admin / member matrix)
+- GIF support — animated GIFs bypass CDN transform across all surfaces
+- Find in Chat — media tab with image/video/audio thumbnails
+- Image loading shimmer (avatars)
 
-### Phase 2 — Anonymous Layer — still $0 if possible
+**Redis is not added.** Presence stays an in-memory `Map`. Atlas M0 + Cloudflare R2 + ImageKit (all free tiers).
+See: [`TECH.md`](./TECH.md) for decision log.
+
+### Phase 2 — Anonymous Layer — 🔜 NEXT — still $0 if possible
 - Redis on **Upstash / Redis Cloud free tier** (queues + ephemeral rooms)
 - `/anon` Socket.IO namespace
 - AnonSession service (Redis only — not Mongo)

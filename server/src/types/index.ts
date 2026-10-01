@@ -126,3 +126,40 @@ export type {
   GetMyFriendsInput,
 } from './friend-request.js';
 export type { LinkPreviewData } from './linkPreview.js';
+// `normalizeVibeTag` is a runtime value, so it needs a value re-export — the
+// `types/` barrel is the one place shared domain exports live.
+export { normalizeVibeTag } from './match.js';
+export type {
+  // Vibe
+  Gender,
+  VibeTag,
+  // Redis session state
+  SessionStatus,
+  AnonSession,
+  // Reveal flow
+  ConnectTokenPayload,
+  // Mongo document shapes
+  PendingConnectionSide,
+  PendingConnectionStatus,
+  IPendingConnectionFields,
+  IConnectionFields,
+  IReportFields,
+  ReportReason,
+  // Queue / pairing
+  WaitingCard,
+  MatchCandidate,
+  PairResult,
+  // Messaging
+  BufferedAnonMessage,
+  AnonMessageAck,
+  SocketAck,
+  // Likes
+  LikeResult,
+  // Vibe eligibility
+  VibeGateInput,
+  // Moderation
+  ModerationReason,
+  MessageVerdict,
+  // Connection origin story
+  ConnectionOrigin,
+} from './match.js';

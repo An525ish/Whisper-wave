@@ -34,7 +34,10 @@ Those `.mdc` files are the condensed Cursor mirrors of this doc (applied via
    whether it already exists. Copy-paste of a shape, a value, or a behavior is a
    defect — extract it (see §12).
 9. **One HTTP client.** All API calls go through `@/shared/lib/api/client`. Never
-   add axios or a second client that skips cookies / 401 refresh.
+   add axios or a second client that skips cookies / 401 refresh. The one sanctioned
+   exception is `shared/lib/analytics.ts`, which posts to a third-party collector
+   (not our API) and therefore must not send our cookies — it uses `sendBeacon` so
+   events survive page unload.
 10. **Query keys live in `hooks/queryKeys.ts`**, owned by the domain that owns the
     resource — never inline `queryKey: ['…']`.
 
@@ -247,6 +250,12 @@ All backend calls go through `api` from `@/shared/lib/api/client` (fetch, cookie
 non-API blobs/downloads. XHR only for upload progress (e.g. R2). **Never add axios
 or a second API client** — it will silently skip auth refresh.
 
+**Sanctioned exception — analytics.** `shared/lib/analytics.ts` posts funnel
+events to a third-party collector via `navigator.sendBeacon`, bypassing the API
+client on purpose: it targets a foreign origin (so our cookies must NOT be sent)
+and must survive page unload. It is a no-op when `VITE_ANALYTICS_ENDPOINT` is
+unset, and it never attaches PII.
+
 ### Query key ownership
 
 Every `queryKey` / factory lives in that feature's `hooks/queryKeys.ts`. Keys are
@@ -319,9 +328,12 @@ const { register, handleSubmit } = useForm<FormValues>({ mode: 'onChange' });
   same feature/folder (including no `@/features/<self>/…`).
 - **File size ≤ 350 lines.** Over → split: big component into sub-components in the
   same `components/` folder; big hook into focused hooks.
-- **Env allowlist:** only `VITE_BASE_URL` and `VITE_GOOGLE_CLIENT_ID` (public; may
-  be unset). Every `VITE_*` must appear on `ImportMetaEnv` in `vite-env.d.ts`.
-  Never put secrets in `VITE_*`. Cookies only — no access tokens in `localStorage`.
+- **Env allowlist:** only `VITE_BASE_URL`, `VITE_GOOGLE_CLIENT_ID` and
+  `VITE_ANALYTICS_ENDPOINT` (public; may be unset). Every `VITE_*` must appear on
+  `ImportMetaEnv` in `vite-env.d.ts`. Never put secrets in `VITE_*`. Cookies only —
+  no access tokens in `localStorage`. `VITE_ANALYTICS_ENDPOINT` is a **self-hosted /
+  free** collector approved in `docs/TECH.md` — not a paid vendor; leaving it unset
+  disables all analytics (see §0.9 for the transport rule that applies to it).
 - **CSS homes:** app tokens/`@theme` in the root entry CSS (`index.css` today) —
   do not keep appending large feature blobs; extract or colocate. Landing-only
   (`lw-*`) → `styles/landing.css`. One-off composites → colocated CSS. Don't grow

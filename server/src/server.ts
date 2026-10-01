@@ -2,7 +2,9 @@ import { createServer } from 'http';
 import mongoose from 'mongoose';
 import { createApp } from './app.js';
 import { connectDb } from './config/db.js';
-import { env } from './config/env.js';
+import { env, isProd } from './config/env.js';
+import { connectRedis, disconnectRedis } from './config/redis.js';
+import { stopAllPresenceSweeps } from './services/match/presence.js';
 import { createSocketServer } from './socket/index.js';
 import { logger } from './utils/logger.js';
 
@@ -20,10 +22,17 @@ const shutdown = async (signal: string): Promise<void> => {
 
   logger.info({ signal }, 'Graceful shutdown started');
 
+  // Stop scheduling new match teardowns before we close the Redis connection
+  // they depend on.
+  stopAllPresenceSweeps();
+
   httpServer.close(async () => {
     try {
-      await mongoose.connection.close();
-      logger.info('MongoDB connection closed');
+      await Promise.all([
+        mongoose.connection.close(),
+        disconnectRedis(),
+      ]);
+      logger.info('MongoDB and Redis connections closed');
       process.exit(0);
     } catch (error) {
       logger.error({ err: error }, 'Error during shutdown');
@@ -40,6 +49,23 @@ const shutdown = async (signal: string): Promise<void> => {
 const start = async (): Promise<void> => {
   try {
     await connectDb();
+
+    // Redis is a hard dependency for /whisper. Booting without it produced a
+    // server that looked healthy on /health while every anon route failed
+    // opaquely — worse than not starting at all. In production we refuse to
+    // come up; in dev we warn loudly and keep the connected layer usable.
+    try {
+      await connectRedis();
+    } catch (error) {
+      if (isProd) {
+        logger.error({ err: error }, 'Redis is required in production — aborting startup');
+        process.exit(1);
+      }
+      logger.error(
+        { err: error },
+        'Redis unavailable — anonymous Whisper matching is disabled until it recovers'
+      );
+    }
 
     httpServer.listen(env.PORT, () => {
       logger.info(

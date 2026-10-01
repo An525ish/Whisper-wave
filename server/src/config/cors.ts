@@ -25,6 +25,19 @@ export const refreshCookieOptions: CookieOptions = {
   secure: isProd,
 };
 
+/**
+ * Anonymous session identity cookie (24 h).
+ * Set when a guest hits POST /api/match/join.
+ * httpOnly so the client can't read/forge the anonId.
+ * No path scope — socket auth middleware reads it on the /anon handshake.
+ */
+export const anonCookieOptions: CookieOptions = {
+  maxAge: 24 * 60 * 60 * 1000, // 24 h — matches session TTL
+  sameSite: isProd ? 'none' : 'lax',
+  httpOnly: true,
+  secure: isProd,
+};
+
 export const corsOptions: CorsOptions = {
   origin: [
     ...(env.CLIENT_URL ? [env.CLIENT_URL] : []),

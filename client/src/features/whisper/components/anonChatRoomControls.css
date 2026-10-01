@@ -1,0 +1,152 @@
+/* ============================================================
+   WHISPER — AnonChatRoom: composer, like button, vibe prompts
+   (`.acr-*`). Colocated continuation of anonChatRoom.css.
+   ============================================================ */
+
+/* ── Persistent like affordance ───────────────────────────────
+   The like is the conversion funnel, so it lives in the header at
+   all times. `--locked` shows *why* it is unavailable rather than
+   hiding it. */
+.acr-like {
+  display: grid;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  color: rgb(235 236 236 / 0.55);
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.acr-like:enabled:hover {
+  background: rgb(1 195 109 / 0.12);
+  color: var(--color-green);
+  transform: scale(1.06);
+}
+
+.acr-like:enabled:active { transform: scale(0.94); }
+
+.acr-like--locked {
+  color: rgb(235 236 236 / 0.22);
+  cursor: not-allowed;
+}
+
+.acr-like--sent {
+  color: var(--color-green);
+  background: rgb(1 195 109 / 0.1);
+  cursor: default;
+}
+
+/* Partner said they're vibing — an ambient pulse, not a banner. */
+.acr-like--ping {
+  color: var(--color-void-bright);
+  animation: acr-like-ping 2.4s ease-in-out infinite;
+}
+
+@keyframes acr-like-ping {
+  0%, 100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-void-bright) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-void-bright) 0%, transparent);
+  }
+}
+
+.acr-like--mutual {
+  color: var(--color-green);
+  background: rgb(1 195 109 / 0.16);
+  box-shadow: 0 0 14px rgb(1 195 109 / 0.35);
+  cursor: default;
+}
+
+/* ── Composer ──────────────────────────────────────────────── */
+
+.acr-composer-wrap {
+  position: relative;
+  z-index: 40;
+  flex-shrink: 0;
+  padding: 0.35rem 0.65rem max(0.55rem, env(safe-area-inset-bottom));
+}
+
+.acr-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  border-radius: 1.35rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: linear-gradient(165deg, rgb(57 48 70 / 0.82) 0%, rgb(33 26 42 / 0.72) 100%);
+  box-shadow: 0 -4px 32px rgb(0 0 0 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 0.4rem 0.45rem 0.4rem 0.35rem;
+}
+
+.acr-composer__field {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  border-radius: 1rem;
+  border: 1px solid rgb(255 255 255 / 0.06);
+  background: rgb(0 0 0 / 0.22);
+  padding: 0 0.5rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.acr-composer__field:focus-within {
+  border-color: rgb(1 195 109 / 0.35);
+  box-shadow: 0 0 0 3px rgb(1 195 109 / 0.08);
+}
+
+.acr-composer__input {
+  width: 100%;
+  min-height: 2.75rem;
+  max-height: 8rem;
+  resize: none;
+  overflow-y: auto;
+  border: none;
+  background: transparent;
+  padding: 0.65rem 0.35rem;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: var(--color-body);
+  outline: none;
+}
+
+.acr-composer__input::placeholder { color: rgb(235 236 236 / 0.35); }
+
+.acr-send {
+  display: grid;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  border: none;
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.acr-send:enabled {
+  background: linear-gradient(145deg, var(--color-green), rgb(1 150 95));
+  box-shadow: 0 6px 20px rgb(1 195 109 / 0.35);
+  color: #fff;
+}
+
+.acr-send:enabled:hover { transform: scale(1.04); }
+
+.acr-send:disabled {
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.05);
+  color: rgb(235 236 236 / 0.35);
+  opacity: 0.85;
+}
+
+.acr-limit {
+  margin: 0 0 0.4rem;
+  padding: 0 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgb(255 138 146 / 0.95);
+}
+
+

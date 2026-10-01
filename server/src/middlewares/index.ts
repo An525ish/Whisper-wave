@@ -5,4 +5,4 @@ export { globalErrorHandler } from './error.js';
 export { apiLimiter, authLimiter, emailLimiter, searchLimiter, signupUsernameLimiter, usernameCheckLimiter } from './rateLimiter.js';
 export { avatarUpload } from './upload.js';
 export { validate } from './validate.js';
-export { onSocketEvent, parseSocketPayload } from './validateSocket.js';
+export { onSocketEvent } from './validateSocket.js';

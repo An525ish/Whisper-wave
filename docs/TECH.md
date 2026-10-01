@@ -34,7 +34,8 @@ We only spend money later if:
 | **Node 20+ + Express 5** | Free | Evented I/O fits chat. Express 5 is the current major (named wildcards, promise-aware middleware). |
 | **MongoDB Atlas + Mongoose 9** | Free (M0) | Permanent data: users, chats, messages, connections. |
 | **Socket.IO 4** | Free | Real-time chat without inventing our own protocol. |
-| **Cloudinary** | Free tier | Avatars + attachments. |
+| **Cloudflare R2** | Free tier (10GB storage, 1M Class A ops/month) | Object storage for avatars + attachments. S3-compatible API via `@aws-sdk/client-s3`. |
+| **ImageKit** | Free tier (20GB bandwidth/month) | CDN delivery + image transforms (resize, `f-auto`, `q-auto`). Raw R2 key stored in DB; delivery URL built at read time via `buildDeliveryUrl()`. |
 | **JWT + cookies** | Free | Login without a paid auth product. |
 | **Vite + React client** | Free | SPA on latest majors (React 19, Vite 8, RR7, Tailwind 4, TanStack Query, Zustand). |
 | **TypeScript 7 / Zod 4 / Multer 2 / Jimp 1** | Free | Phase 1 baseline — Phase 2 follows the same majors. |
@@ -106,6 +107,19 @@ Client: latest majors, TanStack Query + Zustand, modular folders, real admin UI 
 
 **Phase 1 client status:** complete (latest majors, TQ + Zustand, admin API wired, virtualized lists, Zod validators, shared Searchbar/SuggestionListItem, **full `.tsx`/`.ts` conversion**).
 
+**Phase 1 actual scope (exceeded original plan):** Beyond the backend refactor + client cleanup, the following were also shipped during Phase 1:
+- Migrated storage from Cloudinary → **Cloudflare R2 + ImageKit** (R2 for storage, ImageKit for CDN delivery + transforms). Raw R2 key stored in DB; `buildDeliveryUrl()` constructs ImageKit URL at read time.
+- Full marketing landing page (`features/landing/`) with `TranscriptHero`, `BentoSection`, `MomentsSection`, `HeroSection`, `SafetySection`, `FinalCTASection`, `LandingFooter` — complete with design system (HoloMesh, SignalWave, grain, glass cards, `clamp`-based mobile sizing)
+- SparkPass pricing/marketing page (`pages/SparkPass.tsx`) — ticket card, pricing tiers, feature table
+- Legal pages (`pages/legal/`) — Terms, Privacy, Guidelines, Safety, Help, About, Cookies, Contact
+- Complete notification system (`features/notifications/`)
+- Complete profile system (`features/profile/`) — ProfilePanel, ProfileSheet, shared media grid, edit flow
+- Group roles enforced end-to-end (creator/admin/member)
+- GIF handling — `isGifFile` helper, ImageKit transform bypass for animated GIFs across all surfaces
+- Find in Chat — media tab with image/video/audio thumbnails, `SearchResultItem` with `MediaThumb`
+- ImageViewer GIF fix — `transformWidth={undefined}` for GIFs to preserve animation
+- `Image.tsx` loading shimmer — `animate-pulse bg-border/25` skeleton during avatar load
+
 ---
 
 ## What we will do in Phase 2 (after foundation) — still $0 if possible
@@ -152,8 +166,17 @@ Paid AI moderation is nice later. For $0 now:
 3. **Helmet** security headers
 4. **No storing anon chat in Mongo** (less PII, less legal risk)
 5. Age gate as a simple checkbox / DOB field when we add premium — not a paid KYC vendor
+6. **Local content filter** — a word list in `server/src/services/match/moderation.ts`
+   (sexual solicitation, scam/contact solicitation, violence, CSAM-adjacent terms),
+   with leetspeak/separator normalisation. Fails **open** on internal error and
+   auto-files a `Report` on a hit. This is a blocklist, not a classifier.
+7. **Funnel analytics** — self-hosted or free-tier collector only, configured via
+   the client var `VITE_ANALYTICS_ENDPOINT` (approved in
+   `.cursor/rules/product-and-cost.mdc`). Sends no PII and no-ops when unset.
+   Paid error/analytics vendors (Sentry, PostHog, Amplitude paid) are still out.
 
-When Spark Pass makes money, *then* add automated text/image moderation.
+When Spark Pass makes money, *then* add automated text/image moderation
+(Perspective API) and paid error monitoring.
 
 ---
 
@@ -188,7 +211,61 @@ Your laptop (or later one small server)     $0
                 └── Redis free tier         $0  (Phase 2 only: queue + anon rooms)
 ```
 
-Phase 1 is only the Node box + Mongo + Cloudinary. Redis stays off.
+Phase 1 was only the Node box + Mongo + Cloudinary. **Phase 2 has landed**, so
+Redis is now part of the stack (free tier only — see Cost).
+
+---
+
+## Phase 2 backend — anonymous matching (Redis + `/anon`)
+
+Phase 2 adds the anonymous layer: pick a vibe → get matched → chat ephemerally →
+mutual like → reveal into a real DM. Everything ephemeral lives in Redis; only a
+successful reveal writes to Mongo.
+
+### Why Redis
+
+Queues need atomic claim operations. Mongo has no native queue primitive, and a
+`findOneAndUpdate` poll races under concurrency. Anon sessions must also *die*
+when users leave — TTL is built for that. See `PHASE2.md` for the full rationale
+and the cost model (free tier ≈ 650 sessions/day).
+
+Client: `ioredis` with explicit `host`/`port`/`tls.servername` so TLS SNI is set
+correctly for Upstash (passing a `rediss://` URL string skips SNI and fails with
+ECONNRESET). Redis is a **hard boot dependency in production**; `/health`
+returns 503 when it is unreachable.
+
+### Redis key schema (`server/src/services/match/keys.ts`)
+
+| Key | Type | TTL | Purpose |
+|---|---|---|---|
+| `match:queue:global` | List | — | FIFO queue of anonIds. Claimed atomically via Lua `LREM`. |
+| `match:waiting:{anonId}` | String (JSON) | 24 h | **Identity card** (alias, vibes, gender). Not queue membership — that is the list above. Refreshed on every interaction. |
+| `match:session:{sessionId}` | String (JSON) | 24 h | Active anon session (both anonIds, both aliases/tags, status). |
+| `match:likes:{sessionId}` | Set | 24 h | anonIds that sent a vibe. `SCARD == 2` ⇒ mutual. |
+| `match:messages:{sessionId}` | List | 24 h | Last 50 messages, so a refresh doesn't blank the thread. |
+| `match:active:{anonId}` | String | 24 h | anonId → current sessionId (reconnect replay). |
+| `match:presence:{anonId}` | String | **45 s** | Set when a socket drops. The match is only torn down when this lapses — a network blip must not end the conversation. |
+| `match:blocked:{anonId}` | Set | 30 d | Blocked partners. Checked both ways before pairing. |
+
+### `/anon` namespace events
+
+Separate from `/` because anon users have no JWT — the namespace authenticates
+via the httpOnly `anonId` cookie instead of `applySocketAuth`.
+
+| Direction | Events |
+|---|---|
+| Client → server | `ANON_MESSAGE` (acked), `ANON_TYPING_START`, `ANON_TYPING_STOP`, `ANON_LIKE`, `ANON_NEXT`, `ANON_REQUEUE` |
+| Server → client | `QUEUE_JOINED`, `MATCH_FOUND`, `MATCH_MESSAGE`, `MATCH_TYPING_START`, `MATCH_TYPING_STOP`, `SOMEONE_VIBING`, `MATCH_PARTNER_VIBED`, `MUTUAL_LIKE`, `MATCH_DISCONNECTED`, `MATCH_MESSAGE_REJECTED`, `MATCH_ERROR`, `SESSION_EXPIRED`, `CONNECTION_READY` |
+
+### Reveal flow
+
+`connectToken` is a short-lived JWT (default 10 min, `ANON_TOKEN_TTL_MIN`) signed
+with its own `ANON_JWT_SECRET` — deliberately *not* `ACCESS_TOKEN_SECRET`, so a
+compromised access token can't forge connection intent. Both sides call
+`POST /api/connection/complete`; the first writes its `userId` into
+`PendingConnection`, the second completes it (Chat + `Connection` records) and
+both receive `CONNECTION_READY`. `pairKey` is a unique index on the sorted user
+pair, which is what enforces "one connection per pair".
 
 ---
 
@@ -264,3 +341,8 @@ When we start Phase 2, add a short “Phase 2 backend” section here (Redis key
 | Sep 2026 | Client: feature-sliced (`features/` + `shared/`), fetch via `shared/lib/api` | Align Cursor rules + CLAUDE.md; one-way deps |
 | Aug 2026 | Client latest majors (React 19, Vite 8, RR7, Tailwind 4) | Same dependency policy as server |
 | Aug 2026 | Admin `adminToken` cookie + `ADMIN_SECRET` | Real admin auth without leaking secret to Vite |
+| Sep 2026 | Landing + SparkPass + legal pages shipped in Phase 1 | Marketing shell needed before any public share; design system built once and reused |
+| Sep 2026 | `SameSite: 'none'` (not `'strict'`) on refresh cookie in prod | `strict` blocks cross-origin cookie sends when client and API are on different domains |
+| Sep 2026 | Storage migrated from Cloudinary → R2 + ImageKit | R2: cheaper ($0.015/GB vs Cloudinary's credit model), no transformation credit limit. ImageKit: transform via URL params (`tr=w-N,f-auto,q-80`), 20GB free bandwidth. Raw key in DB means zero migration when swapping CDN. |
+| Sep 2026 | GIFs bypass ImageKit transform (`transformWidth={undefined}`) | ImageKit `f-auto` may strip animation; GIF identity requires raw delivery |
+| Sep 2026 | Cookie `path` stays `/` for refresh token (not scoped to `/api/auth/refresh`) | Scoped path causes Set-Cookie/clearCookie sync bugs on sign-in, sign-out; single-path is simpler and still httpOnly+secure |

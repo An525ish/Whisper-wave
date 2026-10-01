@@ -1,0 +1,60 @@
+.mvs-copy {
+  text-align: center;
+}
+
+.mvs-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0 0 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(1 195 109 / 0.88);
+}
+
+.mvs-kicker__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--color-green);
+  box-shadow: 0 0 12px rgb(1 195 109 / 0.85);
+  animation: auth-pulse-dot 2s ease-in-out infinite;
+}
+
+.mvs-headline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.05rem, 7.5vw, 2.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  background: linear-gradient(
+    118deg,
+    #fff 8%,
+    #c8ffe8 38%,
+    #9d8cff 72%,
+    #fff 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: mvs-headline-shine 6s ease-in-out infinite;
+}
+
+.mvs-lede {
+  margin: 0.65rem auto 0;
+  max-width: 20rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgb(235 236 236 / 0.58);
+}
+
+.mvs-lede strong {
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.92);
+}
+
+

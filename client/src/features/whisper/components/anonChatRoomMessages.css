@@ -1,0 +1,309 @@
+/* ============================================================
+   WHISPER — AnonChatRoom: thread + composer (`.acr-*`)
+
+   Colocated continuation of anonChatRoom.css. Split purely to
+   keep each file under the 350-line cap.
+   ============================================================ */
+
+.acr-scroll {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: calc(max(0.55rem, env(safe-area-inset-top)) + 5.35rem) 0.85rem 0.5rem;
+  scrollbar-width: none;
+}
+
+.acr-scroll::-webkit-scrollbar { display: none; }
+
+.acr-ephemeral {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.acr-ephemeral span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  background: rgb(0 0 0 / 0.2);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.68rem;
+  color: rgb(235 236 236 / 0.5);
+  backdrop-filter: blur(8px);
+}
+
+/* Transient, non-blocking hint (e.g. "chat a little longer"). */
+.acr-hint {
+  margin: 0 auto 0.9rem;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(0 0 0 / 0.28);
+  padding: 0.35rem 0.8rem;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  text-align: center;
+  color: rgb(235 236 236 / 0.62);
+  backdrop-filter: blur(8px);
+}
+
+.acr-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgb(236 195 71 / 0.3);
+  background: rgb(236 195 71 / 0.1);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgb(250 220 140 / 0.98);
+}
+
+.acr-alert p { flex: 1; margin: 0; }
+
+.acr-alert button {
+  flex-shrink: 0;
+  border-radius: 0.4rem;
+  padding: 0 0.25rem;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: rgb(250 220 140 / 0.7);
+}
+
+.acr-alert button:hover { background: rgb(255 255 255 / 0.08); }
+
+/* ── Empty state ────────────────────────────────────────────── */
+
+.acr-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2.5rem 1rem 3rem;
+  text-align: center;
+}
+
+.acr-empty__link {
+  position: relative;
+  display: flex;
+  width: min(100%, 14rem);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.acr-empty__orb {
+  display: grid;
+  height: 3.25rem;
+  width: 3.25rem;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+}
+
+.acr-empty__orb--you {
+  border: 1px solid rgb(1 195 109 / 0.45);
+  animation: acr-empty-float 4s ease-in-out infinite;
+}
+
+.acr-empty__orb--them {
+  border: 1px solid color-mix(in srgb, var(--color-void-bright) 40%, transparent);
+  animation: acr-empty-float 4.5s ease-in-out infinite reverse;
+}
+
+.acr-empty__bridge {
+  position: absolute;
+  left: 3.5rem;
+  right: 3.5rem;
+  top: 50%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgb(1 195 109 / 0.5),
+    color-mix(in srgb, var(--color-void-bright) 35%, transparent),
+    rgb(1 195 109 / 0.5)
+  );
+  opacity: 0.7;
+}
+
+.acr-empty__bridge::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px rgb(1 195 109 / 0.9);
+  animation: auth-pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes acr-empty-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.acr-empty__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.acr-empty__sub {
+  margin: 0.35rem 0 0;
+  max-width: 16rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgb(235 236 236 / 0.55);
+}
+
+/* ── Bubbles ────────────────────────────────────────────────── */
+
+.acr-msgs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.acr-row { display: flex; }
+.acr-row--me { justify-content: flex-end; }
+.acr-row--them { justify-content: flex-start; }
+.acr-row--gap { margin-top: 0.85rem; }
+
+.acr-bubble {
+  max-width: min(100%, 21.5rem);
+  padding: 0.55rem 0.85rem 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #fff;
+  word-break: break-word;
+}
+
+.acr-bubble--them {
+  border-radius: 1.25rem 1.25rem 1.25rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--color-void-bright) 22%, transparent);
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--color-void) 22%, transparent) 0%,
+    rgb(42 33 54 / 0.88) 55%
+  );
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+}
+
+.acr-bubble--me {
+  border-radius: 1.25rem 1.25rem 0.4rem 1.25rem;
+  border: 1px solid rgb(1 195 109 / 0.32);
+  background: linear-gradient(135deg, rgb(1 195 109 / 0.38) 0%, rgb(1 120 85 / 0.22) 100%);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.2), 0 0 24px rgb(1 195 109 / 0.08);
+}
+
+.acr-bubble--them.acr-bubble--tail { border-bottom-left-radius: 0.35rem; }
+.acr-bubble--me.acr-bubble--tail { border-bottom-right-radius: 0.35rem; }
+
+/* A message the server refused. It must be visually obvious that the other
+   person never got it — an optimistic bubble that looks sent is a lie. */
+.acr-bubble--failed {
+  border-color: rgb(255 88 99 / 0.45);
+  background: linear-gradient(135deg, rgb(255 88 99 / 0.14) 0%, rgb(76 38 53 / 0.4) 100%);
+}
+
+.acr-bubble--failed p { color: rgb(235 236 236 / 0.78); }
+
+.acr-retry {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(255 88 99 / 0.3);
+  background: rgb(255 88 99 / 0.1);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+  color: rgb(255 190 195 / 0.95);
+  transition: background 0.15s ease;
+}
+
+.acr-retry:hover { background: rgb(255 88 99 / 0.2); }
+
+.acr-time {
+  margin-top: 0.25rem;
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: rgb(255 255 255 / 0.32);
+}
+
+.acr-bubble--me .acr-time {
+  text-align: right;
+  color: rgb(255 255 255 / 0.38);
+}
+
+.acr-bubble--them .acr-time { color: rgb(235 236 236 / 0.4); }
+
+.acr-time__state {
+  display: inline-block;
+  animation: acr-blink 1s ease-in-out infinite;
+}
+
+@keyframes acr-blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.acr-new-r { animation: acr-pop 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
+.acr-new-l { animation: acr-popl 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes acr-pop {
+  from { opacity: 0; transform: translateX(10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes acr-popl {
+  from { opacity: 0; transform: translateX(-10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+.acr-typing {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.acr-typing__bubble {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 1.25rem 1.25rem 1.25rem 0.4rem;
+  border: 1px solid color-mix(in srgb, var(--color-void-bright) 20%, transparent);
+  background: rgb(42 33 54 / 0.85);
+  padding: 0.75rem 1rem;
+}
+
+.acr-typing__dot {
+  height: 0.4rem;
+  width: 0.4rem;
+  border-radius: 50%;
+  background: var(--color-void-bright);
+  animation: acr-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes acr-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
