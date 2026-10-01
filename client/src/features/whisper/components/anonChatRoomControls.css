@@ -67,8 +67,20 @@
 /* ── Composer ──────────────────────────────────────────────── */
 
 .acr-composer-wrap {
+  --acr-column: 46rem;
   flex-shrink: 0;
-  padding: 0.35rem 0.65rem max(0.55rem, env(safe-area-inset-bottom));
+  padding: 0.35rem 0.85rem max(0.55rem, env(safe-area-inset-bottom));
+}
+
+/* Keep the composer in the same column the bubbles live in. The logged-in chat
+   gets this for free from the conversation panel's width; the anonymous room is
+   full-bleed, so without it the input stretches the entire viewport and reads as
+   a search bar rather than a composer. Must stay equal to the cap in
+   anonChatRoomMessages.css. */
+.acr-composer-wrap > div {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--acr-column);
 }
 
 /* Over the 2000-char limit — the logged-in composer has no counter,
