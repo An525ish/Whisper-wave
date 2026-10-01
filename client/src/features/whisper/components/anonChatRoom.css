@@ -9,16 +9,92 @@
    literals, so retheming is a one-file change.
    ============================================================ */
 
+/* Row shell: the conversation plus, at `lg`, the identity column. Below that the
+   panel becomes a sheet, so this stays a single column and nothing shifts. */
+.acr-shell {
+  position: relative;
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+}
+
 .acr-root {
   position: relative;
   display: flex;
+  min-width: 0;
+  flex: 1;
   flex-direction: column;
-  height: 100dvh;
+  height: 100%;
   overflow: hidden;
   background:
     radial-gradient(ellipse 90% 50% at 50% -10%, var(--color-void-light), transparent 55%),
     radial-gradient(ellipse 70% 45% at 100% 100%, rgb(1 195 109 / 0.08), transparent 50%),
     var(--color-background);
+}
+
+/* Identity column — hidden until the logged-in app would show its profile pane. */
+.acr-profile {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .acr-profile {
+    display: flex;
+    width: 20rem;
+    flex-shrink: 0;
+    flex-direction: column;
+    padding: 0.5rem 0.75rem 0.75rem 0;
+  }
+}
+
+/* Below `lg` the panel is a sheet, so it needs a way in. Sits above the
+   composer rather than in the corner, where it would cover the send button. */
+.acr-profile-fab {
+  position: fixed;
+  right: 0.9rem;
+  bottom: 5.75rem;
+  z-index: 45;
+  border-radius: 999px;
+  padding: 0.2rem;
+  transition: transform 180ms ease;
+}
+
+.acr-profile-fab:hover {
+  transform: translateY(-1px);
+}
+
+.acr-profile-fab__orb {
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.92);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.4);
+}
+
+.acr-profile-fab :focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .acr-profile-fab {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acr-profile-fab {
+    transition: none;
+  }
+
+  .acr-profile-fab:hover {
+    transform: none;
+  }
 }
 
 .acr-ambience {

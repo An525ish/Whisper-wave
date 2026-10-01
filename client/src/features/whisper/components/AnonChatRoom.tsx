@@ -4,6 +4,7 @@ import AnonChatHeader from './AnonChatHeader';
 import AnonMessageList from './AnonMessageList';
 import AnonComposer from './AnonComposer';
 import PartnerLeftPrompt from './PartnerLeftPrompt';
+import AnonProfileHost from './AnonProfileHost';
 import MutualVibeModal from './MutualVibeModal';
 import ReportSheet from './ReportSheet';
 import {
@@ -146,112 +147,118 @@ export default function AnonChatRoom({
   };
 
   return (
-    <div className="acr-root">
+    <div className="acr-shell">
       <Helmet>
         <title>{`Whispering with ${partnerName} · Whisper Wave`}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
-      <div className="acr-ambience" aria-hidden>
-        <div className="acr-ambience__glow acr-ambience__glow--a" />
-        <div className="acr-ambience__glow acr-ambience__glow--b" />
-        <div className="acr-ambience__grain" />
-        <div className="acr-ambience__vignette" />
-      </div>
+      <div className="acr-root">
+        <div className="acr-ambience" aria-hidden>
+          <div className="acr-ambience__glow acr-ambience__glow--a" />
+          <div className="acr-ambience__glow acr-ambience__glow--b" />
+          <div className="acr-ambience__grain" />
+          <div className="acr-ambience__vignette" />
+        </div>
 
-      <AnonChatHeader
-        partnerName={partnerName}
-        partnerTags={partnerTags}
-        socketDegraded={socketDegraded}
-        sessionNotice={sessionNotice}
-        likeDisabled={likeDisabled}
-        likeSent={likeSent}
-        mutualLike={mutualLike}
-        partnerVibed={partnerVibed}
-        vibeUnlocked={vibeUnlocked}
-        likeTitle={likeTitle(vibeUnlocked, likeSent, mutualLike)}
-        onLike={onLike}
-        onNext={onNext}
-        onReport={() => setReportOpen(true)}
-      />
-
-      <main className="acr-scroll">
-        {/* Transient "why can't I like yet" style notices get their own compact
-            row; persistent socket errors use the alert. */}
-        {sessionNotice && !reconnecting && (
-          <p className="acr-hint" role="status">
-            {sessionNotice}
-          </p>
-        )}
-        {error && <ChatAlert message={error} onDismiss={onDismissError} />}
-        <AnonMessageList
-          myName={myName}
-          partnerName={partnerName}
-          messages={messages}
-          partnerTyping={partnerTyping}
-          onRetry={onRetry}
-          bottomRef={bottomRef}
-        />
-      </main>
-
-      {/* The one-shot prompt. Once dismissed the header heart is the only
-          path to liking — which is deliberate, so a "not really" is never
-          permanent. */}
-      {showVibePrompt && !promptDismissed && (
-        <VibePrompt
-          partnerName={partnerName}
-          onLike={onLike}
-          onDismiss={() => setPromptDismissed(true)}
-        />
-      )}
-
-      {vibeUnlocked && partnerVibed && !likeSent && !mutualLike && !nudgeDismissed && (
-        <VibeNudge
-          partnerName={partnerName}
-          onLike={onLike}
-          onDismiss={() => setNudgeDismissed(true)}
-        />
-      )}
-
-      {likeSent && !mutualLike && <VibeWaiting />}
-
-      {mutualLike && !showMutualModal && connectToken && (
-        <MutualBar onOpen={onOpenMutualModal} />
-      )}
-
-      {partnerLeft ? (
-        <PartnerLeftPrompt
-          expanded={partnerLeftPromptExpanded}
-          partnerName={partnerName}
-          onFindSomeoneNew={onFindSomeoneNew}
-          onStay={onStayOnEndedThread}
-        />
-      ) : (
-        <AnonComposer
-          draft={draft}
-          overLimit={overLimit}
-          onDraftChange={onDraftChange}
-          onSend={handleSend}
-        />
-      )}
-
-      {connectToken && (
-        <MutualVibeModal
-          open={showMutualModal}
-          myName={myName}
+        <AnonChatHeader
           partnerName={partnerName}
           partnerTags={partnerTags}
-          connectToken={connectToken}
-          onClose={onCloseMutualModal}
+          socketDegraded={socketDegraded}
+          sessionNotice={sessionNotice}
+          likeDisabled={likeDisabled}
+          likeSent={likeSent}
+          mutualLike={mutualLike}
+          partnerVibed={partnerVibed}
+          vibeUnlocked={vibeUnlocked}
+          likeTitle={likeTitle(vibeUnlocked, likeSent, mutualLike)}
+          onLike={onLike}
+          onNext={onNext}
+          onReport={() => setReportOpen(true)}
         />
-      )}
+  
+        <main className="acr-scroll">
+          {/* Transient "why can't I like yet" style notices get their own compact
+              row; persistent socket errors use the alert. */}
+          {sessionNotice && !reconnecting && (
+            <p className="acr-hint" role="status">
+              {sessionNotice}
+            </p>
+          )}
+          {error && <ChatAlert message={error} onDismiss={onDismissError} />}
+          <AnonMessageList
+            myName={myName}
+            partnerName={partnerName}
+            messages={messages}
+            partnerTyping={partnerTyping}
+            onRetry={onRetry}
+            bottomRef={bottomRef}
+          />
+        </main>
+  
+        {/* The one-shot prompt. Once dismissed the header heart is the only
+            path to liking — which is deliberate, so a "not really" is never
+            permanent. */}
+        {showVibePrompt && !promptDismissed && (
+          <VibePrompt
+            partnerName={partnerName}
+            onLike={onLike}
+            onDismiss={() => setPromptDismissed(true)}
+          />
+        )}
+  
+        {vibeUnlocked && partnerVibed && !likeSent && !mutualLike && !nudgeDismissed && (
+          <VibeNudge
+            partnerName={partnerName}
+            onLike={onLike}
+            onDismiss={() => setNudgeDismissed(true)}
+          />
+        )}
+  
+        {likeSent && !mutualLike && <VibeWaiting />}
+  
+        {mutualLike && !showMutualModal && connectToken && (
+          <MutualBar onOpen={onOpenMutualModal} />
+        )}
+  
+        {partnerLeft ? (
+          <PartnerLeftPrompt
+            expanded={partnerLeftPromptExpanded}
+            partnerName={partnerName}
+            onFindSomeoneNew={onFindSomeoneNew}
+            onStay={onStayOnEndedThread}
+          />
+        ) : (
+          <AnonComposer
+            draft={draft}
+            overLimit={overLimit}
+            onDraftChange={onDraftChange}
+            onSend={handleSend}
+          />
+        )}
+  
+        {connectToken && (
+          <MutualVibeModal
+            open={showMutualModal}
+            myName={myName}
+            partnerName={partnerName}
+            partnerTags={partnerTags}
+            connectToken={connectToken}
+            onClose={onCloseMutualModal}
+          />
+        )}
+  
+        <ReportSheet
+            open={reportOpen}
+            sessionId={sessionId}
+            onClose={() => setReportOpen(false)}
+            onReported={onNext}
+          />
+      </div>
 
-      <ReportSheet
-        open={reportOpen}
-        sessionId={sessionId}
-        onClose={() => setReportOpen(false)}
-        onReported={onNext}
-      />
+      {/* Identity panel: a column at `lg`, a sheet below. One spatial grammar
+          with the logged-in chat — conversation centre, context right. */}
+      <AnonProfileHost />
     </div>
   );
 }

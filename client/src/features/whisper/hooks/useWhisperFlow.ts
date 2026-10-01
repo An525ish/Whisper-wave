@@ -25,6 +25,10 @@ export function useWhisperFlow() {
   // Match state
   const status = useAnonStore((s) => s.status);
   const displayName = useAnonStore((s) => s.displayName);
+  // The current thread is called by the alias this match started with. Editing
+  // the identity from the panel changes `displayName` for the *next* match, so
+  // without this the thread would retroactively rename itself.
+  const sessionAlias = useAnonStore((s) => s.sessionAlias);
   const sessionId = useAnonStore((s) => s.sessionId);
   const partnerName = useAnonStore((s) => s.partnerName);
   const partnerTags = useAnonStore((s) => s.partnerTags);
@@ -112,7 +116,7 @@ export function useWhisperFlow() {
       onLeave: leaveMutation.mutate,
     },
     chat: {
-      myName: displayName,
+      myName: sessionAlias ?? displayName,
       partnerName: partnerName ?? 'Stranger',
       partnerTags,
       messages,

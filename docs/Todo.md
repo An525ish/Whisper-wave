@@ -107,15 +107,43 @@ already works (`PendingConnection.sides[].userId` is nullable by design).
 
 ### D — Guest profile panel + visual convergence
 
-Right-hand panel mirroring `ProfilePanel` (`lg:` column / `ProfileSheet` below),
-so the app has one spatial grammar: conversation centre, context right.
+Right-hand panel mirroring `ProfilePanel` (`lg:` column / sheet below), so the
+app has one spatial grammar: conversation centre, context right.
 
 Alias · vibe tags (same `TagPicker`) · gender (same `GenderPicker`) · live
-session stats · "remember this identity" · persistent **"Create an account to
+thread summary · "remember this alias" · persistent **"Create an account to
 keep your connections"** CTA.
 
 That CTA is the conversion fix: a guest with a good match currently has no
 reason to sign up until the mutual like, which is the highest drop-off moment.
+
+✅ **Shipped.**
+
+| Piece | Where |
+|-------|-------|
+| Panel (presentational) | `components/AnonProfilePanel.tsx` |
+| Data + column/sheet split | `components/AnonProfileHost.tsx` — mirrors `pages/Chat.tsx`'s `useMediaQuery('(min-width: 1024px)')` pattern |
+| Identity read/write + persistence | `hooks/useAnonIdentity.ts` |
+| Live stats (owns the clock) | `hooks/useThreadStats.ts` |
+| Pure stat derivation | `utils/threadStats.ts` |
+| `localStorage` access | `utils/anonIdentityStorage.ts` |
+| Shell / column / mobile FAB | `.acr-shell`, `.acr-profile`, `.acr-profile-fab` in `anonChatRoom.css` |
+
+Three decisions worth knowing:
+
+- **Edits apply to the *next* match, not this one.** A partner already received
+  the alias you matched under; renaming mid-thread would make the header, the
+  "you" orb and their view disagree. `sessionAlias` freezes the thread's name at
+  `setMatch`, and the panel says so.
+- **No server call on edit.** `POST /api/match/join` overwrites the Redis
+  identity card wholesale on the next join, so updating the store is sufficient.
+- **The CTA sits above the thread summary, not below it.** In a 20rem column it
+  lands under the fold and is simply never seen — the panel's whole job is that
+  pitch.
+
+⚠️ **Not verified at mobile width.** The `< lg` bottom-sheet path is written to
+mirror the logged-in app exactly but has only been checked at desktop. Worth one
+narrow-viewport pass before calling D done.
 
 ### E — Differentiators (free, in value order)
 

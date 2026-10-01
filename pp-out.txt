@@ -1,0 +1,3 @@
+[partner] joined as PanelPal | anonId=***
+[partner] socket connected
+[partner] QUEUE_JOINED

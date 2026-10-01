@@ -28,6 +28,14 @@ type AnonState = {
   mutualVibeDismissed: boolean;
   partnerVibed: boolean;
   matchedAt: number | null;
+  /**
+   * The alias this match began with, frozen at `setMatch` time.
+   *
+   * `displayName` is editable from the profile panel; this is what the *current
+   * thread* is called. They diverge only while editing mid-conversation, and
+   * the next match re-freezes it.
+   */
+  sessionAlias: string | null;
   /** "Stay here" was chosen, so the partner-left prompt collapsed to a bar. */
   partnerLeftPromptDismissed: boolean;
 
@@ -44,6 +52,18 @@ type AnonState = {
   ) => void;
   setStatus: (status: AnonMatchStatus) => void;
   setMatch: (sessionId: string, partnerName: string, partnerTags: VibeTag[]) => void;
+  /**
+   * Update the identity card in place (alias / vibes / gender).
+   *
+   * Separate from `setIdentity` because that one also records a *new* `anonId`
+   * from a join, which must not happen when someone just renames themselves
+   * mid-session.
+   */
+  setIdentityFields: (
+    displayName: string,
+    vibeTags: VibeTag[],
+    gender: Gender
+  ) => void;
   clearSession: () => void;
   /**
    * The partner left or disconnected.
@@ -91,6 +111,7 @@ const sessionFields = {
   mutualVibeDismissed: false,
   partnerVibed: false,
   matchedAt: null as number | null,
+  sessionAlias: null as string | null,
   partnerLeftPromptDismissed: false,
   messages: [] as AnonMessage[],
   chatId: null as string | null,
@@ -121,12 +142,19 @@ export const useAnonStore = create<AnonState>((set, get) => ({
 
   setStatus: (status) => set({ status }),
 
+  setIdentityFields: (displayName, vibeTags, gender) =>
+    set({ displayName, vibeTags, gender }),
+
   setMatch: (sessionId, partnerName, partnerTags) =>
     set({
       ...sessionFields,
       sessionId,
       partnerName,
       partnerTags,
+      // Freeze the alias this match started with. The partner already has it,
+      // so renaming mid-thread must not change what the thread calls you —
+      // otherwise the header, the "you" avatar and their view disagree.
+      sessionAlias: get().displayName,
       status: 'matched',
       sessionNotice: null,
       error: null,
