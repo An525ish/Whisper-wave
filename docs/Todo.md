@@ -141,15 +141,24 @@ Three decisions worth knowing:
   lands under the fold and is simply never seen — the panel's whole job is that
   pitch.
 
-**Layout contract.** `--acr-column` and `--acr-gutter` are declared once on
-`.acr-shell` and consumed by three separate stylesheets, so the header, the
-thread and the composer cannot drift apart. Verified at 1306px: all three
-resolve to left 109 / right 813. The header is `pointer-events: none` with the
-card re-enabling it, so the invisible full-width wrapper can't eat clicks meant
-for the chat.
+**Layout contract.** `--acr-gutter` is declared once on `.acr-shell` and consumed
+by three separate stylesheets, so the header, the thread and the composer share
+one inset and cannot drift apart.
 
-Panel width is `24rem` — wider than the logged-in pane (which splits a
-three-column layout) because this room has only two columns.
+**There is deliberately no max-width.** An earlier pass capped the conversation
+at 44rem and centred it. Measured, that left 109px of dead background down each
+side of a 922px pane — which read as a misaligned layout, because in the main
+chat that gutter is filled by the chat list and here there is nothing to put
+there. The conversation now fills its pane exactly like `ConversationPanel`
+fills its pane in the logged-in app. Verified at 1306px: header, thread and
+composer all resolve to left 14 / right 876.
+
+The header wrapper is `pointer-events: none` with the card re-enabling it, so
+the full-width hit area can't swallow clicks meant for the chat.
+
+Panel width is `26rem`. That number is measured, not guessed: the three gender
+pills need 329px, and 24rem only left 319px inside the card, so "Other" wrapped
+onto a second row. 26rem puts all three on one line.
 
 Verified at `lg` (column) and by forcing the breakpoint to exercise the `< lg`
 bottom-sheet path: sheet renders with the `isSheet` treatment (no

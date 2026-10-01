@@ -12,11 +12,16 @@
 /* Row shell: the conversation plus, at `lg`, the identity column. Below that the
    panel becomes a sheet, so this stays a single column and nothing shifts.
 
-   `--acr-column` is the conversation's reading column. Declared once here so the
-   header, the thread and the composer all resolve to the same width — they are
-   three separate stylesheets and would otherwise drift apart. */
+   `--acr-gutter` is the conversation's edge padding, declared once here so the
+   header, the thread and the composer — three separate stylesheets — resolve to
+   the same inset and cannot drift apart.
+
+   Deliberately no max-width: the conversation fills its pane, exactly as
+   `ConversationPanel` fills its pane in the logged-in app. Capping and centring
+   it left ~109px of dead background down each side, which reads as a shifted
+   layout precisely because in the main chat that gutter is filled by the chat
+   list. Here there is nothing to put there. */
 .acr-shell {
-  --acr-column: 44rem;
   --acr-gutter: 0.85rem;
 
   position: relative;
@@ -41,7 +46,9 @@
 
 /* Identity column — hidden until the logged-in app would show its profile pane.
    Wider than the logged-in pane (which splits a three-column layout) because this
-   room only has two columns, and the vibe presets need the room. */
+   room only has two columns, and the three gender pills plus the vibe presets
+   need the room. 26rem is what it takes for the pills to sit on one line:
+   measured, they need 329px and 24rem only left 319px inside the card. */
 .acr-profile {
   display: none;
 }
@@ -49,10 +56,10 @@
 @media (min-width: 1024px) {
   .acr-profile {
     display: flex;
-    width: 24rem;
+    width: 26rem;
     flex-shrink: 0;
     flex-direction: column;
-    padding: 0.75rem 0.85rem 0.85rem 0;
+    padding: 0.85rem 0.85rem 0.85rem 0.75rem;
   }
 }
 
@@ -160,9 +167,9 @@
 
 /* ── Header ─────────────────────────────────────────────────── */
 
-/* Sits in the same reading column as the thread and the composer, so the three
-   share one left and right edge instead of the header floating full-bleed above
-   a narrower conversation. */
+/* Spans the pane with the same gutter as the thread and the composer, so all
+   three share one set of edges — the header used to be full-bleed above a
+   narrower conversation. */
 .acr-header {
   position: absolute;
   z-index: 30;
@@ -174,9 +181,6 @@
 
 .acr-header > * {
   pointer-events: auto;
-  width: 100%;
-  max-width: var(--acr-column);
-  margin-inline: auto;
 }
 
 .acr-header__card {
