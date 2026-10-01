@@ -5,13 +5,15 @@ export const NEAR_BOTTOM_PX = 120;
 // Re-exported from app.ts — single source of truth
 export { SEARCH_DEBOUNCE_MS, MAX_TEXTAREA_HEIGHT } from '@/shared/constants/app';
 
-/** Composer row + send button sizing (input pill border adds 2px to outer height). */
-export const COMPOSER_ROW_MIN_PX = 44;
-export const COMPOSER_ROW_MIN_PX_COMPACT = 36;
-export const COMPOSER_ROW_MIN_CLASS = 'min-h-11';
-export const COMPOSER_ROW_MIN_CLASS_COMPACT = 'min-h-9';
-export const COMPOSER_SEND_SIZE_CLASS = 'size-[calc(2.75rem+2px)]';
-export const COMPOSER_SEND_SIZE_CLASS_COMPACT = 'size-[calc(2.25rem+2px)]';
+// Composer geometry lives in shared/constants/app.ts because the anonymous
+// composer is the same control. Re-exported here so chat's own imports stay
+// local; delete this block once nothing inside features/chat references it.
+export {
+  COMPOSER_ROW_MIN_CLASS,
+  COMPOSER_ROW_MIN_CLASS_COMPACT,
+  COMPOSER_SEND_SIZE_CLASS,
+  COMPOSER_SEND_SIZE_CLASS_COMPACT,
+} from '@/shared/constants/app';
 
 /** Clearance for the floating conversation header (matches Chat.tsx fade). */
 export const CHAT_HEADER_OFFSET_CLASS =

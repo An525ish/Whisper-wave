@@ -3,9 +3,9 @@ import { logger } from '../../utils/logger.js';
 import type { Namespace } from 'socket.io';
 import type { AnonSession } from '../../types/match.js';
 import { MATCH_DISCONNECTED } from '../../constants/anon-events.js';
-import { REDIS_KEYS, TTL } from './keys.js';
+import { PRESENCE_SWEEP, REDIS_KEYS, TTL } from './keys.js';
 import { dequeue } from './queue.js';
-import { endSession, getPartner, getSession } from './session.js';
+import { endSession, getActiveSessionId, getPartner, getSession } from './session.js';
 
 /**
  * Disconnect handling for the /anon namespace.
@@ -18,26 +18,34 @@ import { endSession, getPartner, getSession } from './session.js';
  *
  * So a drop now starts a short grace period instead:
  *   1. On connect, clear presence immediately (we're back).
- *   2. On drop, set `match:presence:{anonId}` with a TTL.
- *   3. A sweeper ends the session only if presence is still set when it lapses.
+ *   2. On drop, set `match:presence:{anonId}` with a TTL and record a deadline in
+ *      the `match:presence-sweeps` sorted set.
+ *   3. A poller ends the session only if presence is still set when it lapses.
  *   4. Waiting users are still dequeued right away — nothing to resume there.
+ *
+ * The deadline is durable state in Redis, not a `Map<anonId, Timeout>` held per
+ * process (A4 in docs/Todo.md). A `setTimeout` only exists in the process that
+ * created it, so a drop on one instance was swept by that instance and nobody
+ * else: restart it, redeploy it, or run two of them, and the match was never torn
+ * down at all — the partner sat in front of a dead thread indefinitely. A sorted
+ * set is claimable by any process and survives a restart.
  */
 
-const sweepTimers = new Map<string, ReturnType<typeof setTimeout>>();
+/**
+ * The /anon namespace, and the poll interval that drives the sweeper.
+ *
+ * `handleSocketDrop` is the only thing that hands us a namespace and it does so
+ * on every drop, so the namespace is captured the first time one happens rather
+ * than at boot. A process that has never seen an anon drop never starts the
+ * poller — which is right, because it has no anon sockets to notify.
+ */
+let sweepNamespace: Namespace | null = null;
+let sweepTimer: ReturnType<typeof setInterval> | null = null;
+let sweepInFlight = false;
 
-/** Mark an anonId as connected again: cancel any pending grace period. */
-export const clearPresence = async (anonId: string): Promise<void> => {
-  const timer = sweepTimers.get(anonId);
-  if (timer) {
-    clearTimeout(timer);
-    sweepTimers.delete(anonId);
-  }
-  try {
-    await getRedis().del(REDIS_KEYS.presence(anonId));
-  } catch (err) {
-    logger.warn({ err, anonId }, 'Failed to clear presence on reconnect');
-  }
-};
+/** Epoch ms at which a drop taken now stops being a reconnect and starts a teardown. */
+const graceDeadline = (): number =>
+  Date.now() + (TTL.presence + PRESENCE_SWEEP.graceOverheadSeconds) * 1000;
 
 /**
  * Tear the match down once the grace period lapses with nobody back.
@@ -92,6 +100,91 @@ const finalizeDrop = async (
 };
 
 /**
+ * Claim and run every grace period that has lapsed.
+ *
+ * `ZREM` *is* the claim — it removes the member atomically, so when N processes
+ * poll the same sorted set exactly one wins each sweep. No lock, no fencing
+ * token, no process handed the same work twice. Everything the sweep then reads
+ * (presence key, session, partner) is already in Redis, so the teardown itself is
+ * process-independent.
+ */
+const sweepLapsedDrops = async (nsp: Namespace): Promise<void> => {
+  const redis = getRedis();
+
+  const due = await redis
+    .zrangebyscore(
+      REDIS_KEYS.presenceSweeps,
+      '-inf',
+      Date.now(),
+      'LIMIT',
+      0,
+      PRESENCE_SWEEP.batchSize
+    )
+    .catch((err: unknown) => {
+      logger.warn({ err }, 'Failed to read due presence sweeps');
+      return [] as string[];
+    });
+
+  for (const anonId of due) {
+    const claimed = await redis.zrem(REDIS_KEYS.presenceSweeps, anonId).catch(
+      (err: unknown) => {
+        logger.warn({ err, anonId }, 'Failed to claim presence sweep');
+        return 0;
+      }
+    );
+    if (claimed !== 1) continue; // another process claimed it first
+
+    // The deadline is keyed by anonId, so the session is resolved here rather than
+    // carried in the entry. If it was replaced in the meantime `finalizeDrop`'s
+    // participation check turns this into a no-op instead of a wrong teardown.
+    const sessionId = await getActiveSessionId(anonId).catch((err: unknown) => {
+      logger.warn({ err, anonId }, 'Failed to resolve session for lapsed sweep');
+      return null;
+    });
+    if (!sessionId) continue;
+
+    await finalizeDrop(nsp, sessionId, anonId).catch((err: unknown) =>
+      logger.warn({ err, anonId, sessionId }, 'Presence sweep failed')
+    );
+  }
+};
+
+const ensureSweeperRunning = (nsp: Namespace): void => {
+  sweepNamespace = nsp;
+  if (sweepTimer) return;
+
+  sweepTimer = setInterval(() => {
+    const namespace = sweepNamespace;
+    if (!namespace || sweepInFlight) return;
+    sweepInFlight = true;
+    void sweepLapsedDrops(namespace)
+      .catch((err: unknown) => logger.warn({ err }, 'Presence sweep poll failed'))
+      .finally(() => {
+        sweepInFlight = false;
+      });
+  }, PRESENCE_SWEEP.intervalMs);
+  sweepTimer.unref?.();
+};
+
+/**
+ * Mark an anonId as connected again: cancel any pending grace period.
+ *
+ * The pending sweep is a member of the sorted set keyed by anonId, so cancelling
+ * is an exact `ZREM`, and both keys drop in one pipeline instead of two
+ * round-trips.
+ */
+export const clearPresence = async (anonId: string): Promise<void> => {
+  try {
+    const pipe = getRedis().pipeline();
+    pipe.del(REDIS_KEYS.presence(anonId));
+    pipe.zrem(REDIS_KEYS.presenceSweeps, anonId);
+    await pipe.exec();
+  } catch (err) {
+    logger.warn({ err, anonId }, 'Failed to clear presence on reconnect');
+  }
+};
+
+/**
  * Called on socket `disconnect`.
  * Waiting users are dequeued immediately; matched users get a grace period.
  */
@@ -106,23 +199,15 @@ export const handleSocketDrop = async (
 
     if (!sessionId) return;
 
-    await getRedis()
-      .set(REDIS_KEYS.presence(anonId), sessionId, 'EX', TTL.presence)
-      .catch((err: unknown) =>
-        logger.warn({ err, anonId }, 'Failed to set disconnect presence')
-      );
+    ensureSweeperRunning(nsp);
 
-    const existing = sweepTimers.get(anonId);
-    if (existing) clearTimeout(existing);
-
-    const timer = setTimeout(() => {
-      sweepTimers.delete(anonId);
-      void finalizeDrop(nsp, sessionId, anonId).catch((err: unknown) =>
-        logger.warn({ err, anonId, sessionId }, 'Presence sweep failed')
-      );
-    }, (TTL.presence + 2) * 1000);
-    timer.unref?.();
-    sweepTimers.set(anonId, timer);
+    // Presence key and sweep deadline in one round-trip. If Redis is unhappy the
+    // grace period simply never fires, which is the same place the old code
+    // landed: `finalizeDrop` would have bailed out on its own presence check.
+    const pipe = getRedis().pipeline();
+    pipe.set(REDIS_KEYS.presence(anonId), sessionId, 'EX', TTL.presence);
+    pipe.zadd(REDIS_KEYS.presenceSweeps, graceDeadline(), anonId);
+    await pipe.exec();
 
     logger.info({ anonId, sessionId }, 'Anon socket dropped — grace period started');
   } catch (err) {
@@ -146,8 +231,15 @@ export const endSessionNow = async (
   return partnerAnonId;
 };
 
-/** Shutdown helper — stop every pending grace-period timer. */
+/**
+ * Shutdown helper — stop the presence-sweep poller.
+ *
+ * Pending grace periods are deliberately NOT flushed. They live in Redis, so
+ * whichever process boots next picks them up — which is the entire reason they
+ * were moved out of process memory.
+ */
 export const stopAllPresenceSweeps = (): void => {
-  for (const timer of sweepTimers.values()) clearTimeout(timer);
-  sweepTimers.clear();
+  if (sweepTimer) clearInterval(sweepTimer);
+  sweepTimer = null;
+  sweepNamespace = null;
 };

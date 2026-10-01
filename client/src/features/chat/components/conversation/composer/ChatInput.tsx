@@ -8,7 +8,8 @@ import EmojiIcon from "@/shared/components/ui/icons/Emoji";
 import SendIcon from "@/shared/components/ui/icons/Send";
 import type { GifItem } from "@/features/chat/api/gif";
 import { MAX_FILES } from "@/shared/constants/app";
-import { MAX_TEXTAREA_HEIGHT, COMPOSER_ROW_MIN_PX, COMPOSER_ROW_MIN_PX_COMPACT, COMPOSER_ROW_MIN_CLASS, COMPOSER_ROW_MIN_CLASS_COMPACT, COMPOSER_SEND_SIZE_CLASS, COMPOSER_SEND_SIZE_CLASS_COMPACT } from "@/features/chat/constants/chat";
+import { useAutoGrowTextarea } from "@/shared/hooks";
+import { COMPOSER_ROW_MIN_CLASS, COMPOSER_ROW_MIN_CLASS_COMPACT, COMPOSER_SEND_SIZE_CLASS, COMPOSER_SEND_SIZE_CLASS_COMPACT } from "@/features/chat/constants/chat";
 import { readFilesFromClipboardEvent } from "@/features/chat/utils/chat";
 import { extractLinksFromText, splitTextByUrls, type ParsedLink } from "@/features/chat/utils/linkParser";
 import { useChatClipboardStore } from "@/features/chat/stores/clipboard";
@@ -75,7 +76,6 @@ const ChatInput = ({
 
     const clipIconRef = useRef<HTMLSpanElement | null>(null);
     const emojiIconRef = useRef<HTMLSpanElement | null>(null);
-    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const rootRef = useRef<HTMLDivElement | null>(null);
 
     const [detectedLink, setDetectedLink] = useState<ParsedLink | null>(null);
@@ -123,18 +123,18 @@ const ChatInput = ({
         activeUrl === dismissedLink.url &&
         currentLinkRaw === dismissedLink.raw;
 
+    // Autosize is shared with the anonymous-room composer. Caret placement is keyed on
+    // editMode alone: re-running on `message` yanked the caret to the end of the draft
+    // after every keystroke, which made mid-text edits impossible.
+    const textareaRef = useAutoGrowTextarea({ value: message });
     useEffect(() => {
+        if (!editMode) return;
         const node = textareaRef.current;
         if (!node) return;
-        node.style.height = 'auto';
-        const minH = compact ? COMPOSER_ROW_MIN_PX_COMPACT : COMPOSER_ROW_MIN_PX;
-        node.style.height = `${Math.max(minH, Math.min(node.scrollHeight, MAX_TEXTAREA_HEIGHT))}px`;
-        if (editMode) {
-            node.focus();
-            const len = node.value.length;
-            node.setSelectionRange(len, len);
-        }
-    }, [message, editMode, compact]);
+        node.focus();
+        const len = node.value.length;
+        node.setSelectionRange(len, len);
+    }, [editMode, textareaRef]);
 
     useEffect(() => {
         const node = rootRef.current;
@@ -213,8 +213,8 @@ const ChatInput = ({
     const sendSizeClass = compact ? COMPOSER_SEND_SIZE_CLASS_COMPACT : COMPOSER_SEND_SIZE_CLASS;
     const textareaMinClass = compact ? 'min-h-9' : 'min-h-11';
 
-    // Match line-height + vertical padding to COMPOSER_ROW_MIN_PX* so placeholder sits
-    // centered in one row; unlike leading-11, a fixed ~22px line-height stays natural when wrapped.
+    // Line-height + vertical padding sum to exactly `textareaMinClass`, so the placeholder sits
+    // centred in one row and that class is the autosize floor; unlike leading-11 a fixed ~22px line-height stays natural when wrapped.
     const textareaTypographyClass = compact
         ? 'px-1 md:px-2 text-sm leading-5 py-2'
         : 'px-1 md:px-2 text-[16px] md:text-sm leading-[22px] py-[11px]';

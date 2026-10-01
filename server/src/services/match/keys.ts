@@ -21,6 +21,16 @@ export const REDIS_KEYS = {
   presence: (anonId: string) => `match:presence:${anonId}`,
   /** Throttle key for the "partner left for real" broadcast. */
   presenceNotified: (sessionId: string) => `match:presence-notified:${sessionId}`,
+  /**
+   * Sorted set of anonIds whose disconnect grace period has not lapsed yet,
+   * scored by deadline (epoch ms). `ZRANGEBYSCORE` finds what is due and `ZREM`
+   * atomically claims it, so any process can sweep and no two ever do.
+   *
+   * Replaces the per-process `Map<anonId, Timeout>` of pending sweeps: a
+   * `setTimeout` only lives in the process that created it, so a drop on one
+   * instance was never swept by any other — see A4 in docs/Todo.md.
+   */
+  presenceSweeps: 'match:presence-sweeps',
 } as const;
 
 export const TTL = {
@@ -46,4 +56,46 @@ export const TTL = {
    * a user who closes the tab isn't left in limbo.
    */
   presence: 45, // 45 s
+} as const;
+
+/**
+ * Presence keys for the *signed-in* app.
+ *
+ * Kept beside `REDIS_KEYS` so key naming still has a single home, but as their
+ * own map because they are not anonymous-match keys: `REDIS_KEYS` is uniformly
+ * `match:`-namespaced and that invariant is worth keeping.
+ */
+export const PRESENCE_KEYS = {
+  /**
+   * userId → SET of socketIds. A signed-in user can hold several at once
+   * (tabs, phone + laptop), and this is the cluster-shared record of them.
+   */
+  userSockets: (userId: string) => `presence:sockets:${userId}`,
+} as const;
+
+export const PRESENCE_TTL = {
+  /**
+   * Upper bound on how long a user's socket set survives without a write.
+   *
+   * Refreshed on every add/remove, so a user who connects once and stays
+   * connected for hours is never dropped from presence. It exists only to stop
+   * a hard process crash from leaving that user "online" in Redis forever.
+   */
+  userSockets: 24 * 60 * 60, // 24 h — matches TTL.session and the anon cookie
+} as const;
+
+/**
+ * Grace-period sweeper tuning. Not TTLs, so it does not live in `TTL` — that map
+ * is in seconds because it feeds ioredis' `EX` parameter, and these do not.
+ */
+export const PRESENCE_SWEEP = {
+  /** How often a process looks for grace periods that have lapsed. */
+  intervalMs: 5_000,
+  /** Due entries claimed per tick, so one busy tick cannot stall the loop. */
+  batchSize: 50,
+  /**
+   * Seconds past `TTL.presence` before the sweep fires. The presence key has to
+   * have actually expired before we conclude the user really left.
+   */
+  graceOverheadSeconds: 2,
 } as const;

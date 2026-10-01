@@ -3,7 +3,7 @@ import { getRedis } from '../../config/redis.js';
 import { logger } from '../../utils/logger.js';
 import type { MatchCandidate, VibeTag, WaitingCard } from '../../types/match.js';
 import { REDIS_KEYS, TTL } from './keys.js';
-import { isBlockedEitherWay } from './block.js';
+import { findBlockedCandidates } from './block.js';
 
 /**
  * Persist an anon user's identity card (display name, vibes, gender).
@@ -72,6 +72,27 @@ export const vibePairScore = (a: VibeTag[], b: VibeTag[]): number => {
 };
 
 /**
+ * How many of the longest-waiting queue entries a single join attempt considers.
+ *
+ * The queue is one FIFO list pushed with LPUSH, so index 0 is the newest arrival
+ * and the tail is the longest wait. This reads the tail — the people who have
+ * been waiting longest — which is what a waiting room promises: the further you
+ * have waited, the more certain you are of being considered.
+ *
+ * It used to read `0 -1`, i.e. the entire list. That made every join attempt
+ * O(queue length): a full-list response, one identity-card GET per entry, and
+ * two block checks per entry. At 10k waiting that is ~30k Redis operations per
+ * join, and joins happen on every match, every skip and every reconnect.
+ *
+ * Bounding costs vibe-priority *reach* — a 3-tag match far down the list is no
+ * longer seen — but not correctness. Nobody starves: every join is a seek, so a
+ * newcomer matches on its own first attempt if anyone at all is waiting, and
+ * anyone who is being waited *on* sits in this window because it is anchored to
+ * the oldest entries.
+ */
+const CANDIDATE_SCAN_WINDOW = 200;
+
+/**
  * Claim the first candidate we can atomically remove from the queue.
  *
  * The claim is a single Lua script: LREM the candidate and, if the removal
@@ -105,21 +126,25 @@ const claimCandidate = async (candidates: string[]): Promise<string | null> => {
 /**
  * Vibe-aware, block-aware match attempt.
  *
- * Reads the queue non-destructively, drops ourselves and anyone we're blocked
- * with (in either direction), scores the rest by shared vibe tags, and prefers
- * the best overlap — tie-broken by longest wait.
+ * Reads a bounded window of the queue non-destructively, drops ourselves and
+ * anyone we're blocked with (in either direction), scores the rest by shared
+ * vibe tags, and prefers the best overlap — tie-broken by longest wait.
  *
  * No global lock: candidates are claimed atomically inside `claimCandidate`, so
  * the previous process-wide mutex (a single key held across an O(n) scan) is
- * gone. This was the throughput ceiling on matching.
+ * gone.
+ *
+ * Cost per attempt is bounded by `CANDIDATE_SCAN_WINDOW` regardless of how many
+ * people are waiting, in three round-trips: the window read, the identity-card
+ * pipeline, the block pipeline.
  *
  * Returns the matched partner's anonId, or null if nobody suitable is waiting.
  */
 export const tryMatchFromQueue = async (self: WaitingCard): Promise<string | null> => {
   const redis = getRedis();
 
-  // Snapshot the queue (index 0 = most recent). Skip self.
-  const queued = (await redis.lrange(REDIS_KEYS.queue, 0, -1)).filter(
+  // Tail-anchored window = the longest-waiting entries. Skip self.
+  const queued = (await redis.lrange(REDIS_KEYS.queue, -CANDIDATE_SCAN_WINDOW, -1)).filter(
     (id) => id !== self.anonId
   );
   if (queued.length === 0) return null;
@@ -136,15 +161,14 @@ export const tryMatchFromQueue = async (self: WaitingCard): Promise<string | nul
   candidates.forEach((id) => cardPipe.get(REDIS_KEYS.waiting(id)));
   const cardResults = await cardPipe.exec();
 
-  const blockedChecks = await Promise.all(
-    candidates.map((anonId) => isBlockedEitherWay(self.anonId, anonId))
-  );
+  // Two block checks per candidate, batched into one round-trip.
+  const blocked = await findBlockedCandidates(self.anonId, candidates);
 
   const eligible: MatchCandidate[] = [];
   candidates.forEach((anonId, i) => {
     const raw = cardResults?.[i]?.[1] as string | null | undefined;
     if (!raw) return; // no identity card — stale queue entry, skip
-    if (blockedChecks[i]) return;
+    if (blocked.has(anonId)) return;
 
     const card = JSON.parse(raw) as WaitingCard;
     eligible.push({

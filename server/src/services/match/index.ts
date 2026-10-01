@@ -35,7 +35,7 @@ export {
 
 export { recordLike } from './like.js';
 export { joinQueue, leaveQueue } from './queueEntry.js';
-export { blockAnonId, isBlocked, isBlockedEitherWay } from './block.js';
+export { blockAnonId, isBlocked, findBlockedCandidates } from './block.js';
 export { issueConnectToken, verifyConnectToken } from './connectToken.js';
 export { isVibeUnlocked, meetsVibeGate, VIBE_UNLOCK } from './vibeEligibility.js';
 export {

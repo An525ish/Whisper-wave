@@ -1,5 +1,183 @@
 # Whisper Wave — TODO
 
+## Status
+
+**Free tier only until real users or revenue.** Paid/Spark Pass work is audited
+below and must not be started — see [Deferred — Spark Pass](#deferred--spark-pass-paid-audit-only).
+
+Scope decisions settled Sep 2026:
+
+- Anonymous **threads** are never persisted and never appear in "All Chats" /
+  "Personal". Anonymous *connections* are persisted and listed with their origin
+  story (`Connection.originAnonSession` + `ConnectionOriginStrip`).
+- **No concurrent anonymous chats.** One active session per anon identity.
+  Sequential, with a short-lived Redis archive for the thread you just left.
+- Guests are never capped. Any quota applies to **signed-in** users only.
+
+---
+
+## Anonymous chat — free-tier roadmap (agreed)
+
+Ordered so each phase is independently shippable.
+
+### A — Foundation (no new product surface)
+
+| # | Task | Where | Why |
+|---|------|-------|-----|
+| A1 | `LRANGE 0 -1` → `LRANGE 0 199` in the join scan | `server/src/services/match/queue.ts` | `tryMatchFromQueue` is **O(n) per join** — full queue scan, n card GETs, n unpipelined block checks. At 10k queued that's ~20k Redis ops *per join attempt*. This is the real scaling ceiling, not session storage |
+| A2 | Pipeline `isBlockedEitherWay` instead of `Promise.all` | same file | n commands → 1 round-trip |
+| A3 | Move `userSocketIds` to Redis | `server/src/services/presence/index.ts` | In-memory `Map`. Breaks under a 2nd Node process. Affects the **logged-in** app too |
+| A4 | Move presence sweep timers to Redis | `server/src/services/match/presence.ts` | Same single-process ceiling |
+| A5 | Unify whisper bubble + composer CSS onto `bubble-in`/`bubble-out` and chat's composer shell classes | `features/whisper/components/anonChatRoom*.css` | Two design systems for "a chat" is why the screens look different. ~200 lines deleted vs. a risky refactor |
+| A6 | Extract shared `useAutoGrowTextarea` | `features/whisper/hooks/` + `features/chat/components/conversation/composer/ChatInput.tsx` | Literal duplicate of the 44→128px autosize |
+| A7 | Extract typing dots + `groupMessages()` tail logic | → `shared/` | Two independent implementations of each |
+| A8 | Fix the boot-splash dead-end | `client/src/features/chat/hooks/useProfileQuery.ts` + `App.tsx` | `clear()` fires only on a **401**. Any other failure (backend down, DNS, CORS) leaves `bootstrapped: false` forever — permanent loader, no error, no retry |
+
+### B — Partner-left state
+
+Do **not** eject to the picker. Add status `'partner_left'`.
+
+- Socket stays warm (`shouldConnect = status !== 'idle'`) so re-matching is fast.
+- Messages stay readable; header keeps the alias, greyed.
+- Composer is **replaced**, not `disabled` — a greyed input reads as broken.
+  Prompt row: "They're gone." + [Find someone new] [Stay here].
+- Auto-requeue after ~4s, cancellable, countdown visible. Never silently requeue.
+- **Keep report available** on the finished thread — today report-after-leaving
+  is impossible, so being matched and dropped makes someone unreportable.
+
+### C — Signed-in users can whisper
+
+**The blocking gap: there is no `userId` anywhere in the anon runtime.**
+`socket/anon/auth.ts` never reads `accessToken`; `WaitingCard` and `AnonSession`
+have no user field. A signed-in user on `/whisper` holds two sockets with zero
+server-side link.
+
+1. `socket/anon/auth.ts` — optionally read `accessToken`, set `socket.userId`. Anonymous stays anonymous.
+2. `WaitingCard` + `AnonSession` — add optional `userId`.
+3. `queue.ts` — maintain `match:user:{userId}` → active sessionIds (cross-tab state, quota enforcement).
+4. **`services/match/block.ts` — the security item.** Blocking is `anonId`-scoped, so a report/block **does not survive the user signing up**. Store and check both keys.
+5. Skip the picker for signed-in users — derive the anon identity card from their account.
+
+`POST /connection/complete` needs no change: both sides arriving signed-in
+already works (`PendingConnection.sides[].userId` is nullable by design).
+
+### D — Guest profile panel + visual convergence
+
+Right-hand panel mirroring `ProfilePanel` (`lg:` column / `ProfileSheet` below),
+so the app has one spatial grammar: conversation centre, context right.
+
+Alias · vibe tags (same `TagPicker`) · gender (same `GenderPicker`) · live
+session stats · "remember this identity" · persistent **"Create an account to
+keep your connections"** CTA.
+
+That CTA is the conversion fix: a guest with a good match currently has no
+reason to sign up until the mutual like, which is the highest drop-off moment.
+
+### E — Differentiators (free, in value order)
+
+| # | Feature | Cost | Note |
+|---|---------|------|------|
+| E1 | Vibe reactions on individual messages | 1 Redis set/message | PRODUCT.md already promises it; today it's heart + report only |
+| E2 | 24h thread expiry with visible countdown | TTL exists, invisible now | Also explains the 5-min buffer wipe that currently surprises people |
+| E3 | Icebreaker cards | Cheap | Raises conversation-start rate, which feeds the `VIBE_UNLOCK` gate |
+| E4 | "How it went" end-of-thread card | Nearly free | Doubles as the local-archive entry point |
+| E5 | Client-side whisper history (localStorage) | **Zero server cost, zero privacy surface** | Satisfies "I don't want to lose this" without archiving anything server-side |
+| E6 | Signed-in daily whisper counter | 1 INCR + 1 EXPIRE | Ship the counter now as an abuse lever; it becomes the paywall once billing exists |
+
+**Note:** vibe-aligned matching is **already live and free** —
+`vibePairScore` (`services/match/queue.ts`) scores candidates by shared tags and
+`tryMatchFromQueue` sorts best-overlap-first, tie-broken by longest wait. Do not
+rebuild it. The paid upsell is *preference* on top of it.
+
+### Rejected outright
+
+- ❌ **Concurrent anonymous chats.** `socket.sessionId` is a single scalar pushed
+  to every socket in `anon:{anonId}`; N sessions changes every handler signature.
+  `anonStore`'s flat `partnerName/messages/matchedAt` becomes an array.
+  `VIBE_UNLOCK` fragments across threads. Users would idle in the easiest one.
+- ❌ **Anonymous threads in "All Chats" / "Personal".** `AnonMessage.from` is
+  relative (`'me' | 'them'`) and cannot be replayed for both parties. The only
+  ways to force it are fabricating placeholder `User` docs (breaks the
+  "not stored in MongoDB" privacy promise) or threading `chat.kind: 'anon'`
+  through `MessageBubble` (307 lines) and every read/reaction/forward/delete path.
+- ❌ **Voice notes in anon.** Moderation is text-only today
+  (`services/match/moderation.ts`, 3 categories, no audio). Charging for the
+  least-protected surface is the wrong order.
+- ❌ **Location matching.** Needs a permission prompt and a location data
+  category in a product whose whole pitch is anonymity.
+
+---
+
+## Deferred — Spark Pass (paid). Audit only.
+
+**Do not build any of this until there is revenue.** Adding Stripe requires a
+`docs/TECH.md` approval note per `product-and-cost.mdc`.
+
+**There is currently zero billing infrastructure.** `pages/SparkPass.tsx` is 15
+lines wrapping a 183-line marketing component with a hardcoded `₹199` whose only
+CTA is `<Link to="/auth">`. No `Subscription` model, no `stripe` dependency, no
+webhook, no entitlement resolver, no feature flags.
+
+### Sequencing: build the gate, not the payment
+
+Everything in "Gate foundation" below can be built **at $0** with an
+admin-grant path for testing. Stripe plugs in later and costs only % of real
+payments. Do not build a paywall without a gate behind it.
+
+| Prereq | Task | Notes |
+|--------|------|-------|
+| Gate foundation | `Subscription` model | PRODUCT.md already sketches the shape: `user, plan, interval, status, stripeCustomerId, stripeSubscriptionId, currentPeriodEnd` |
+| Gate foundation | `useEntitlements()` resolver + server-side `requireEntitlement()` middleware | **Server-side only.** Never gate on the client — the client is not a security boundary |
+| Gate foundation | Admin manual grant (set `plan: 'premium'` directly) | Lets us test every paid feature with zero billing |
+| Billing | `POST /api/subscription/create` + Stripe Checkout | |
+| Billing | `POST /api/subscription/webhook` | The only trustworthy source of entitlement truth |
+| Billing | `DELETE /api/subscription/cancel` | |
+| Billing | `docs/TECH.md` approval note | Required by `product-and-cost.mdc` before any paid service |
+
+### Feature backlog (each gated on the entitlement resolver existing)
+
+| Feature | Effort | Notes |
+|---------|--------|-------|
+| Gender preference filter | Medium — needs `match:queue:pref:{gender}` buckets | Promised in PRODUCT.md. Current `tryMatchFromQueue` already reads every card's `gender` but ignores it |
+| Vibe preference routing | Medium | Preference *on top of* existing shared-tag scoring — not a rebuild |
+| Priority queue | Low | Reorder LPUSH position. Almost free once buckets exist |
+| Read receipts in anon chat | Medium | High value, low abuse surface, invisible to free users until they want it. Good first paid feature |
+| Daily whisper quota → paywall | **Zero — counter already ships in E6** | Just lift the cap for `plan: 'premium'`. The best first monetisation because the instrumentation is already live |
+| "See who liked you" | Low | `match:likes:{sessionId}` already exists; just don't fire `MUTUAL_LIKE` to free users |
+| Re-find (server-side) | High | **See below — needs the mutual-opt-in work first** |
+| Verified vibes badge | Low | Cosmetic; needs a verification signal that doesn't cost money |
+| Extended / no chat timer | Low | Extend the Redis TTL on premium sessions |
+| Vibe Boosts (consumable IAP) | Medium | One-time queue priority. Needs an IAP balance model |
+
+### Re-find — do NOT build as originally sketched
+
+The first proposal was "archive ended sessions in Redis, let a paid user spend a
+credit to re-queue preferring that person." Two problems:
+
+1. **It contradicts the brand.** PRODUCT.md sells serendipity — *"Serendipitous
+   connection that isn't driven by an algorithm."* A "people you talked to
+   before" list turns this into a dating app with a worse matcher. Keep it a
+   quiet affordance, never a headline tab.
+2. **"Good match" is not inferable from behaviour.** Message count and duration
+   are volume, not quality — and volume biases against quiet people and
+   non-native English speakers. Who pressed skip is asymmetric: one person
+   leaving doesn't mean the other had a bad time. **Asking is both cheaper and
+   more accurate than any heuristic, and it is the only version that isn't
+   surveillance-adjacent.**
+
+If it's ever built, it must be:
+
+- **Redis only, hard 24h TTL, never Mongo.**
+- **Mutual and explicit** — only for threads *both* people marked good. Never
+  unilateral. This is the anti-stalking rule and it is non-negotiable.
+- **Visible and deletable** — show the archive, let the user clear it. An
+  invisible archive of who you talked to is a trust violation waiting to happen.
+
+**E5 (client-side local history) is the better free-tier answer** and covers most
+of the emotional need at zero server cost and zero privacy surface.
+
+---
+
 ## Network & connectivity UX
 
 **Verdict:** Good idea — do it in phases, not as one blanket "all actions" pass.

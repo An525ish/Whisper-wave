@@ -1,6 +1,11 @@
 /* ============================================================
-   WHISPER — AnonChatRoom: composer, like button, vibe prompts
-   (`.acr-*`). Colocated continuation of anonChatRoom.css.
+   WHISPER — AnonChatRoom: like button + composer footer (`.acr-*`)
+   Colocated continuation of anonChatRoom.css.
+
+   The composer's shell, row and send button are Tailwind, copied
+   from the logged-in chat's non-floating `ChatInput` so both chats
+   share one geometry. Only what Tailwind cannot express (the safe-
+   area padding) and the length counter live here.
    ============================================================ */
 
 /* ── Persistent like affordance ───────────────────────────────
@@ -62,85 +67,12 @@
 /* ── Composer ──────────────────────────────────────────────── */
 
 .acr-composer-wrap {
-  position: relative;
-  z-index: 40;
   flex-shrink: 0;
   padding: 0.35rem 0.65rem max(0.55rem, env(safe-area-inset-bottom));
 }
 
-.acr-composer {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  border-radius: 1.35rem;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background: linear-gradient(165deg, rgb(57 48 70 / 0.82) 0%, rgb(33 26 42 / 0.72) 100%);
-  box-shadow: 0 -4px 32px rgb(0 0 0 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 0.4rem 0.45rem 0.4rem 0.35rem;
-}
-
-.acr-composer__field {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  align-items: center;
-  border-radius: 1rem;
-  border: 1px solid rgb(255 255 255 / 0.06);
-  background: rgb(0 0 0 / 0.22);
-  padding: 0 0.5rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.acr-composer__field:focus-within {
-  border-color: rgb(1 195 109 / 0.35);
-  box-shadow: 0 0 0 3px rgb(1 195 109 / 0.08);
-}
-
-.acr-composer__input {
-  width: 100%;
-  min-height: 2.75rem;
-  max-height: 8rem;
-  resize: none;
-  overflow-y: auto;
-  border: none;
-  background: transparent;
-  padding: 0.65rem 0.35rem;
-  font-size: 1rem;
-  line-height: 1.35;
-  color: var(--color-body);
-  outline: none;
-}
-
-.acr-composer__input::placeholder { color: rgb(235 236 236 / 0.35); }
-
-.acr-send {
-  display: grid;
-  height: 2.75rem;
-  width: 2.75rem;
-  flex-shrink: 0;
-  place-items: center;
-  border-radius: 999px;
-  border: none;
-  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
-}
-
-.acr-send:enabled {
-  background: linear-gradient(145deg, var(--color-green), rgb(1 150 95));
-  box-shadow: 0 6px 20px rgb(1 195 109 / 0.35);
-  color: #fff;
-}
-
-.acr-send:enabled:hover { transform: scale(1.04); }
-
-.acr-send:disabled {
-  border: 1px solid rgb(255 255 255 / 0.08);
-  background: rgb(255 255 255 / 0.05);
-  color: rgb(235 236 236 / 0.35);
-  opacity: 0.85;
-}
-
+/* Over the 2000-char limit — the logged-in composer has no counter,
+   so this warning is anonymous-chat only and must stay loud. */
 .acr-limit {
   margin: 0 0 0.4rem;
   padding: 0 0.35rem;
@@ -148,5 +80,3 @@
   font-weight: 500;
   color: rgb(255 138 146 / 0.95);
 }
-
-

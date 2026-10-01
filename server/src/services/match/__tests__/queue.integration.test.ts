@@ -65,11 +65,22 @@ after(async () => {
   }
 });
 
-const skip = () =>
-  redisUp ? false : 'Redis unavailable or unprefixed — skipping integration test';
+/**
+ * Resolved at RUN time, not registration time.
+ *
+ * These tests were previously `it(name, { skip: skip() }, fn)`. Node's runner
+ * registers `it()` synchronously inside `describe()`, so that call evaluated
+ * `redisUp` *before* the `before()` hook had run — every integration test was
+ * therefore skipped unconditionally, Redis up or not, and had in fact never
+ * executed. `t.skip()` is reached only once the test body starts, which is after
+ * `before()` has had its chance to connect.
+ */
+const INTEGRATION_SKIP_REASON =
+  'Redis unavailable or unprefixed — skipping integration test';
 
 describe('queue matching (Redis integration)', () => {
-  it('is idempotent — re-enqueue never duplicates an entry', { skip: skip() }, async () => {
+  it('is idempotent — re-enqueue never duplicates an entry', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
     await dequeue('dup-1');
     await reenqueue('dup-1');
     await reenqueue('dup-1');
@@ -81,7 +92,8 @@ describe('queue matching (Redis integration)', () => {
     await dequeue('dup-1');
   });
 
-  it('never lets two concurrent matchers claim the same candidate', { skip: skip() }, async () => {
+  it('never lets two concurrent matchers claim the same candidate', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
     // Two candidates in the queue; eight matchers race for them at once.
     const candidates = ['race-a', 'race-b'];
     const matchers = Array.from({ length: 8 }, (_, i) => `racer-${i}`);
@@ -120,7 +132,8 @@ describe('queue matching (Redis integration)', () => {
     }
   });
 
-  it('prefers the best vibe overlap', { skip: skip() }, async () => {
+  it('prefers the best vibe overlap', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
     await getRedis().del(REDIS_KEYS.queue);
     await dequeue('seeker');
     await dequeue('match-yes');
@@ -142,7 +155,8 @@ describe('queue matching (Redis integration)', () => {
     }
   });
 
-  it('never matches a user with themselves', { skip: skip() }, async () => {
+  it('never matches a user with themselves', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
     await getRedis().del(REDIS_KEYS.queue);
     await dequeue('narcissist');
     await saveWaitingCard(card('narcissist'));
@@ -151,7 +165,8 @@ describe('queue matching (Redis integration)', () => {
     await getRedis().del(REDIS_KEYS.queue);
   });
 
-  it('skips a blocked candidate in both directions', { skip: skip() }, async () => {
+  it('skips a blocked candidate in both directions', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
     await getRedis().del(REDIS_KEYS.queue);
     for (const id of ['blocker', 'blocked', 'third']) {
       await dequeue(id);
@@ -170,10 +185,44 @@ describe('queue matching (Redis integration)', () => {
       await getRedis().del(REDIS_KEYS.blocked(id));
     }
   });
+
+  /**
+   * The scan window is anchored to the TAIL of the list (the longest waiters),
+   * not the head. That choice is invisible on a small queue — the whole list fits
+   * in the window either way — so this is the only kind of test that can catch
+   * someone "optimising" it to `LRANGE 0 N`, which would silently make the
+   * people who have waited longest unmatchable behind a busy queue.
+   */
+  it('still matches the longest waiter when the queue overflows the scan window', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
+    await getRedis().del(REDIS_KEYS.queue);
+
+    const OVERFLOW = 250;
+    const oldest = 'overflow-oldest';
+    const others = Array.from({ length: OVERFLOW - 1 }, (_, i) => `overflow-${i}`);
+
+    // LPUSH puts the newest at the head, so `oldest` must be pushed FIRST to end
+    // up deepest in the list — i.e. the furthest outside a head-anchored window.
+    for (const id of [oldest, ...others]) {
+      await saveWaitingCard(card(id));
+      await enqueue(id);
+    }
+
+    // No vibe tags on the seeker, so every candidate scores 0 and the tie-break
+    // decides: the longest wait must win.
+    const partner = await tryMatchFromQueue(card('seeker'));
+    assert.equal(partner, oldest, 'a head-anchored scan window would starve the longest waiter');
+
+    await getRedis().del(REDIS_KEYS.queue);
+    for (const id of [oldest, ...others]) {
+      await getRedis().del(REDIS_KEYS.waiting(id));
+    }
+  });
 });
 
 describe('anon session lifecycle (Redis integration)', () => {
-  it('round-trips a session and confirms both participants', { skip: skip() }, async () => {
+  it('round-trips a session and confirms both participants', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
     await createSession('sess-test', 'p1', 'p2', 'one', 'two', ['music'], ['gaming']);
     const session = await getSession('sess-test');
     assert.ok(session);
@@ -184,7 +233,8 @@ describe('anon session lifecycle (Redis integration)', () => {
     await endSession('sess-test');
   });
 
-  it('clears the active-session pointer on end, but keeps identity data', { skip: skip() }, async () => {
+  it('clears the active-session pointer on end, but keeps identity data', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
     await createSession('sess-lp', 'q1', 'q2', 'one', 'two', [], []);
     await saveWaitingCard(card('q1', ['music']));
     await endSession('sess-lp');
@@ -197,7 +247,12 @@ describe('anon session lifecycle (Redis integration)', () => {
     await getRedis().del(REDIS_KEYS.waiting('q1'));
   });
 
-  it('buffers messages newest-first internally and returns them oldest-first', { skip: skip() }, async () => {
+  it('buffers messages newest-first internally and returns them oldest-first', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
+    // These two tests pin fixed session ids and share the buffer key, so clear it
+    // first — otherwise a second run against the same Redis replays the previous
+    // run's messages and fails on a phantom bug.
+    await getRedis().del(REDIS_KEYS.messages('sess-msg'));
     await createSession('sess-msg', 'm1', 'm2', 'one', 'two', [], []);
     await bufferMessage('sess-msg', { from: 'm1', content: 'first', sentAt: 1 });
     await bufferMessage('sess-msg', { from: 'm2', content: 'second', sentAt: 2 });
@@ -209,7 +264,9 @@ describe('anon session lifecycle (Redis integration)', () => {
     );
   });
 
-  it('caps the buffer so a long chat cannot grow Redis without bound', { skip: skip() }, async () => {
+  it('caps the buffer so a long chat cannot grow Redis without bound', async (t) => {
+    if (!redisUp) return t.skip(INTEGRATION_SKIP_REASON);
+    await getRedis().del(REDIS_KEYS.messages('sess-cap'));
     await createSession('sess-cap', 'c1', 'c2', 'one', 'two', [], []);
     for (let i = 0; i < 60; i++) {
       await bufferMessage('sess-cap', { from: 'c1', content: `m${i}`, sentAt: i });
