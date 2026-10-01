@@ -141,17 +141,19 @@ Three decisions worth knowing:
   lands under the fold and is simply never seen — the panel's whole job is that
   pitch.
 
-**Layout contract.** `--acr-gutter` is declared once on `.acr-shell` and consumed
-by three separate stylesheets, so the header, the thread and the composer share
-one inset and cannot drift apart.
+**Layout contract.** `--acr-gutter` and `--acr-column` are declared once on
+`.acr-shell` and consumed by three separate stylesheets, so the header, the
+thread and the composer share one inset and one width and cannot drift apart.
 
-**There is deliberately no max-width.** An earlier pass capped the conversation
-at 44rem and centred it. Measured, that left 109px of dead background down each
-side of a 922px pane — which read as a misaligned layout, because in the main
-chat that gutter is filled by the chat list and here there is nothing to put
-there. The conversation now fills its pane exactly like `ConversationPanel`
-fills its pane in the logged-in app. Verified at 1306px: header, thread and
-composer all resolve to left 14 / right 876.
+**How `--acr-column` got to 48rem.** Three passes, all measured at 1306px:
+
+| Value | Pane | Slack each side | Verdict |
+|---|---|---|---|
+| none (fills pane) | 890px | 0 | Too wide — 22rem bubbles sit so far apart it stops reading as one exchange |
+| 44rem | 922px | 109px | Read as a misaligned layout. In the main chat that gutter is the chat list; here there is nothing to put there |
+| **48rem** | 890px | **61px** | Slack is small enough to read as breathing room, and 768px is close to the logged-in conversation pane's ~700px |
+
+Verified at `lg`: header, thread and composer all resolve to left 61 / right 829.
 
 The header wrapper is `pointer-events: none` with the card re-enabling it, so
 the full-width hit area can't swallow clicks meant for the chat.
@@ -163,7 +165,8 @@ onto a second row. 26rem puts all three on one line.
 Verified at `lg` (column) and by forcing the breakpoint to exercise the `< lg`
 bottom-sheet path: sheet renders with the `isSheet` treatment (no
 `bg-background-alt` card of its own), the mobile FAB sits at 800–840px against a
-composer starting at 877px, so it covers neither.
+composer starting at 877px, so it covers neither. The column cap is inert on
+mobile — the pane there is ~390px.
 
 ⚠️ **Found while testing, not fixed:** the panel's elapsed timer reads "Just met"
 after a reconnect even for a thread that has been going an hour. `MATCH_FOUND`

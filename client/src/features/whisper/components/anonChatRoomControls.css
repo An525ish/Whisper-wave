@@ -71,9 +71,11 @@
   padding: 0.35rem var(--acr-gutter, 0.85rem) max(0.55rem, env(safe-area-inset-bottom));
 }
 
-/* Fills the pane, sharing `--acr-gutter` with the header and the thread. */
+/* Shares `--acr-gutter` and `--acr-column` with the header and the thread. */
 .acr-composer-wrap > div {
   width: 100%;
+  max-width: var(--acr-column);
+  margin-inline: auto;
 }
 
 /* Over the 2000-char limit — the logged-in composer has no counter,

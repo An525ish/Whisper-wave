@@ -26,10 +26,12 @@
   scrollbar-width: none;
 }
 
-/* Fills the pane. See the note on `.acr-shell` — the conversation deliberately
-   has no max-width, matching `ConversationPanel` in the logged-in app. */
+/* Capped conversation column — resolves to `--acr-column` on `.acr-shell`, which
+   the header and composer use too, so all three share one set of edges. */
 .acr-scroll > * {
   width: 100%;
+  max-width: var(--acr-column);
+  margin-inline: auto;
 }
 
 /* Bottom-anchor the thread. A short conversation otherwise floats at the top of

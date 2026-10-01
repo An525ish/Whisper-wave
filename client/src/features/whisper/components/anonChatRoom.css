@@ -12,17 +12,18 @@
 /* Row shell: the conversation plus, at `lg`, the identity column. Below that the
    panel becomes a sheet, so this stays a single column and nothing shifts.
 
-   `--acr-gutter` is the conversation's edge padding, declared once here so the
-   header, the thread and the composer — three separate stylesheets — resolve to
-   the same inset and cannot drift apart.
+   Both tokens are declared once here and consumed by three separate stylesheets,
+   so the header, the thread and the composer share one inset and one width and
+   cannot drift apart.
 
-   Deliberately no max-width: the conversation fills its pane, exactly as
-   `ConversationPanel` fills its pane in the logged-in app. Capping and centring
-   it left ~109px of dead background down each side, which reads as a shifted
-   layout precisely because in the main chat that gutter is filled by the chat
-   list. Here there is nothing to put there. */
+   `--acr-column` caps the conversation rather than letting it run the full pane:
+   a ~890px pane with 22rem bubbles puts the two sides so far apart it stops
+   reading as one exchange. Capped at 48rem it keeps ~60px of slack a side in a
+   26rem-panel layout — small enough that it reads as breathing room rather than
+   the floating column an earlier 44rem cap produced. */
 .acr-shell {
   --acr-gutter: 0.85rem;
+  --acr-column: 48rem;
 
   position: relative;
   display: flex;
@@ -167,9 +168,9 @@
 
 /* ── Header ─────────────────────────────────────────────────── */
 
-/* Spans the pane with the same gutter as the thread and the composer, so all
-   three share one set of edges — the header used to be full-bleed above a
-   narrower conversation. */
+/* Same gutter and same capped width as the thread and the composer — see the
+   tokens on `.acr-shell`. The header used to be full-bleed above a narrower
+   conversation. */
 .acr-header {
   position: absolute;
   z-index: 30;
@@ -181,6 +182,9 @@
 
 .acr-header > * {
   pointer-events: auto;
+  width: 100%;
+  max-width: var(--acr-column);
+  margin-inline: auto;
 }
 
 .acr-header__card {
