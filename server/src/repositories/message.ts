@@ -132,6 +132,12 @@ export const deleteById = async (
   return Boolean(result);
 };
 
+export const deleteManyByIds = async (
+  ids: string[]
+): Promise<void> => {
+  await Message.deleteMany({ _id: { $in: ids } });
+};
+
 export const deleteByChatId = async (chatId: string): Promise<void> => {
   await Message.deleteMany({ chat: chatId });
 };

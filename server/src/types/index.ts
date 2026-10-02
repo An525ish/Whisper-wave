@@ -112,6 +112,7 @@ export type {
   CreateMessageInput,
   MessageRecord,
   UpdateMessagePatch,
+  ToggleMessageReactionInput,
 } from './message.js';
 export type {
   IRequestFields,
