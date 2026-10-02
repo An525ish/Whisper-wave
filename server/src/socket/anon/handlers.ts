@@ -288,8 +288,20 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
     ANON_NEXT,
     anonNoPayloadSchema,
     async () => {
-      const sessionId = socket.sessionId;
+      const socketSessionId = socket.sessionId;
       socket.sessionId = undefined;
+
+      // Fall back to the durable Redis pointer rather than trusting the socket
+      // field alone.
+      //
+      // `socket.sessionId` is a cache of "which match this socket is in". If it is
+      // ever missing or stale — a socket that joined the room late, a reconnect
+      // that raced the fan-out, a deployment that predates the field — then
+      // skipping on that value alone silently skips the teardown and the partner
+      // is never told their chat ended. They then sit in a dead conversation with
+      // no way to learn why. One Redis read is cheap next to that failure.
+      const sessionId =
+        socketSessionId ?? (await getActiveSessionId(socket.anonId)) ?? undefined;
 
       if (sessionId) {
         const session = await getSession(sessionId);

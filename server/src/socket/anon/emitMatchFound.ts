@@ -18,6 +18,26 @@ export const emitMatchFound = async (
   partnerCard: WaitingCard,
   createdAt: number
 ): Promise<void> => {
+  // Attach `sessionId` to both sides' sockets BEFORE telling either of them the
+  // match exists.
+  //
+  // This used to run after the emits, which is a race the client cannot lose: the
+  // moment a socket receives MATCH_FOUND it may act on it, and every handler here
+  // (ANON_NEXT especially) reads `socket.sessionId` to decide who to notify. In
+  // the old order a skip arriving in that window read `undefined`, skipped the
+  // teardown entirely, and left the partner sitting in a chat that no longer
+  // existed. It also meant a socket joining the room between the two statements
+  // got the event without ever getting the id.
+  //
+  // `fetchSockets()` is a round trip, so awaiting it first is what actually makes
+  // the ordering a guarantee rather than a hope.
+  for (const anonId of [localAnonId, partnerAnonId]) {
+    const sockets = await nsp.in(`anon:${anonId}`).fetchSockets();
+    for (const socket of sockets) {
+      (socket as unknown as AnonSocket).sessionId = sessionId;
+    }
+  }
+
   // A brand-new session has no history, so there is nothing to replay.
   nsp.to(`anon:${localAnonId}`).emit(MATCH_FOUND, {
     sessionId,
@@ -38,13 +58,6 @@ export const emitMatchFound = async (
     },
     bufferedMessages: [],
   });
-
-  for (const anonId of [localAnonId, partnerAnonId]) {
-    const sockets = await nsp.in(`anon:${anonId}`).fetchSockets();
-    for (const socket of sockets) {
-      (socket as unknown as AnonSocket).sessionId = sessionId;
-    }
-  }
 };
 
 /** Late socket connect after a match — replay MATCH_FOUND to one client. */

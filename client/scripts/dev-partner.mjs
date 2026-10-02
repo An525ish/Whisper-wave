@@ -57,7 +57,9 @@ socket.on('connect_error', (e) => console.error('[partner] connect_error', e.mes
 socket.on('QUEUE_JOINED', () => console.log('[partner] QUEUE_JOINED'));
 
 socket.on('MATCH_FOUND', (p) => {
-  console.log('[partner] MATCH_FOUND partner =', p?.partnerName, 'session =', p?.sessionId);
+  // `partner` was flattened to `{ displayName, vibeTags }` in Phase D; the old
+  // `p.partnerName` here logged `undefined` and read like a server bug.
+  console.log('[partner] MATCH_FOUND partner =', p?.partner?.displayName, 'session =', p?.sessionId);
   setTimeout(() => say('hey — what are you listening to tonight?'), 800);
   setTimeout(() => say('i keep rotating between lo-fi and way too much post-rock'), 2200);
   setTimeout(() => say('anyway. hi. i am BlueStatic, before you ask.'), 3600);
