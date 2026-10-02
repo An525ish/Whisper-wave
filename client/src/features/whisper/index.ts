@@ -20,13 +20,11 @@ export type { AnonSocketRef } from './hooks/useAnonSocketLifecycle';
 export { default as VibePicker } from './components/VibePicker';
 export { default as WaitingRoom } from './components/WaitingRoom';
 export { default as AnonChatRoom } from './components/AnonChatRoom';
-export { default as Icebreakers } from './components/Icebreakers';
 export { default as ThreadSummaryCard } from './components/ThreadSummaryCard';
 export { default as WhisperConnectNotice } from './components/WhisperConnectNotice';
 export { default as ConnectionOriginStrip } from './components/ConnectionOriginStrip';
 export { whisperAuthCopy } from './utils/whisperAuthCopy';
 export { aliasFirstName } from './utils/alias';
-export { ICEBREAKERS, pickIcebreaker } from './utils/icebreakers';
 export { deriveThreadSummary, formatThreadDuration } from './utils/threadSummary';
 export {
   MAX_WHISPER_HISTORY,
@@ -62,6 +60,5 @@ export type {
   CompleteConnectionResponse,
   ConnectionOrigin,
 } from './types';
-export type { Icebreaker } from './utils/icebreakers';
 export type { ThreadSummary } from './utils/threadSummary';
 export type { WhisperHistoryEntry } from './utils/whisperHistory';

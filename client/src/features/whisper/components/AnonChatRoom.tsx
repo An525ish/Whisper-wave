@@ -6,9 +6,8 @@ import AnonMessageList from './AnonMessageList';
 import AnonComposer from './AnonComposer';
 import PartnerLeftPrompt from './PartnerLeftPrompt';
 import ThreadSummaryCard from './ThreadSummaryCard';
-import Icebreakers from './Icebreakers';
 import AnonProfileHost from './AnonProfileHost';
-import { useThreadExtras } from '../hooks/useThreadExtras';
+import { useThreadEnd } from '../hooks/useThreadEnd';
 import MutualVibeModal from './MutualVibeModal';
 import ReportSheet from './ReportSheet';
 import {
@@ -120,13 +119,7 @@ export default function AnonChatRoom({
     ended: partnerLeft,
   });
 
-  const {
-    showIcebreakers,
-    prompts,
-    onShuffle,
-    onDismissIcebreakers,
-    summary,
-  } = useThreadExtras(partnerName, matchedAt);
+  const { summary } = useThreadEnd(partnerName, matchedAt);
 
   // Local, dismissible mirrors. The underlying facts (partner liked, prompt
   // eligibility) stay in the store; these only control what is on screen. The
@@ -257,21 +250,12 @@ export default function AnonChatRoom({
             />
           )
         ) : (
-          <>
-            {showIcebreakers && (
-              <Icebreakers
-                prompts={prompts}
-                onShuffle={onShuffle}
-                onDismiss={onDismissIcebreakers}
-              />
-            )}
-            <AnonComposer
-              draft={draft}
-              overLimit={overLimit}
-              onDraftChange={onDraftChange}
-              onSend={handleSend}
-            />
-          </>
+          <AnonComposer
+            draft={draft}
+            overLimit={overLimit}
+            onDraftChange={onDraftChange}
+            onSend={handleSend}
+          />
         )}
   
         {connectToken && (

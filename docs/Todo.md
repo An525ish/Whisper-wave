@@ -225,10 +225,24 @@ match reads "vanishes in 23h 58m" and "1 min together".
 |---|---------|------|------|
 | E1 | Vibe reactions on individual messages | 1 Redis set/message | ✅ Shipped. `ANON_REACT` / `MATCH_REACTION`, 6 curated keys, server-side whitelist |
 | E2 | 24h thread expiry with visible countdown | TTL exists, invisible now | ✅ Shipped. Needs `createdAt`, now on both `MATCH_FOUND` paths |
-| E3 | Icebreaker cards | Cheap | ✅ Shipped. 14 prompts, hidden at 4+ messages so they stop competing |
+| E3 | Icebreaker cards | Cheap | ❌ **Cut on purpose.** Built, then removed — see below |
 | E4 | "How it went" end-of-thread card | Nearly free | ✅ Shipped. Replaces the partner-left prompt once there is something to say |
 | E5 | Client-side whisper history (localStorage) | **Zero server cost, zero privacy surface** | ✅ Shipped. Capped at 20, device-local, aliases + tags only — never message content |
 | E6 | Signed-in daily whisper counter | 1 INCR + 1 EXPIRE | ✅ Shipped server-side (limit 30). Abuse lever now, paywall later |
+
+**E3 icebreakers — cut.** Built (14 curated prompts, a non-repeating picker,
+dismissible card, hidden at 4+ messages) and then removed on the product call that
+people bring their own material, and a "Need a spark?" card sitting above the
+composer reads as an admission that the product thinks they need help starting a
+conversation. Deleting it is also a simplification: the card, its CSS, the picker
+util and the shuffle/seen-id state all went, and `useThreadExtras` shrank to one
+job — the end-of-thread summary and the archive — so it was renamed `useThreadEnd`
+rather than left named for a feature that no longer exists.
+
+The original justification was that starters raise the conversation-start rate and
+so feed the `VIBE_UNLOCK` gate (90 s + ≥2 messages each side + ≥5 total). That
+gate is unchanged and still governs the like button; only the nudge is gone. Worth
+watching real conversation-start rates before concluding the cost was nil.
 
 **E1 reaction rules** — one reaction per person per message; sending the same one
 again removes it; sending a different one replaces it. The store deliberately has
