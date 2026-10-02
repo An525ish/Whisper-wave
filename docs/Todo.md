@@ -233,18 +233,77 @@ scan. Refused attempts count, so "retry until under" can't escape. Guests are
 never capped.
 
 ⚠️ **Follow-ups found while building E**
-- `validateSocket.ts`'s built-in failure acks are hardcoded to the *message*
-  vocabulary and carry no `code`, so a rate-limited or malformed `ANON_REACT` reaches
-  the client as bare prose. Same class of problem as the `session_ended` one.
-  `SocketEventOptions` wants optional per-event `messages` + `code`.
-- Per-socket rate limiters are still in-process, so N instances = N× the cap. Needs
-  a Redis-backed limiter before scaling out.
+- ✅ **Fixed.** `validateSocket.ts`'s built-in failure acks were hardcoded to the
+  *message* vocabulary and carried no `code`. `SocketEventOptions` now takes
+  optional per-event `rejections` — `rateLimited` / `invalidPayload` /
+  `handlerFailed`, each `{ reason, code? }` — defaulting to the old copy so no
+  existing caller changed. `ANON_REACT` opts in and now answers with
+  `rate_limited` / `invalid_reaction` / `unknown_message` instead of "Too many
+  messages" when the caller tapped an emoji. `rate_limited` added to
+  `AnonFailureCode` on both sides.
+- ✅ **Fixed, and the original note was wrong.** See the limiter section below —
+  "N instances = N× the cap" was not true, and building to it would have been
+  building the wrong thing.
 - **Only `queue.integration.test.ts` may touch `match:queue:global`.** Test files
   share one Redis and run concurrently; the suite already broke once on this.
 - `getUserActiveSessions` is an N+1 loop, fine at 1–2 sessions, pipeline it if the
   per-account concurrency cap ever rises.
 - `hasMessage` on the reaction path `LRANGE`s and JSON-parses the whole buffer.
   Bounded at 50, not on the hot path, but O(buffer).
+
+#### The socket rate limiter — the old warning was incorrect
+
+`socket/rateLimiter.ts` carried this comment:
+
+> `// NOTE: in-process only — does not coordinate across multiple Node processes`
+> `// Replace with a Redis-backed limiter before horizontal scaling.`
+
+**That was not true.** A socket is held by exactly one Node process for its whole
+life — Socket.IO only delivers a given socket's packets to its owning instance —
+so an in-process `Map` keyed by `socket.id` already enforced the real cap on
+every connection it accepted, on any number of instances. Verified rather than
+assumed: `engine.io`'s `Server.generateId` is unconditionally
+`base64id.generateId()`, and a client-supplied `sid` only *selects* an existing
+session, never creates one with an attacker-chosen id. Ids cannot be made to
+collide across instances.
+
+What the Redis limiter actually buys is **TTL-based memory reclamation**, which is
+the real bug: an in-process entry is freed only when `disconnect` fires, so a
+`SIGKILL`, an OOM kill, or a dropped `disconnect` strands one `Map` entry per
+socket for the life of the process. `/anon` is the high-churn, trivially
+reconnectable namespace, so that is exactly where it leaked.
+
+✅ Shipped: `makeRedisSocketRateLimiter(namespace, maxEvents, windowMs)`, a
+sorted-set sliding window in **one Lua script** (three round trips would let two
+concurrent events both read a below-cap count and both be admitted). Wired to
+`msgLimiter`, `likeLimiter`, `requeueLimiter` and `reactionLimiter`. `typingLimiter`
+deliberately stays in-process — its handler already spends a `requireActiveParticipant`
+Redis read per event, so a second round trip would spend the scarce resource to
+rate-limit the cheapest traffic in the product, and a per-connection `Map` absorbs
+the runaway loop completely.
+
+⚠️ **The namespaced argument is load-bearing, not decoration.** One socket carries
+four limiters; a shared key means the 20-message allowance launders the 5-like
+allowance. There is deliberately no default bucket.
+
+⚠️ **Costs, stated plainly.** One extra `EVAL` round trip per anon message, like,
+requeue and reaction — roughly +25% on the Redis round trips of an anon send
+locally, and one more TLS round trip on visible latency against Upstash. And it
+**fails open**: if Redis is unreachable, `allow()` resolves `true` and logs. That
+matches `consumeWhisperQuota`'s existing call for the same reason — a limiter that
+fails closed lets anyone who can make Redis unhappy stop messaging entirely. The
+trade is that during a Redis outage the anon limiters are no-ops.
+
+⚠️ **Still open, and it is the one that actually matters.** Both limiters reset on
+reconnect, so a client that opens a fresh socket per event is unmetered — wide
+open today and still wide open after this change. The Redis key already supports
+fixing it (key on `anonId` rather than `socketId`); it is a one-line change to
+the same factory. It is deliberately not done because it changes what the cap
+*means*: a real user reconnecting mid-conversation would burn their budget.
+
+Incidental fix: a synchronous throw inside `before()` used to escape the
+`socket.on` callback as an uncaught exception. The body is async now, so it is
+caught and acked.
 
 **Note:** vibe-aligned matching is **already live and free** —
 `vibePairScore` (`services/match/queue.ts`) scores candidates by shared tags and

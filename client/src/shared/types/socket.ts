@@ -37,7 +37,9 @@ export type AnonFailureCode =
   /** A signed-in account already holds an anon match on another device. */
   | 'already_matched'
   /** Signed-in user has used their rolling daily allowance. */
-  | 'quota_exceeded';
+  | 'quota_exceeded'
+  /** The per-socket limiter dropped this event. Mirrors the server union. */
+  | 'rate_limited';
 
 /** Client → server ack shape for `ANON_MESSAGE`. */
 export type AnonMessageAck = {

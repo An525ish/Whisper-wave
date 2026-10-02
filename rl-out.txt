@@ -1,0 +1,12 @@
+[partner] joined as RatePal | anonId=***
+[partner] socket connected
+[partner] QUEUE_JOINED
+[partner] MATCH_FOUND partner = AsyncOwl session = 5bcb6bc2-1857-45e2-80e5-5299b2087ca9
+[partner] sent ack = {"ok":true}
+[partner] heard: rate-limit probe 1
+[partner] sent ack = {"ok":true}
+[partner] heard: rate-limit probe 2
+[partner] heard: rate-limit probe 3
+[partner] sent ack = {"ok":true}
+[partner] heard: rate-limit probe 4
+[partner] sent ack = {"ok":true}

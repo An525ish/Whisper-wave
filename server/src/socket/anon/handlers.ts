@@ -1,5 +1,5 @@
 import { onSocketEvent } from '../../middlewares/validateSocket.js';
-import { makeSocketRateLimiter } from '../rateLimiter.js';
+import { makeRedisSocketRateLimiter, makeSocketRateLimiter } from '../rateLimiter.js';
 import {
   ANON_MESSAGE,
   ANON_TYPING_START,
@@ -50,12 +50,38 @@ import { ackOf, emitError, failureCodeFor } from './shared.js';
 import type { AnonSocket } from './types.js';
 import type { Namespace } from 'socket.io';
 import type { WaitingCard } from '../../types/match.js';
-const msgLimiter = makeSocketRateLimiter(20, 10_000);
-const likeLimiter = makeSocketRateLimiter(5, 30_000);
-/** Typing events are cheap but unvalidated traffic aimed at a partner — cap them. */
+/**
+ * The abuse-relevant /anon caps live on Redis.
+ *
+ * /anon is unauthenticated and trivially scriptable, and an in-process `Map`
+ * cannot reclaim its own memory — only a `disconnect` that actually arrives frees
+ * an entry, so a crash mid-session strands one entry per socket until the process
+ * restarts. On Redis the cap belongs to the cluster and each key expires on its
+ * own. See `makeRedisSocketRateLimiter`.
+ */
+const msgLimiter = makeRedisSocketRateLimiter('anon-msg', 20, 10_000);
+const likeLimiter = makeRedisSocketRateLimiter('anon-like', 5, 30_000);
+/** Requeue spam guard — one at a time is plenty, and each attempt costs a scan. */
+const requeueLimiter = makeRedisSocketRateLimiter('anon-requeue', 3, 15_000);
+
+/**
+ * Typing stays in-process, deliberately — the one cap here that is not worth a
+ * round trip.
+ *
+ * It is the highest-frequency event in the product by an order of magnitude and
+ * the cheapest one: nothing is persisted and it fans out to a single room. Its
+ * handler already spends a `requireActiveParticipant` Redis read per event, so a
+ * Redis-backed limiter would put a SECOND round trip in front of every typing
+ * ping — spending the scarce resource to rate-limit something that costs almost
+ * nothing to absorb.
+ *
+ * 12 / 10 s is also far above anything a client produces (typing indicators fire
+ * on a 2–3 s cadence while someone composes and are debounced client-side), so
+ * this cap never touches a real person. Its job is to absorb a runaway loop, and
+ * a per-connection `Map` absorbs that completely: a socket is held by exactly one
+ * process for its whole life, so there is no cross-instance gap to close here.
+ */
 const typingLimiter = makeSocketRateLimiter(12, 10_000);
-/** Requeue spam guard — one at a time is plenty. */
-const requeueLimiter = makeSocketRateLimiter(3, 15_000);
 
 /**
  * On socket connect: resume an existing match, or (re)join the queue.
@@ -343,10 +369,13 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
 
   // ── DISCONNECT ────────────────────────────────────────────────────────────
   socket.on('disconnect', () => {
-    msgLimiter.remove(socket.id);
-    likeLimiter.remove(socket.id);
-    typingLimiter.remove(socket.id);
-    requeueLimiter.remove(socket.id);
+    // Fire and forget on purpose — `remove` is async on the Redis limiters, and
+    // these callers are disconnect handlers that cannot await anything. It never
+    // rejects, so nothing is left dangling.
+    void msgLimiter.remove(socket.id);
+    void likeLimiter.remove(socket.id);
+    void typingLimiter.remove(socket.id);
+    void requeueLimiter.remove(socket.id);
     clearReactionLimiter(socket.id);
 
     // Grace period: a dropped socket is not proof of departure.

@@ -1,5 +1,5 @@
 import { onSocketEvent } from '../../middlewares/validateSocket.js';
-import { makeSocketRateLimiter } from '../rateLimiter.js';
+import { makeRedisSocketRateLimiter } from '../rateLimiter.js';
 import { ANON_REACT, MATCH_REACTION } from '../../constants/anon-events.js';
 import { anonReactionSchema, applyAnonReaction } from '../../services/match/index.js';
 import { logger } from '../../utils/logger.js';
@@ -19,8 +19,12 @@ import type { Namespace } from 'socket.io';
 /**
  * Reactions are one tap per message, so this is well above real use — it exists
  * to stop a client writing reaction keys in a loop, not to slow a person down.
+ *
+ * Redis-backed: /anon is unauthenticated, and each reaction is a read-modify-write
+ * against a Redis SET, so the loop this stops is expensive per iteration. See
+ * `makeRedisSocketRateLimiter`.
  */
-const reactionLimiter = makeSocketRateLimiter(20, 10_000);
+const reactionLimiter = makeRedisSocketRateLimiter('anon-react', 20, 10_000);
 
 export const registerReactionHandler = (socket: AnonSocket, nsp: Namespace): void => {
   onSocketEvent(
@@ -63,9 +67,31 @@ export const registerReactionHandler = (socket: AnonSocket, nsp: Namespace): voi
     },
     {
       before: () => reactionLimiter.allow(socket.id),
+      // Without these the middleware falls back to message copy — "Too many
+      // messages" when the caller tapped an emoji — and, worse, sends no code, so
+      // the client has nothing to branch on and can only put prose on screen.
+      rejections: {
+        rateLimited: {
+          reason: 'Easy — you are reacting a bit fast.',
+          code: 'rate_limited',
+        },
+        invalidPayload: {
+          reason: 'That reaction is not one we offer.',
+          code: 'invalid_reaction',
+        },
+        handlerFailed: {
+          reason: 'That reaction did not stick.',
+          code: 'unknown_message',
+        },
+      },
       onError: (err) => logger.warn({ err, anonId: socket.anonId }, 'ANON_REACT error'),
     }
   );
 };
 
-export const clearReactionLimiter = (socketId: string): void => reactionLimiter.remove(socketId);
+export const clearReactionLimiter = (socketId: string): void => {
+  // Called from the /anon disconnect handler, which cannot await. `remove` is
+  // async on a Redis limiter, so make the fire-and-forget explicit — it never
+  // rejects, so there is no dangling promise.
+  void reactionLimiter.remove(socketId);
+};

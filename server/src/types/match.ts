@@ -210,7 +210,9 @@ export type AnonFailureCode =
   /** The account is already in another anonymous match (another device/tab). */
   | 'already_matched'
   /** The signed-in account's rolling daily whisper cap is reached. */
-  | 'quota_exceeded';
+  | 'quota_exceeded'
+  /** The per-socket limiter dropped this event. Distinct from every other failure. */
+  | 'rate_limited';
 
 /**
  * Ack for `ANON_MESSAGE`.
