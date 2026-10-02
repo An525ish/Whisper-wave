@@ -199,11 +199,11 @@ bottom-sheet path: sheet renders with the `isSheet` treatment (no
 composer starting at 877px, so it covers neither. The column cap is inert on
 mobile — the pane there is ~390px.
 
-⚠️ **Found while testing, not fixed:** the panel's elapsed timer reads "Just met"
-after a reconnect even for a thread that has been going an hour. `MATCH_FOUND`
-carries no `createdAt`, so a resumed session resets `matchedAt` to now. Blocks
-E2 (thread expiry) and E4 ("how it went"), which both need the real start time —
-either add `createdAt` to the `MATCH_FOUND` payload or read it from the session.
+✅ **Fixed as part of E2:** `MATCH_FOUND` now carries `createdAt` (the session's
+real start) on **both** the new-match and resume paths, and `setMatch` uses it
+instead of `Date.now()`. A resumed thread keeps the clock it already had — this
+was what blocked both E2's countdown and E4's duration. Verified live: a fresh
+match reads "vanishes in 23h 58m" and "1 min together".
 
 ### E — Differentiators (free, in value order)
 
