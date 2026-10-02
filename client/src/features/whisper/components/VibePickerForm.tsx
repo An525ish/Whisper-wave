@@ -1,5 +1,6 @@
 import { useForm, useController, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useAuthStore } from '@/features/auth';
 import { MAX_DISPLAY_NAME_LENGTH } from '../constants';
 import { TagPicker, GenderPicker } from './VibePickerFields';
 import {
@@ -22,6 +23,7 @@ type Props = {
  * → consent → go.
  */
 export default function VibePickerForm({ onJoin, loading, error }: Props) {
+  const signedIn = useAuthStore((s) => s.user !== null);
   const {
     control,
     register,
@@ -186,7 +188,13 @@ export default function VibePickerForm({ onJoin, loading, error }: Props) {
         </button>
 
         <p className="text-center text-[11px] leading-relaxed text-body-700">
-          No account · chats vanish when you leave · completely anonymous
+          {/* Must not claim "No account" to someone who is signed in — the whisper
+              layer carries their account for blocking, quota and cross-device
+              state. The anonymity promise still holds, because the alias is what
+              the partner sees, but "no account" would now be a lie. */}
+          {signedIn
+            ? 'Signed in · your alias stays anonymous to them · chats vanish when you leave'
+            : 'No account · chats vanish when you leave · completely anonymous'}
         </p>
       </div>
     </form>

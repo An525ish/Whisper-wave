@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAuthStore } from '@/features/auth';
 import { useAnonStore } from '../stores/anonStore';
 import {
   clearStoredIdentity,
@@ -24,23 +25,29 @@ const SAVED_HINT_MS = 1600;
  *   the alias you matched with; silently swapping it would make the header, the
  *   "you" avatar and their view disagree. Edits apply from the *next* match, and
  *   the panel says so.
+ *
+ * A third, less obvious one: it does **not** derive the alias from the signed-in
+ * account. The alias is what the other party sees, so defaulting it to someone's
+ * real name would de-anonymise them to a stranger. The account only scopes where
+ * the alias is remembered.
  */
 export function useAnonIdentity() {
   const displayName = useAnonStore((s) => s.displayName);
   const vibeTags = useAnonStore((s) => s.vibeTags);
   const gender = useAnonStore((s) => s.gender);
+  const accountId = useAuthStore((s) => s.user?._id);
 
-  const [remember, setRemember] = useState<boolean>(() => readStoredIdentity() !== null);
+  const [remember, setRemember] = useState<boolean>(() => readStoredIdentity(accountId) !== null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   // First visit of a returning guest: restore before they submit the picker.
   useEffect(() => {
-    const stored = readStoredIdentity();
+    const stored = readStoredIdentity(accountId);
     if (!stored) return;
     const state = useAnonStore.getState();
     if (state.displayName || state.status !== 'idle') return;
     state.setIdentityFields(stored.displayName, stored.vibeTags, stored.gender);
-  }, []);
+  }, [accountId]);
 
   // Clear the "Saved" confirmation on its own, without a per-field timer.
   useEffect(() => {
@@ -61,12 +68,12 @@ export function useAnonIdentity() {
       };
       state.setIdentityFields(identity.displayName, identity.vibeTags, identity.gender);
 
-      if (persist) writeStoredIdentity(identity);
-      else clearStoredIdentity();
+      if (persist) writeStoredIdentity(identity, accountId);
+      else clearStoredIdentity(accountId);
       setRemember(persist);
       flashSaved();
     },
-    [flashSaved]
+    [accountId, flashSaved]
   );
 
   return {
@@ -76,6 +83,8 @@ export function useAnonIdentity() {
     gender: (gender === 'prefer_not_to_say' ? null : gender) as Gender | null,
     remember,
     justSaved: savedAt !== null,
+    /** The signed-in account scoping this alias, if any. Null for a guest. */
+    accountId: accountId ?? null,
     setAlias: (value: string) => apply({ displayName: value }, remember),
     setTags: (value: VibeTag[]) => apply({ vibeTags: value }, remember),
     setGender: (value: Gender | null) =>
@@ -84,13 +93,16 @@ export function useAnonIdentity() {
       setRemember(value);
       const state = useAnonStore.getState();
       if (value) {
-        writeStoredIdentity({
-          displayName: state.displayName,
-          vibeTags: state.vibeTags,
-          gender: state.gender,
-        });
+        writeStoredIdentity(
+          {
+            displayName: state.displayName,
+            vibeTags: state.vibeTags,
+            gender: state.gender,
+          },
+          accountId
+        );
       } else {
-        clearStoredIdentity();
+        clearStoredIdentity(accountId);
       }
     },
   };

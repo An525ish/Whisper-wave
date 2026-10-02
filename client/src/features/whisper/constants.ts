@@ -33,3 +33,17 @@ export const ACK_TIMEOUT_MS = 8000;
 
 /** sessionStorage key holding a pending connectToken across the auth redirect. */
 export const WHISPER_CONNECT_TOKEN_KEY = 'whisper:connectToken';
+
+/**
+ * Rolling daily whisper allowance for a signed-in account.
+ *
+ * Keep in sync with `DAILY_WHISPER_LIMIT` in `server/src/services/match/quota.ts`.
+ *
+ * The server is the only thing that enforces this — the client copy exists so the
+ * picker can set an honest expectation rather than let someone discover the limit
+ * by being refused. It is deliberately generous (the server test asserts
+ * `>= 20`, calling anything tighter "too tight to be invisible to a real user"),
+ * because guests are never capped and capping the top of the funnel would be the
+ * wrong lever.
+ */
+export const DAILY_WHISPER_LIMIT = 30;
