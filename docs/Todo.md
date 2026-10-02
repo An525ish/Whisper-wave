@@ -77,17 +77,31 @@ Redis with **no** disconnect emitted, via `server/scripts/dev-desync.mjs`): the
 client showed a live chat, the next send flipped it to the partner-left prompt,
 and the 4 s auto-requeue returned it to the queue. **The user is never stranded.**
 
-#### Still open: why the disconnect was missed
+#### The missed disconnect: narrowed, and half of it closed
 
-The reconciliation makes the missed event *survivable*, but the underlying cause
-is still unidentified. Worth one instrumented two-client run to find out, because
-if `notifyMatchEnded` is silently failing then the *normal* partner-left path is
-also broken and only the fallback is carrying it.
+The reconciliation makes a missed event *survivable*, but the question underneath
+was whether the **normal** partner-left path was also broken with only the
+fallback carrying it. That part is now answered.
 
-| Step | Notes |
-|------|-------|
-| Instrument `notifyMatchEnded` | Log the target room and the number of sockets `fetchSockets()` finds in it |
-| Check the join race | `emitMatchFound` sets `socket.sessionId` **after** emitting `MATCH_FOUND`; if a skip arrives in between, `ANON_NEXT` reads `session.sessionId` as `undefined` and never notifies |
+✅ **`notifyMatchEnded` is not silently failing.** Verified live: a partner joined,
+matched and skipped; the browser transited to partner-left in 4 s and E4's summary
+card rendered. That run sent **no** messages, so no `session_ended` ack could have
+rescued it — `MATCH_DISCONNECTED` was the only thing that could have moved it. The
+normal path works.
+
+✅ **The leading candidate cause is fixed.** The join race documented below was
+real: `emitMatchFound` emitted `MATCH_FOUND` and *then* attached
+`socket.sessionId`, so a skip arriving in that window read `undefined`, skipped the
+teardown entirely, and left the partner in a chat that no longer existed. The ids
+are now attached before the emit, `ANON_NEXT` additionally falls back to the durable
+Redis pointer, and a regression test asserts the interleaving (verified failing
+against the old ordering).
+
+⚠️ **Not proven: that this race caused the original observation.** There is no
+surviving failing reproduction, so the fix is confirmed correct and the symptom is
+confirmed gone, but causation is inferred from the symptom matching. If the miss is
+ever seen again, instrument `notifyMatchEnded` — log the target room and how many
+sockets `fetchSockets()` finds in it — before assuming this again.
 
 ### C — Signed-in users can whisper
 
