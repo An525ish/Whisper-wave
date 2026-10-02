@@ -1,4 +1,4 @@
-import { useEffect, useState, Children, type ReactNode } from 'react';
+import { useState, Children, type ReactNode } from 'react';
 import Tabs, { type TabItem, type TabVariant } from '@/shared/components/ui/swipeable-tabs/Tab';
 
 type TabViewProps = {
@@ -17,10 +17,15 @@ const TabView = ({
   ariaLabel,
 }: TabViewProps) => {
   const [activeTabIndex, setActiveTabIndex] = useState(initialTabIndex);
+  const [syncedInitialIndex, setSyncedInitialIndex] = useState(initialTabIndex);
 
-  useEffect(() => {
+  // Re-sync when the caller changes `initialTabIndex`, adjusted during render
+  // (React's documented "adjust state when a prop changes" pattern) rather than
+  // in an effect, which would paint one frame of the stale tab first.
+  if (initialTabIndex !== syncedInitialIndex) {
+    setSyncedInitialIndex(initialTabIndex);
     setActiveTabIndex(initialTabIndex);
-  }, [initialTabIndex]);
+  }
 
   const handleTabChange = (index: number) => {
     setActiveTabIndex(index);
