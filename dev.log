@@ -73,3 +73,92 @@ React will try to recreate this component tree from scratch using the error boun
 [2m12:00:04 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/features/whisper/components/VibePickerForm.tsx[22m
 [2m12:00:18 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/features/whisper/components/signedInNote.css[22m
 [2m12:05:24 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m12:21:22 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mpublic/__narrow.html[22m
+[2m12:23:44 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/features/whisper/components/AnonProfilePanel.tsx[22m
+[2m12:23:44 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mReferenceError: signedIn is not defined
+    at AnonProfilePanel (http://localhost:5173/src/features/whisper/components/AnonProfilePanel.tsx?t=1790924024192:138:6)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:12864:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:4211:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:5567:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:6138:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:850:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8427:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8323:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8307:6)
+    at performWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:7992:27)
+
+The above error occurred in the <AnonProfilePanel> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary.
+
+[2m12:23:44 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mReact Router caught the following error during render ReferenceError: signedIn is not defined
+    at AnonProfilePanel (http://localhost:5173/src/features/whisper/components/AnonProfilePanel.tsx?t=1790924024192:138:6)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:12864:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:4211:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:5567:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:6138:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:850:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8427:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8323:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8307:6)
+    at performWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:7992:27)
+[2m12:23:44 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mReferenceError: signedIn is not defined
+    at AnonProfilePanel (http://localhost:5173/src/features/whisper/components/AnonProfilePanel.tsx?t=1790924024192:138:6)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:12864:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:4211:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:5567:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:6138:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:850:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8427:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8323:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8307:6)
+    at performWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:7992:27)
+
+The above error occurred in the <AnonProfilePanel> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary.
+
+[2m12:23:44 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mReact Router caught the following error during render ReferenceError: signedIn is not defined
+    at AnonProfilePanel (http://localhost:5173/src/features/whisper/components/AnonProfilePanel.tsx?t=1790924024192:138:6)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:12864:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:4211:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:5567:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:6138:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:850:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8427:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8323:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8307:6)
+    at performWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:7992:27)
+[2m12:24:03 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/features/whisper/components/AnonProfilePanel.tsx[22m
+[2m12:24:03 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mReferenceError: signedIn is not defined
+    at AnonProfilePanel (http://localhost:5173/src/features/whisper/components/AnonProfilePanel.tsx?t=1790924043206:138:6)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:12864:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:4211:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:5567:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:6138:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:850:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8427:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8323:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8307:6)
+    at performWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:7992:27)
+
+The above error occurred in the <AnonProfilePanel> component.
+
+React will try to recreate this component tree from scratch using the error boundary you provided, RenderErrorBoundary.
+
+[2m12:24:03 pm[22m [31m[1m[vite][22m[39m [31m[2m(client)[22m[39m [2m[console.error] [22mReact Router caught the following error during render ReferenceError: signedIn is not defined
+    at AnonProfilePanel (http://localhost:5173/src/features/whisper/components/AnonProfilePanel.tsx?t=1790924043206:138:6)
+    at Object.react_stack_bottom_frame (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:12864:12)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:4211:19)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:5567:16)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:6138:20)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:850:66)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8427:92)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8323:37)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:8307:6)
+    at performWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=eb71285d:7992:27)
+[2m12:24:31 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/features/whisper/components/AnonProfilePanel.tsx[22m
+[2m12:26:17 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mpublic/__narrow.html[22m
+[2m12:26:22 pm[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mNo `HydrateFallback` element provided to render during initial hydration
+[2m12:29:25 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mpublic/__narrow.html[22m
+[2m12:29:31 pm[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [2m[console.warn] [22mNo `HydrateFallback` element provided to render during initial hydration

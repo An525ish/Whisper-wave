@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '@/features/auth';
 import { TagPicker, GenderPicker } from './VibePickerFields';
 import { MAX_DISPLAY_NAME_LENGTH } from '../constants';
 import { avatarGradient } from '../utils/vibeTag';
@@ -48,6 +49,7 @@ export default function AnonProfilePanel({
   onRememberChange,
 }: Props) {
   const initial = displayName.trim().charAt(0).toUpperCase() || '?';
+  const signedIn = useAuthStore((s) => s.user !== null);
 
   return (
     <div className={variant === 'sheet' ? 'acp acp--sheet' : 'acp'}>
@@ -102,17 +104,23 @@ export default function AnonProfilePanel({
             Deliberately above the thread summary. It is the panel's whole job —
             a guest with a good match currently has no reason to make an account
             until the mutual-like, which is the moment most of them drop off —
-            and below the fold in a narrow rail it is never seen. */}
-        <div className="acp__cta">
-          <p className="acp__cta-title">Want to keep them?</p>
-          <p className="acp__cta-body">
-            Chats here vanish when you leave. An account keeps the connection and
-            lets you message them for real.
-          </p>
-          <Link to="/auth" className="acp__cta-btn">
-            Create an account
-          </Link>
-        </div>
+            and below the fold in a narrow rail it is never seen.
+
+            Suppressed once signed in. There is no version of "Create an account"
+            that is true for someone who already has one, and a signed-in user is
+            now carrying this thread through their account anyway. */}
+        {!signedIn && (
+          <div className="acp__cta">
+            <p className="acp__cta-title">Want to keep them?</p>
+            <p className="acp__cta-body">
+              Chats here vanish when you leave. An account keeps the connection and
+              lets you message them for real.
+            </p>
+            <Link to="/auth" className="acp__cta-btn">
+              Create an account
+            </Link>
+          </div>
+        )}
 
         {/* ── This thread ───────────────────────────────────────────── */}
         {stats && (
