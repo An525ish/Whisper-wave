@@ -1,6 +1,7 @@
 import { getRedis } from '../../config/redis.js';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
+import type { WhisperQuota } from '../../types/match.js';
 import { REDIS_KEYS, TTL } from './keys.js';
 
 /**
@@ -40,12 +41,6 @@ import { REDIS_KEYS, TTL } from './keys.js';
  */
 export const DAILY_WHISPER_LIMIT = 30;
 
-export type WhisperQuota = {
-  /** Attempts recorded in the current window, including this one. */
-  used: number;
-  limit: number;
-};
-
 /**
  * Record one attempt and open the window on the first one — in one round-trip.
  *
@@ -63,39 +58,120 @@ const CONSUME_SCRIPT = `
   return n
 `;
 
+/**
+ * The same, but only for a FRESH join: if the anonId already holds a
+ * `joinCounted` marker (a refresh, a flaky-network reconnect, a second tab inside
+ * the window) it is the same whisper and nothing is counted (`-1`).
+ *
+ * The marker is only set while the account is still UNDER the cap. A refused
+ * attempt must keep counting, otherwise "retry until under" is the cheapest way
+ * around the cap.
+ */
+const FRESH_JOIN_SCRIPT = `
+  if redis.call('EXISTS', KEYS[2]) == 1 then
+    return -1
+  end
+  local n = redis.call('INCR', KEYS[1])
+  if n == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+  end
+  if n <= tonumber(ARGV[2]) then
+    redis.call('SET', KEYS[2], '1', 'EX', ARGV[3])
+  end
+  return n
+`;
+
 /** Read the current count without recording an attempt. */
 export const peekWhisperQuota = async (userId: string): Promise<WhisperQuota> => {
   const used = await getRedis().get(REDIS_KEYS.userWhispers(userId));
-  return { used: Number(used ?? 0), limit: DAILY_WHISPER_LIMIT };
+  return { used: Number(used ?? 0), limit: DAILY_WHISPER_LIMIT, counted: false };
+};
+
+/** Forget the "this join was already counted" marker — a new picker submit is a new whisper. */
+export const clearJoinCounted = async (anonId: string): Promise<void> => {
+  await getRedis().del(REDIS_KEYS.joinCounted(anonId));
+};
+
+/** Never-throwing adapter: the socket layer emits the returned `AppError`, it holds no rule. */
+const asResult = async (
+  run: () => Promise<WhisperQuota>
+): Promise<WhisperQuota | AppError> => {
+  try {
+    return await run();
+  } catch (err) {
+    // `consumeWhisperQuota` already converts its own failures to `AppError`, so
+    // this only guards a future change — but a raw Redis error escaping here
+    // would disconnect the socket instead of telling the user why.
+    return err instanceof AppError
+      ? err
+      : new AppError(503, 'Could not check your whisper limit — try again in a moment');
+  }
 };
 
 /**
- * Enforce the cap for a socket that is about to enter the queue.
+ * Enforce the cap for a socket that is about to enter the queue from a connect.
  *
- * A separate entry point from `consumeWhisperQuota` because this is where the
- * account is actually known: the /anon connect handler is the first place in the
- * request lifecycle that can read the `accessToken` cookie, and it is the point
- * the user is genuinely entering Whisper. Guests are not counted and never
- * refused.
+ * Counts only FRESH joins: a refresh while queued, a reconnect after a network
+ * blip and a second tab are the same whisper and are not counted (see
+ * `FRESH_JOIN_SCRIPT`). Resumed matches never get here at all. Guests are not
+ * counted and never refused.
  *
  * Returns the quota when the user may proceed, or the `AppError` to surface
  * instead of queueing them — the caller emits it, so the socket layer holds no
  * business rule.
  */
 export const checkWhisperQuota = async (
+  userId: string | undefined,
+  anonId: string
+): Promise<WhisperQuota | AppError> => {
+  if (!userId) return { used: 0, limit: DAILY_WHISPER_LIMIT, counted: false };
+  return asResult(() => consumeFreshJoin(userId, anonId));
+};
+
+/**
+ * Enforce the cap for an explicit skip (`ANON_NEXT`). A skip IS a new whisper, so
+ * it always counts — it is never deduplicated against the join marker.
+ */
+export const checkSkipQuota = async (
   userId: string | undefined
 ): Promise<WhisperQuota | AppError> => {
-  if (!userId) return { used: 0, limit: DAILY_WHISPER_LIMIT };
+  if (!userId) return { used: 0, limit: DAILY_WHISPER_LIMIT, counted: false };
+  return asResult(() => consumeWhisperQuota(userId));
+};
+
+const consumeFreshJoin = async (userId: string, anonId: string): Promise<WhisperQuota> => {
+  let used: number;
   try {
-    return await consumeWhisperQuota(userId);
+    used = Number(
+      await getRedis().eval(
+        FRESH_JOIN_SCRIPT,
+        2,
+        REDIS_KEYS.userWhispers(userId),
+        REDIS_KEYS.joinCounted(anonId),
+        String(TTL.whisperWindow),
+        String(DAILY_WHISPER_LIMIT),
+        String(TTL.joinCounted)
+      )
+    );
   } catch (err) {
-    // Defensive: `consumeWhisperQuota` already converts its own failures to
-    // `AppError`, so this only guards a future change — but a raw Redis error
-    // escaping here would disconnect the socket instead of telling the user why.
-    return err instanceof AppError
-      ? err
-      : new AppError(503, 'Could not check your whisper limit — try again in a moment');
+    logger.error({ err, userId }, 'Failed to record whisper quota attempt');
+    throw new AppError(503, 'Could not check your whisper limit — try again in a moment');
   }
+  if (!Number.isFinite(used)) {
+    throw new AppError(503, 'Could not check your whisper limit — try again in a moment');
+  }
+  if (used === -1) return { used: 0, limit: DAILY_WHISPER_LIMIT, counted: false };
+  return enforceLimit(used);
+};
+
+const enforceLimit = (used: number): WhisperQuota => {
+  if (used > DAILY_WHISPER_LIMIT) {
+    throw new AppError(
+      429,
+      `You have used all ${DAILY_WHISPER_LIMIT} whispers for today. Come back in a few hours.`
+    );
+  }
+  return { used, limit: DAILY_WHISPER_LIMIT, counted: true };
 };
 
 /**
@@ -132,12 +208,5 @@ export const consumeWhisperQuota = async (userId: string): Promise<WhisperQuota>
     throw new AppError(503, 'Could not check your whisper limit — try again in a moment');
   }
 
-  if (used > DAILY_WHISPER_LIMIT) {
-    throw new AppError(
-      429,
-      `You have used all ${DAILY_WHISPER_LIMIT} whispers for today. Come back in a few hours.`
-    );
-  }
-
-  return { used, limit: DAILY_WHISPER_LIMIT };
+  return enforceLimit(used);
 };

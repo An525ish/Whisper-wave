@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  ANON_REACTIONS,
-  ANON_REACTION_LABELS,
-  type AnonReaction,
-} from '@/shared/constants/anonEvents';
+import { ANON_REACTIONS, ANON_REACTION_LABELS } from '../constants';
+import type { AnonReaction } from '../types';
 import './messageReactions.css';
 
 type Props = {

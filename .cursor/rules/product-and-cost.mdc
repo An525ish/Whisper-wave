@@ -13,7 +13,7 @@ Canonical docs (read when changing product/backend direction):
 
 ## Cost
 
-Stay **$0** until real users or Spark Pass revenue: no Redis/Stripe/Sentry/paid moderation in Phase 1. Redis free tier only when Phase 2 matching starts.
+Stay **$0** until real users or Spark Pass revenue: no Stripe/Sentry/paid moderation. Phase 2 has started, so Redis is now part of the stack — free tier only (Upstash / Redis Cloud), no paid Redis until real users need it.
 
 Approved at $0 (self-hosted or free tier, no vendor contract):
 
@@ -25,7 +25,7 @@ Approved at $0 (self-hosted or free tier, no vendor contract):
 
 ## Stack baseline
 
-**Server:** Node 20+, Express 5, Mongoose 9, Socket.IO 4.8+, Zod 4, TypeScript 7.
+**Server:** Node 22+, Express 5, Mongoose 9, Socket.IO 4.8+, Zod 4, TypeScript 7.
 
 **Client:** React 19, Vite 8, React Router 7, Tailwind 4, TanStack Query 5, Zustand 5, Zod 4, TypeScript 7. Phase 2 must follow the same majors — no parallel older stack.
 

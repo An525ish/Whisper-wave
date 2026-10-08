@@ -1,7 +1,7 @@
 # Whisper Wave — Product Document
 
 > Living document. Update this whenever product direction changes.
-> Last updated: Aug 2026
+> Last updated: Oct 2026
 >
 > Tech + cost: [`TECH.md`](./TECH.md) — what we build with, why, and how we stay at $0.
 > Backend user journey: [`USER_JOURNEY.md`](./USER_JOURNEY.md) — what the user does and what the server does at every step.
@@ -169,12 +169,12 @@ Media is stored on **Cloudflare R2** (S3-compatible object storage) and delivere
 ## Technical Architecture
 
 Full stack, cost, and “why this tool” live in [`TECH.md`](./TECH.md).
-**Constraint: $0 until we have users.** Mongo stays. Redis is Phase 2 + free tier only. No paid APIs in Phase 1.
+**Constraint: $0 until we have users.** Mongo stays. Redis is Phase 2 (now shipped) + free tier only. No paid APIs in Phase 1.
 
 ### Two Layers
 
 ```
-Layer 1: Anonymous Layer (new — Phase 2 build)
+Layer 1: Anonymous Layer (Phase 2 — shipped, pending e2e verification)
   - No account required
   - Redis-backed matching queues
   - Ephemeral Socket.IO rooms (/anon namespace)
@@ -192,7 +192,7 @@ Layer 2: Connected Layer (existing Whisper Wave — Phase 1 refactor)
 ```
 [Ghost]
    │
-   ├── POST /api/match/join (no auth, gets anonId cookie)
+   ├── POST /api/match/join (no auth, gets anonId cookie; saves identity card)
    │
 [Wanderer — in Redis queue]
    │
@@ -206,9 +206,9 @@ Layer 2: Connected Layer (existing Whisper Wave — Phase 1 refactor)
    │
 [Spark — connect CTA shown]
    │
-   ├── ANON_CONNECT → server issues connectToken (JWT, 10 min TTL)
+   ├── MUTUAL_LIKE carries a connectToken (JWT, 10 min TTL, no anonIds)
    │
-   ├── POST /api/auth/signup (with connectToken in body)
+   ├── Sign up / sign in, then POST /api/connection/complete (with the token)
    │
 [Connected — account created]
    │
@@ -247,56 +247,12 @@ Layer 2: Connected Layer (existing Whisper Wave — Phase 1 refactor)
 }
 ```
 
-### Redis Key Structure (Phase 2)
+### Redis keys, API and socket events
 
-```
-match:queue:global          → Redis List (FIFO queue, no preference)
-match:queue:pref:male       → Redis List (wants male partner — premium only)
-match:queue:pref:female     → Redis List (wants female partner — premium only)
-match:session:{roomId}      → Redis Hash (session data)
-match:likes:{roomId}        → Redis Set (anonIds of who liked)
-presence:{userId}           → Redis Hash (socketId, lastSeen)
-```
-
-### New API Endpoints (Phase 2)
-
-```
-POST   /api/match/join          join queue (anonymous)
-DELETE /api/match/leave         leave queue
-POST   /api/match/like          like current match
-POST   /api/match/next          skip to next match
-POST   /api/match/connect       initiate connection (get connectToken)
-
-POST   /api/connection/complete complete connection after signup
-GET    /api/connection/:id      get connection details
-
-GET    /api/subscription/plans  available plans
-POST   /api/subscription/create create Stripe subscription
-POST   /api/subscription/webhook Stripe webhook handler
-DELETE /api/subscription/cancel cancel subscription
-```
-
-### New Socket Events (Phase 2)
-
-```
-// Client → Server (/anon namespace)
-ANON_JOIN_QUEUE      { displayName, vibeTags?, genderPref? }
-ANON_MESSAGE         { content, sessionId }
-ANON_TYPING_START    { sessionId }
-ANON_TYPING_STOP     { sessionId }
-ANON_LIKE            { sessionId }
-ANON_NEXT            { sessionId }
-
-// Server → Client
-MATCH_FOUND          { sessionId, partnerName, partnerVibeTags }
-MATCH_MESSAGE        { content, sentAt }
-MATCH_TYPING_START   {}
-MATCH_TYPING_STOP    {}
-MATCH_LIKED          {}  (only sent when MUTUAL — not when one-sided)
-MUTUAL_LIKE          { sessionId, connectToken }
-MATCH_DISCONNECTED   {}
-QUEUE_JOINED         {}
-```
+Implementation detail (Redis key schema, `/anon` events, HTTP endpoints, reveal
+flow) lives in [`TECH.md`](./TECH.md) and [`PHASE2.md`](./PHASE2.md) so it
+doesn't drift from the code. Product intent above is unchanged. Still planned
+and not built: `/api/subscription/*` (Stripe, Phase 3).
 
 ---
 
@@ -316,10 +272,10 @@ Server refactored to production-grade TypeScript (services, repos, Zod, Helmet, 
 - Find in Chat — media tab with image/video/audio thumbnails
 - Image loading shimmer (avatars)
 
-**Redis is not added.** Presence stays an in-memory `Map`. Atlas M0 + Cloudflare R2 + ImageKit (all free tiers).
+**Redis was not added in Phase 1.** Presence stayed an in-memory `Map` (Redis arrived in Phase 2). Atlas M0 + Cloudflare R2 + ImageKit (all free tiers).
 See: [`TECH.md`](./TECH.md) for decision log.
 
-### Phase 2 — Anonymous Layer — 🔜 NEXT — still $0 if possible
+### Phase 2 — Anonymous Layer — ✅ SHIPPED (pending end-to-end verification against live Redis + Mongo) — $0
 - Redis on **Upstash / Redis Cloud free tier** (queues + ephemeral rooms)
 - `/anon` Socket.IO namespace
 - AnonSession service (Redis only — not Mongo)
@@ -334,7 +290,7 @@ See: [`TECH.md`](./TECH.md) for decision log.
 - Gender/vibe preference queue routing
 
 ### Phase 4 — Scale + Polish — pay only if load requires it
-- BullMQ workers (FFmpeg, Cloudinary off main thread)
+- BullMQ workers (FFmpeg, media off main thread)
 - Caching layer (Redis for chat lists, user profiles)
 - Analytics (PostHog has a free tier — prefer that over paid)
 - Push notifications (FCM — free)

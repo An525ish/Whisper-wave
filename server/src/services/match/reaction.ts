@@ -1,13 +1,14 @@
 import { getRedis } from '../../config/redis.js';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
-import { ANON_REACTIONS } from '../../types/match.js';
+import { ANON_REACTIONS } from '../../constants/anon-reactions.js';
 import type {
   AnonMessageReactions,
+  AnonMessageReactionsBySide,
   AnonReaction,
   AnonReactionAction,
   AnonSessionReactions,
-  BufferedAnonMessage,
+  StoredAnonMessage,
 } from '../../types/match.js';
 import { REDIS_KEYS, TTL } from './keys.js';
 import { requireActiveParticipant } from './pairing.js';
@@ -30,8 +31,17 @@ import { getPartner } from './session.js';
  * testable without a socket.
  */
 
-/** Redis member = `<anonId>:<reaction>`, so one SREM both replaces and drops. */
-const member = (anonId: string, reaction: AnonReaction): string => `${anonId}:${reaction}`;
+/**
+ * Redis member = `<anonId>:<reaction>`, so one SREM both replaces and drops.
+ *
+ * The encoding is only unambiguous because an anonId can never contain `:` — every
+ * anonId is a UUID, validated at the HTTP and socket boundaries. The check below
+ * makes a violation loud instead of silently mis-attributing a reaction.
+ */
+const member = (anonId: string, reaction: AnonReaction): string => {
+  if (anonId.includes(':')) throw new AppError(400, 'Invalid anonymous identity');
+  return `${anonId}:${reaction}`;
+};
 
 /**
  * Group raw `anonId:reaction` members by who left them.
@@ -61,13 +71,19 @@ export const getMessageReactions = async (
   return groupMembers(members);
 };
 
-/** Reactions on every buffered message, for replaying a thread on reconnect. */
+/**
+ * Reactions on every buffered message, for replaying a thread on reconnect.
+ *
+ * Keyed `me` / `them` relative to `viewerAnonId` — an anonId never reaches the
+ * client.
+ */
 export const getSessionReactions = async (
   sessionId: string,
-  messages: BufferedAnonMessage[]
+  messages: StoredAnonMessage[],
+  viewerAnonId: string
 ): Promise<AnonSessionReactions> => {
   const byMessage: AnonSessionReactions = {};
-  const withIds = messages.filter((m): m is BufferedAnonMessage & { id: string } => Boolean(m.id));
+  const withIds = messages.filter((m): m is StoredAnonMessage & { id: string } => Boolean(m.id));
   if (withIds.length === 0) return byMessage;
 
   // One round-trip for the whole thread, not one per message.
@@ -81,7 +97,11 @@ export const getSessionReactions = async (
     const entry = results?.[index];
     if (!entry || entry[0]) continue; // a failed read omits, it does not invent
     const grouped = groupMembers((entry[1] as string[]) ?? []);
-    if (Object.keys(grouped).length > 0) byMessage[message.id] = grouped;
+    const bySide: AnonMessageReactionsBySide = {};
+    for (const [anonId, reactions] of Object.entries(grouped)) {
+      bySide[anonId === viewerAnonId ? 'me' : 'them'] = reactions;
+    }
+    if (Object.keys(bySide).length > 0) byMessage[message.id] = bySide;
   }
   return byMessage;
 };
@@ -96,7 +116,7 @@ export { anonReactionSchema } from '../../validators/anon.js';
 export type ApplyReactionResult = {
   messageId: string;
   reaction: AnonReaction;
-  /** Who reacted — the client maps this to "me" or "them". */
+  /** Who reacted. SERVER-INTERNAL — the socket layer maps it to `me` / `them`. */
   anonId: string;
   /** The other participant's anonId, so the caller can broadcast to them. */
   partnerAnonId: string;
@@ -134,7 +154,8 @@ export const applyAnonReaction = async (
   // Replace-then-add in one round-trip: SREM clears this person's other
   // reactions on the message, and SADDs the new one unless it is a toggle-off.
   const pipe = getRedis().pipeline();
-  pipe.srem(key, ...existing.filter((m) => m.startsWith(`${anonId}:`)));
+  const mine = existing.filter((m) => m.startsWith(`${anonId}:`));
+  if (mine.length > 0) pipe.srem(key, ...mine);
   if (!alreadyReacted) pipe.sadd(key, wanted);
   pipe.expire(key, TTL.reactions);
   await pipe.exec();
@@ -169,11 +190,11 @@ const hasMessage = async (sessionId: string, messageId: string): Promise<boolean
 };
 
 /** Parse one buffer entry, tolerating a legacy or truncated row. */
-const parseBufferedMessage = (raw: string): BufferedAnonMessage | null => {
+const parseBufferedMessage = (raw: string): StoredAnonMessage | null => {
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object') return null;
-    return parsed as BufferedAnonMessage;
+    return parsed as StoredAnonMessage;
   } catch (err) {
     // A row we cannot parse is not a message, so the reaction is refused. Logged
     // because an unparseable buffer means something is wrong upstream.

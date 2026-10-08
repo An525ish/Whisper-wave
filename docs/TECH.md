@@ -1,7 +1,7 @@
 # Whisper Wave — Tech Plan (simple + cheap)
 
 > Living document. Update when tech decisions change.
-> Last updated: Aug 2026
+> Last updated: Oct 2026
 >
 > Product vision: [`PRODUCT.md`](./PRODUCT.md)
 > Backend user journey: [`USER_JOURNEY.md`](./USER_JOURNEY.md)
@@ -31,7 +31,7 @@ We only spend money later if:
 
 | Thing | Cost | Why we keep it |
 |---|---|---|
-| **Node 20+ + Express 5** | Free | Evented I/O fits chat. Express 5 is the current major (named wildcards, promise-aware middleware). |
+| **Node 22+ + Express 5** | Free | Evented I/O fits chat. Express 5 is the current major (named wildcards, promise-aware middleware). |
 | **MongoDB Atlas + Mongoose 9** | Free (M0) | Permanent data: users, chats, messages, connections. |
 | **Socket.IO 4** | Free | Real-time chat without inventing our own protocol. |
 | **Cloudflare R2** | Free tier (10GB storage, 1M Class A ops/month) | Object storage for avatars + attachments. S3-compatible API via `@aws-sdk/client-s3`. |
@@ -49,10 +49,10 @@ Phase 1 is on **latest majors** (server and client). Phase 2 must not invent an 
 - Prefer current majors: Express 5, Mongoose 9, Multer 2, Jimp 1, uuid 14, Zod 4.
 - Client: React 19, Vite 8, React Router 7, Tailwind 4, TanStack Query 5, Zustand 5, TypeScript 7.
 - Client ESLint: until `typescript-eslint` supports TS ≥7.1, keep the Microsoft side-by-side install — `typescript` → `@typescript/typescript6` (for eslint), `typescript-7` → `typescript@7` (for `tsc` / typecheck / build). No `legacy-peer-deps`.
-- **No `dotenv`** — Node 20+ `--env-file` / `--env-file-if-exists` loads `.env` (see npm scripts).
+- **No `dotenv`** — Node 22+ `--env-file` / `--env-file-if-exists` loads `.env` (see npm scripts).
 - When adding Redis / Stripe later, install the current major at that time.
 - After big upgrades: `npm run typecheck` + `npm run build` + hit `/health`.
-- Require **Node >= 20** (`engines` in `server/package.json` and `client/package.json`).
+- Require **Node >= 22** on the server (the test script relies on the test runner's glob expansion); the client keeps **>= 20** (`engines` in each `package.json`).
 
 ### Notable upgrade adaptations already in the code
 
@@ -148,7 +148,7 @@ This is the anonymous product: queue → random chat → like → connect → si
 | Stage | Where it runs | Cost |
 |---|---|---|
 | **Now (dev)** | Your laptop: `npm run server` + Vite | $0 |
-| **First share with friends** | Optional: Render / Railway / Fly **free** web service + Atlas M0 + Cloudinary free | $0, with caveats (free hosts sleep, Socket.IO can be flaky) |
+| **First share with friends** | Optional: Render / Railway / Fly **free** web service + Atlas M0 + R2/ImageKit free | $0, with caveats (free hosts sleep, Socket.IO can be flaky) |
 | **Real public launch** | Cheap VPS (Hetzner/Oracle always-free) **or** paid Render when users exist | Pay only then |
 
 We do **not** use Vercel for the API. Vercel serverless cannot hold Socket.IO connections. The chat server must be a long-running Node process.
@@ -188,7 +188,7 @@ When Spark Pass makes money, *then* add automated text/image moderation
 | Migrate frontend to Next.js | Chat is behind login / sockets. Next.js doesn’t help; Vercel doesn’t fit sockets. |
 | Drop MongoDB | We need it for accounts + connected chats. |
 | Put anonymous chats in Mongo | Breaks “they’re gone if you disconnect” + extra Atlas usage on free tier. |
-| Redis in Phase 1 | Extra moving part + another account. In-memory `Map` is enough until matching exists. |
+| Redis in Phase 1 | Extra moving part + another account. In-memory `Map` was enough until matching existed (Phase 2 has since added it). |
 | Auth0 / Firebase / Clerk | Cost at scale. JWT + cookies is enough. |
 | Datadog / Sentry / Logtail | Pino to stdout is free. |
 | Stripe before Spark Pass UI exists | No one to charge yet. Integrate when premium ships. |
@@ -207,11 +207,11 @@ Your laptop (or later one small server)     $0
         └── Node + Express + Socket.IO      $0
                 │
                 ├── MongoDB Atlas M0        $0  (accounts, chats, messages, connections)
-                ├── Cloudinary free         $0  (images/files)
+                ├── R2 + ImageKit free      $0  (images/files)
                 └── Redis free tier         $0  (Phase 2 only: queue + anon rooms)
 ```
 
-Phase 1 was only the Node box + Mongo + Cloudinary. **Phase 2 has landed**, so
+Phase 1 was only the Node box + Mongo + R2/ImageKit. **Phase 2 has landed**, so
 Redis is now part of the stack (free tier only — see Cost).
 
 ---
@@ -227,12 +227,14 @@ successful reveal writes to Mongo.
 Queues need atomic claim operations. Mongo has no native queue primitive, and a
 `findOneAndUpdate` poll races under concurrency. Anon sessions must also *die*
 when users leave — TTL is built for that. See `PHASE2.md` for the full rationale
-and the cost model (free tier ≈ 650 sessions/day).
+and the cost model (free tier ≈ 60–70 sessions/day, an estimate).
 
-Client: `ioredis` with explicit `host`/`port`/`tls.servername` so TLS SNI is set
+Server: the `ioredis` client library with explicit `host`/`port`/`tls.servername` so TLS SNI is set
 correctly for Upstash (passing a `rediss://` URL string skips SNI and fails with
 ECONNRESET). Redis is a **hard boot dependency in production**; `/health`
-returns 503 when it is unreachable.
+makes `/ready` return 503 when it is unreachable. `/health` is plain liveness
+(process is up, no dependency checks) and is what a restart-on-failure probe
+should hit; `/ready` is what a load balancer should gate traffic on.
 
 ### Redis key schema (`server/src/services/match/keys.ts`)
 
@@ -246,6 +248,17 @@ returns 503 when it is unreachable.
 | `match:active:{anonId}` | String | 24 h | anonId → current sessionId (reconnect replay). |
 | `match:presence:{anonId}` | String | **45 s** | Set when a socket drops. The match is only torn down when this lapses — a network blip must not end the conversation. |
 | `match:blocked:{anonId}` | Set | 30 d | Blocked partners. Checked both ways before pairing. |
+| `match:reactions:{sessionId}:{messageId}` | Set | 24 h | `anonId:reaction` members. Deleted when the session ends. |
+| `match:user:{userId}` | Set | 24 h | Signed-in account → sessionIds it holds (stops matching your own other device). |
+| `match:whispers:{userId}` | Counter | 24 h rolling | Signed-in users' whisper quota window. |
+| `match:alias:{anonId}` | String | 24 h | anonId → userId link, so blocks can be mirrored onto the account. |
+| `match:presence-notified:{sessionId}` | String | short | Throttle for the "partner left for real" broadcast. |
+| `match:presence-sweeps` | Sorted set | — | Grace-period deadlines (score = epoch ms); claimed with `ZREM` so any process may sweep. |
+| `match:meta:{sessionId}` | Hash | 24 h | Per-side message counters (`c1`,`c2`) for the vibe gate + token-issue counter (`tk`). Deleted when the session ends. |
+| `match:autoreport:{sessionId}:{category}` | String | 24 h | Dedupe key so a sender cannot mint unlimited auto-reports. |
+| `match:joined:{anonId}` | String | 10 min | Marks a counted fresh join so refreshes/reconnects don't burn the signed-in quota. |
+
+Transcripts (`match:messages:*`, `match:reactions:*`) are deleted when a session ends.
 
 ### `/anon` namespace events
 
@@ -254,8 +267,18 @@ via the httpOnly `anonId` cookie instead of `applySocketAuth`.
 
 | Direction | Events |
 |---|---|
-| Client → server | `ANON_MESSAGE` (acked), `ANON_TYPING_START`, `ANON_TYPING_STOP`, `ANON_LIKE`, `ANON_NEXT`, `ANON_REQUEUE` |
-| Server → client | `QUEUE_JOINED`, `MATCH_FOUND`, `MATCH_MESSAGE`, `MATCH_TYPING_START`, `MATCH_TYPING_STOP`, `SOMEONE_VIBING`, `MATCH_PARTNER_VIBED`, `MUTUAL_LIKE`, `MATCH_DISCONNECTED`, `MATCH_MESSAGE_REJECTED`, `MATCH_ERROR`, `SESSION_EXPIRED`, `CONNECTION_READY` |
+| Client → server | `ANON_MESSAGE` (acked), `ANON_TYPING_START`, `ANON_TYPING_STOP`, `ANON_LIKE`, `ANON_NEXT`, `ANON_REQUEUE`, `ANON_REACT` |
+| Server → client | `QUEUE_JOINED`, `MATCH_FOUND`, `MATCH_MESSAGE`, `MATCH_TYPING_START`, `MATCH_TYPING_STOP`, `SOMEONE_VIBING`, `MATCH_PARTNER_VIBED`, `MATCH_REACTION`, `MUTUAL_LIKE`, `MATCH_DISCONNECTED`, `MATCH_MESSAGE_REJECTED`, `MATCH_ERROR`, `SESSION_EXPIRED`, `CONNECTION_READY` |
+
+Messages carry `from: 'me' | 'them'`; the server never sends anonIds to clients.
+On the **authenticated** `/` namespace the same completion is announced as
+`WHISPER_CONNECTION_READY` (plus `REFETCH_CHATS`), so a signed-in socket can move
+the whisper UI to the new DM. Names live in `server/src/constants/anon-events.ts`
+and `socket-events.ts`; the client mirrors are in `client/src/shared/constants/`.
+
+`POST /api/match/join` saves the identity card only; the queue entry is created
+when the `/anon` socket connects, after the quota and active-session gates. The
+disconnect sweeper is armed on demand and at boot, and the queue is purged at boot.
 
 ### Reveal flow
 
@@ -264,7 +287,8 @@ with its own `ANON_JWT_SECRET` — deliberately *not* `ACCESS_TOKEN_SECRET`, so 
 compromised access token can't forge connection intent. Both sides call
 `POST /api/connection/complete`; the first writes its `userId` into
 `PendingConnection`, the second completes it (Chat + `Connection` records) and
-both receive `CONNECTION_READY`. `pairKey` is a unique index on the sorted user
+both receive `CONNECTION_READY` (anon namespace) / `WHISPER_CONNECTION_READY`
+(authenticated namespace). The token embeds no anonId. `pairKey` is a unique index on the sorted user
 pair, which is what enforces "one connection per pair".
 
 ---
@@ -323,8 +347,6 @@ client/src/
 - Admin auth: httpOnly `adminToken` cookie; `ADMIN_SECRET` never in `VITE_*`.
 
 Cursor rules live in `.cursor/rules/` (`acknowledge-rules`, `server-architecture`, `server-code-quality`, `client-architecture`, `client-code-quality`, `product-and-cost`).
-
-When we start Phase 2, add a short “Phase 2 backend” section here (Redis keys, `/anon` events) instead of inventing a new stack.
 
 ---
 

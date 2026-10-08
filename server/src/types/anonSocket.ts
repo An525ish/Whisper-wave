@@ -15,4 +15,19 @@ export type AnonSocket = Socket & {
    * missing, malformed or unknown token all yield a working anon session.
    */
   userId?: string;
+  /**
+   * The handshake carried `auth: { resume: true }`: this socket may only RESUME an
+   * existing match. It never enqueues, never touches the identity card and never
+   * counts quota.
+   */
+  resumeOnly?: boolean;
+};
+
+/**
+ * Sliding-window limiter. `key` is whatever identity the cap belongs to — an
+ * anonId for `/anon` (so a reconnect cannot reset it), a socket id elsewhere.
+ */
+export type SocketRateLimiter = {
+  allow(key: string): Promise<boolean>;
+  remove(key: string): Promise<void>;
 };

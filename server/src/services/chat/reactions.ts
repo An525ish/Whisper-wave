@@ -1,3 +1,4 @@
+import * as chatRepo from '../../repositories/chat.js';
 import * as messageReactionRepo from '../../repositories/messageReaction.js';
 import type { MessageReaction, ToggleMessageReactionInput } from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';
@@ -5,9 +6,11 @@ import { AppError } from '../../utils/AppError.js';
 /**
  * Add, switch or remove `userId`'s reaction to `messageId`.
  *
- * Invariant: one reaction per user per message. Because of that, switching
- * emoji is a two-step edit (drop from the old entry, add to the new one) and an
- * entry whose last user just left is pruned rather than left behind empty.
+ * Invariant: one reaction per user per message. Switching emoji drops the user
+ * from the old entry and adds them to the new one, and an entry whose last user
+ * just left is pruned rather than left behind empty — all in one atomic update.
+ *
+ * Throws 404 for an unknown message and 403 when `userId` is not a member of `chatId`.
  *
  * Resolves to the message's reactions so the caller can broadcast them, or
  * `null` when nothing was written and nothing should be broadcast (see the
@@ -27,37 +30,16 @@ export const toggleMessageReaction = async (
   // payload. Return without writing, and let the caller stay quiet.
   if (String(msg.chat) !== chatId) return null;
 
-  // Each user may have at most one reaction per message. Find their current one (if any).
-  const userCurrentEntry = msg.reactions?.find((r) =>
-    r.users.some((u) => String(u) === userId)
-  );
-
-  if (userCurrentEntry && userCurrentEntry.emoji === emoji) {
-    // Clicking the same emoji the user already reacted with → remove it
-    await messageReactionRepo.pullUserFromEmoji(messageId, emoji, userId);
-    if (userCurrentEntry.users.length <= 1) {
-      await messageReactionRepo.pruneEmoji(messageId, emoji);
-    }
-  } else {
-    // Clicking a different emoji (or first reaction) → remove old, add new
-
-    if (userCurrentEntry) {
-      const prevEmoji = userCurrentEntry.emoji;
-      await messageReactionRepo.pullUserFromEmoji(messageId, prevEmoji, userId);
-      // Prune the old entry if this user was the only one
-      if (userCurrentEntry.users.length <= 1) {
-        await messageReactionRepo.pruneEmoji(messageId, prevEmoji);
-      }
-    }
-
-    const targetEntry = msg.reactions?.find((r) => r.emoji === emoji);
-    if (targetEntry) {
-      await messageReactionRepo.addUserToEmoji(messageId, emoji, userId);
-    } else {
-      await messageReactionRepo.pushEmojiWithUser(messageId, emoji, userId);
-    }
+  // Only members of the chat may react. Checked against the chat itself, not
+  // just the message's chat id, so an ex-member or outsider cannot write.
+  const chat = await chatRepo.findByIdMembers(chatId);
+  if (!chat || !chat.members.some((m) => m.toString() === userId)) {
+    throw new AppError(403, 'Forbidden');
   }
 
-  const updated = await messageReactionRepo.findReactions(messageId);
+  // One atomic update (see the repo): the toggle cannot interleave with another
+  // toggle by the same user. `null` only if the message vanished since the check.
+  const updated = await messageReactionRepo.toggleUserReaction(messageId, chatId, emoji, userId);
+  if (!updated) throw new AppError(404, 'Message not found');
   return updated.map((r) => ({ emoji: r.emoji, users: r.users.map(String) }));
 };

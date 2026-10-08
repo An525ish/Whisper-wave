@@ -1,4 +1,5 @@
 import type { Types } from 'mongoose';
+import type { ANON_REACTIONS } from '../constants/anon-reactions.js';
 
 // ── Vibe ─────────────────────────────────────────────────────────────────────
 
@@ -78,35 +79,30 @@ export type CreateSessionInput = {
 
 // ── connectToken payload ──────────────────────────────────────────────────────
 
+/**
+ * What a connectToken carries. The token is handed to the client and a JWT
+ * payload is readable by whoever holds it, so it must NEVER contain an anonId
+ * (the holder's or the partner's): `side` is the holder's position in the
+ * session instead, and the server resolves the ids from the session in Redis.
+ */
 export type ConnectTokenPayload = {
   sessionId: string;
-  anonId: string; // the holder's own anonId
-  partnerAnonId: string;
+  /** Holder's seat in the session: 0 = `anon1`, 1 = `anon2`. */
+  side: 0 | 1;
   displayName: string;
   partnerName: string;
   vibeTags: VibeTag[];
   partnerTags: VibeTag[];
 };
 
-// ── Mongo document shapes ─────────────────────────────────────────────────────
-
-export type PendingConnectionSide = {
-  anonId: string;
-  userId: Types.ObjectId | null;
-  displayName: string;
-  vibeTags: VibeTag[];
+/** A verified token: the payload plus the standard claims the signer adds. */
+export type VerifiedConnectToken = ConnectTokenPayload & {
+  /** Unique per issued token — usable as a single-use key. */
+  jti?: string;
+  /** Expiry, seconds since epoch. */
+  exp?: number;
 };
 
-export type PendingConnectionStatus = 'pending' | 'processing' | 'completed' | 'expired';
-
-export type IPendingConnectionFields = {
-  sessionId: string;
-  sides: [PendingConnectionSide, PendingConnectionSide];
-  status: PendingConnectionStatus;
-  expiresAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
-};
 
 export type IConnectionFields = {
   users: [Types.ObjectId, Types.ObjectId];
@@ -162,8 +158,45 @@ export type WaitingCard = {
 
 export type MatchCandidate = { anonId: string; score: number; rank: number };
 
+/**
+ * Outcome of one match attempt.
+ *
+ * `self_claimed` means someone else paired us first (we were claimed as THEIR
+ * candidate) — the caller must do nothing: the claimer emits `MATCH_FOUND` to us.
+ */
+export type MatchAttempt =
+  | { outcome: 'matched'; partnerAnonId: string }
+  | { outcome: 'none' }
+  | { outcome: 'self_claimed' };
+
+/** What the join endpoint accepts: the identity card fields. */
+export type IdentityCardInput = {
+  displayName: string;
+  vibeTags: VibeTag[];
+  gender: Gender;
+};
+
+export type IdentityCardResult = {
+  anonId: string;
+  /** TRUE when a NEW identity was minted — the caller should set the cookie. */
+  isNewIdentity: boolean;
+};
+
+/** Rolling whisper cap state for a signed-in account. */
+export type WhisperQuota = {
+  /** Attempts recorded in the current window, including this one. */
+  used: number;
+  limit: number;
+  /** False when this call did not count as a new whisper (resume/refresh). */
+  counted: boolean;
+};
+
 export type PairResult =
-  | { paired: false }
+  | {
+      paired: false;
+      /** Someone else paired us first; they emit `MATCH_FOUND`, so say nothing. */
+      claimedByOther?: boolean;
+    }
   | {
       paired: true;
       sessionId: string;
@@ -180,18 +213,38 @@ export type PairResult =
 // ── Messaging ───────────────────────────────────────────────────────────────
 
 /**
- * A buffered anon message.
+ * A message as stored in the Redis buffer. `from` is the sender's anonId, which
+ * is server-internal: it is never sent to a client (see `BufferedAnonMessage`).
  *
  * `id` is the sender's client-generated idempotency key, carried through so a
  * reconnected client can reconcile its own history with the live thread.
  * Optional because entries written before ids existed still parse.
  */
-export type BufferedAnonMessage = {
+export type StoredAnonMessage = {
   id?: string;
   from: string;
   content: string;
   sentAt: number;
 };
+
+/** Which side of the conversation, relative to the RECIPIENT of the payload. */
+export type AnonMessageSide = 'me' | 'them';
+
+/**
+ * A message on the wire (`MATCH_MESSAGE`, `bufferedMessages` in `MATCH_FOUND`).
+ * `from` is computed per recipient — the server never sends an anonId.
+ */
+export type BufferedAnonMessage = {
+  id?: string;
+  from: AnonMessageSide;
+  content: string;
+  sentAt: number;
+};
+
+/** Result of `acceptAnonMessage`. */
+export type AcceptMessageResult =
+  | { accepted: true; message: StoredAnonMessage; partnerAnonId: string }
+  | { accepted: false; id?: string; reason: string; code?: AnonFailureCode };
 
 /**
  * Machine-readable failure class for the `/anon` namespace.
@@ -209,6 +262,8 @@ export type AnonFailureCode =
   | 'unknown_message'
   /** The account is already in another anonymous match (another device/tab). */
   | 'already_matched'
+  /** This message id was already used in this session (client retry or reuse). */
+  | 'duplicate_id'
   /** The signed-in account's rolling daily whisper cap is reached. */
   | 'quota_exceeded'
   /** The per-socket limiter dropped this event. Distinct from every other failure. */
@@ -233,6 +288,27 @@ export type AnonMessageAck = {
 
 export type SocketAck = (res: AnonMessageAck) => void;
 
+/** Why an `ANON_LIKE` did not land. The client branches on this, never on `reason`. */
+export type AnonLikeFailureCode =
+  /** The vibe gate is still closed — chat a little longer. */
+  | 'locked'
+  /** No live match for this socket (ended, expired, or not a participant). */
+  | 'no_session'
+  /** The per-anonId like limiter dropped the event. */
+  | 'rate_limited'
+  /** Anything else (invalid payload, unexpected failure). */
+  | 'error';
+
+/**
+ * Optional ack for `ANON_LIKE`. `mutual: true` means this like completed a mutual
+ * vibe (the `MUTUAL_LIKE` event with the connect token is still emitted as before).
+ */
+export type AnonLikeAck =
+  | { ok: true; mutual: boolean }
+  | { ok: false; code: AnonLikeFailureCode; reason?: string };
+
+export type LikeSocketAck = (res: AnonLikeAck) => void;
+
 /**
  * Server → client ack for `ANON_REACT`.
  *
@@ -252,23 +328,6 @@ export type ReactionSocketAck = (res: AnonReactionAck) => void;
 
 // ── Vibe reactions (E1) ─────────────────────────────────────────────────────
 
-/**
- * The curated reaction set, and the only one the server will accept.
- *
- * A fixed list on purpose: accepting arbitrary emoji from the client means any
- * glyph at all can be rendered inside someone else's bubble, which is a
- * moderation surface with no moderation. Keep it small and on-brand — this is a
- * curated Gen Z set, not an emoji keyboard.
- *
- * These are stable wire keys, not glyphs. The client owns the presentation, so a
- * new reaction is a new key here and a new glyph there.
- *
- * Mirrored by the client's `ANON_REACTIONS` in
- * `client/src/shared/constants/anonEvents.ts`; one source, referenced from the
- * other side in a comment.
- */
-export const ANON_REACTIONS = ['fire', 'slay', 'dead', 'fr', 'peak', 'lit'] as const;
-
 export type AnonReaction = (typeof ANON_REACTIONS)[number];
 
 /** What one reaction event did, broadcast to both participants. */
@@ -278,13 +337,16 @@ export type AnonReactionAction = 'added' | 'removed';
 export type AnonReactionEvent = {
   messageId: string;
   reaction: AnonReaction;
-  /** Which side reacted — the client maps this to "me" or "them". */
-  anonId: string;
+  /** Who reacted, relative to the recipient. Never an anonId. */
+  by: AnonMessageSide;
   action: AnonReactionAction;
 };
 
-/** One message's reactions, keyed by the anonId that left each one. */
+/** One message's reactions, keyed by the anonId that left each one. SERVER-INTERNAL. */
 export type AnonMessageReactions = Record<string, AnonReaction[]>;
+
+/** One message's reactions on the wire, keyed relative to the recipient. */
+export type AnonMessageReactionsBySide = Partial<Record<AnonMessageSide, AnonReaction[]>>;
 
 /**
  * Every buffered message's reactions, keyed by messageId.
@@ -293,13 +355,16 @@ export type AnonMessageReactions = Record<string, AnonReaction[]>;
  * thread from the one payload, with no per-message fetch. Messages with no
  * reactions are omitted rather than sent as an empty object.
  */
-export type AnonSessionReactions = Record<string, AnonMessageReactions>;
+export type AnonSessionReactions = Record<string, AnonMessageReactionsBySide>;
 
 // ── Likes ───────────────────────────────────────────────────────────────────
 
 export type LikeResult =
   | { type: 'one_sided' } // only one like so far
   | { type: 'mutual'; tokenA: string; tokenB: string }; // tokens for both sides
+
+/** Per-side message counters for the vibe gate (`match:meta:{sessionId}`). */
+export type SessionMessageCounts = { countA: number; countB: number };
 
 // ── Vibe eligibility ────────────────────────────────────────────────────────
 
@@ -317,7 +382,12 @@ export type ModerationReason = 'sexual' | 'solicitation' | 'violence' | 'blocked
 
 export type MessageVerdict =
   | { allowed: true }
-  | { allowed: false; reason: ModerationReason };
+  | {
+      allowed: false;
+      reason: ModerationReason;
+      /** Severe enough to auto-file a report and block the pair. */
+      severe: boolean;
+    };
 
 // ── Connection origin (the "how we met" story) ──────────────────────────────
 

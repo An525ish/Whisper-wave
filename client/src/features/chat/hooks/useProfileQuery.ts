@@ -18,11 +18,12 @@ export function useProfileQuery(enabled = true) {
     queryFn: authApi.getProfile,
     enabled,
     staleTime: 60_000,
-    // A boot that gives up on the first failure drops the user into a logged-out
-    // state on a momentary blip. Two quick retries cost little and cover the
-    // common cases (server restart, brief offline). The gate below resolves on
-    // the final error either way, so this only improves the outcome.
-    retry: 2,
+    // Retry transient failures (network blip, 5xx, server restart) but never an
+    // auth failure: the api client has already tried a refresh by the time a 401
+    // surfaces, so retrying only delays the logged-out transition.
+    retry: (failureCount, error) =>
+      !(error instanceof ApiError && (error.status === 401 || error.status === 403)) &&
+      failureCount < 2,
     retryDelay: 500,
   });
 

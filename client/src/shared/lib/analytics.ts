@@ -1,9 +1,8 @@
 /**
  * Lightweight, provider-agnostic funnel analytics.
  *
- * PHASE2.md defines the launch metrics (like rate, mutual rate, connect rate,
- * median session length, report rate, re-Whisper rate). None of them are
- * measurable without emitting these events, so Phase 2 ships them.
+ * Domain-agnostic transport only: each feature owns its event names (e.g.
+ * `WHISPER_EVENTS` in features/whisper/constants.ts) and calls `track`.
  *
  * Deliberate choices:
  *  - No PII. Events carry counts, booleans and short enum-ish labels only. We
@@ -18,45 +17,16 @@
  * Cost: self-hosted or free-tier collector only. See docs/TECH.md.
  */
 
-export const ANALYTICS = {
-  /** User submitted the vibe picker. */
-  WHISPER_JOIN: 'whisper_join',
-  /** Server confirmed a match. */
-  WHISPER_MATCHED: 'whisper_matched',
-  /** Outgoing message sent. */
-  WHISPER_MESSAGE_SENT: 'whisper_message_sent',
-  WHISPER_REACTED: 'whisper_reacted',
-  /** User tapped the like/vibe button. */
-  WHISPER_LIKE_SENT: 'whisper_like_sent',
-  /** Mutual like achieved — the top of the funnel. */
-  WHISPER_MUTUAL: 'whisper_mutual',
-  /** Both sides revealed — a real DM now exists. */
-  WHISPER_DM_OPENED: 'whisper_dm_opened',
-  /** User skipped to the next match. */
-  WHISPER_NEXT: 'whisper_next',
-  /** Partner ended the session. */
-  WHISPER_PARTNER_LEFT: 'whisper_partner_left',
-  /** Abuse report filed. */
-  WHISPER_REPORT: 'whisper_report',
-  /** Match ended — carries durationMs and messageCount. */
-  WHISPER_SESSION_END: 'whisper_session_end',
-} as const;
-
-export type AnalyticsEvent = (typeof ANALYTICS)[keyof typeof ANALYTICS];
-
 /** Values safe to send: no PII, no unbounded strings. */
-export type AnalyticsProps = Record<
-  string,
-  string | number | boolean | undefined
->;
+type AnalyticsProps = Record<string, string | number | boolean | undefined>;
 
 const endpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT;
 
-const post = (event: AnalyticsEvent, props: AnalyticsProps): void => {
+const post = (event: string, props: AnalyticsProps): void => {
   if (!endpoint) return;
   try {
     const body = JSON.stringify({ event, props, at: Date.now() });
-    // sendBeacon survives page unload, which matters for WHISPER_SESSION_END.
+    // sendBeacon survives page unload, which matters for end-of-session events.
     if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
       navigator.sendBeacon(endpoint, body);
       return;
@@ -72,5 +42,5 @@ const post = (event: AnalyticsEvent, props: AnalyticsProps): void => {
   }
 };
 
-export const track = (event: AnalyticsEvent, props: AnalyticsProps = {}): void =>
+export const track = (event: string, props: AnalyticsProps = {}): void =>
   post(event, props);

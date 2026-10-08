@@ -42,15 +42,10 @@
    Done with `margin-top: auto` on the leading child rather than
    `justify-content: flex-end` on the scroller: when the thread outgrows the pane
    the auto margin resolves to 0 and normal top-down scrolling is untouched,
-   whereas `flex-end` + `overflow` can push the first messages out of reach. */
+   whereas `flex-end` + `overflow` can push the first messages out of reach.
+   The first child is the virtualized list's fixed-height container. */
 .acr-scroll > :first-child {
   margin-top: auto;
-}
-
-/* With no messages the empty state takes the free space itself, so it lands
-   centred in the pane instead of hugging the composer. */
-.acr-empty {
-  margin-block: auto;
 }
 
 .acr-scroll::-webkit-scrollbar { display: none; }
@@ -58,7 +53,8 @@
 .acr-ephemeral {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.25rem;
+  /* Padding, not margin: the virtualizer measures the row's own box. */
+  padding-bottom: 1.25rem;
 }
 
 .acr-ephemeral span {
@@ -82,22 +78,6 @@
 .acr-ephemeral__expiry {
   color: rgb(235 236 236 / 0.4);
   font-variant-numeric: tabular-nums;
-}
-
-/* Transient, non-blocking hint (e.g. "chat a little longer"). */
-.acr-hint {
-  margin: 0 auto 0.9rem;
-  width: fit-content;
-  max-width: 100%;
-  border-radius: 999px;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  background: rgb(0 0 0 / 0.28);
-  padding: 0.35rem 0.8rem;
-  font-size: 0.7rem;
-  line-height: 1.35;
-  text-align: center;
-  color: rgb(235 236 236 / 0.62);
-  backdrop-filter: blur(8px);
 }
 
 .acr-alert {
@@ -271,4 +251,10 @@
 @keyframes acr-popl {
   from { opacity: 0; transform: translateX(-10px) scale(0.97); }
   to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acr-empty__bridge::after {
+    animation: none;
+  }
 }

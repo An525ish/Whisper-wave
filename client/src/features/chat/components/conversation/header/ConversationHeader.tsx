@@ -184,7 +184,8 @@ const ConversationHeader = ({
 
   return (
     <>
-      <HeaderDialogs        name={name}
+      <HeaderDialogs
+        name={name}
         otherMembers={otherMembers}
         isLeaveGroupLoading={headerActions.isLeaveGroupLoading}
         isConfirmLeave={headerActions.isConfirmLeave}

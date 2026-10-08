@@ -5,7 +5,7 @@ import {
   generateAdminToken,
   verifyAdminToken,
 } from '../../utils/token.js';
-import type { AdminLoginInput } from '../../validators/admin.js';
+import type { AdminLoginInput } from '../../types/adminInput.js';
 import { secretsEqual } from './shared.js';
 
 export const login = async (

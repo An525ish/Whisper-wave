@@ -1,3 +1,4 @@
+// DEV ONLY — never run against production Redis. Hard-codes localhost:6379 and mutates live match state.
 /**
  * Dev-only fault injector. Flips a live match's server-side status to `ending`
  * WITHOUT emitting MATCH_DISCONNECTED — reproducing the desync where the client

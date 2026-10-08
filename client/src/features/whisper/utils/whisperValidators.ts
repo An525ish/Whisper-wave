@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { MAX_DISPLAY_NAME_LENGTH, MAX_TAGS } from '../constants';
+import { MAX_DISPLAY_NAME_LENGTH, MAX_TAG_LENGTH, MAX_TAGS } from '../constants';
 import type { JoinQueuePayload } from '../types';
 
 const tagSchema = z
   .string()
   .trim()
   .min(1, 'Pick or type a vibe')
-  .max(20, 'Keep it under 20 characters');
+  .max(MAX_TAG_LENGTH, `Keep it under ${MAX_TAG_LENGTH} characters`);
 
 /**
  * The form's single source of truth, wired into react-hook-form via

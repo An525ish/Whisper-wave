@@ -1,8 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { submitReport } from '../api/report';
-import { ANALYTICS, track } from '@/shared/lib/analytics';
-import type { ReportReason } from '../types';
+import { track } from '@/shared/lib/analytics';
+import { WHISPER_EVENTS } from '../constants';
+import type { SubmitReportPayload } from '../types';
 
 /**
  * File an abuse report.
@@ -12,13 +13,9 @@ import type { ReportReason } from '../types';
  */
 export function useReportMutation(options: { onSuccess: () => void }) {
   return useMutation({
-    mutationFn: (input: {
-      sessionId: string;
-      reason: ReportReason;
-      details?: string;
-    }) => submitReport(input),
+    mutationFn: (input: SubmitReportPayload) => submitReport(input),
     onSuccess: (_data, variables) => {
-      track(ANALYTICS.WHISPER_REPORT, { reason: variables.reason });
+      track(WHISPER_EVENTS.REPORT, { reason: variables.reason });
       toast.success('Report sent. You won’t be matched with them again.');
       options.onSuccess();
     },

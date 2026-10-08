@@ -1,10 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { getRedis } from '../../../config/redis.js';
-import { createSession, bufferMessage, endSession } from '../session.js';
-import { applyAnonReaction, getMessageReactions } from '../reaction.js';
+import { createSession, endSession } from '../session.js';
+import { applyAnonReaction, getMessageReactions, getSessionReactions } from '../reaction.js';
 import { REDIS_KEYS } from '../keys.js';
-import { skipUnlessRedis, useTestRedis } from './redisHarness.js';
+import { bufferTestMessage, skipUnlessRedis, useTestRedis } from './redisHarness.js';
 
 /**
  * Vibe reactions against real Redis.
@@ -29,6 +29,7 @@ const MSG = 'msg-1';
  */
 const reactionSession = async (id: string): Promise<void> => {
   await getRedis().del(REDIS_KEYS.messages(id));
+  await getRedis().del(REDIS_KEYS.meta(id));
   await getRedis().del(REDIS_KEYS.reactions(id, MSG));
   await createSession({
     sessionId: id,
@@ -45,7 +46,7 @@ describe('vibe reactions (Redis integration)', () => {
   it('adds a reaction and reports who left it', async (t) => {
     skipUnlessRedis(t);
     await reactionSession('react-add');
-    await bufferMessage('react-add', { id: MSG, from: 'react-add-a', content: 'hi', sentAt: 1 });
+    await bufferTestMessage('react-add', { id: MSG, from: 'react-add-a', content: 'hi', sentAt: 1 });
 
     const result = await applyAnonReaction('react-add', 'react-add-a', MSG, 'fire');
     assert.equal(result.action, 'added');
@@ -59,7 +60,7 @@ describe('vibe reactions (Redis integration)', () => {
   it('toggles the same reaction off', async (t) => {
     skipUnlessRedis(t);
     await reactionSession('react-toggle');
-    await bufferMessage('react-toggle', { id: MSG, from: 'react-toggle-a', content: 'hi', sentAt: 1 });
+    await bufferTestMessage('react-toggle', { id: MSG, from: 'react-toggle-a', content: 'hi', sentAt: 1 });
 
     await applyAnonReaction('react-toggle', 'react-toggle-a', MSG, 'fire');
     const second = await applyAnonReaction('react-toggle', 'react-toggle-a', MSG, 'fire');
@@ -70,7 +71,7 @@ describe('vibe reactions (Redis integration)', () => {
   it('lets one person hold only one reaction per message', async (t) => {
     skipUnlessRedis(t);
     await reactionSession('react-replace');
-    await bufferMessage('react-replace', { id: MSG, from: 'react-replace-a', content: 'hi', sentAt: 1 });
+    await bufferTestMessage('react-replace', { id: MSG, from: 'react-replace-a', content: 'hi', sentAt: 1 });
 
     await applyAnonReaction('react-replace', 'react-replace-a', MSG, 'fire');
     await applyAnonReaction('react-replace', 'react-replace-a', MSG, 'slay');
@@ -84,7 +85,7 @@ describe('vibe reactions (Redis integration)', () => {
   it('keeps two people on one message apart', async (t) => {
     skipUnlessRedis(t);
     await reactionSession('react-two');
-    await bufferMessage('react-two', { id: MSG, from: 'react-two-a', content: 'hi', sentAt: 1 });
+    await bufferTestMessage('react-two', { id: MSG, from: 'react-two-a', content: 'hi', sentAt: 1 });
 
     await applyAnonReaction('react-two', 'react-two-a', MSG, 'fire');
     await applyAnonReaction('react-two', 'react-two-b', MSG, 'peak');
@@ -92,6 +93,36 @@ describe('vibe reactions (Redis integration)', () => {
       'react-two-a': ['fire'],
       'react-two-b': ['peak'],
     });
+  });
+
+  it('reports reactions relative to the viewer, never as an anonId', async (t) => {
+    skipUnlessRedis(t);
+    await reactionSession('react-side');
+    const message = { id: MSG, from: 'react-side-a', content: 'hi', sentAt: 1 };
+    await bufferTestMessage('react-side', message);
+    await applyAnonReaction('react-side', 'react-side-a', MSG, 'fire');
+    await applyAnonReaction('react-side', 'react-side-b', MSG, 'peak');
+
+    const forA = await getSessionReactions('react-side', [message], 'react-side-a');
+    const forB = await getSessionReactions('react-side', [message], 'react-side-b');
+    assert.deepEqual(forA[MSG], { me: ['fire'], them: ['peak'] });
+    assert.deepEqual(forB[MSG], { me: ['peak'], them: ['fire'] });
+    assert.equal(JSON.stringify(forA).includes('react-side-'), false, 'an anonId leaked');
+  });
+
+  it('deletes a thread\'s reactions when the session ends', async (t) => {
+    skipUnlessRedis(t);
+    await reactionSession('react-end');
+    await bufferTestMessage('react-end', { id: MSG, from: 'react-end-a', content: 'hi', sentAt: 1 });
+    await applyAnonReaction('react-end', 'react-end-a', MSG, 'fire');
+    assert.equal(await getRedis().exists(REDIS_KEYS.reactions('react-end', MSG)), 1);
+
+    await endSession('react-end');
+    assert.equal(
+      await getRedis().exists(REDIS_KEYS.reactions('react-end', MSG)),
+      0,
+      'a transcript must not outlive its session'
+    );
   });
 
   it('refuses a reaction on a message that is not in the buffer', async (t) => {
@@ -115,7 +146,6 @@ describe('vibe reactions (Redis integration)', () => {
     skipUnlessRedis(t);
     await reactionSession('react-dead');
     await endSession('react-dead');
-    await bufferMessage('react-dead', { id: MSG, from: 'react-dead-a', content: 'hi', sentAt: 1 });
     await assert.rejects(
       () => applyAnonReaction('react-dead', 'react-dead-a', MSG, 'fire'),
       /no longer active/i
@@ -125,7 +155,7 @@ describe('vibe reactions (Redis integration)', () => {
   it('refuses reactions from a non-participant', async (t) => {
     skipUnlessRedis(t);
     await reactionSession('react-outsider');
-    await bufferMessage('react-outsider', { id: MSG, from: 'react-outsider-a', content: 'hi', sentAt: 1 });
+    await bufferTestMessage('react-outsider', { id: MSG, from: 'react-outsider-a', content: 'hi', sentAt: 1 });
     await assert.rejects(
       () => applyAnonReaction('react-outsider', 'someone-else', MSG, 'fire'),
       /not found or expired/i
@@ -135,7 +165,7 @@ describe('vibe reactions (Redis integration)', () => {
   it('bounds a reaction set to the TTL, so it cannot outlive the thread', async (t) => {
     skipUnlessRedis(t);
     await reactionSession('react-ttl');
-    await bufferMessage('react-ttl', { id: MSG, from: 'react-ttl-a', content: 'hi', sentAt: 1 });
+    await bufferTestMessage('react-ttl', { id: MSG, from: 'react-ttl-a', content: 'hi', sentAt: 1 });
     await applyAnonReaction('react-ttl', 'react-ttl-a', MSG, 'fire');
 
     // Reactions are private-thread data; an unexpiring key would hold a

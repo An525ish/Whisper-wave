@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { REDIS_KEYS, TTL } from '../keys.js';
 import { meetsVibeGate, VIBE_UNLOCK } from '../vibeEligibility.js';
 import { vibePairScore } from '../queue.js';
-import { inspectMessage, shouldAutoReport } from '../moderation.js';
+import { inspectMessage } from '../moderation.js';
 import { anonReactionSchema } from '../reaction.js';
-import { ANON_REACTIONS } from '../../../types/match.js';
+import { ANON_REACTIONS } from '../../../constants/anon-reactions.js';
+import { toWireMessage } from '../messaging.js';
 describe('redis keys', () => {
   it('namespaces every key by feature so SCAN is safe', () => {
     const anon = 'anon-1';
@@ -25,6 +26,9 @@ describe('redis keys', () => {
       REDIS_KEYS.userWhispers(user),
       REDIS_KEYS.identityAlias(anon),
       REDIS_KEYS.reactions(session, 'msg_1'),
+      REDIS_KEYS.meta(session),
+      REDIS_KEYS.autoReported(session, 'sexual'),
+      REDIS_KEYS.joinCounted(anon),
     ];
     for (const key of keys) {
       assert.ok(key.startsWith('match:'), `${key} is not namespaced`);
@@ -266,9 +270,60 @@ describe('anon message moderation', () => {
     assert.equal(inspectMessage('add me on t3legram').allowed, false);
   });
 
-  it('flags CSAM-adjacent terms for auto-report', () => {
-    assert.equal(shouldAutoReport('minor sex'), true);
-    assert.equal(shouldAutoReport('just a normal message'), false);
+  it('marks CSAM-adjacent terms severe, so they are blocked AND auto-reported', () => {
+    for (const msg of ['minor sex', 'child porn', 'you pedo', 'im a pedophile', 'loli']) {
+      const verdict = inspectMessage(msg);
+      assert.equal(verdict.allowed, false, `${msg} must be blocked, not delivered`);
+      if (!verdict.allowed) assert.equal(verdict.severe, true, `${msg} must be severe`);
+    }
+    assert.deepEqual(inspectMessage('just a normal message'), { allowed: true });
+  });
+
+  it('does NOT auto-report contact or scam solicitation — blocked only', () => {
+    // Auto-reporting these would let one spammer flood the review queue.
+    for (const msg of ['add me on telegram', 'send money via western union', 'buy btc']) {
+      const verdict = inspectMessage(msg);
+      assert.equal(verdict.allowed, false, msg);
+      if (!verdict.allowed) assert.equal(verdict.severe, false, `${msg} must not be severe`);
+    }
+    const lesser = inspectMessage('send nudes');
+    assert.equal(lesser.allowed === false && lesser.severe, false);
+  });
+
+  it('does not flag ordinary words that merely contain a blocked term', () => {
+    // Substring matching blocked all of these. Word boundaries do not.
+    for (const msg of [
+      'grape soda',
+      'i love grapes',
+      'scrape the pan',
+      'new drapes',
+      'that was therapeutic',
+      'a torpedo sank it',
+      'my pedometer says 9k steps',
+      'a lollipop',
+      'okay, kysmet',
+      'cryptography is fun',
+      'the analyst',
+    ]) {
+      assert.deepEqual(inspectMessage(msg), { allowed: true }, msg);
+    }
+  });
+
+  it('still catches a term that carries punctuation or sits inside a sentence', () => {
+    assert.equal(inspectMessage('send nudes!').allowed, false);
+    assert.equal(inspectMessage('lol, rape.').allowed, false);
+    assert.equal(inspectMessage('you are a pedo').allowed, false);
+  });
+
+  it('still catches genuinely obfuscated terms after normalising', () => {
+    for (const msg of ['p3d0', 'r@pe', 'n.u.d.e.s pls', 'l0li', 'p e d o', 'k.y.s']) {
+      assert.equal(inspectMessage(msg).allowed, false, msg);
+    }
+  });
+
+  it('does not glue ordinary single letters into a blocked word', () => {
+    assert.deepEqual(inspectMessage('plan b i guess'), { allowed: true });
+    assert.deepEqual(inspectMessage('i a m fine'), { allowed: true });
   });
 
   it('reports a coarse reason without echoing the offending text', () => {
@@ -285,5 +340,20 @@ describe('anon message moderation', () => {
     assert.deepEqual(inspectMessage('héllo 👋🏽 世界'), { allowed: true });
     assert.deepEqual(inspectMessage(''), { allowed: true });
     assert.deepEqual(inspectMessage(' '.repeat(500)), { allowed: true });
+  });
+});
+
+describe('per-recipient message sides', () => {
+  const stored = { id: 'm1', from: 'anon-a', content: 'hi', sentAt: 5 };
+
+  it('labels the sender me and everyone else them, without leaking the id', () => {
+    assert.deepEqual(toWireMessage(stored, 'anon-a'), { id: 'm1', from: 'me', content: 'hi', sentAt: 5 });
+    const forPartner = toWireMessage(stored, 'anon-b');
+    assert.equal(forPartner.from, 'them');
+    assert.equal(JSON.stringify(forPartner).includes('anon-'), false, 'an anonId leaked');
+  });
+
+  it('omits id when the stored message has none', () => {
+    assert.equal('id' in toWireMessage({ from: 'x', content: 'c', sentAt: 1 }, 'x'), false);
   });
 });

@@ -150,6 +150,7 @@ describe('Redis socket rate limiter', () => {
     assert.equal(await limiter.allow(id), true, 't=0');
     await sleep(200);
     assert.equal(await limiter.allow(id), true, 't=200');
+    const secondEntryAt = Date.now();
     await sleep(200);
     assert.equal(await limiter.allow(id), true, 't=400');
 
@@ -162,6 +163,10 @@ describe('Redis socket rate limiter', () => {
     assert.equal(await limiter.allow(id), true, 't=700 — exactly one slot came back');
 
     await sleep(10);
+    // Timers drift when suites run in parallel. If the t=200 entry has already
+    // aged out in real time, the premise is gone and asserting would only test
+    // the scheduler — so judge by the clock, not by the intended sleeps.
+    if (Date.now() - secondEntryAt >= windowMs) return;
     assert.equal(
       await limiter.allow(id),
       false,

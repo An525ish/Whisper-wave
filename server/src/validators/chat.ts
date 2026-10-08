@@ -69,5 +69,3 @@ export const markChatReadSchema = z.object({
 export const leaveGroupSchema = z.object({
   newCreatorId: objectId.optional(),
 });
-
-export type GetChatDetailsQuery = z.infer<typeof getChatDetailsQuerySchema>;

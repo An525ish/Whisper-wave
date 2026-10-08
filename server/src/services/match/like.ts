@@ -1,9 +1,16 @@
 import { getRedis } from '../../config/redis.js';
-import { REDIS_KEYS } from './keys.js';
-import { getSession, getPartner } from './session.js';
+import { META_FIELDS, REDIS_KEYS, TTL } from './keys.js';
+import { getSession } from './session.js';
 import { issueConnectToken } from './connectToken.js';
 import { AppError } from '../../utils/AppError.js';
 import type { ConnectTokenPayload, LikeResult } from '../../types/match.js';
+
+/**
+ * Mutual-like token pairs a single session may mint. A re-like after the mutual
+ * is idempotent for the match itself, but every call would otherwise sign two
+ * fresh tokens; this caps that (the like limiter caps the rate).
+ */
+const MAX_TOKEN_ISSUES = 4;
 
 /**
  * Record a like for anonId in sessionId.
@@ -28,27 +35,38 @@ export const recordLike = async (
     throw new AppError(409, 'Session is no longer active');
   }
 
+  // The EXPIRE is what bounds the likes set: without it a session that never
+  // ends cleanly would leave the key behind forever.
   const pipe = redis.pipeline();
   pipe.sadd(REDIS_KEYS.likes(sessionId), anonId);
+  pipe.expire(REDIS_KEYS.likes(sessionId), TTL.session);
   pipe.scard(REDIS_KEYS.likes(sessionId));
   const results = await pipe.exec();
-  const likeCount = (results?.[1]?.[1] ?? 0) as number;
+  const likeCount = (results?.[2]?.[1] ?? 0) as number;
 
   if (likeCount < 2) return { type: 'one_sided' };
 
+  const tokenPipe = redis.pipeline();
+  tokenPipe.hincrby(REDIS_KEYS.meta(sessionId), META_FIELDS.tokens, 1);
+  tokenPipe.expire(REDIS_KEYS.meta(sessionId), TTL.session);
+  const issued = Number((await tokenPipe.exec())?.[0]?.[1] ?? 0);
+  if (issued > MAX_TOKEN_ISSUES) {
+    throw new AppError(429, 'Already vibing — head to your connections to continue.');
+  }
+
   // Mutual like — build a payload per perspective and issue a token for each,
   // so both sides can prove they were in this session at the moment of the like.
-  const partnerAnonId = getPartner(session, anonId);
-  const myIndex = session.anon1 === anonId ? 0 : 1;
-  const partnerIndex = 1 - myIndex;
+  const myIndex: 0 | 1 = session.anon1 === anonId ? 0 : 1;
+  const partnerIndex: 0 | 1 = myIndex === 0 ? 1 : 0;
 
   const names = [session.name1, session.name2];
   const tags = [session.tags1, session.tags2];
 
+  // No anonIds in a token: it is handed to the client and a JWT payload is
+  // readable. `side` is the holder's seat; the server resolves ids from the session.
   const payloadA: ConnectTokenPayload = {
     sessionId,
-    anonId,
-    partnerAnonId,
+    side: myIndex,
     displayName: names[myIndex],
     partnerName: names[partnerIndex],
     vibeTags: tags[myIndex],
@@ -57,8 +75,7 @@ export const recordLike = async (
 
   const payloadB: ConnectTokenPayload = {
     sessionId,
-    anonId: partnerAnonId,
-    partnerAnonId: anonId,
+    side: partnerIndex,
     displayName: names[partnerIndex],
     partnerName: names[myIndex],
     vibeTags: tags[partnerIndex],

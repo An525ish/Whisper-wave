@@ -4,9 +4,10 @@ import {
   getBufferedMessages,
   getSessionReactions,
   isParticipant,
+  toWireMessage,
 } from '../../services/match/index.js';
 import type { AnonSession, WaitingCard } from '../../types/match.js';
-import type { AnonSocket } from './types.js';
+import type { AnonSocket } from '../../types/anonSocket.js';
 
 /** Notify both anonymous users and attach sessionId to their /anon sockets. */
 export const emitMatchFound = async (
@@ -71,8 +72,11 @@ export const emitMatchFoundToSocket = async (
   const isAnon1 = session.anon1 === anonId;
   const partnerName = isAnon1 ? session.name2 : session.name1;
   const partnerTags = isAnon1 ? session.tags2 : session.tags1;
-  const bufferedMessages = await getBufferedMessages(session.sessionId);
-  const reactions = await getSessionReactions(session.sessionId, bufferedMessages);
+  // The buffer stores the sender's anonId; the client gets `me` / `them` computed
+  // for THIS recipient, and reactions keyed the same way — never an anonId.
+  const stored = await getBufferedMessages(session.sessionId);
+  const bufferedMessages = stored.map((message) => toWireMessage(message, anonId));
+  const reactions = await getSessionReactions(session.sessionId, stored, anonId);
 
   socket.sessionId = session.sessionId;
   socket.emit(MATCH_FOUND, {

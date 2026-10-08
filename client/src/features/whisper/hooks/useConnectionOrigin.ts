@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import useErrors from '@/shared/hooks/useError';
 import { getConnectionOrigin } from '../api/connection';
 import { queryKeys } from './queryKeys';
 import type { ConnectionOrigin } from '../types';
@@ -14,11 +15,14 @@ export function useConnectionOrigin(
   chatId: string | undefined,
   enabled: boolean
 ) {
-  return useQuery<ConnectionOrigin | null>({
+  const query = useQuery<ConnectionOrigin | null>({
     queryKey: queryKeys.connectionOrigin(chatId),
-    queryFn: async () => (await getConnectionOrigin(chatId!)).data.origin,
+    queryFn: async () =>
+      chatId ? (await getConnectionOrigin(chatId)).data.origin : null,
     enabled: Boolean(chatId) && enabled,
     staleTime: Infinity,
     retry: false,
   });
+  useErrors([{ isError: query.isError, error: query.error }]);
+  return query;
 }

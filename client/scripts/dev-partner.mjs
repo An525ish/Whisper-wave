@@ -1,4 +1,6 @@
 /**
+ * DEV ONLY — never run against production.
+ *
  * Dev-only partner simulator. Not imported by the app — run it by hand.
  *
  * Drives a second anonymous participant over the real `/anon` socket so a single

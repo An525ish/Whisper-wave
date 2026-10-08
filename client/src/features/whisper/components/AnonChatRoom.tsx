@@ -1,26 +1,28 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import type { AnonReaction } from '@/shared/types/socket';
 import AnonChatHeader from './AnonChatHeader';
 import AnonMessageList from './AnonMessageList';
 import AnonComposer from './AnonComposer';
-import PartnerLeftPrompt from './PartnerLeftPrompt';
-import ThreadSummaryCard from './ThreadSummaryCard';
 import AnonProfileHost from './AnonProfileHost';
-import { useThreadEnd } from '../hooks/useThreadEnd';
+import ChatAlert from './ChatAlert';
+import LeaveConfirm from './LeaveConfirm';
+import MutualBar from './MutualBar';
 import MutualVibeModal from './MutualVibeModal';
 import ReportSheet from './ReportSheet';
-import {
-  VibePrompt,
-  VibeNudge,
-  VibeWaiting,
-  MutualBar,
-  ChatAlert,
-} from './VibePrompts';
+import ThreadEndedBar from './ThreadEndedBar';
+import ThreadSummaryCard from './ThreadSummaryCard';
+import VibeNudge from './VibeNudge';
+import VibePrompt from './VibePrompt';
+import VibeWaiting from './VibeWaiting';
+import { useThreadEnd } from '../hooks/useThreadEnd';
 import { useVibeUnlock } from '../hooks/useVibeUnlock';
-import { useScrollToBottom } from '../hooks/useScrollToBottom';
 import { MAX_MESSAGE_LENGTH } from '../constants';
-import type { AnonMessage, VibeTag } from '../types';
+import type {
+  AnonMessage,
+  AnonReaction,
+  LeaveConfirmKind,
+  VibeTag,
+} from '../types';
 
 import './anonChatRoom.css';
 import './anonChatRoomHeader.css';
@@ -39,22 +41,31 @@ type Props = {
   mutualLike: boolean;
   partnerVibed: boolean;
   connectToken: string | null;
+  mutualAt: number | null;
   showMutualModal: boolean;
   matchedAt: number | null;
   sessionId: string | null;
   socketConnected: boolean;
-  sessionNotice: string | null;
+  reconnecting: boolean;
   error: string | null;
-  /** Partner left: the composer is replaced by the find-someone prompt. */
+  /** Partner left: the composer is replaced by the thread-ended card. */
   partnerLeft: boolean;
-  partnerLeftPromptExpanded: boolean;
+  /** "Stay and re-read it" was chosen — the card is collapsed to a bar. */
+  partnerLeftDismissed: boolean;
+  /** A leave/skip confirmation is open (Back button or the chevron). */
+  confirmKind: LeaveConfirmKind | null;
+  onResolveConfirm: (accept: boolean) => void;
+  onRequestSkip: () => void;
   onFindSomeoneNew: () => void;
   onStayOnEndedThread: () => void;
   onReact: (messageId: string, reaction: AnonReaction) => void;
   onDraftChange: (value: string) => void;
   onSend: (content: string) => void;
   onLike: () => void;
-  onNext: () => void;
+  /** A report succeeded — end this match and move on. */
+  onReported: () => void;
+  /** The connect window closed — end the match and return to the picker. */
+  onLeaveAfterExpiry: () => void;
   onClearDraft: () => void;
   onRetry: (id: string) => void;
   onCloseMutualModal: () => void;
@@ -91,26 +102,31 @@ export default function AnonChatRoom({
   mutualLike,
   partnerVibed,
   connectToken,
+  mutualAt,
   showMutualModal,
   matchedAt,
   sessionId,
   socketConnected,
-  sessionNotice,
+  reconnecting,
   error,
+  partnerLeft,
+  partnerLeftDismissed,
+  confirmKind,
+  onResolveConfirm,
+  onRequestSkip,
+  onFindSomeoneNew,
+  onStayOnEndedThread,
+  onReact,
   onDraftChange,
   onSend,
   onLike,
-  onNext,
+  onReported,
+  onLeaveAfterExpiry,
   onClearDraft,
   onRetry,
   onCloseMutualModal,
   onOpenMutualModal,
   onDismissError,
-  partnerLeft,
-  partnerLeftPromptExpanded,
-  onFindSomeoneNew,
-  onStayOnEndedThread,
-  onReact,
 }: Props) {
   const { vibeUnlocked, showVibePrompt } = useVibeUnlock(messages, matchedAt, {
     likeSent,
@@ -119,7 +135,7 @@ export default function AnonChatRoom({
     ended: partnerLeft,
   });
 
-  const { summary } = useThreadEnd(partnerName, matchedAt);
+  const { summary } = useThreadEnd(matchedAt);
 
   // Local, dismissible mirrors. The underlying facts (partner liked, prompt
   // eligibility) stay in the store; these only control what is on screen. The
@@ -138,14 +154,12 @@ export default function AnonChatRoom({
     setPromptDismissed(false);
   }
 
-  const reconnecting = Boolean(sessionNotice?.toLowerCase().includes('reconnect'));
+  const scrollRef = useRef<HTMLElement>(null);
   const socketDegraded = reconnecting || !socketConnected;
   const overLimit = draft.length > MAX_MESSAGE_LENGTH;
   // `onLike` guards the gate itself and reports why, so keep the button
   // enabled pre-unlock — a control that explains itself beats one that refuses.
-  const likeDisabled = likeSent || mutualLike;
-
-  const bottomRef = useScrollToBottom(`${messages.length}:${partnerTyping}`);
+  const likeDisabled = likeSent || mutualLike || partnerLeft;
 
   const handleSend = () => {
     const text = draft.trim();
@@ -173,7 +187,7 @@ export default function AnonChatRoom({
           partnerName={partnerName}
           partnerTags={partnerTags}
           socketDegraded={socketDegraded}
-          sessionNotice={sessionNotice}
+          reconnecting={reconnecting}
           likeDisabled={likeDisabled}
           likeSent={likeSent}
           mutualLike={mutualLike}
@@ -181,19 +195,11 @@ export default function AnonChatRoom({
           vibeUnlocked={vibeUnlocked}
           likeTitle={likeTitle(vibeUnlocked, likeSent, mutualLike)}
           onLike={onLike}
-          onNext={onNext}
+          onSkip={onRequestSkip}
           onReport={() => setReportOpen(true)}
         />
-  
-        <main className="acr-scroll">
-          {/* Transient "why can't I like yet" style notices get their own compact
-              row; persistent socket errors use the alert. */}
-          {sessionNotice && !reconnecting && (
-            <p className="acr-hint" role="status">
-              {sessionNotice}
-            </p>
-          )}
-          {error && <ChatAlert message={error} onDismiss={onDismissError} />}
+
+        <main className="acr-scroll" ref={scrollRef}>
           <AnonMessageList
             myName={myName}
             partnerName={partnerName}
@@ -201,12 +207,13 @@ export default function AnonChatRoom({
             partnerTyping={partnerTyping}
             startedAt={matchedAt}
             live={!partnerLeft}
+            scrollRef={scrollRef}
             onRetry={onRetry}
             onReact={onReact}
-            bottomRef={bottomRef}
           />
+          {error && <ChatAlert message={error} onDismiss={onDismissError} />}
         </main>
-  
+
         {/* The one-shot prompt. Once dismissed the header heart is the only
             path to liking — which is deliberate, so a "not really" is never
             permanent. */}
@@ -217,23 +224,28 @@ export default function AnonChatRoom({
             onDismiss={() => setPromptDismissed(true)}
           />
         )}
-  
-        {vibeUnlocked && partnerVibed && !likeSent && !mutualLike && !nudgeDismissed && (
+
+        {vibeUnlocked && !partnerLeft && partnerVibed && !likeSent && !mutualLike && !nudgeDismissed && (
           <VibeNudge
             partnerName={partnerName}
             onLike={onLike}
             onDismiss={() => setNudgeDismissed(true)}
           />
         )}
-  
-        {likeSent && !mutualLike && <VibeWaiting />}
-  
+
+        {likeSent && !mutualLike && !partnerLeft && <VibeWaiting />}
+
         {mutualLike && !showMutualModal && connectToken && (
-          <MutualBar onOpen={onOpenMutualModal} />
+          <MutualBar
+            connectToken={connectToken}
+            mutualAt={mutualAt}
+            partnerLeft={partnerLeft}
+            onOpen={onOpenMutualModal}
+          />
         )}
-  
+
         {partnerLeft ? (
-          summary ? (
+          summary && !partnerLeftDismissed ? (
             <ThreadSummaryCard
               summary={summary}
               partnerAlias={partnerName}
@@ -242,12 +254,7 @@ export default function AnonChatRoom({
               secondaryLabel="Stay and re-read it"
             />
           ) : (
-            <PartnerLeftPrompt
-              expanded={partnerLeftPromptExpanded}
-              partnerName={partnerName}
-              onFindSomeoneNew={onFindSomeoneNew}
-              onStay={onStayOnEndedThread}
-            />
+            <ThreadEndedBar onFindSomeoneNew={onFindSomeoneNew} />
           )
         ) : (
           <AnonComposer
@@ -257,24 +264,28 @@ export default function AnonChatRoom({
             onSend={handleSend}
           />
         )}
-  
-        {connectToken && (
+
+        {connectToken && showMutualModal && (
           <MutualVibeModal
-            open={showMutualModal}
             myName={myName}
             partnerName={partnerName}
             partnerTags={partnerTags}
             connectToken={connectToken}
+            mutualAt={mutualAt}
+            partnerLeft={partnerLeft}
             onClose={onCloseMutualModal}
+            onExpiredLeave={onLeaveAfterExpiry}
           />
         )}
-  
+
         <ReportSheet
-            open={reportOpen}
-            sessionId={sessionId}
-            onClose={() => setReportOpen(false)}
-            onReported={onNext}
-          />
+          open={reportOpen}
+          sessionId={sessionId}
+          onClose={() => setReportOpen(false)}
+          onReported={onReported}
+        />
+
+        {confirmKind && <LeaveConfirm kind={confirmKind} onResolve={onResolveConfirm} />}
       </div>
 
       {/* Identity panel: a column at `lg`, a sheet below. One spatial grammar

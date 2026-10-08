@@ -1,26 +1,5 @@
-import type { AnonMessage, VibeTag } from '../types';
+import type { AnonMessage, ThreadSummary, VibeTag } from '../types';
 import { threadStats } from './threadStats';
-
-/**
- * Everything the end-of-thread card needs, derived in one pure pass.
- *
- * `durationMs` is kept alongside the formatted label because the archive
- * (`whisperHistory.ts`) stores the number and formats it at render time — one
- * duration formatter, not two that drift.
- */
-export type ThreadSummary = {
-  /** Clamped at 0. Never negative, never NaN. */
-  durationMs: number;
-  /** `"0m"`, `"4m"`, `"1h 12m"`. */
-  durationLabel: string;
-  totalMessages: number;
-  myMessages: number;
-  theirMessages: number;
-  /** Tags both sides had, matched case-insensitively, in the caller's casing. */
-  sharedTags: VibeTag[];
-  /** One warm line. Never implies the other person did something wrong. */
-  verdict: string;
-};
 
 const MS_PER_MINUTE = 60_000;
 
@@ -32,16 +11,11 @@ const QUIET_MESSAGE_CEILING = 6;
 const LOUD_MESSAGE_FLOOR = 14;
 const CHATTY_MESSAGE_FLOOR = 8;
 
-/** Coerce anything the caller (or `localStorage`) hands us into a usable ms count. */
+/** Coerce anything the caller hands us into a usable ms count. */
 const toMs = (ms: number): number =>
   Number.isFinite(ms) && ms > 0 ? ms : 0;
 
-/**
- * `"0m"` / `"4m"` / `"12m"` / `"1h"` / `"1h 12m"`.
- *
- * Distinct from `formatDuration` in `threadStats.ts`, which is the live panel's
- * "4 min together" headline. This is the compact stat-tile form.
- */
+/** `"0m"` / `"4m"` / `"12m"` / `"1h"` / `"1h 12m"` — the one duration formatter. */
 export const formatThreadDuration = (durationMs: number): string => {
   const totalMinutes = Math.floor(toMs(durationMs) / MS_PER_MINUTE);
   const hours = Math.floor(totalMinutes / 60);
@@ -60,7 +34,7 @@ export const formatThreadDuration = (durationMs: number): string => {
  * kinds of conversation — an anon chat has no context to blame anyone with, and
  * a card that implies fault is a card that makes people leave.
  */
-export const threadVerdict = (durationMs: number, totalMessages: number): string => {
+const threadVerdict = (durationMs: number, totalMessages: number): string => {
   const minutes = Math.floor(toMs(durationMs) / MS_PER_MINUTE);
   const messages = Number.isFinite(totalMessages) ? Math.max(0, Math.trunc(totalMessages)) : 0;
 

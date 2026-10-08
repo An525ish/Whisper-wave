@@ -1,8 +1,13 @@
 import type { ChainableCommander } from 'ioredis';
 import { getRedis } from '../../config/redis.js';
 import { logger } from '../../utils/logger.js';
-import type { AnonSession, BufferedAnonMessage, CreateSessionInput } from '../../types/match.js';
-import { REDIS_KEYS, TTL } from './keys.js';
+import type {
+  AnonSession,
+  CreateSessionInput,
+  SessionMessageCounts,
+  StoredAnonMessage,
+} from '../../types/match.js';
+import { META_FIELDS, REDIS_KEYS, TTL } from './keys.js';
 
 /**
  * Create a new anon session in Redis.
@@ -39,15 +44,13 @@ export const createSession = async (input: CreateSessionInput): Promise<AnonSess
     createdAt: Date.now(),
   };
 
-  // One pipeline: the session, its likes set, both active-session pointers, the
+  // One pipeline: the session, both active-session pointers, the
   // anonId → userId aliases (so a later block can be mirrored onto the account)
   // and the per-account session index.
   const pipe = redis.pipeline();
   pipe.set(REDIS_KEYS.session(sessionId), JSON.stringify(session), 'EX', TTL.session);
   pipe.set(REDIS_KEYS.activeSession(anon1), sessionId, 'EX', TTL.session);
   pipe.set(REDIS_KEYS.activeSession(anon2), sessionId, 'EX', TTL.session);
-  pipe.del(REDIS_KEYS.likes(sessionId)); // clean slate
-  pipe.expire(REDIS_KEYS.likes(sessionId), TTL.session);
   writeIdentityLinks(pipe, sessionId, [
     { anonId: anon1, userId: userId1 },
     { anonId: anon2, userId: userId2 },
@@ -114,23 +117,6 @@ export const getActiveSessionId = async (anonId: string): Promise<string | null>
   getRedis().get(REDIS_KEYS.activeSession(anonId));
 
 /**
- * Extend an active session's TTL. Called on every message/typing event so a
- * long conversation never silently expires out from under the users.
- */
-export const touchSession = async (sessionId: string): Promise<void> => {
-  const redis = getRedis();
-  const pipe = redis.pipeline();
-  pipe.expire(REDIS_KEYS.session(sessionId), TTL.session);
-  pipe.expire(REDIS_KEYS.messages(sessionId), TTL.session);
-  try {
-    await pipe.exec();
-  } catch (err) {
-    // Non-fatal: the session keeps working, it just stops being refreshed.
-    logger.warn({ err, sessionId }, 'Failed to refresh session TTL');
-  }
-};
-
-/**
  * Confirm that a given anonId is a participant of the session.
  * Used in every socket handler to prevent spoofing.
  */
@@ -141,13 +127,53 @@ export const isParticipant = (session: AnonSession, anonId: string): boolean =>
 export const getPartner = (session: AnonSession, anonId: string): string =>
   session.anon1 === anonId ? session.anon2 : session.anon1;
 
+/** Message ids currently in the buffer — the only way to find their reaction keys. */
+const bufferedMessageIds = async (sessionId: string): Promise<string[]> => {
+  const raw = await getRedis().lrange(REDIS_KEYS.messages(sessionId), 0, -1);
+  const ids: string[] = [];
+  for (const entry of raw) {
+    try {
+      const id = (JSON.parse(entry) as StoredAnonMessage).id;
+      if (id) ids.push(id);
+    } catch (err) {
+      // An unreadable row has no id we could clean up; the reaction key (if any)
+      // falls back to its own TTL. Logged because the buffer should never hold one.
+      logger.warn({ err, sessionId }, 'Unparseable anon message while clearing a session');
+    }
+  }
+  return ids;
+};
+
 /**
- * End a session — marks it as ending and clears the active-session pointers.
+ * Queue the deletion of everything that holds a conversation's CONTENT: the
+ * message buffer, its reactions and the per-side counters. "Transcripts die with
+ * the session" is a product promise, so this runs on every way a session ends.
  *
- * The TTL is shortened to 1 hour rather than deleted: it keeps origin data
- * available for `connectToken` completion, but doesn't hold Redis memory for
- * 24 h after the session ends. Identity cards are deliberately LEFT in place so
- * either side can rejoin with the same alias after a reconnect or a skip.
+ * Reactions hang off individual messages, so they are found by walking the
+ * buffer. A reaction on a message that already fell out of the last-50 buffer
+ * cannot be found and expires on its own `TTL.reactions` — it holds an anonId and
+ * an emoji key, never text.
+ */
+const queueContentDeletion = (
+  pipe: ChainableCommander,
+  sessionId: string,
+  messageIds: string[]
+): void => {
+  pipe.del(REDIS_KEYS.messages(sessionId));
+  pipe.del(REDIS_KEYS.meta(sessionId));
+  pipe.del(REDIS_KEYS.likes(sessionId));
+  for (const id of messageIds) pipe.del(REDIS_KEYS.reactions(sessionId, id));
+};
+
+/**
+ * End a session — marks it as ending, clears the active-session pointers and
+ * DELETES the chat content (messages, reactions, counters).
+ *
+ * The session record itself is kept for 1 hour rather than deleted: it holds only
+ * aliases/tags/ids and is what `connectToken` completion resolves the two anonIds
+ * from. Completion never needs the buffered messages — anon messages are not
+ * carried into the connected layer. Identity cards are deliberately LEFT in place
+ * so either side can rejoin with the same alias after a reconnect or a skip.
  */
 export const endSession = async (sessionId: string): Promise<void> => {
   const raw = await getRedis().get(REDIS_KEYS.session(sessionId));
@@ -157,9 +183,11 @@ export const endSession = async (sessionId: string): Promise<void> => {
   if (session.status === 'ending') return; // already torn down
   session.status = 'ending';
 
+  const messageIds = await bufferedMessageIds(sessionId);
+
   const pipe = getRedis().pipeline();
   pipe.set(REDIS_KEYS.session(sessionId), JSON.stringify(session), 'EX', 60 * 60);
-  pipe.expire(REDIS_KEYS.likes(sessionId), 60 * 60);
+  queueContentDeletion(pipe, sessionId, messageIds);
   pipe.del(REDIS_KEYS.activeSession(session.anon1));
   pipe.del(REDIS_KEYS.activeSession(session.anon2));
   pipe.del(REDIS_KEYS.presence(session.anon1));
@@ -175,17 +203,10 @@ export const endSession = async (sessionId: string): Promise<void> => {
 /** Hard-delete a session and associated data (after Connection is created). */
 export const deleteSession = async (sessionId: string): Promise<void> => {
   const session = await getSession(sessionId);
-  const messages = await getBufferedMessages(sessionId);
+  const messageIds = await bufferedMessageIds(sessionId);
   const pipe = getRedis().pipeline();
   pipe.del(REDIS_KEYS.session(sessionId));
-  pipe.del(REDIS_KEYS.likes(sessionId));
-  pipe.del(REDIS_KEYS.messages(sessionId));
-  // Reactions hang off individual messages, so they can only be found by
-  // walking the buffer we are about to drop. Without this they would sit in
-  // Redis until their TTL, holding a private conversation's contents.
-  for (const message of messages) {
-    if (message.id) pipe.del(REDIS_KEYS.reactions(sessionId, message.id));
-  }
+  queueContentDeletion(pipe, sessionId, messageIds);
   if (session) {
     pipe.del(REDIS_KEYS.activeSession(session.anon1));
     pipe.del(REDIS_KEYS.activeSession(session.anon2));
@@ -196,25 +217,90 @@ export const deleteSession = async (sessionId: string): Promise<void> => {
   await pipe.exec();
 };
 
-/** Persist a message to the Redis buffer (last N messages for page refresh). */
-export const bufferMessage = async (
-  sessionId: string,
-  message: BufferedAnonMessage
-): Promise<void> => {
-  const redis = getRedis();
-  const pipe = redis.pipeline();
-  pipe.lpush(REDIS_KEYS.messages(sessionId), JSON.stringify(message));
-  pipe.ltrim(REDIS_KEYS.messages(sessionId), 0, TTL.maxMessages - 1);
-  pipe.expire(REDIS_KEYS.messages(sessionId), TTL.session);
-  await pipe.exec();
+/**
+ * Accept one message into the session, atomically and in ONE command:
+ *
+ *   - reject a duplicate client id (returns 0) — a stored entry starts with
+ *     `{"id":<json id>,` because `id` is serialised first, so the check is an
+ *     exact prefix compare and message content can never spoof it;
+ *   - LPUSH + LTRIM to the last-N buffer, bump this side's counter (the vibe gate
+ *     reads counters, not the buffer — the buffer forgets), and refresh the TTL of
+ *     the buffer, counters, session and the sender's identity card.
+ *
+ * Folding all of that into one script is what keeps a message at one Redis
+ * command here instead of six (Upstash bills per command).
+ */
+const RECORD_MESSAGE_SCRIPT = `
+  local prefix = ARGV[1]
+  if prefix ~= '' then
+    local entries = redis.call('LRANGE', KEYS[1], 0, -1)
+    for i = 1, #entries do
+      if string.sub(entries[i], 1, #prefix) == prefix then
+        return 0
+      end
+    end
+  end
+  redis.call('LPUSH', KEYS[1], ARGV[2])
+  redis.call('LTRIM', KEYS[1], 0, tonumber(ARGV[3]) - 1)
+  redis.call('HINCRBY', KEYS[2], ARGV[5], 1)
+  redis.call('EXPIRE', KEYS[1], ARGV[4])
+  redis.call('EXPIRE', KEYS[2], ARGV[4])
+  redis.call('EXPIRE', KEYS[3], ARGV[4])
+  redis.call('EXPIRE', KEYS[4], ARGV[4])
+  return 1
+`;
+
+/**
+ * Persist a message to the Redis buffer (last N, for page refresh) and count it.
+ * Returns false when `message.id` was already used in this session.
+ */
+export const recordMessage = async (
+  session: AnonSession,
+  message: StoredAnonMessage
+): Promise<boolean> => {
+  const { sessionId } = session;
+  const field = session.anon1 === message.from ? META_FIELDS.count1 : META_FIELDS.count2;
+  // `id` first — the duplicate check in the script depends on this key order.
+  const stored = JSON.stringify({
+    ...(message.id ? { id: message.id } : {}),
+    from: message.from,
+    content: message.content,
+    sentAt: message.sentAt,
+  });
+  const idPrefix = message.id ? `{"id":${JSON.stringify(message.id)},` : '';
+
+  const accepted = await getRedis().eval(
+    RECORD_MESSAGE_SCRIPT,
+    4,
+    REDIS_KEYS.messages(sessionId),
+    REDIS_KEYS.meta(sessionId),
+    REDIS_KEYS.session(sessionId),
+    REDIS_KEYS.waiting(message.from),
+    idPrefix,
+    stored,
+    String(TTL.maxMessages),
+    String(TTL.session),
+    field
+  );
+  return Number(accepted) === 1;
+};
+
+/** Messages accepted from each side so far (the vibe gate's input). */
+export const getMessageCounts = async (sessionId: string): Promise<SessionMessageCounts> => {
+  const [a, b] = await getRedis().hmget(
+    REDIS_KEYS.meta(sessionId),
+    META_FIELDS.count1,
+    META_FIELDS.count2
+  );
+  return { countA: Number(a ?? 0), countB: Number(b ?? 0) };
 };
 
 /** Retrieve buffered messages oldest-first (the order a reader expects). */
 export const getBufferedMessages = async (
   sessionId: string
-): Promise<BufferedAnonMessage[]> => {
+): Promise<StoredAnonMessage[]> => {
   const raw = await getRedis().lrange(REDIS_KEYS.messages(sessionId), 0, -1);
   return raw
-    .map((entry) => JSON.parse(entry) as BufferedAnonMessage)
+    .map((entry) => JSON.parse(entry) as StoredAnonMessage)
     .reverse();
 };

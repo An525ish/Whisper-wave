@@ -1,20 +1,12 @@
-import dayjs from 'dayjs';
+import type { RefObject } from 'react';
 import TypingDots from '@/shared/components/ui/typing-indicator/TypingDots';
 import { groupMessages } from '@/shared/utils/groupMessages';
-import { avatarGradient } from '../utils/vibeTag';
-import MessageReactionBar from './MessageReactionBar';
+import { THREAD_EXPIRY_TICK_MS, THREAD_LIFETIME_MS } from '../constants';
 import { useNowWhile } from '../hooks/useNowWhile';
-import type { AnonReaction } from '@/shared/types/socket';
-import type { AnonMessage } from '../types';
-
-const fmt = (ms: number): string => dayjs(ms).format('h:mm A');
-
-/**
- * The thread's own lifetime. Redis holds the session for 24h from creation, so
- * this is a real deadline, not decoration — and it is the one piece of urgency the
- * anonymous layer has, since nothing here is saved.
- */
-const THREAD_LIFETIME_MS = 24 * 60 * 60 * 1000;
+import { useThreadVirtualizer } from '../hooks/useThreadVirtualizer';
+import { avatarGradient } from '../utils/vibeTag';
+import AnonMessageBubble from './AnonMessageBubble';
+import type { AnonMessage, AnonReaction } from '../types';
 
 const expiryLabel = (msLeft: number): string => {
   const mins = Math.floor(msLeft / 60_000);
@@ -31,19 +23,20 @@ type Props = {
   partnerTyping: boolean;
   /** Session start; drives the expiry line. Null hides it. */
   startedAt: number | null;
-  /** False once the thread is over — no reacting on a dead conversation. */
   live: boolean;
+  /** The scrolling `<main>` that hosts this list. */
+  scrollRef: RefObject<HTMLElement | null>;
   onRetry: (id: string) => void;
   onReact: (messageId: string, reaction: AnonReaction) => void;
-  bottomRef: React.RefObject<HTMLDivElement | null>;
 };
 
 /**
- * The ephemeral thread. Bubble geometry, radii and timestamp treatment come
- * straight from the logged-in chat (`bubble-in`/`bubble-out` + the same padding
- * contract), so the two screens read as one product. Consecutive messages from
- * the same sender are grouped by the shared util so only the last of a run draws
- * the tail.
+ * The ephemeral thread, virtualized. Consecutive messages from the same sender
+ * are grouped by the shared util so only the last of a run draws the tail.
+ *
+ * Accessibility: rows mount and unmount as you scroll, so the visible list is not
+ * a live region (scrolling would re-announce history). A visually hidden `log`
+ * announces only the newest incoming message.
  */
 export default function AnonMessageList({
   myName,
@@ -52,133 +45,105 @@ export default function AnonMessageList({
   partnerTyping,
   startedAt,
   live,
+  scrollRef,
   onRetry,
   onReact,
-  bottomRef,
 }: Props) {
-  const showEmpty = messages.length === 0;
   const groups = groupMessages(messages, (msg) => msg.from);
+  const { virtualizer, rowAt } = useThreadVirtualizer({ scrollRef, messages, partnerTyping });
   // A countdown has to tick, so the clock lives in state — `Date.now()` in a
   // render body is impure and the compiler rejects it.
-  const now = useNowWhile(live && Boolean(startedAt), 60_000);
+  const now = useNowWhile(live && Boolean(startedAt), THREAD_EXPIRY_TICK_MS);
   const msLeft = startedAt ? startedAt + THREAD_LIFETIME_MS - now : 0;
+
+  const lastIncoming = [...messages].reverse().find((m) => m.from === 'them');
+
+  const renderRow = (index: number) => {
+    const row = rowAt(index);
+    switch (row.kind) {
+      case 'lead':
+        return (
+          <div className="acr-ephemeral">
+            <span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Ephemeral — gone when you leave
+              {live && startedAt && (
+                <span className="acr-ephemeral__expiry">
+                  · vanishes in {expiryLabel(msLeft)}
+                </span>
+              )}
+            </span>
+          </div>
+        );
+      case 'empty':
+        return (
+          <div className="acr-empty">
+            <div className="acr-empty__link" aria-hidden>
+              <div className="acr-empty__orb acr-empty__orb--you" style={{ background: avatarGradient(myName) }}>
+                {myName.charAt(0).toUpperCase()}
+              </div>
+              <div className="acr-empty__bridge" />
+              <div className="acr-empty__orb acr-empty__orb--them" style={{ background: avatarGradient(partnerName) }}>
+                {partnerName.charAt(0).toUpperCase()}
+              </div>
+            </div>
+            <div>
+              <p className="acr-empty__title">You&apos;re linked</p>
+              <p className="acr-empty__sub">
+                Two strangers, same wavelength. Break the ice — this thread
+                doesn&apos;t stick around.
+              </p>
+            </div>
+          </div>
+        );
+      case 'typing':
+        return <TypingDots label={`${partnerName} is typing`} className="acr-new-l mt-3" />;
+      case 'message':
+        return (
+          <AnonMessageBubble
+            msg={messages[row.index]}
+            joinedAbove={groups[row.index].joinedAbove}
+            isTail={groups[row.index].isTail}
+            live={live}
+            onRetry={onRetry}
+            onReact={onReact}
+          />
+        );
+    }
+  };
 
   return (
     <>
-      <div className="acr-ephemeral">
-        <span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-          Ephemeral — gone when you leave
-          {live && startedAt && (
-            <span className="acr-ephemeral__expiry">
-              · vanishes in {expiryLabel(msLeft)}
-            </span>
-          )}
-        </span>
+      <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+        {virtualizer.getVirtualItems().map((item) => (
+          <div
+            key={item.key}
+            data-index={item.index}
+            ref={virtualizer.measureElement}
+            className="absolute left-0 top-0 w-full"
+            style={{ transform: `translateY(${item.start}px)` }}
+          >
+            {renderRow(item.index)}
+          </div>
+        ))}
       </div>
 
-      {showEmpty && (
-        <div className="acr-empty">
-          <div className="acr-empty__link" aria-hidden>
-            <div className="acr-empty__orb acr-empty__orb--you" style={{ background: avatarGradient(myName) }}>
-              {myName.charAt(0).toUpperCase()}
-            </div>
-            <div className="acr-empty__bridge" />
-            <div className="acr-empty__orb acr-empty__orb--them" style={{ background: avatarGradient(partnerName) }}>
-              {partnerName.charAt(0).toUpperCase()}
-            </div>
-          </div>
-          <div>
-            <p className="acr-empty__title">You&apos;re linked</p>
-            <p className="acr-empty__sub">
-              Two strangers, same wavelength. Break the ice — this thread
-              doesn&apos;t stick around.
-            </p>
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-[0.15rem]">
-        {messages.map((msg, i) => {
-          const isMe = msg.from === 'me';
-          const { joinedAbove, isTail } = groups[i];
-          const failed = isMe && msg.delivery === 'failed';
-
-          return (
-            <div
-              key={msg.id}
-              className={`acr-row flex w-full ${isMe ? 'acr-row--me justify-end' : 'justify-start'}${joinedAbove ? '' : ' mt-[0.85rem]'}`}
-            >
-              <div
-                className={[
-                  // `acr-bubble` is the hook the failed-state override hangs off.
-                  'acr-bubble min-w-0 w-fit max-w-[min(100%,22rem)] select-none text-left',
-                  isMe
-                    ? 'bubble-out border border-green/35 bg-green-dark/55 pl-3.5 pr-2 py-2'
-                    : 'bubble-in border border-border bg-primary/90 pl-3.5 pr-3.5 py-2',
-                  failed ? 'acr-bubble--failed' : '',
-                  isMe ? 'acr-new-r' : 'acr-new-l',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <div className="relative min-w-0 max-w-full">
-                  <p className="m-0 text-sm leading-[19px] wrap-break-word whitespace-pre-wrap text-body">
-                    {msg.content}
-                    {/* Reserve the timestamp's footprint on the last line so the
-                        absolute stamp can never sit on top of the last word. */}
-                    {isTail && (
-                      <span aria-hidden className="pointer-events-none ml-2 inline-flex h-[19px] select-none items-center whitespace-nowrap align-bottom text-[11px] leading-none tabular-nums opacity-0">
-                        {fmt(msg.sentAt)}
-                      </span>
-                    )}
-                  </p>
-                  {isTail && (
-                    <time
-                      dateTime={new Date(msg.sentAt).toISOString()}
-                      className={`pointer-events-none absolute bottom-0 right-0 translate-y-1 select-none text-[11px] leading-none tabular-nums ${isMe ? 'text-body-700' : 'text-body-300'}`}
-                    >
-                      {fmt(msg.sentAt)}
-                      {msg.delivery === 'sending' && (
-                        <span className="acr-time__state" aria-label="Sending"> ·</span>
-                      )}
-                    </time>
-                  )}
-                </div>
-                {/* Sits below the absolutely-positioned stamp, so the two never
-                    collide and the bubble needs no extra padding. */}
-                {failed && (
-                  <button
-                    type="button"
-                    className="acr-retry"
-                    onClick={() => onRetry(msg.id)}
-                    title={msg.failureReason ?? 'Tap to resend'}
-                  >
-                    {msg.failureReason ?? 'Not sent — tap to resend'}
-                  </button>
-                )}
-              </div>
-
-              {/* Reactions live beside the bubble, not inside it, so the bubble's
-                  padding and its absolutely-positioned timestamp are untouched. */}
-              <MessageReactionBar
-                reactions={msg.reactions}
-                enabled={live && !failed && msg.delivery !== 'sending'}
-                onReact={(reaction) => onReact(msg.id, reaction)}
-              />
-            </div>
-          );
-        })}
+      <div
+        className="sr-only"
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="New messages"
+      >
+        {lastIncoming && (
+          <p key={lastIncoming.id}>
+            {partnerName}: {lastIncoming.content}
+          </p>
+        )}
       </div>
-
-      {partnerTyping && (
-        <TypingDots label={`${partnerName} is typing`} className="acr-new-l mt-3" />
-      )}
-
-      <div ref={bottomRef} />
     </>
   );
 }

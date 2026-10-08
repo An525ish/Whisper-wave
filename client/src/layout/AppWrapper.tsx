@@ -5,7 +5,7 @@ import { useNotificationsStore } from '@/features/notifications';
 import { usePresenceStore } from '@/features/chat';
 import { useProfileUiStore } from '@/features/profile';
 import { useAuthStore } from '@/features/auth';
-import { useWhisperConnectResume } from '@/features/whisper';
+import { useWhisperConnectResume, useWhisperConnectionReady } from '@/features/whisper';
 import { Title } from '@/features/notifications';
 import { GhostBanner } from '@/features/auth';
 import { ChatListPanel } from '@/features/chat';
@@ -21,8 +21,7 @@ import type {
   TypingPayload,
 } from '@/shared/types/socket';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { useParams } from 'react-router-dom';
 
 type AppWrapperProps = {
   children: ReactNode;
@@ -36,7 +35,6 @@ type NewMessagePayload = {
 
 const AppWrapper = ({ children }: AppWrapperProps) => {
   const socket = useSocket();
-  const navigate = useNavigate();
   const { chatId } = useParams();
   const isChatOpen = Boolean(chatId);
 
@@ -154,17 +152,8 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
     [markTyping],
   );
 
-  // A Whisper anon match was upgraded to a real DM while this user was on
-  // another screen (they signed in from the mutual-vibe prompt and completed
-  // first). Drop them into the freshly created chat.
-  const whisperConnectionReadyHandler = useCallback(
-    (res: { chatId?: string }) => {
-      if (!res.chatId) return;
-      toast('You’re connected — say hi ✨');
-      navigate(`/chat/${res.chatId}`);
-    },
-    [navigate],
-  );
+  // A Whisper anon match became a real DM while this user was elsewhere.
+  const whisperConnectionReadyHandler = useWhisperConnectionReady();
 
   const events = useMemo(
     () => ({

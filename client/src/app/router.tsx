@@ -97,8 +97,8 @@ const appRoutes = [
     // Guest-accessible. The phase spec asked for /whisper, /whisper/chat and
     // /whisper/vibe; we use one route driven by store state because a refresh
     // mid-chat would otherwise hit a cold route with no session to restore.
-    // Browser Back is handled in-page (see pages/Whisper.tsx) so it steps back
-    // to the waiting room instead of abandoning a live match.
+    // While a live match exists, Browser Back is intercepted in the whisper feature
+    // (`useLeaveGuard`) and asks for confirmation instead of abandoning the match.
     path: '/whisper',
     lazy: async () => {
       const module = await import('@/pages/Whisper');

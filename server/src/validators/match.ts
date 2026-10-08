@@ -68,7 +68,3 @@ export const submitReportSchema = z.discriminatedUnion('targetType', [
 export const completeConnectionSchema = z.object({
   connectToken: z.string().min(1, 'connectToken is required'),
 });
-
-export type JoinQueueBody = z.infer<typeof joinQueueSchema>;
-export type SubmitReportBody = z.infer<typeof submitReportSchema>;
-export type CompleteConnectionBody = z.infer<typeof completeConnectionSchema>;

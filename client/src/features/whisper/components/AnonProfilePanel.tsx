@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth';
-import { TagPicker, GenderPicker } from './VibePickerFields';
+import GenderPicker from './GenderPicker';
+import TagPicker from './TagPicker';
 import { MAX_DISPLAY_NAME_LENGTH } from '../constants';
-import { avatarGradient } from '../utils/vibeTag';
-import { formatDuration, type ThreadStats } from '../utils/threadStats';
-import type { Gender, VibeTag } from '../types';
+import { formatThreadDuration } from '../utils/threadSummary';
+import { avatarGradient, vibeTagLabel } from '../utils/vibeTag';
+import type { Gender, ThreadStats, VibeTag } from '../types';
 import './anonProfilePanel.css';
 
 type Props = {
@@ -126,7 +127,7 @@ export default function AnonProfilePanel({
         {stats && (
           <section className="acp__card">
             <p className="acp__label">This thread</p>
-            <p className="acp__stat-lead">{formatDuration(stats.minutes)}</p>
+            <p className="acp__stat-lead">{stats.minutes < 1 ? 'Just met' : `${formatThreadDuration(stats.minutes * 60_000)} together`}</p>
             <dl className="acp__stats">
               <div className="acp__stat">
                 <dt>Messages</dt>
@@ -142,7 +143,7 @@ export default function AnonProfilePanel({
                 <span className="acp__shared-label">In common</span>
                 {stats.sharedTags.map((tag) => (
                   <span key={tag} className="acp__shared-tag">
-                    {tag.replace(/_/g, ' ')}
+                    {vibeTagLabel(tag)}
                   </span>
                 ))}
               </p>

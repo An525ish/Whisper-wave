@@ -1,5 +1,5 @@
 import * as userRepo from '../../repositories/user.js';
-import type { UpdateProfileInput } from '../../validators/request.js';
+import type { UpdateProfileInput } from '../../types/input.js';
 import type { PublicUser, UpdateUserPatch } from '../../types/index.js';
 import type { UploadableFile } from '../../types/message.js';
 import { AppError } from '../../utils/AppError.js';

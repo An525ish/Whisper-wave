@@ -4,7 +4,7 @@ import { chatService } from '../../services/index.js';
 import { logger } from '../../utils/logger.js';
 import { chatRoom } from '../../utils/helper.js';
 import { socketReactionSchema } from '../../validators/socket.js';
-import type { SocketRateLimiter } from '../rateLimiter.js';
+import type { SocketRateLimiter } from '../../types/anonSocket.js';
 import type { SocketSession } from '../types.js';
 
 export const registerReactionHandler = (session: SocketSession, limiter: SocketRateLimiter): void => {

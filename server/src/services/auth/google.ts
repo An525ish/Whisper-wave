@@ -6,7 +6,7 @@ import { AppError } from '../../utils/AppError.js';
 import { deriveUsername } from '../../utils/helper.js';
 import { resolveOAuthAvatar } from '../../utils/avatar.js';
 import { env } from '../../config/env.js';
-import type { GoogleSignInInput } from '../../validators/auth.js';
+import type { GoogleSignInInput } from '../../types/input.js';
 import { normalizeEmail } from '../../utils/normalize.js';
 import { assertAcceptableEmail, issueAuthResult } from './shared.js';
 

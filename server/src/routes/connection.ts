@@ -4,6 +4,7 @@ import {
   getConnectionForChat,
 } from '../controllers/connection.js';
 import { auth, validate } from '../middlewares/index.js';
+import { chatIdParamSchema } from '../validators/chat.js';
 import { completeConnectionSchema } from '../validators/match.js';
 
 export const connectionRouter = Router();
@@ -17,4 +18,9 @@ connectionRouter.post(
 );
 
 /** Auth required — the "how we met" story for a DM. */
-connectionRouter.get('/:chatId', auth, getConnectionForChat);
+connectionRouter.get(
+  '/:chatId',
+  auth,
+  validate(chatIdParamSchema, 'params'),
+  getConnectionForChat
+);

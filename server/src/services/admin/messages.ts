@@ -4,7 +4,7 @@ import type { AdminMessagesPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
 import { trimOptional } from '../../utils/normalize.js';
 import { deleteManyFromR2 } from '../../utils/storage.js';
-import type { AdminMessagesQuery } from '../../validators/admin.js';
+import type { AdminMessagesQuery } from '../../types/adminInput.js';
 import { parseBeforeCursor } from './shared.js';
 
 export const listMessages = async (input: AdminMessagesQuery): Promise<AdminMessagesPage> => {

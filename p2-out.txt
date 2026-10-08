@@ -1,8 +1,0 @@
-[partner] joined as DesyncTest | anonId=***
-[partner] socket connected
-[partner] MATCH_FOUND partner = undefined session = 8d41762b-a4ab-439a-b310-ee2d4112284a
-[partner] sent ack = {"ok":true}
-[partner] sent ack = {"ok":true}
-[partner] sent ack = {"ok":true}
-[partner] sent ack = {"ok":true}
-[partner] DISCONNECTED {"reason":"skipped"}

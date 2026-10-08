@@ -3,25 +3,15 @@ import { logger } from '../utils/logger.js';
 import * as reportRepo from '../repositories/report.js';
 import * as chatRepo from '../repositories/chat.js';
 import { getSession, getPartner, isParticipant, blockAnonId } from './match/index.js';
-import type { SubmitReportBody } from '../validators/match.js';
+import type { SubmitReportInput } from '../types/report.js';
 
-export type SubmitReportInput = SubmitReportBody & {
-  /** From the httpOnly `anonId` cookie — guests can report without an account. */
-  reporterAnonId: string | null;
-  /** From the access token, when signed in. */
-  reporterUserId: string | null;
-};
-/**
- * Was `userId` a member of `chatId`? Missing ids deny by default.
- */
-const isChatMember = async (
-  chatId: string | undefined,
-  userId: string | null
-): Promise<boolean> => {
-  if (!chatId || !userId) return false;
+/** A repeat report of the same user in the same chat inside this window is a no-op. */
+const DUPLICATE_REPORT_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** Member ids of `chatId`, or null when the chat does not exist. */
+const getChatMemberIds = async (chatId: string): Promise<string[] | null> => {
   const chat = await chatRepo.findByIdMembers(chatId);
-  if (!chat) return false;
-  return chat.members.some((m) => m.toString() === userId);
+  return chat ? chat.members.map((m) => m.toString()) : null;
 };
 
 /**
@@ -34,8 +24,9 @@ const isChatMember = async (
  * rate limiter is per-IP:
  *  1. The client can never name its own anon target. It is resolved server-side
  *     from the session plus the reporter's own cookie.
- *  2. For a user target we verify the reporter is actually a member of that
- *     chat, so reports can't be weaponised to flood a stranger's queue.
+ *  2. For a user target we verify BOTH reporter and target are members of that
+ *     chat (and differ), and drop repeats within 24h, so reports can't be
+ *     weaponised to flood a stranger's queue.
  *
  * A resolved anon target is mutually blocked — the guarantee behind "report &
  * move on": neither side can be re-matched to the other.
@@ -71,9 +62,27 @@ export const submitReport = async (input: SubmitReportInput): Promise<void> => {
   } else {
     chatId = input.chatId;
     targetUserId = input.targetUserId;
-    if (!(await isChatMember(chatId, reporterUserId))) {
+    if (!reporterUserId) {
+      throw new AppError(401, 'Please sign in to report a user');
+    }
+    if (targetUserId === reporterUserId) {
+      throw new AppError(400, 'You cannot report yourself');
+    }
+    const memberIds = await getChatMemberIds(chatId);
+    if (!memberIds || !memberIds.includes(reporterUserId)) {
       throw new AppError(403, 'You are not part of that chat');
     }
+    if (!memberIds.includes(targetUserId)) {
+      throw new AppError(400, 'That user is not part of this chat');
+    }
+    const alreadyReported = await reportRepo.existsRecentUserReport(
+      reporterUserId,
+      targetUserId,
+      chatId,
+      new Date(Date.now() - DUPLICATE_REPORT_WINDOW_MS)
+    );
+    // Idempotent: the earlier report is already in the queue.
+    if (alreadyReported) return;
   }
 
   await reportRepo.create({

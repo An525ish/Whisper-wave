@@ -1,11 +1,8 @@
-import mongoose, { Schema, model, type Document } from 'mongoose';
-import type { IPendingConnectionFields, PendingConnectionSide } from '../types/match.js';
+import mongoose, { Schema, model } from 'mongoose';
+import type { IPendingConnection, PendingConnectionSideDoc } from '../types/connection.js';
 
-export type IPendingConnection = IPendingConnectionFields & Document;
-
-const sideSchema = new Schema<PendingConnectionSide>(
+const sideSchema = new Schema<PendingConnectionSideDoc>(
   {
-    anonId: { type: String, required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     displayName: { type: String, required: true },
     vibeTags: { type: [String], default: [] },
@@ -29,6 +26,9 @@ const pendingConnectionSchema = new Schema<IPendingConnection>(
       default: 'pending',
       index: true,
     },
+    // Set when status flips to 'processing'; a claim older than the stale
+    // threshold may be re-taken (the claimant crashed or hung).
+    processingAt: { type: Date, default: null },
     expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } },
   },
   { timestamps: true }

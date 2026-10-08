@@ -1,16 +1,33 @@
 import { logger } from '../../utils/logger.js';
 import type { Namespace } from 'socket.io';
-import type { BufferedAnonMessage } from '../../types/match.js';
+import type {
+  AcceptMessageResult,
+  BufferedAnonMessage,
+  StoredAnonMessage,
+} from '../../types/match.js';
 import { MATCH_DISCONNECTED, MATCH_MESSAGE } from '../../constants/anon-events.js';
 import { requireActiveParticipant } from './pairing.js';
-import { bufferMessage, getPartner, touchSession } from './session.js';
-import { touchWaitingCard } from './queue.js';
-import { inspectMessage, rejectionMessage, shouldAutoReport } from './moderation.js';
-import { maybeAutoReport } from '../moderation/autoReport.js';
+import { getPartner, recordMessage } from './session.js';
+import { inspectMessage, rejectionMessage } from './moderation.js';
+import { fileAutoReport } from '../moderation/autoReport.js';
 
-export type AcceptMessageResult =
-  | { accepted: true; message: BufferedAnonMessage; partnerAnonId: string }
-  | { accepted: false; id?: string; reason: string };
+/**
+ * A stored message as one specific recipient sees it.
+ *
+ * The buffer keeps the sender's anonId, which must never reach a client. `from`
+ * becomes `'me'` for the sender and `'them'` for everyone else, computed against
+ * the RECIPIENT — the same stored row is `'me'` for one side and `'them'` for the
+ * other.
+ */
+export const toWireMessage = (
+  message: StoredAnonMessage,
+  viewerAnonId: string
+): BufferedAnonMessage => ({
+  ...(message.id ? { id: message.id } : {}),
+  from: message.from === viewerAnonId ? 'me' : 'them',
+  content: message.content,
+  sentAt: message.sentAt,
+});
 
 /**
  * Validate, moderate, buffer and relay one anonymous message.
@@ -33,51 +50,66 @@ export const acceptAnonMessage = async (
   const verdict = inspectMessage(content);
   if (!verdict.allowed) {
     logger.info(
-      { sessionId: activeSessionId, anonId, reason: verdict.reason },
+      { sessionId: activeSessionId, anonId, reason: verdict.reason, severe: verdict.severe },
       'Blocked anon message'
     );
-    // Severe categories file a report + mutually block the pair.
-    void maybeAutoReport({
-      sessionId: activeSessionId,
-      reporterAnonId: anonId,
-      reason: verdict.reason,
-    });
+    // Only the severe set files a report + mutually blocks the pair. Contact and
+    // scam solicitation is blocked but never auto-reported, or one spammer could
+    // flood the review queue.
+    if (verdict.severe) {
+      void fileAutoReport({
+        sessionId: activeSessionId,
+        reporterAnonId: anonId,
+        reason: verdict.reason,
+      });
+    }
     return { accepted: false, id, reason: rejectionMessage() };
   }
 
-  // Allowed, but severe enough to warrant a report + block on its own.
-  if (shouldAutoReport(content)) {
-    void maybeAutoReport({
-      sessionId: activeSessionId,
-      reporterAnonId: anonId,
-      reason: 'sexual',
-    });
-  }
-
   const partnerAnonId = getPartner(session, anonId);
-  const message: BufferedAnonMessage = { id, from: anonId, content, sentAt: Date.now() };
+  const message: StoredAnonMessage = {
+    ...(id ? { id } : {}),
+    from: anonId,
+    content,
+    sentAt: Date.now(),
+  };
 
   // Buffer in Redis (survives a refresh) — the partner is told only after this
-  // succeeds, so a message can't be delivered without being replayable.
-  await bufferMessage(activeSessionId, message);
-
-  // Keep both the session and the identity card alive.
-  await touchSession(activeSessionId);
-  await touchWaitingCard(anonId);
+  // succeeds, so a message can't be delivered without being replayable. Also
+  // counts the message for the vibe gate and refreshes every TTL, in one command.
+  const recorded = await recordMessage(session, message);
+  if (!recorded) {
+    return {
+      accepted: false,
+      id,
+      reason: 'That message id was already used in this chat.',
+      code: 'duplicate_id',
+    };
+  }
 
   return { accepted: true, message, partnerAnonId };
 };
 
 /**
- * Relay a message to the partner's anonId room.
+ * Deliver an accepted message.
+ *
+ * The partner gets it as `from: 'them'`. The sender's OTHER sockets (a second
+ * tab on the same anonId) get it as `from: 'me'` with the same id, so tabs do not
+ * desync; the originating socket is excluded because it is told by its ack.
  * Kept separate from `acceptAnonMessage` so the socket layer owns emission.
  */
 export const relayMessage = (
   nsp: Namespace,
+  senderAnonId: string,
+  senderSocketId: string,
   partnerAnonId: string,
-  message: BufferedAnonMessage
+  message: StoredAnonMessage
 ): void => {
-  nsp.to(`anon:${partnerAnonId}`).emit(MATCH_MESSAGE, message);
+  nsp.to(`anon:${partnerAnonId}`).emit(MATCH_MESSAGE, toWireMessage(message, partnerAnonId));
+  nsp
+    .to(`anon:${senderAnonId}`)
+    .except(senderSocketId)
+    .emit(MATCH_MESSAGE, toWireMessage(message, senderAnonId));
 };
 
 /** Tell a partner their match ended, and why. */

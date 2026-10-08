@@ -2,6 +2,7 @@ import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import mongoose, { Types } from 'mongoose';
 import { env } from '../../../config/env.js';
+import { Chat } from '../../../models/chat.js';
 import * as messageRepo from '../../../repositories/message.js';
 import * as messageReactionRepo from '../../../repositories/messageReaction.js';
 import { toggleMessageReaction } from '../reactions.js';
@@ -23,26 +24,59 @@ import { toggleMessageReaction } from '../reactions.js';
 
 const TEST_DB_NAME = 'whisperwave_test_message_reactions';
 
+let mongoUp = false;
+const SKIP_REASON = 'MongoDB unavailable — skipping integration test';
+
 before(async () => {
   if (process.env.NODE_ENV !== 'test') {
     throw new Error('Refusing to run: this suite writes to MongoDB outside NODE_ENV=test');
   }
-  await mongoose.connect(env.DB_URI, {
-    dbName: TEST_DB_NAME,
-    serverSelectionTimeoutMS: 5000,
-  });
+  try {
+    // Short timeout — a missing Mongo must skip the suite, not stall the run.
+    await mongoose.connect(env.DB_URI, {
+      dbName: TEST_DB_NAME,
+      serverSelectionTimeoutMS: 1500,
+    });
+    mongoUp = true;
+  } catch (err) {
+    mongoUp = false;
+    await mongoose.disconnect().catch(() => undefined);
+    console.warn(
+      `[test] MongoDB unavailable (${err instanceof Error ? err.message : 'unknown'}) — skipping integration tests`
+    );
+  }
 });
 
 after(async () => {
-  if (mongoose.connection.readyState === 0) return;
+  if (!mongoUp) return;
   await mongoose.connection.dropDatabase();
   await mongoose.disconnect();
 });
 
+/**
+ * `t.skip()` only labels the test — it does not stop the body, so throw after it
+ * (same pattern as match/__tests__/redisHarness.ts `skipUnlessRedis`). Resolved at
+ * run time, after `before()` has had its chance to connect.
+ */
+const mongoIt = (name: string, fn: () => Promise<void>): void => {
+  void it(name, async (t) => {
+    if (!mongoUp) {
+      t.skip(SKIP_REASON);
+      throw new Error(SKIP_REASON);
+    }
+    await fn();
+  });
+};
+
 const newUserId = (): string => new Types.ObjectId().toString();
 
-/** A message in `chatId` with no reactions yet. */
+/** The two members of every seeded chat — only members may react. */
+const ALICE = newUserId();
+const BOB = newUserId();
+
+/** A message in `chatId` (a chat with members ALICE and BOB) with no reactions yet. */
 const seedMessage = async (chatId: Types.ObjectId): Promise<string> => {
+  await Chat.create({ _id: chatId, name: 'test', creator: ALICE, members: [ALICE, BOB] });
   const record = await messageRepo.create({
     content: 'hello',
     sender: new Types.ObjectId(),
@@ -59,10 +93,10 @@ const stored = async (messageId: string) =>
   }));
 
 describe('toggleMessageReaction (MongoDB integration)', () => {
-  it('adds, and reports the reacting user by id', async () => {
+  mongoIt('adds, and reports the reacting user by id', async () => {
     const chatId = new Types.ObjectId();
     const messageId = await seedMessage(chatId);
-    const alice = newUserId();
+    const alice = ALICE;
 
     const reactions = await toggleMessageReaction({
       messageId,
@@ -75,10 +109,10 @@ describe('toggleMessageReaction (MongoDB integration)', () => {
     assert.deepEqual(await stored(messageId), [{ emoji: '🔥', users: [alice] }]);
   });
 
-  it('toggles the same emoji back off and leaves no entry behind', async () => {
+  mongoIt('toggles the same emoji back off and leaves no entry behind', async () => {
     const chatId = new Types.ObjectId();
     const messageId = await seedMessage(chatId);
-    const alice = newUserId();
+    const alice = ALICE;
 
     await toggleMessageReaction({ messageId, chatId: chatId.toString(), emoji: '🔥', userId: alice });
     const after = await toggleMessageReaction({
@@ -93,11 +127,11 @@ describe('toggleMessageReaction (MongoDB integration)', () => {
     assert.deepEqual(await stored(messageId), []);
   });
 
-  it('keeps other users on the emoji when one toggles off', async () => {
+  mongoIt('keeps other users on the emoji when one toggles off', async () => {
     const chatId = new Types.ObjectId();
     const messageId = await seedMessage(chatId);
-    const alice = newUserId();
-    const bob = newUserId();
+    const alice = ALICE;
+    const bob = BOB;
 
     await toggleMessageReaction({ messageId, chatId: chatId.toString(), emoji: '🔥', userId: alice });
     await toggleMessageReaction({ messageId, chatId: chatId.toString(), emoji: '🔥', userId: bob });
@@ -111,10 +145,10 @@ describe('toggleMessageReaction (MongoDB integration)', () => {
     assert.deepEqual(after, [{ emoji: '🔥', users: [bob] }]);
   });
 
-  it('moves a user between emojis without accumulating', async () => {
+  mongoIt('moves a user between emojis without accumulating', async () => {
     const chatId = new Types.ObjectId();
     const messageId = await seedMessage(chatId);
-    const alice = newUserId();
+    const alice = ALICE;
 
     await toggleMessageReaction({ messageId, chatId: chatId.toString(), emoji: '🔥', userId: alice });
     const after = await toggleMessageReaction({
@@ -128,11 +162,11 @@ describe('toggleMessageReaction (MongoDB integration)', () => {
     assert.deepEqual(await stored(messageId), [{ emoji: '🎉', users: [alice] }]);
   });
 
-  it('prunes the old emoji when its last user switches away', async () => {
+  mongoIt('prunes the old emoji when its last user switches away', async () => {
     const chatId = new Types.ObjectId();
     const messageId = await seedMessage(chatId);
-    const alice = newUserId();
-    const bob = newUserId();
+    const alice = ALICE;
+    const bob = BOB;
 
     await toggleMessageReaction({ messageId, chatId: chatId.toString(), emoji: '🔥', userId: alice });
     await toggleMessageReaction({ messageId, chatId: chatId.toString(), emoji: '🔥', userId: bob });
@@ -151,11 +185,11 @@ describe('toggleMessageReaction (MongoDB integration)', () => {
     ]);
   });
 
-  it('lets two users hold different reactions on one message', async () => {
+  mongoIt('lets two users hold different reactions on one message', async () => {
     const chatId = new Types.ObjectId();
     const messageId = await seedMessage(chatId);
-    const alice = newUserId();
-    const bob = newUserId();
+    const alice = ALICE;
+    const bob = BOB;
 
     await toggleMessageReaction({ messageId, chatId: chatId.toString(), emoji: '🔥', userId: alice });
     const after = await toggleMessageReaction({
@@ -171,11 +205,11 @@ describe('toggleMessageReaction (MongoDB integration)', () => {
     ]);
   });
 
-  it('does not add the same user twice to a shared emoji', async () => {
+  mongoIt('does not add the same user twice to a shared emoji', async () => {
     const chatId = new Types.ObjectId();
     const messageId = await seedMessage(chatId);
-    const alice = newUserId();
-    const bob = newUserId();
+    const alice = ALICE;
+    const bob = BOB;
 
     await toggleMessageReaction({ messageId, chatId: chatId.toString(), emoji: '🔥', userId: alice });
     await toggleMessageReaction({ messageId, chatId: chatId.toString(), emoji: '🔥', userId: bob });
@@ -185,10 +219,10 @@ describe('toggleMessageReaction (MongoDB integration)', () => {
     assert.deepEqual(await stored(messageId), [{ emoji: '🔥', users: [alice, bob] }]);
   });
 
-  it('writes nothing when the message belongs to a different chat', async () => {
+  mongoIt('writes nothing when the message belongs to a different chat', async () => {
     const realChatId = new Types.ObjectId();
     const messageId = await seedMessage(realChatId);
-    const alice = newUserId();
+    const alice = ALICE;
 
     // Surfacing this as an error would tell a user their own tap failed; the
     // guard exists to stop writes, not to report. Silent, and nothing broadcast.
@@ -203,7 +237,24 @@ describe('toggleMessageReaction (MongoDB integration)', () => {
     assert.deepEqual(await stored(messageId), [], 'and must not have written anything');
   });
 
-  it('throws a 404 for a message that does not exist', async () => {
+  mongoIt('rejects a user who is not a member of the chat with a 403', async () => {
+    const chatId = new Types.ObjectId();
+    const messageId = await seedMessage(chatId);
+
+    await assert.rejects(
+      () =>
+        toggleMessageReaction({
+          messageId,
+          chatId: chatId.toString(),
+          emoji: '🔥',
+          userId: newUserId(),
+        }),
+      (err: unknown) => (err as { statusCode?: number }).statusCode === 403
+    );
+    assert.deepEqual(await stored(messageId), []);
+  });
+
+  mongoIt('throws a 404 for a message that does not exist', async () => {
     await assert.rejects(
       () =>
         toggleMessageReaction({
@@ -218,5 +269,21 @@ describe('toggleMessageReaction (MongoDB integration)', () => {
         return true;
       }
     );
+  });
+
+  mongoIt('keeps exactly one reaction per user when the same user toggles concurrently', async () => {
+    const chatId = new Types.ObjectId();
+    const messageId = await seedMessage(chatId);
+    const base = { messageId, chatId: chatId.toString(), userId: ALICE };
+
+    await Promise.all([
+      toggleMessageReaction({ ...base, emoji: '🔥' }),
+      toggleMessageReaction({ ...base, emoji: '🎉' }),
+      toggleMessageReaction({ ...base, emoji: '👍' }),
+    ]);
+
+    const entries = await stored(messageId);
+    assert.equal(entries.length, 1, 'one reaction per user, no orphaned empty entries');
+    assert.deepEqual(entries[0]?.users, [ALICE]);
   });
 });

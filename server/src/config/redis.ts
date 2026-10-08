@@ -39,11 +39,14 @@ export const getRedis = (): Redis => {
         ? { servername: parsed.hostname, rejectUnauthorized: !env.REDIS_TLS_INSECURE }
         : undefined,
       maxRetriesPerRequest: 3,
-      // Bounded: an unbounded strategy means a down Redis never surfaces an
-      // error to the caller, so `connectRedis` hangs instead of failing fast.
+      // Reconnect FOREVER with a capped backoff. Giving up after a few attempts
+      // left a one-minute Redis blip as a permanently dead client that only a
+      // process restart could revive. Individual commands still fail fast
+      // (`maxRetriesPerRequest`), so callers get an error, not a hang; and boot
+      // still fails fast because `connectRedis` bounds ITS probe with a timeout
+      // rather than relying on this strategy giving up.
       retryStrategy(times) {
-        if (times > 3) return null; // stop retrying, surface the error
-        return Math.min(times * 300, 2000);
+        return Math.min(times * 300, 5000);
       },
       // Only reconnect on READONLY (replica promotion failover).
       reconnectOnError(err: Error) {
@@ -62,12 +65,22 @@ export const getRedis = (): Redis => {
     });
     _redis.on('connect', () => logger.info('Redis connected'));
     _redis.on('ready', () => logger.info('Redis ready'));
-    _redis.on('reconnecting', () => logger.warn('Redis reconnecting...'));
+    _redis.on('reconnecting', (delayMs: number) =>
+      logger.warn({ delayMs }, 'Redis reconnecting...')
+    );
+    _redis.on('end', () => logger.warn('Redis connection ended'));
   }
   return _redis;
 };
 
-/** Connect + verify. Rejects on timeout instead of hanging forever. */
+/**
+ * Connect + verify. Rejects on timeout instead of hanging forever.
+ *
+ * The timeout lives HERE, not in the retry strategy: with unbounded reconnects the
+ * initial `connect()` never rejects on its own, so this race is what makes a boot
+ * against a dead Redis fail fast. The client keeps retrying in the background
+ * after a timeout, which is what lets a dev server recover when Redis comes up.
+ */
 const probe = async (timeoutMs: number): Promise<void> => {
   const redis = getRedis();
   await Promise.race([
@@ -90,7 +103,7 @@ export const connectRedis = async (timeoutMs = 10_000): Promise<void> => {
   logger.info('Redis ping OK');
 };
 
-/** Liveness probe for /health — never throws. */
+/** Redis reachability probe for /health and /ready — never throws. */
 export const redisHealth = async (): Promise<{
   ok: boolean;
   status: string;
@@ -114,10 +127,16 @@ export const redisHealth = async (): Promise<{
 /** Graceful disconnect — call during server shutdown. */
 export const disconnectRedis = async (): Promise<void> => {
   if (_redis) {
-    await _redis.quit().catch((err: unknown) => {
-      logger.warn({ err }, 'Redis quit failed — forcing disconnect');
-      _redis?.disconnect();
-    });
+    if (_redis.status === 'ready') {
+      await _redis.quit().catch((err: unknown) => {
+        logger.warn({ err }, 'Redis quit failed — forcing disconnect');
+        _redis?.disconnect();
+      });
+    } else {
+      // Not connected (down, or still retrying forever): QUIT would sit in the
+      // offline queue and never be answered, so cut the client loose directly.
+      _redis.disconnect();
+    }
     _redis = null;
     logger.info('Redis disconnected');
   }

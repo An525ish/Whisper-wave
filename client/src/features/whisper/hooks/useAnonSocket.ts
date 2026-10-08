@@ -1,20 +1,30 @@
 import { useCallback } from 'react';
+import { track } from '@/shared/lib/analytics';
 import {
-  ANON_MESSAGE,
+  ACK_TIMEOUT_MS,
   ANON_LIKE,
+  ANON_MESSAGE,
   ANON_NEXT,
   ANON_REACT,
-  ANON_REQUEUE,
   ANON_TYPING_START,
   ANON_TYPING_STOP,
-  type AnonMessageAck,
-  type AnonReaction,
-} from '@/shared/constants/anonEvents';
-import { useAnonSocketLifecycle, type AnonSocketRef } from './useAnonSocketLifecycle';
+  LIKE_ACK_TIMEOUT_MS,
+  LIKE_FAIL_COPY,
+  LIKE_FAIL_FALLBACK,
+  WHISPER_EVENTS,
+} from '../constants';
+import { joinQueue } from '../api/match';
 import { useAnonStore } from '../stores/anonStore';
+import { trackSessionEnd } from '../stores/trackSessionEnd';
 import { isVibeUnlocked } from '../utils/isVibeUnlocked';
-import { ANALYTICS, track } from '@/shared/lib/analytics';
-import { ACK_TIMEOUT_MS } from '../constants';
+import { useAnonSocketLifecycle } from './useAnonSocketLifecycle';
+import type {
+  AnonLikeAck,
+  AnonMessageAck,
+  AnonReaction,
+  AnonReactionAck,
+  NextSource,
+} from '../types';
 
 const newMessageId = (): string => {
   const c = globalThis.crypto;
@@ -24,30 +34,19 @@ const newMessageId = (): string => {
 
 const TIMEOUT_REASON = 'No reply from the server — tap to resend.';
 
-type UseAnonSocketReturn = {
-  sendMessage: (content: string) => void;
-  sendLikeEvent: () => void;
-  sendNext: () => void;
-  requeue: () => void;
-  sendReaction: (messageId: string, reaction: AnonReaction) => void;
-  retryMessage: (id: string) => void;
-  emitTypingStart: () => void;
-  emitTypingStop: () => void;
-};
-
 /**
  * The imperative half of the anon socket: send actions over the connection
  * owned by `useAnonSocketLifecycle`.
  *
- * Every send is **acked**. Messages are appended optimistically but marked
+ * Every message send is **acked**. Messages are appended optimistically but marked
  * `sending` until the server confirms, so a message rejected by moderation or
  * the rate limiter can never sit in the thread looking delivered.
  */
 export function useAnonSocket(
   onPartnerTyping: (isTyping: boolean) => void,
   onError: (msg: string) => void
-): UseAnonSocketReturn {
-  const socketRef: AnonSocketRef = useAnonSocketLifecycle({
+) {
+  const socketRef = useAnonSocketLifecycle({
     onPartnerTyping,
     onSocketError: onError,
   });
@@ -72,16 +71,15 @@ export function useAnonSocket(
         .emit(ANON_MESSAGE, { content, id }, (err: Error | null, res: AnonMessageAck) => {
           if (err) return settle('failed', TIMEOUT_REASON);
 
-          // The server saying "this session is over" is the one definitive proof
-          // we get that our view of the match is stale. Without this the client
-          // keeps rendering a live chat whose every message fails forever, and
-          // the user has no way to learn the thread is dead — `MATCH_DISCONNECTED`
-          // is the normal signal and it can be missed.
-          //
-          // Settle the bubble first so the text they typed is visibly unsent,
-          // then hand them the find-someone prompt.
-          settle(res?.ok ? 'sent' : 'failed', res?.reason);
+          // A reused id means this exact message already landed (a retry whose
+          // first ack was lost) — it is delivered, not failed.
+          const delivered = res?.ok || res?.code === 'duplicate_id';
+          settle(delivered ? 'sent' : 'failed', res?.reason);
+
+          // `session_ended` is the one definitive proof our view of the match is
+          // stale; hand the user the find-someone prompt instead of a dead chat.
           if (res?.code === 'session_ended') {
+            trackSessionEnd('session_ended');
             useAnonStore.getState().markPartnerLeft();
           }
         });
@@ -103,6 +101,7 @@ export function useAnonSocket(
         sentAt: Date.now(),
         delivery: 'sending',
       });
+      track(WHISPER_EVENTS.MESSAGE_SENT, {});
       emitWithAck(id, text);
     },
     [socketRef, emitWithAck]
@@ -120,43 +119,89 @@ export function useAnonSocket(
   const sendLikeEvent = useCallback(() => {
     const socket = socketRef.current;
     const state = useAnonStore.getState();
-    if (!socket?.connected || state.likeSent || state.mutualLike) return;
+    if (!socket?.connected || !state.sessionId || state.likeSent || state.mutualLike) return;
     if (!isVibeUnlocked(state.messages, state.matchedAt)) {
       // The header heart stays tappable before the gate opens, so this is the
       // user-facing explanation. The server re-checks regardless.
       onError('Chat a little longer before sending a vibe.');
       return;
     }
+    const sessionId = state.sessionId;
     state.sendLike();
-    socket.emit(ANON_LIKE, {});
+    socket
+      .timeout(LIKE_ACK_TIMEOUT_MS)
+      .emit(ANON_LIKE, {}, (err: Error | null, res?: AnonLikeAck) => {
+        const now = useAnonStore.getState();
+        // The thread moved on (skip / new match) before the ack: nothing to settle.
+        if (now.sessionId !== sessionId) return;
+        if (!err && res?.ok) {
+          track(WHISPER_EVENTS.LIKE_SENT, {});
+          return; // MUTUAL_LIKE drives the modal.
+        }
+        // No ack (lost, or an old server) or a refusal: undo the heart.
+        if (!now.rollbackLike()) return;
+        if (err) return onError(LIKE_FAIL_FALLBACK);
+        onError(LIKE_FAIL_COPY[res?.ok === false ? res.code : ''] ?? LIKE_FAIL_FALLBACK);
+      });
   }, [socketRef, onError]);
 
-  const sendNext = useCallback(() => {
-    const socket = socketRef.current;
-    const state = useAnonStore.getState();
-    state.clearSession();
-    state.setStatus('waiting');
-    state.setSessionNotice(null);
-    if (!socket?.connected) {
-      onError('Not connected. Reconnecting…');
-      return;
-    }
-    socket.emit(ANON_NEXT, {});
-  }, [socketRef, onError]);
+  /**
+   * Skip the current match and queue for the next one.
+   *
+   * If the identity was edited since the server last saved it, the card is
+   * rewritten (`POST /match/join`) BEFORE `ANON_NEXT`, because the server re-queues
+   * us from the stored card. A failed rewrite falls back to the old card.
+   */
+  const sendNext = useCallback(
+    async (from: NextSource) => {
+      const socket = socketRef.current;
+      const state = useAnonStore.getState();
+      track(WHISPER_EVENTS.NEXT, { from });
+      trackSessionEnd('skip');
 
-  const requeue = useCallback(() => {
-    socketRef.current?.emit(ANON_REQUEUE, {});
+      const refresh =
+        state.identityDirty && state.displayName.trim()
+          ? {
+              displayName: state.displayName.trim(),
+              vibeTags: state.vibeTags,
+              gender: state.gender,
+              ageConfirmed: true,
+            }
+          : null;
+
+      state.clearSession();
+      state.setStatus('waiting');
+      if (!socket?.connected) {
+        onError('Not connected. Reconnecting…');
+        return;
+      }
+      if (refresh) {
+        try {
+          await joinQueue(refresh);
+          useAnonStore.getState().markIdentitySynced();
+        } catch {
+          onError('Couldn’t save your new alias — this match uses the old one.');
+        }
+      }
+      socket.emit(ANON_NEXT, {});
+    },
+    [socketRef, onError]
+  );
+
+  /** End a live match for good (Back-confirm). The caller then leaves the queue. */
+  const endMatch = useCallback(() => {
+    if (!useAnonStore.getState().sessionId) return;
+    trackSessionEnd('leave');
+    // Tell the partner now rather than leaving them a 45 s reconnect grace period.
+    socketRef.current?.emit(ANON_NEXT, {});
   }, [socketRef]);
 
   /**
    * React to one message.
    *
    * Optimistic: the store applies the toggle immediately and `MATCH_REACTION`
-   * arrives back to BOTH participants, so the same store call settles our own tap
-   * from the server's answer rather than from a local guess. If the send fails
-   * outright there is nothing to undo — the optimistic state is overwritten by the
-   * next authoritative `MATCH_REACTION`, and a dead session lands on
-   * `markPartnerLeft` instead.
+   * arrives back to BOTH participants, which settles our own tap from the server's
+   * answer. The ack only matters on refusal, where we restore what the bubble held.
    */
   const sendReaction = useCallback(
     (messageId: string, reaction: AnonReaction) => {
@@ -164,9 +209,14 @@ export function useAnonSocket(
       const state = useAnonStore.getState();
       if (!socket?.connected || !state.sessionId || !messageId) return;
 
+      const previous = state.messages.find((m) => m.id === messageId)?.reactions?.me;
       state.applyReaction(messageId, 'me', reaction);
-      track(ANALYTICS.WHISPER_REACTED, { reaction });
-      socket.emit(ANON_REACT, { messageId, reaction });
+      track(WHISPER_EVENTS.REACTED, { reaction });
+      socket.emit(ANON_REACT, { messageId, reaction }, (res?: AnonReactionAck) => {
+        if (res?.ok === false) {
+          useAnonStore.getState().setReaction(messageId, 'me', previous);
+        }
+      });
     },
     [socketRef]
   );
@@ -184,7 +234,7 @@ export function useAnonSocket(
     sendMessage,
     sendLikeEvent,
     sendNext,
-    requeue,
+    endMatch,
     sendReaction,
     retryMessage,
     emitTypingStart,

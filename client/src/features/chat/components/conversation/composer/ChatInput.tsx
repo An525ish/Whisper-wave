@@ -9,7 +9,7 @@ import SendIcon from "@/shared/components/ui/icons/Send";
 import type { GifItem } from "@/features/chat/api/gif";
 import { MAX_FILES } from "@/shared/constants/app";
 import { useAutoGrowTextarea } from "@/shared/hooks";
-import { COMPOSER_ROW_MIN_CLASS, COMPOSER_ROW_MIN_CLASS_COMPACT, COMPOSER_SEND_SIZE_CLASS, COMPOSER_SEND_SIZE_CLASS_COMPACT } from "@/features/chat/constants/chat";
+import { COMPOSER_ROW_MIN_CLASS, COMPOSER_ROW_MIN_CLASS_COMPACT, COMPOSER_SEND_SIZE_CLASS, COMPOSER_SEND_SIZE_CLASS_COMPACT } from "@/shared/constants/app";
 import { readFilesFromClipboardEvent } from "@/features/chat/utils/chat";
 import { extractLinksFromText, splitTextByUrls, type ParsedLink } from "@/features/chat/utils/linkParser";
 import { useChatClipboardStore } from "@/features/chat/stores/clipboard";

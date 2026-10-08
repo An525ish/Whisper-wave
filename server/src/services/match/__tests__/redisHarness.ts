@@ -1,6 +1,8 @@
 import { before, after } from 'node:test';
 import { connectRedis, disconnectRedis } from '../../../config/redis.js';
 import { env } from '../../../config/env.js';
+import { getSession, recordMessage } from '../session.js';
+import type { StoredAnonMessage } from '../../../types/match.js';
 
 /**
  * Shared Redis lifecycle for the match integration suites.
@@ -32,10 +34,16 @@ const INTEGRATION_SKIP_REASON =
  * chance to connect.
  */
 export const skipUnlessRedis = (t: { skip: (why: string) => void }): void => {
-  if (!redisUp) t.skip(INTEGRATION_SKIP_REASON);
+  if (redisUp) return;
+  t.skip(INTEGRATION_SKIP_REASON);
+  // `t.skip()` only labels the test — it does NOT stop the body. Running on would
+  // send commands to a dead Redis whose client retries forever (by design), so a
+  // Redis-less run would crawl. Throwing after the skip ends the body at once and
+  // the runner still reports the test as skipped, not failed.
+  throw new Error(INTEGRATION_SKIP_REASON);
 };
 
-/** A minimal identity card, matching what `joinQueue` writes. */
+/** A minimal identity card, matching what `saveIdentityCard` writes. */
 export const card = (anonId: string, tags: string[] = []) => ({
   anonId,
   displayName: `alias-${anonId}`,
@@ -71,6 +79,9 @@ export const useTestRedis = (cleanup?: () => Promise<void>): void => {
       redisUp = true;
     } catch (err) {
       redisUp = false;
+      // The client reconnects forever by design, which would keep the test process
+      // alive after the suite is done — cut it loose.
+      await disconnectRedis();
       console.warn(
         `[test] Redis unavailable (${err instanceof Error ? err.message : 'unknown'}) — skipping integration tests`
       );
@@ -82,4 +93,17 @@ export const useTestRedis = (cleanup?: () => Promise<void>): void => {
     if (cleanup) await cleanup();
     await disconnectRedis();
   });
+};
+
+/**
+ * Push a message into a session's buffer the way the real path does (counters and
+ * TTLs included). Returns false for a duplicate id.
+ */
+export const bufferTestMessage = async (
+  sessionId: string,
+  message: StoredAnonMessage
+): Promise<boolean> => {
+  const session = await getSession(sessionId);
+  if (!session) throw new Error(`test session ${sessionId} does not exist`);
+  return recordMessage(session, message);
 };

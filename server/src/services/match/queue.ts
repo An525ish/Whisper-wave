@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid';
 import { getRedis } from '../../config/redis.js';
 import { logger } from '../../utils/logger.js';
 import type {
+  MatchAttempt,
   MatchCandidate,
   MatchIdentity,
   VibeTag,
@@ -34,38 +35,29 @@ export const getWaitingCard = async (anonId: string): Promise<WaitingCard | null
 };
 
 /**
- * Attach (or clear) the signed-in account on an existing identity card.
+ * Attach (or clear) the signed-in account on an existing identity card, and hand
+ * the (possibly updated) card back so the caller does not read it a second time.
  *
  * Called on every /anon connect, where the account is known. A signed-out socket
  * CLEARS the link rather than leaving it: the anonId cookie is a 24 h
  * credential, and a stale account on it would charge the next person to use that
  * device this stranger's quota and blocks.
+ *
+ * Returns null when there is no identity card yet.
  */
 export const setWaitingCardUser = async (
   anonId: string,
   userId: string | undefined
-): Promise<void> => {
+): Promise<WaitingCard | null> => {
   const card = await getWaitingCard(anonId);
-  if (!card) return; // no identity card yet — nothing to attach the account to
-  if (card.userId === userId) return; // already correct; don't rewrite the TTL
+  if (!card) return null; // no identity card yet — nothing to attach the account to
+  if (card.userId === userId) return card; // already correct; don't rewrite the TTL
 
   const next: WaitingCard = { ...card };
   if (userId) next.userId = userId;
   else delete next.userId;
   await saveWaitingCard(next);
-};
-
-/**
- * Keep the identity card alive without touching `joinedAt`.
- * Called on every message so an active session never ages out.
- */
-export const touchWaitingCard = async (anonId: string): Promise<void> => {
-  try {
-    await getRedis().expire(REDIS_KEYS.waiting(anonId), TTL.waiting);
-  } catch (err) {
-    // Non-fatal: the card still works, it just stops being refreshed.
-    logger.warn({ err, anonId }, 'Failed to refresh identity card TTL');
-  }
+  return next;
 };
 
 /** Forget an identity card entirely — only on an explicit queue exit. */
@@ -91,15 +83,59 @@ export const setIdentityAlias = async (
   await getRedis().set(key, userId, 'EX', TTL.identityAlias);
 };
 
-/** Push self onto the global queue. */
-export const enqueue = async (anonId: string): Promise<void> => {
-  await getRedis().lpush(REDIS_KEYS.queue, anonId);
+/**
+ * Atomic "remove then push", so a reconnect/refresh never duplicates an entry and
+ * never leaves a window where the user is in the queue twice (or not at all).
+ *
+ * With the guard on (`ARGV[2] == '1'`) it refuses when the anonId already holds an
+ * active match — a second tab connecting at the wrong moment must not put a
+ * matched user back into the queue.
+ */
+const ENQUEUE_SCRIPT = `
+  if ARGV[2] == '1' and redis.call('EXISTS', KEYS[2]) == 1 then
+    return 0
+  end
+  redis.call('LREM', KEYS[1], 0, ARGV[1])
+  redis.call('LPUSH', KEYS[1], ARGV[1])
+  return 1
+`;
+
+const runEnqueue = async (anonId: string, guardActive: boolean): Promise<boolean> =>
+  Number(
+    await getRedis().eval(
+      ENQUEUE_SCRIPT,
+      2,
+      REDIS_KEYS.queue,
+      REDIS_KEYS.activeSession(anonId),
+      anonId,
+      guardActive ? '1' : '0'
+    )
+  ) === 1;
+
+/**
+ * Put self on the global queue (idempotent). Returns false — and does nothing —
+ * when the anonId is already in an active match.
+ */
+export const enqueue = async (anonId: string): Promise<boolean> => runEnqueue(anonId, true);
+
+/**
+ * Idempotent put-back WITHOUT the active-match guard. Only for rollbacks, where a
+ * half-built session may have left an active pointer behind that is being torn
+ * down at the same moment.
+ */
+export const reenqueue = async (anonId: string): Promise<void> => {
+  await runEnqueue(anonId, false);
 };
 
-/** Idempotent: remove then add so reconnect/connect handlers don't duplicate entries. */
-export const reenqueue = async (anonId: string): Promise<void> => {
-  await dequeue(anonId);
-  await enqueue(anonId);
+/**
+ * Drop the whole queue. Called once at boot: every socket died with the previous
+ * process, so every entry is a ghost that would be claimed and paired with
+ * nobody. Clients re-enter via `ANON_REQUEUE`/reconnect, which re-enqueues them.
+ * SINGLE-PROCESS ASSUMPTION — with several instances this would wipe live users
+ * and must become a per-instance heartbeat check instead.
+ */
+export const purgeQueue = async (): Promise<void> => {
+  await getRedis().del(REDIS_KEYS.queue);
 };
 
 /**
@@ -140,36 +176,52 @@ const CANDIDATE_SCAN_WINDOW = 200;
 /**
  * Claim the first candidate we can atomically remove from the queue.
  *
- * The claim is a single Lua script: LREM the candidate and, if the removal
- * actually happened, we own them. This is what makes concurrent matching safe
- * without a global mutex — two matchers can scan the same candidates in
- * parallel and exactly one of them wins each one.
+ * One Lua script, no interleaving point, so concurrent matchers are safe without
+ * a global mutex:
  *
- * `candidates` must already be ordered best-first. Returns the claimed anonId,
- * or null when every candidate was taken by someone else in the meantime.
+ *   1. Self must still be queued (`LPOS`). If it is not, someone else already
+ *      claimed US as their partner — abort (`-1`). Without this, two joiners who
+ *      are both in the queue and scan simultaneously each claim the other and
+ *      both get two partners.
+ *   2. Claim the first available candidate with `LREM`; on success also remove
+ *      self, so after a successful pair NEITHER anonId remains in the queue.
+ *   3. If nothing could be claimed, self stays queued at its original position
+ *      (`0`) — that is why this is `LPOS` rather than `LREM self` + re-push.
+ *
+ * `candidates` must already be ordered best-first.
  */
 const CLAIM_SCRIPT = `
-  for i = 1, #ARGV do
+  if not redis.call('LPOS', KEYS[1], ARGV[1]) then
+    return -1
+  end
+  for i = 2, #ARGV do
     if redis.call('LREM', KEYS[1], 0, ARGV[i]) > 0 then
+      redis.call('LREM', KEYS[1], 0, ARGV[1])
       return ARGV[i]
     end
   end
-  return false
+  return 0
 `;
 
-const claimCandidate = async (candidates: string[]): Promise<string | null> => {
-  if (candidates.length === 0) return null;
-  const claimed = (await getRedis().eval(
+const claimCandidate = async (
+  selfAnonId: string,
+  candidates: string[]
+): Promise<MatchAttempt> => {
+  if (candidates.length === 0) return { outcome: 'none' };
+  const result = await getRedis().eval(
     CLAIM_SCRIPT,
     1,
     REDIS_KEYS.queue,
+    selfAnonId,
     ...candidates
-  )) as string | null;
-  return claimed ?? null;
+  );
+  if (typeof result === 'string') return { outcome: 'matched', partnerAnonId: result };
+  return result === -1 ? { outcome: 'self_claimed' } : { outcome: 'none' };
 };
 
 /**
- * Vibe-aware, block-aware match attempt.
+ * Vibe-aware, block-aware match attempt. `self` MUST already be in the queue
+ * (see `enqueue`) — that is what lets a concurrent matcher find them.
  *
  * Reads a bounded window of the queue non-destructively, drops ourselves and
  * anyone we're blocked with (in either direction), scores the rest by shared
@@ -185,16 +237,23 @@ const claimCandidate = async (candidates: string[]): Promise<string | null> => {
  * once per queue entry, in the /anon connect handler, so the scan's cost stays a
  * function of the window alone.)
  *
- * Returns the matched partner's anonId, or null if nobody suitable is waiting.
+ * `self_claimed` means another matcher paired us first; the caller must do
+ * nothing, because the claimer emits `MATCH_FOUND` to our room.
  */
-export const tryMatchFromQueue = async (self: WaitingCard): Promise<string | null> => {
+export const tryMatchFromQueue = async (self: WaitingCard): Promise<MatchAttempt> => {
   const redis = getRedis();
 
-  // Tail-anchored window = the longest-waiting entries. Skip self.
-  const queued = (await redis.lrange(REDIS_KEYS.queue, -CANDIDATE_SCAN_WINDOW, -1)).filter(
-    (id) => id !== self.anonId
-  );
-  if (queued.length === 0) return null;
+  // Tail-anchored window = the longest-waiting entries.
+  const tail = await redis.lrange(REDIS_KEYS.queue, -CANDIDATE_SCAN_WINDOW, -1);
+
+  // A window shorter than the cap is the WHOLE queue, so self's absence from it
+  // means we were already claimed — answered for free, without running the script.
+  if (!tail.includes(self.anonId) && tail.length < CANDIDATE_SCAN_WINDOW) {
+    return { outcome: 'self_claimed' };
+  }
+
+  const queued = tail.filter((id) => id !== self.anonId);
+  if (queued.length === 0) return { outcome: 'none' };
 
   // Later index = joined earlier = higher fairness priority.
   const waitRank = new Map<string, number>();
@@ -253,7 +312,10 @@ export const tryMatchFromQueue = async (self: WaitingCard): Promise<string | nul
   // Best vibe overlap first; tie-break by longest wait.
   eligible.sort((a, b) => b.score - a.score || b.rank - a.rank);
 
-  return claimCandidate(eligible.map((c) => c.anonId));
+  return claimCandidate(
+    self.anonId,
+    eligible.map((c) => c.anonId)
+  );
 };
 
 /** Remove an anonId from the queue if present (called on disconnect/skip). */

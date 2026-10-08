@@ -1,62 +1,40 @@
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
+import AuthAmbience from './AuthAmbience';
 import './waitingRoom.css';
 
 type Props = {
   displayName: string;
   socketConnected: boolean;
-  sessionNotice: string | null;
+  /** The socket dropped and is retrying; the server holds the match meanwhile. */
+  reconnecting: boolean;
   /** Approximate number of people queued. 0 means "nobody is here right now". */
   queueSize: number | null;
+  /** Restoring a chat after a refresh, not searching for a new one. */
+  resuming?: boolean;
   onLeave: () => void;
 };
-
-// Ghost vibe chips — glimpses of other souls in the void
-const GHOST_CHIPS = [
-  { label: 'night owl · deep talks', pos: 'top-[8%] right-[4%]', delay: '0s', dur: '6.5s' },
-  { label: 'gaming · memes', pos: 'top-[22%] left-[2%]', delay: '1.2s', dur: '7.8s' },
-  { label: 'cozy · bookworm', pos: 'bottom-[32%] left-[0%]', delay: '2s', dur: '6.2s' },
-  { label: 'creative · art', pos: 'bottom-[18%] right-[2%]', delay: '0.6s', dur: '8.1s' },
-  { label: 'overthinker', pos: 'top-[52%] right-[1%]', delay: '3.1s', dur: '7s' },
-];
 
 export default function WaitingRoom({
   displayName,
   socketConnected,
-  sessionNotice,
+  reconnecting,
   queueSize,
+  resuming = false,
   onLeave,
 }: Props) {
-  const reconnecting = Boolean(sessionNotice?.toLowerCase().includes('reconnect'));
-  const degraded = reconnecting || !socketConnected;
+  const degraded = !resuming && (reconnecting || !socketConnected);
   // The wr-* keyframes are applied as inline `animation` styles, which a
   // stylesheet rule can't reliably override — so honour the preference here too.
   const calm = useMediaQuery('(prefers-reduced-motion: reduce)');
 
   // Honest empty-state: with a small audience the honest thing is to say so
   // rather than spin an infinite "searching" animation that implies activity.
-  const emptyQueue = queueSize !== null && queueSize <= 1;
+  const emptyQueue = !resuming && queueSize !== null && queueSize <= 1;
 
-  // wr-* keyframes live in client/src/styles/whisper.css.
   return (
-    <div className="auth-shell relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background text-body">
-
+    <main className="auth-shell relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background text-body">
       {/* Auth ambience */}
-      <div className="auth-ambience pointer-events-none fixed inset-0" aria-hidden>
-        <div className="auth-ambience__mesh" />
-        <div className="auth-ambience__glow auth-ambience__glow--a" />
-        <div className="auth-ambience__glow auth-ambience__glow--b" />
-        <div className="auth-ambience__glow auth-ambience__glow--c" />
-        <svg className="auth-ambience__ripples" viewBox="0 0 800 800" fill="none">
-          <circle className="auth-ripple auth-ripple--1" cx="400" cy="400" r="90" />
-          <circle className="auth-ripple auth-ripple--2" cx="400" cy="400" r="160" />
-          <circle className="auth-ripple auth-ripple--3" cx="400" cy="400" r="240" />
-          <circle className="auth-ripple auth-ripple--4" cx="400" cy="400" r="330" />
-          <path className="auth-ambience__sine" d="M40 400 C 120 320, 200 480, 280 400 S 440 320, 520 400 S 680 480, 760 400" />
-        </svg>
-        <div className="auth-ambience__signal" aria-hidden><span /><span /><span /><span /></div>
-        <div className="auth-ambience__grain" />
-        <div className="auth-ambience__vignette" />
-      </div>
+      <AuthAmbience />
 
       <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-7 px-4 text-center">
 
@@ -71,25 +49,6 @@ export default function WaitingRoom({
             <circle className="auth-stage__ring auth-stage__ring--c" cx="180" cy="180" r="158" />
             <path className="auth-stage__arc" d="M52 180 A128 128 0 0 1 180 52" strokeLinecap="round" />
           </svg>
-
-          {/* Ghost vibe chips — the illustration is the illustration, so these
-              drift in the empty state too. The copy below is what changes. */}
-          {GHOST_CHIPS.map((chip, i) => (
-            <div
-              key={i}
-              className={`auth-stage__chip absolute ${chip.pos} pointer-events-none`}
-              style={{
-                animation: calm ? 'none' : `wr-ghost-fade ${chip.dur} ease-in-out ${chip.delay} infinite`,
-                opacity: 0,
-                ...(i % 2 === 1 ? { color: '#ebecec', borderColor: 'rgba(1,195,109,0.28)' } : {}),
-              }}
-            >
-              {i % 2 === 1 && (
-                <span className="auth-stage__chip-dot" style={{ animation: calm ? 'none' : 'auth-pulse-dot 2.4s ease-in-out infinite' }} />
-              )}
-              {chip.label}
-            </div>
-          ))}
 
           {/* Center — two chat bubbles converging. When nobody else is queued
               the right bubble dims: a literal depiction of "no one to talk to
@@ -166,13 +125,19 @@ export default function WaitingRoom({
         {/* Text */}
         <div>
           <h1 className="font-display text-[1.9rem] font-bold leading-none tracking-tight text-white">
-            {emptyQueue ? 'Quiet in the void' : 'Searching the void'}
+            {resuming
+              ? 'Reconnecting to your chat'
+              : emptyQueue
+                ? 'Quiet in the void'
+                : 'Searching the void'}
             <span style={{ animation: calm ? 'none' : 'wr-cursor 1.1s step-start infinite' }}>
-              {emptyQueue ? '…' : '_'}
+              {resuming || emptyQueue ? '…' : '_'}
             </span>
           </h1>
           <p className="mt-2 text-sm text-body-500">
-            {emptyQueue
+            {resuming
+              ? 'Hang tight — picking up right where you left off.'
+              : emptyQueue
               ? 'You’re first in. Keep this tab open — we’ll link you the moment someone else arrives.'
               : 'Vibes in the distance — finding the right one'}
           </p>
@@ -207,9 +172,15 @@ export default function WaitingRoom({
               />
               <div className="min-w-0 text-left">
                 <span className="truncate text-sm text-body-400">
-                  Searching as <span className="font-semibold text-white">{displayName}</span>
+                  {resuming ? (
+                    'Restoring your thread'
+                  ) : (
+                    <>
+                      Searching as <span className="font-semibold text-white">{displayName}</span>
+                    </>
+                  )}
                 </span>
-                {queueSize !== null && (
+                {!resuming && queueSize !== null && (
                   <p className="text-[11px] text-body-700">
                     {queueSize <= 1
                       ? 'Just you so far'
@@ -218,7 +189,7 @@ export default function WaitingRoom({
                 )}
                 {degraded && (
                   <p className="text-[11px] text-amber-200/90" role="status">
-                    {sessionNotice ?? 'Connection lost — retrying…'}
+                    {reconnecting ? 'Reconnecting…' : 'Connection lost — retrying…'}
                   </p>
                 )}
               </div>
@@ -239,6 +210,6 @@ export default function WaitingRoom({
         </div>
 
       </div>
-    </div>
+    </main>
   );
 }

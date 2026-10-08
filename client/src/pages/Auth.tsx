@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { AuthShell } from '@/features/auth';
-import { ForgotPasswordForm as ForgotPassword } from '@/features/auth';
-import { LoginForm as Login } from '@/features/auth';
-import { RegisterForm as Register } from '@/features/auth';
-import { WhisperConnectNotice, whisperAuthCopy } from '@/features/whisper';
+import { useNavigate } from 'react-router-dom';
+import {
+  AuthShell,
+  ForgotPasswordForm as ForgotPassword,
+  LoginForm as Login,
+  RegisterForm as Register,
+} from '@/features/auth';
+import { WhisperConnectNotice, useWhisperAuthIntent } from '@/features/whisper';
 import { PRODUCT_VOICE } from '@/shared/constants/app';
-import { useAnonStore } from '@/features/whisper';
 
 /**
  * Auth route entry. Composes feature components and reads route state only —
@@ -16,17 +17,10 @@ import { useAnonStore } from '@/features/whisper';
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [isForget, setIsForget] = useState(false);
-  const location = useLocation();
   const navigate = useNavigate();
-
-  const isWhisperConnect =
-    (location.state as { intent?: string } | null)?.intent === 'whisper-connect';
-
-  const storeAlias = useAnonStore((s) => s.displayName);
-  const partnerAlias = useAnonStore((s) => s.partnerName);
+  const { active: isWhisperConnect, copy, names } = useWhisperAuthIntent();
 
   const mode = isForget ? 'forgot' : isLogin ? 'login' : 'register';
-  const copy = whisperAuthCopy(isWhisperConnect, storeAlias || undefined, partnerAlias || undefined);
 
   const headline =
     copy?.headline ??
@@ -53,7 +47,7 @@ export default function Auth() {
       mode={mode}
     >
       <WhisperConnectNotice
-        active={isWhisperConnect}
+        names={names}
         onStayAnonymous={() => navigate('/whisper', { replace: true })}
       />
 

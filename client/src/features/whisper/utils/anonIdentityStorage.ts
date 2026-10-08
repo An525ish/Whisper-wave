@@ -1,4 +1,4 @@
-import type { Gender, VibeTag } from '../types';
+import type { StoredIdentity } from '../types';
 
 /**
  * A returning guest's anonymous identity, kept in `localStorage` so they don't
@@ -10,12 +10,6 @@ import type { Gender, VibeTag } from '../types';
  * anything. Worst case it is cleared and the guest picks a new alias.
  */
 const STORAGE_KEY = 'whisper:identity';
-
-export type StoredIdentity = {
-  displayName: string;
-  vibeTags: VibeTag[];
-  gender: Gender;
-};
 
 const EMPTY: StoredIdentity = { displayName: '', vibeTags: [], gender: 'prefer_not_to_say' };
 
@@ -52,7 +46,7 @@ export const readStoredIdentity = (accountId?: string): StoredIdentity | null =>
     return {
       displayName: candidate.displayName,
       vibeTags: Array.isArray(candidate.vibeTags)
-        ? candidate.vibeTags.filter((t): t is VibeTag => typeof t === 'string')
+        ? candidate.vibeTags.filter((t): t is string => typeof t === 'string')
         : [],
       gender: candidate.gender ?? EMPTY.gender,
     };

@@ -17,9 +17,9 @@ type Props = {
 const TypingDots = ({ label, className = '' }: Props) => (
   <div
     role="status"
-    aria-label={label}
     className={`bubble-in flex w-fit items-center gap-1.5 border border-border bg-primary/90 px-3 py-2 ${className}`.trim()}
   >
+    <span className="sr-only">{label}</span>
     <span aria-hidden className="flex items-center gap-1.5">
       {[0, 1, 2].map((i) => (
         <span key={i} className="typing-dots__dot" style={{ animationDelay: `${i * 200}ms` }} />

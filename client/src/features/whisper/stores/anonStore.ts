@@ -1,13 +1,19 @@
 import { create } from 'zustand';
-import type { AnonReaction } from '@/shared/types/socket';
-import type { AnonMatchStatus, AnonMessage, Gender, VibeTag } from '../types';
+import { sessionFields } from './sessionFields';
+import { clearResumeFlag, setResumeFlag } from '../utils/resumeFlag';
+import type { AnonMatchStatus, AnonMessage, AnonReaction, Gender, VibeTag } from '../types';
 
 type AnonState = {
-  // Identity
-  anonId: string | null;
+  // Identity (survives `reset`, so backing out keeps the alias)
   displayName: string;
   vibeTags: VibeTag[];
   gender: Gender;
+  /** Edited after the server last saved the card — must be re-saved before the next match. */
+  identityDirty: boolean;
+  /** Account the identity belongs to (null = guest). A different account wipes it. */
+  ownerId: string | null;
+  /** Last DM opened from a whisper; makes "DM opened" idempotent. Survives `reset`. */
+  openedChatId: string | null;
 
   // Match state
   status: AnonMatchStatus;
@@ -19,39 +25,49 @@ type AnonState = {
 
   // Transport
   socketConnected: boolean;
-  sessionNotice: string | null;
+  /** The socket dropped and is retrying; the server holds the match meanwhile. */
+  reconnecting: boolean;
   error: string | null;
 
   // Like state
   likeSent: boolean;
   mutualLike: boolean;
   connectToken: string | null;
+  /** When the mutual like landed; fallback clock for the connect countdown. */
+  mutualAt: number | null;
   mutualVibeDismissed: boolean;
   partnerVibed: boolean;
   matchedAt: number | null;
   /**
-   * The alias this match began with, frozen at `setMatch` time.
-   *
-   * `displayName` is editable from the profile panel; this is what the *current
-   * thread* is called. They diverge only while editing mid-conversation, and
-   * the next match re-freezes it.
+   * The alias this match began with, frozen at `setMatch` time. `displayName` is
+   * editable from the profile panel; this is what the *current thread* is called.
    */
   sessionAlias: string | null;
-  /** "Stay here" was chosen, so the partner-left prompt collapsed to a bar. */
+  /** "Stay here" was chosen, so the thread-ended card collapsed to a bar. */
   partnerLeftPromptDismissed: boolean;
+  /** When the partner left (Unix ms) — freezes the thread-ended summary. */
+  endedAt: number | null;
+  /** SESSION_END analytics already fired for this session. */
+  sessionEndTracked: boolean;
 
   messages: AnonMessage[];
 
   chatId: string | null;
   connectionId: string | null;
 
-  setIdentity: (
-    anonId: string,
-    displayName: string,
-    vibeTags: VibeTag[],
-    gender?: Gender
-  ) => void;
+  /** Restore / confirm an identity card without marking it as edited. */
+  setIdentityFields: (displayName: string, vibeTags: VibeTag[], gender: Gender) => void;
+  /** A user edit from the profile panel — applies from the NEXT match. */
+  editIdentity: (displayName: string, vibeTags: VibeTag[], gender: Gender) => void;
+  markIdentitySynced: () => void;
+  /** Wipe everything (identity included) when the signed-in account changes. */
+  bindOwner: (ownerId: string | null) => void;
   setStatus: (status: AnonMatchStatus) => void;
+  /**
+   * A match was announced. A reconnect replays MATCH_FOUND for the SAME session —
+   * that must not reset the like/connect handshake, which the server does not
+   * send back. Only a different `sessionId` starts clean.
+   */
   setMatch: (
     sessionId: string,
     partnerName: string,
@@ -59,94 +75,47 @@ type AnonState = {
     /** The session's real start (Unix ms). Falls back to now if absent. */
     startedAt?: number
   ) => void;
-  /**
-   * Update the identity card in place (alias / vibes / gender).
-   *
-   * Separate from `setIdentity` because that one also records a *new* `anonId`
-   * from a join, which must not happen when someone just renames themselves
-   * mid-session.
-   */
-  setIdentityFields: (
-    displayName: string,
-    vibeTags: VibeTag[],
-    gender: Gender
-  ) => void;
   clearSession: () => void;
   /**
-   * The partner left or disconnected.
-   *
-   * Deliberately NOT `clearSession`: the thread stays readable and the header
-   * keeps their alias, because the conversation already happened and throwing it
-   * away is more jarring than the event that ended it. Only the state that can no
-   * longer be true is dropped — the like/connect handshake is dead once they are
-   * gone. `matchedAt` is kept for the end-of-thread summary.
-   *
-   * Moving to `partner_left` rather than `idle` also keeps the socket connected
-   * (the lifecycle hook connects whenever status isn't `idle`), so finding
-   * someone new doesn't cost a fresh handshake.
+   * The partner left or disconnected. The thread stays readable, and the
+   * like/connect handshake is KEPT: a mutual like's connectToken stays valid for
+   * its TTL whether or not the partner is still here.
    */
   markPartnerLeft: () => void;
-  /** "Stay here" — collapse the prompt to a one-line bar. Thread still readable. */
   dismissPartnerLeftPrompt: () => void;
-  /**
-   * Refused before we ever entered a queue — another device already holds this
-   * account's match, or the daily allowance is spent.
-   *
-   * Drops back to the picker with the reason attached, because there is no thread
-   * to show it on and an in-chat banner would imply otherwise. Guests never reach
-   * this: neither condition can apply to an anonymous identity.
-   */
   endAtDoor: (message: string) => void;
   setSocketConnected: (connected: boolean) => void;
-  setSessionNotice: (notice: string | null) => void;
+  setReconnecting: (reconnecting: boolean) => void;
   setError: (message: string | null) => void;
   setQueueSize: (size: number | null) => void;
   sendLike: () => void;
+  rollbackLike: () => boolean;
+  /** A refresh-resume failed or the chat is gone: back to the picker with a notice. */
+  abortResume: (message: string) => void;
   setMutualLike: (connectToken: string) => void;
   dismissMutualVibePrompt: () => void;
   openMutualVibePrompt: () => void;
   setPartnerVibed: (v: boolean) => void;
   appendMessage: (msg: AnonMessage) => void;
-  setMessages: (msgs: AnonMessage[]) => void;
+  /** Replace history with the server's buffer, keeping our unsettled sends. */
+  applyBuffered: (buffered: AnonMessage[]) => void;
   /** Settle an optimistic bubble once the server acks (or rejects) it. */
   settleMessage: (id: string, delivery: 'sent' | 'failed', reason?: string) => void;
-  /** Put a failed message back in flight. */
   retryMessage: (id: string) => AnonMessage | null;
-  /**
-   * Apply one curated reaction to a bubble.
-   *
-   * `side` is already resolved from the server's anonId by the socket layer.
-   * Sending the reaction a side already holds removes it (the server's toggle),
-   * and sending a different one replaces it — one reaction per person per
-   * message, by design, so a bubble can't turn into a sticker sheet.
-   */
   applyReaction: (messageId: string, side: 'me' | 'them', reaction: AnonReaction) => void;
-  /**
-   * Set or clear one side's reaction from an **authoritative** server event.
-   *
-   * Distinct from `applyReaction` on purpose: that one toggles, because a local tap
-   * has no idea whether the reaction is already there. The server already decided,
-   * and it says which — so this must write the answer rather than invert it. Using
-   * the toggle for both makes the optimistic tap and its own broadcast cancel out.
-   */
   setReaction: (
     messageId: string,
     side: 'me' | 'them',
     reaction: AnonReaction | undefined
   ) => void;
-  /** Bulk-apply on resume, where the server sends a whole session's reactions. */
   setMessageReactions: (byMessageId: Record<string, AnonMessage['reactions']>) => void;
   setConnected: (chatId: string, connectionId: string) => void;
+  markSessionEndTracked: () => void;
+  markDmOpened: (chatId: string) => void;
   reset: () => void;
 };
 
-/**
- * Write one side's reaction onto a bubble.
- *
- * A cleared reaction is `delete`d rather than assigned `undefined`, so it doesn't
- * linger as an explicit "nothing" that `Object.keys` and the UI would both treat as
- * present.
- */
+/** A cleared reaction is `delete`d, not assigned `undefined`. */
 const setSide = (
   message: AnonMessage,
   side: 'me' | 'them',
@@ -158,97 +127,101 @@ const setSide = (
   return { ...message, reactions };
 };
 
-/** Everything that belongs to a single match and must not survive into the next. */
-const sessionFields = {
-  sessionId: null as string | null,
-  partnerName: null as string | null,
-  partnerTags: [] as VibeTag[],
-  likeSent: false,
-  mutualLike: false,
-  connectToken: null as string | null,
-  mutualVibeDismissed: false,
-  partnerVibed: false,
-  matchedAt: null as number | null,
-  sessionAlias: null as string | null,
-  partnerLeftPromptDismissed: false,
-  messages: [] as AnonMessage[],
-  chatId: null as string | null,
-  connectionId: null as string | null,
-  queueSize: null as number | null,
-} as const;
-
 export const useAnonStore = create<AnonState>((set, get) => ({
-  anonId: null,
   displayName: '',
   vibeTags: [],
   gender: 'prefer_not_to_say',
+  identityDirty: false,
+  ownerId: null,
+  openedChatId: null,
   status: 'idle',
   socketConnected: false,
-  sessionNotice: null,
+  reconnecting: false,
   error: null,
   ...sessionFields,
 
-  setIdentity: (anonId, displayName, vibeTags, gender) =>
-    set((s) => ({
-      anonId,
-      displayName,
-      vibeTags,
-      gender: gender ?? s.gender,
-      // Identity is known → clear any stale "session expired" error.
+  setIdentityFields: (displayName, vibeTags, gender) =>
+    set({ displayName, vibeTags, gender, error: null }),
+
+  editIdentity: (displayName, vibeTags, gender) =>
+    set({ displayName, vibeTags, gender, identityDirty: true }),
+
+  markIdentitySynced: () => set({ identityDirty: false }),
+
+  bindOwner: (ownerId) => {
+    const { ownerId: current, status } = get();
+    if (current === ownerId) return;
+    // Auth hydrates after first paint: null → account while restoring a refresh
+    // is the same person, not an account switch.
+    if (current === null && status === 'resuming') {
+      set({ ownerId });
+      return;
+    }
+    clearResumeFlag();
+    set({
+      ownerId,
+      displayName: '',
+      vibeTags: [],
+      gender: 'prefer_not_to_say',
+      identityDirty: false,
+      status: 'idle',
+      socketConnected: false,
+      reconnecting: false,
       error: null,
-    })),
+      ...sessionFields,
+    });
+  },
 
   setStatus: (status) => set({ status }),
 
-  setIdentityFields: (displayName, vibeTags, gender) =>
-    set({ displayName, vibeTags, gender }),
+  setMatch: (sessionId, partnerName, partnerTags, startedAt) => {
+    setResumeFlag();
+    set((s) => {
+      const same = s.sessionId === sessionId;
+      return {
+        ...(same ? {} : sessionFields),
+        sessionId,
+        partnerName,
+        partnerTags,
+        // Freeze the alias this match started with. The partner already has it,
+        // so renaming mid-thread must not change what the thread calls you.
+        sessionAlias: same ? (s.sessionAlias ?? s.displayName) : s.displayName,
+        status: 'matched' as const,
+        reconnecting: false,
+        error: null,
+        // The server's real session start, not `Date.now()` — a resumed session
+        // must keep the clock it already had.
+        matchedAt: startedAt || (same ? s.matchedAt : null) || Date.now(),
+      };
+    });
+  },
 
-  setMatch: (sessionId, partnerName, partnerTags, startedAt) =>
-    set({
-      ...sessionFields,
-      sessionId,
-      partnerName,
-      partnerTags,
-      // Freeze the alias this match started with. The partner already has it,
-      // so renaming mid-thread must not change what the thread calls you —
-      // otherwise the header, the "you" avatar and their view disagree.
-      sessionAlias: get().displayName,
-      status: 'matched',
-      sessionNotice: null,
-      error: null,
-      // The server's real session start, not `Date.now()` — a resumed session
-      // must keep the clock it already had.
-      matchedAt: startedAt || Date.now(),
-    }),
+  clearSession: () => {
+    clearResumeFlag();
+    set({ ...sessionFields });
+  },
 
-  clearSession: () => set({ ...sessionFields }),
-
-  markPartnerLeft: () =>
-    set({
-      status: 'partner_left',
-      sessionNotice: null,
-      // The handshake is over — a like sent to someone who has left can never
-      // come back, so offering the heart or the "open DM" CTA would be a lie.
-      likeSent: false,
-      mutualLike: false,
-      connectToken: null,
-      partnerVibed: false,
-    }),
+  markPartnerLeft: () => {
+    clearResumeFlag();
+    set((s) => ({ status: 'partner_left' as const, reconnecting: false, endedAt: s.endedAt ?? Date.now() }));
+  },
 
   dismissPartnerLeftPrompt: () => set({ partnerLeftPromptDismissed: true }),
 
-  endAtDoor: (message) =>
+  endAtDoor: (message) => {
+    clearResumeFlag();
     set({
       ...sessionFields,
       status: 'idle',
       error: message,
-      sessionNotice: null,
+      reconnecting: false,
       socketConnected: false,
-    }),
+    });
+  },
 
   setSocketConnected: (socketConnected) => set({ socketConnected }),
 
-  setSessionNotice: (sessionNotice) => set({ sessionNotice }),
+  setReconnecting: (reconnecting) => set({ reconnecting }),
 
   setError: (error) => set({ error }),
 
@@ -256,10 +229,30 @@ export const useAnonStore = create<AnonState>((set, get) => ({
 
   sendLike: () => set({ likeSent: true }),
 
+  rollbackLike: () => {
+    const { likeSent, mutualLike } = get();
+    if (!likeSent || mutualLike) return false;
+    set({ likeSent: false });
+    return true;
+  },
+
+  abortResume: (message) => {
+    clearResumeFlag();
+    set({
+      ...sessionFields,
+      status: 'idle',
+      error: message,
+      reconnecting: false,
+      socketConnected: false,
+    });
+  },
+
   setMutualLike: (connectToken) =>
     set({
+      likeSent: true,
       mutualLike: true,
       connectToken,
+      mutualAt: Date.now(),
       mutualVibeDismissed: false,
       partnerVibed: false,
     }),
@@ -272,7 +265,14 @@ export const useAnonStore = create<AnonState>((set, get) => ({
 
   appendMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
 
-  setMessages: (msgs) => set({ messages: msgs }),
+  applyBuffered: (buffered) =>
+    set((s) => {
+      const ids = new Set(buffered.map((m) => m.id));
+      const pending = s.messages.filter(
+        (m) => m.from === 'me' && m.delivery !== 'sent' && !ids.has(m.id)
+      );
+      return { messages: [...buffered, ...pending] };
+    }),
 
   settleMessage: (id, delivery, reason) =>
     set((s) => ({
@@ -323,18 +323,23 @@ export const useAnonStore = create<AnonState>((set, get) => ({
       ),
     })),
 
-  setConnected: (chatId, connectionId) =>
-    set({ chatId, connectionId, status: 'connected', sessionNotice: null }),
+  setConnected: (chatId, connectionId) => {
+    clearResumeFlag();
+    set({ chatId, connectionId, status: 'connected', reconnecting: false });
+  },
+
+  markSessionEndTracked: () => set({ sessionEndTracked: true }),
+
+  markDmOpened: (openedChatId) => set({ openedChatId }),
 
   reset: () =>
     set({
       status: 'idle',
       socketConnected: false,
-      sessionNotice: null,
+      reconnecting: false,
       error: null,
-      // NOTE: anonId / displayName / vibeTags / gender deliberately survive a
-      // reset — a user who backs out of a chat should rejoin with the same
-      // alias, not be made to re-type it.
+      // Identity (alias / vibes / gender) deliberately survives a reset — a user
+      // who backs out of a chat should rejoin with the same alias.
       ...sessionFields,
     }),
 }));

@@ -33,5 +33,3 @@ export const passwordField = z
 export const pageQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
 });
-
-export type PageQuery = z.infer<typeof pageQuerySchema>;

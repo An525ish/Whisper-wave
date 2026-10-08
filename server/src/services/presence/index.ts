@@ -2,53 +2,40 @@ import type { Server } from 'socket.io';
 import { chatRoom } from '../../utils/helper.js';
 import type { JoinedChat, RealtimeNotify } from '../../types/chat.js';
 import * as chatRepo from '../../repositories/chat.js';
-import { forgetUserSocket, recordUserSocket } from './store.js';
 
 /**
- * Presence for the signed-in app.
+ * Presence for the signed-in app — an in-process registry of the sockets THIS
+ * instance owns.
  *
- * Redis holds the cluster-shared record — `presence:sockets:{userId}` → SET of
- * socketIds, written through on every connect and disconnect (see `store.ts`).
- * That is what stops presence being a `Map` that a second Node instance cannot
- * see (A3 in docs/Todo.md).
+ * There used to be a Redis mirror (`presence:sockets:{userId}`, written on every
+ * connect and disconnect). Nothing ever read it, and every write was a billed
+ * Upstash command, so it was removed. When a second instance / a Socket.IO Redis
+ * adapter arrives, bring a cluster-shared record back WITH a reader.
  *
- * Reads below are served from `localSocketIds`, a registry of the sockets *this*
- * instance owns. That is a deliberate split, not an oversight:
- *
- *   - Every consumer of a socket ID hands it straight to Socket.IO
- *     (`io.to(socketIds)`, `io.sockets.sockets.get(socketId)`), and a Socket.IO
- *     instance can only address sockets attached to it. A socket on another
- *     instance is unaddressable here by construction, so reading it out of Redis
- *     would return an ID we have no way to deliver to.
- *   - `emitToMembers` sits on the message fan-out path. Reading Redis there adds
- *     a round-trip per recipient list to every message sent.
- *
- * So the registry is the addressing cache, and Redis is the record of truth.
+ * Every consumer of a socket ID hands it straight to Socket.IO
+ * (`io.to(socketIds)`, `io.sockets.sockets.get(socketId)`), and a Socket.IO
+ * instance can only address sockets attached to it, so this registry is the right
+ * source for addressing regardless.
  *
  * KNOWN LIMIT — the reads that answer a *cluster-wide* question rather than an
- * addressing one are still instance-local: `isUserOnline`, `resolveOnlinePresence`,
- * `getPresenceSize`, `getOnlineUserIds`. Their call sites are synchronous and live
- * outside this module, so making them accurate means changing those signatures and
- * installing a Socket.IO Redis adapter. Until then a user with one tab on each of
- * two instances is reported online/offline by whichever instance handled the event.
+ * addressing one are instance-local: `isUserOnline`, `resolveOnlinePresence`,
+ * `getPresenceSize`, `getOnlineUserIds`. Until a Socket.IO Redis adapter is
+ * installed a user with one tab on each of two instances is reported
+ * online/offline by whichever instance handled the event.
  */
 const localSocketIds = new Map<string, Set<string>>();
 
 /**
- * Attach a socket to a user and mirror it into Redis.
+ * Attach a socket to a user.
  *
- * Stays `void` on purpose. `disconnect.ts` calls `removeUserSocket` and then
+ * Synchronous on purpose: `disconnect.ts` calls `removeUserSocket` and then
  * `isUserOnline` straight afterwards to decide whether to broadcast an offline
- * event, so the registry has to be updated before any await. Returning a promise
- * would invite a future caller to await it and quietly reorder that check against
- * the Redis write.
+ * event, so the registry has to be updated before any await.
  */
 export const setUserSocket = (userId: string, socketId: string): void => {
   const existing = localSocketIds.get(userId) ?? new Set<string>();
   existing.add(socketId);
   localSocketIds.set(userId, existing);
-
-  void recordUserSocket(userId, socketId);
 };
 
 /** Remove a specific socket for a user. Cleans up the user entry when no sockets remain. */
@@ -57,8 +44,6 @@ export const removeUserSocket = (userId: string, socketId: string): void => {
   if (!sockets) return;
   sockets.delete(socketId);
   if (sockets.size === 0) localSocketIds.delete(userId);
-
-  void forgetUserSocket(userId, socketId);
 };
 
 /** Returns true when the user has at least one connected socket. */

@@ -29,7 +29,8 @@ export default function AnonComposer({ draft, overLimit, onDraftChange, onSend }
   const textareaRef = useAutoGrowTextarea({ value: draft });
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    // Enter confirms an IME candidate (CJK etc.) — it must not also send.
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       onSend();
     }

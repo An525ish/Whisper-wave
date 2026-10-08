@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { TYPING_IDLE_MS } from '../constants';
 import { useAnonStore } from '../stores/anonStore';
 
@@ -14,6 +14,21 @@ export function useAnonChat(emitStart: () => void, emitStop: () => void) {
   const isTypingRef = useRef(false);
 
   const messages = useAnonStore((s) => s.messages);
+  const sessionId = useAnonStore((s) => s.sessionId);
+
+  // A draft belongs to one match; a new (or skipped) session starts empty.
+  const [draftFor, setDraftFor] = useState(sessionId);
+  if (draftFor !== sessionId) {
+    setDraftFor(sessionId);
+    setDraft('');
+  }
+
+  useEffect(
+    () => () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    },
+    []
+  );
 
   const stopTyping = useCallback(() => {
     if (typingTimerRef.current) {

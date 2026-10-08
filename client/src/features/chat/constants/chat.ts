@@ -2,18 +2,6 @@
 /** Distance from bottom (px) below which the view is considered "near bottom". */
 export const NEAR_BOTTOM_PX = 120;
 
-// Re-exported from app.ts — single source of truth
-export { SEARCH_DEBOUNCE_MS, MAX_TEXTAREA_HEIGHT } from '@/shared/constants/app';
-
-// Composer geometry lives in shared/constants/app.ts because the anonymous
-// composer is the same control. Re-exported here so chat's own imports stay
-// local; delete this block once nothing inside features/chat references it.
-export {
-  COMPOSER_ROW_MIN_CLASS,
-  COMPOSER_ROW_MIN_CLASS_COMPACT,
-  COMPOSER_SEND_SIZE_CLASS,
-  COMPOSER_SEND_SIZE_CLASS_COMPACT,
-} from '@/shared/constants/app';
 
 /** Clearance for the floating conversation header (matches Chat.tsx fade). */
 export const CHAT_HEADER_OFFSET_CLASS =

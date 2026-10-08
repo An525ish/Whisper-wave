@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  PORT: z.coerce.number().default(3000),
+  PORT: z.coerce.number().default(8080),
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
     .default('development'),
@@ -20,6 +20,9 @@ const envSchema = z.object({
     .min(32, 'ADMIN_TOKEN_SECRET must be at least 32 characters')
     .optional(),
   CLIENT_URL: z.string().optional().default(''),
+  // Number of reverse-proxy hops in front of the app (Express `trust proxy`).
+  // Per-IP rate limits key off the client IP, so this must match the deploy.
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(1),
   // Cloudflare R2 (S3-compatible object storage)
   R2_ACCOUNT_ID: z.string().min(1, 'R2_ACCOUNT_ID is required'),
   R2_ACCESS_KEY_ID: z.string().min(1, 'R2_ACCESS_KEY_ID is required'),
@@ -67,6 +70,13 @@ const parsed = envSchema.safeParse(process.env);
  */
 const isTest = process.env.NODE_ENV === 'test';
 
+// Admin cookies must be signed with their own secret in production; a shared
+// secret means a leaked user-token secret also forges admin sessions.
+if (parsed.success && parsed.data.NODE_ENV === 'production' && !parsed.data.ADMIN_TOKEN_SECRET) {
+  console.error('ADMIN_TOKEN_SECRET is required in production (min 32 characters).');
+  process.exit(1);
+}
+
 if (!parsed.success) {
   if (isTest) {
     console.warn(
@@ -81,13 +91,14 @@ if (!parsed.success) {
 
 /** Placeholder-only shape used when running tests without a real environment. */
 const testFallback = {
-  PORT: 3000,
+  PORT: 8080,
   NODE_ENV: 'test' as const,
   DB_URI: 'mongodb://localhost:27017/test',
   ACCESS_TOKEN_SECRET: 'test-access-secret-long-enough-000000',
   ADMIN_SECRET: '',
   ADMIN_TOKEN_SECRET: undefined,
   CLIENT_URL: '',
+  TRUST_PROXY_HOPS: 1,
   R2_ACCOUNT_ID: 'test',
   R2_ACCESS_KEY_ID: 'test',
   R2_SECRET_ACCESS_KEY: 'test',
@@ -112,15 +123,13 @@ export const env = parsed.success ? parsed.data : testFallback;
 export const isProd = env.NODE_ENV === 'production';
 
 /** JWT secret for admin cookies.
- *  Falls back to ACCESS_TOKEN_SECRET when ADMIN_TOKEN_SECRET is not set,
- *  which means a compromised user secret also compromises admin.
- *  Always set ADMIN_TOKEN_SECRET to a separate value in production. */
+ *  Production requires ADMIN_TOKEN_SECRET (enforced above). Dev/test fall back
+ *  to ACCESS_TOKEN_SECRET with a warning. */
 export const adminTokenSecret = (() => {
   if (!env.ADMIN_TOKEN_SECRET) {
-    if (isProd) {
+    if (!isTest) {
       console.warn(
-        '[SECURITY] ADMIN_TOKEN_SECRET is not set. Falling back to ACCESS_TOKEN_SECRET. ' +
-          'Set a separate ADMIN_TOKEN_SECRET in production to isolate admin credentials.',
+        '[SECURITY] ADMIN_TOKEN_SECRET is not set; falling back to ACCESS_TOKEN_SECRET (dev only).'
       );
     }
     return env.ACCESS_TOKEN_SECRET;

@@ -5,7 +5,7 @@ type Props = {
   partnerName: string;
   partnerTags: VibeTag[];
   socketDegraded: boolean;
-  sessionNotice: string | null;
+  reconnecting: boolean;
   likeDisabled: boolean;
   likeSent: boolean;
   mutualLike: boolean;
@@ -13,7 +13,8 @@ type Props = {
   vibeUnlocked: boolean;
   likeTitle: string;
   onLike: () => void;
-  onNext: () => void;
+  /** Asks for confirmation before skipping a live match. */
+  onSkip: () => void;
   onReport: () => void;
 };
 
@@ -28,7 +29,7 @@ export default function AnonChatHeader({
   partnerName,
   partnerTags,
   socketDegraded,
-  sessionNotice,
+  reconnecting,
   likeDisabled,
   likeSent,
   mutualLike,
@@ -36,7 +37,7 @@ export default function AnonChatHeader({
   vibeUnlocked,
   likeTitle,
   onLike,
-  onNext,
+  onSkip,
   onReport,
 }: Props) {
   return (
@@ -45,7 +46,7 @@ export default function AnonChatHeader({
         <div className="flex min-w-0 items-center gap-0">
           <button
             type="button"
-            onClick={onNext}
+            onClick={onSkip}
             className="acr-back"
             aria-label="Skip to someone new"
           >
@@ -77,7 +78,7 @@ export default function AnonChatHeader({
                 </div>
               ) : socketDegraded ? (
                 <p className="acr-status acr-status--warn" role="status">
-                  {sessionNotice ?? 'Reconnecting…'}
+                  {reconnecting ? 'Reconnecting…' : 'Connection lost — retrying…'}
                 </p>
               ) : (
                 <p className="acr-status">

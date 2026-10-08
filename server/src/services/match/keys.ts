@@ -74,6 +74,32 @@ export const REDIS_KEYS = {
    * instance was never swept by any other — see A4 in docs/Todo.md.
    */
   presenceSweeps: 'match:presence-sweeps',
+  /**
+   * HASH of per-session counters, same lifetime as the session: `c1` / `c2` are
+   * the messages accepted from `anon1` / `anon2` (the vibe gate reads these — the
+   * last-50 buffer cannot be used, it forgets), `tk` is how many mutual-like token
+   * pairs were issued. Deleted in `endSession` / `deleteSession`.
+   */
+  meta: (sessionId: string) => `match:meta:${sessionId}`,
+  /**
+   * Dedupe marker for server-filed auto-reports, one per (session, category).
+   * SET NX with a TTL, so a spammer cannot mint unlimited reports.
+   */
+  autoReported: (sessionId: string, category: string) =>
+    `match:autoreport:${sessionId}:${category}`,
+  /**
+   * anonId → "this signed-in join was already counted against the whisper cap".
+   * Short TTL: a refresh or flaky-network reconnect inside it is the same whisper,
+   * not a new one. See `quota.ts`.
+   */
+  joinCounted: (anonId: string) => `match:joined:${anonId}`,
+} as const;
+
+/** Field names inside `REDIS_KEYS.meta`. */
+export const META_FIELDS = {
+  count1: 'c1',
+  count2: 'c2',
+  tokens: 'tk',
 } as const;
 
 export const TTL = {
@@ -121,32 +147,10 @@ export const TTL = {
    * a user who closes the tab isn't left in limbo.
    */
   presence: 45, // 45 s
-} as const;
-
-/**
- * Presence keys for the *signed-in* app.
- *
- * Kept beside `REDIS_KEYS` so key naming still has a single home, but as their
- * own map because they are not anonymous-match keys: `REDIS_KEYS` is uniformly
- * `match:`-namespaced and that invariant is worth keeping.
- */
-export const PRESENCE_KEYS = {
-  /**
-   * userId → SET of socketIds. A signed-in user can hold several at once
-   * (tabs, phone + laptop), and this is the cluster-shared record of them.
-   */
-  userSockets: (userId: string) => `presence:sockets:${userId}`,
-} as const;
-
-export const PRESENCE_TTL = {
-  /**
-   * Upper bound on how long a user's socket set survives without a write.
-   *
-   * Refreshed on every add/remove, so a user who connects once and stays
-   * connected for hours is never dropped from presence. It exists only to stop
-   * a hard process crash from leaving that user "online" in Redis forever.
-   */
-  userSockets: 24 * 60 * 60, // 24 h — matches TTL.session and the anon cookie
+  /** Window in which a signed-in reconnect/refresh is not counted as a new whisper. */
+  joinCounted: 10 * 60, // 10 min
+  /** Auto-report dedupe window — one report per (session, category). */
+  autoReport: 24 * 60 * 60, // 24 h — matches TTL.session
 } as const;
 
 /**
@@ -154,8 +158,14 @@ export const PRESENCE_TTL = {
  * is in seconds because it feeds ioredis' `EX` parameter, and these do not.
  */
 export const PRESENCE_SWEEP = {
-  /** How often a process looks for grace periods that have lapsed. */
+  /**
+   * How soon the sweeper looks again after it just processed lapsed entries, or
+   * after a Redis error. While nothing is due it sleeps until the earliest
+   * deadline instead of polling (Upstash bills per command).
+   */
   intervalMs: 5_000,
+  /** Longest the sweeper sleeps between looks, so a foreign earlier deadline is seen. */
+  maxSleepMs: 60_000,
   /** Due entries claimed per tick, so one busy tick cannot stall the loop. */
   batchSize: 50,
   /**

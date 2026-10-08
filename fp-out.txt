@@ -1,7 +1,0 @@
-[partner] joined as FillPal | anonId=***
-[partner] socket connected
-[partner] MATCH_FOUND partner = undefined session = f06eb2d2-bd3f-40e1-ba65-8fb8bdf3c278
-[partner] sent ack = {"ok":true}
-[partner] sent ack = {"ok":true}
-[partner] sent ack = {"ok":true}
-[partner] sent ack = {"ok":true}

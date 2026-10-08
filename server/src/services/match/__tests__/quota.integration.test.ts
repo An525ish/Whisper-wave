@@ -1,7 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { getRedis } from '../../../config/redis.js';
-import { DAILY_WHISPER_LIMIT, consumeWhisperQuota, peekWhisperQuota } from '../quota.js';
+import {
+  DAILY_WHISPER_LIMIT,
+  checkSkipQuota,
+  checkWhisperQuota,
+  clearJoinCounted,
+  consumeWhisperQuota,
+  peekWhisperQuota,
+} from '../quota.js';
+import { AppError } from '../../../utils/AppError.js';
 import { REDIS_KEYS, TTL } from '../keys.js';
 import { skipUnlessRedis, useTestRedis } from './redisHarness.js';
 
@@ -87,6 +95,69 @@ describe('signed-in whisper quota (Redis integration)', () => {
     // Whisper for good.
     const ttl = await getRedis().ttl(REDIS_KEYS.userWhispers(user));
     assert.ok(ttl > 0 && ttl <= TTL.whisperWindow, `expected a rolling window TTL, got ${ttl}`);
+    await clearQuota(user);
+  });
+
+  it('counts a fresh join once — a refresh or reconnect inside the window is the same whisper', async (t) => {
+    skipUnlessRedis(t);
+    const user = 'quota-fresh';
+    const anon = 'quota-fresh-anon';
+    await clearQuota(user);
+    await clearJoinCounted(anon);
+
+    const first = await checkWhisperQuota(user, anon);
+    assert.ok(!(first instanceof AppError));
+    assert.equal(first instanceof AppError ? 0 : first.counted, true);
+
+    // A page refresh / network blip reconnects the socket: same whisper.
+    const again = await checkWhisperQuota(user, anon);
+    assert.ok(!(again instanceof AppError));
+    assert.equal(again instanceof AppError ? 1 : again.counted, false);
+    assert.equal((await peekWhisperQuota(user)).used, 1, 'a reconnect must not burn the cap');
+
+    // Submitting the picker again is a new whisper.
+    await clearJoinCounted(anon);
+    await checkWhisperQuota(user, anon);
+    assert.equal((await peekWhisperQuota(user)).used, 2);
+
+    await clearQuota(user);
+    await clearJoinCounted(anon);
+  });
+
+  it('never counts or refuses a guest', async (t) => {
+    skipUnlessRedis(t);
+    const result = await checkWhisperQuota(undefined, 'quota-guest-anon');
+    assert.ok(!(result instanceof AppError));
+    assert.equal(result instanceof AppError ? true : result.counted, false);
+  });
+
+  it('keeps counting refused joins and sets no marker, so retrying cannot escape the cap', async (t) => {
+    skipUnlessRedis(t);
+    const user = 'quota-fresh-over';
+    const anon = 'quota-fresh-over-anon';
+    await clearQuota(user);
+    await clearJoinCounted(anon);
+    for (let i = 0; i < DAILY_WHISPER_LIMIT; i++) await consumeWhisperQuota(user);
+
+    for (let i = 0; i < 3; i++) {
+      const result = await checkWhisperQuota(user, anon);
+      assert.ok(result instanceof AppError, `retry ${i + 1} must still be refused`);
+      assert.equal(result instanceof AppError ? result.statusCode : 0, 429);
+    }
+    assert.equal((await peekWhisperQuota(user)).used, DAILY_WHISPER_LIMIT + 3);
+
+    await clearQuota(user);
+    await clearJoinCounted(anon);
+  });
+
+  it('always counts a skip, regardless of the join marker', async (t) => {
+    skipUnlessRedis(t);
+    const user = 'quota-skip';
+    await clearQuota(user);
+    await checkSkipQuota(user);
+    const second = await checkSkipQuota(user);
+    assert.ok(!(second instanceof AppError));
+    assert.equal(second instanceof AppError ? 0 : second.used, 2);
     await clearQuota(user);
   });
 });

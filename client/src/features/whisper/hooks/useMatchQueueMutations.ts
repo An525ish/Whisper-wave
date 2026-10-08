@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { joinQueue, leaveQueue } from '../api/match';
 import { useAnonStore } from '../stores/anonStore';
+import { clearResumeFlag } from '../utils/resumeFlag';
 import type { JoinQueuePayload } from '../types';
 
 /**
@@ -14,21 +15,18 @@ import type { JoinQueuePayload } from '../types';
 export function useJoinQueueMutation() {
   return useMutation({
     mutationFn: (payload: JoinQueuePayload) => joinQueue(payload),
+    // `joining` keeps the socket DISCONNECTED: the server pairs on connect, so
+    // connecting before the card is saved would queue an identity-less user.
     onMutate: () => {
       const store = useAnonStore.getState();
-      store.setSessionNotice(null);
       store.setError(null);
       store.setStatus('joining');
     },
-    onSuccess: (res, payload) => {
+    onSuccess: (_res, payload) => {
       const store = useAnonStore.getState();
-      store.setIdentity(
-        res.data.anonId,
-        payload.displayName,
-        payload.vibeTags,
-        payload.gender
-      );
-      // The server only ever returns `waiting` — pairing happens on the socket.
+      store.setIdentityFields(payload.displayName, payload.vibeTags, payload.gender);
+      store.markIdentitySynced();
+      // Card saved → the lifecycle hook now connects the socket, which queues us.
       store.setStatus('waiting');
     },
     onError: (err) => {
@@ -46,7 +44,9 @@ export function useLeaveQueueMutation() {
     mutationFn: () => leaveQueue(),
     // A failed leave is not worth surfacing: the server also drops us from the
     // queue when the socket disconnects, which happens either way.
-    onSettled: () => useAnonStore.getState().reset(),
+    onSettled: () => {
+      clearResumeFlag();
+      useAnonStore.getState().reset();
+    },
   });
 }
-

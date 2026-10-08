@@ -1,27 +1,41 @@
 import type { RequestHandler } from 'express';
 import { anonCookieOptions } from '../config/cors.js';
-import { joinQueue, leaveQueue } from '../services/match/index.js';
+import { leaveQueue, saveIdentityCard } from '../services/match/index.js';
 import { catchAsync } from '../utils/catchAsync.js';
-import type { JoinQueueBody } from '../validators/match.js';
+import { anonIdSchema } from '../validators/anon.js';
+import type { JoinQueueBody } from '../types/input.js';
 
-/** Read the httpOnly anonId cookie if the client already has an identity. */
-const anonIdFrom = (req: { cookies?: Record<string, string | undefined> }): string | undefined =>
-  req.cookies?.['anonId'];
+/**
+ * Read the httpOnly anonId cookie if the client already has an identity.
+ *
+ * The cookie is client-controlled, so anything that is not a UUID is treated as
+ * ABSENT (join mints a fresh identity; leave answers 400) rather than trusted.
+ */
+const anonIdFrom = (req: { cookies?: Record<string, string | undefined> }): string | undefined => {
+  const parsed = anonIdSchema.safeParse(req.cookies?.['anonId']);
+  return parsed.success ? parsed.data : undefined;
+};
 
 /**
  * POST /api/match/join
  *
  * Guest-safe — no auth middleware.
  *
- * Registers the user's identity card + enqueues them, then returns `waiting`.
- * ALL matching happens in one place — the `/anon` socket's connect handler —
- * which the client opens immediately after this call. Keeping a single match
- * path removes the double-match race between HTTP and socket entry points.
+ * Validates the age gate and saves the user's identity card — it does NOT enqueue.
+ * ALL queueing and matching happens in one place, the `/anon` socket's connect
+ * handler, which the client opens immediately after this call: that is the first
+ * point where the account is known, so it can apply the quota and already-matched
+ * gates BEFORE enqueueing. Keeping a single entry path also removes the
+ * double-match race between HTTP and socket entry points.
+ *
+ * Response: `{ success: true, data: { status: 'waiting', anonId, isNewIdentity } }`
+ * — `status` means "waiting for the socket to connect"; `anonId` is the caller's
+ * OWN id.
  */
 export const joinQueueController: RequestHandler = catchAsync(async (req, res) => {
   const { displayName, vibeTags, gender } = req.body as JoinQueueBody;
 
-  const { anonId, isNewIdentity } = await joinQueue(
+  const { anonId, isNewIdentity } = await saveIdentityCard(
     { displayName, vibeTags, gender },
     anonIdFrom(req)
   );

@@ -2,7 +2,8 @@ import { useForm, useController, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '@/features/auth';
 import { MAX_DISPLAY_NAME_LENGTH } from '../constants';
-import { TagPicker, GenderPicker } from './VibePickerFields';
+import GenderPicker from './GenderPicker';
+import TagPicker from './TagPicker';
 import {
   joinQueueFormSchema,
   toJoinPayload,
@@ -164,7 +165,10 @@ export default function VibePickerForm({ onJoin, loading, error }: Props) {
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              <span
+                className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white motion-safe:animate-spin"
+                aria-hidden
+              />
               Finding your wavelength…
             </span>
           ) : (

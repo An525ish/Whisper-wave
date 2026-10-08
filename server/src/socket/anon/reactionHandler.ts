@@ -2,9 +2,10 @@ import { onSocketEvent } from '../../middlewares/validateSocket.js';
 import { makeRedisSocketRateLimiter } from '../rateLimiter.js';
 import { ANON_REACT, MATCH_REACTION } from '../../constants/anon-events.js';
 import { anonReactionSchema, applyAnonReaction } from '../../services/match/index.js';
+import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
-import { emitError, failureCodeFor, reactionAckOf, toReactionEvent } from './shared.js';
-import type { AnonSocket } from './types.js';
+import { clientMessage, emitError, failureCodeFor, reactionAckOf, toReactionEvent } from './shared.js';
+import type { AnonSocket } from '../../types/anonSocket.js';
 import type { Namespace } from 'socket.io';
 
 /**
@@ -47,7 +48,10 @@ export const registerReactionHandler = (socket: AnonSocket, nsp: Namespace): voi
         // each: a dead session means stop showing this chat as live, an unknown
         // message means just settle the optimistic bubble. Both arrive as a code,
         // never as prose the client has to pattern-match.
-        const message = err instanceof Error ? err.message : 'That reaction did not stick';
+        const message = clientMessage(err, 'That reaction did not stick');
+        if (!(err instanceof AppError)) {
+          logger.warn({ err, anonId: socket.anonId }, 'ANON_REACT failed unexpectedly');
+        }
         const code = failureCodeFor(err) ?? ('invalid_reaction' as const);
         ack?.({ ok: false, messageId, reason: message, code });
         emitError(socket, message, code);
@@ -58,15 +62,19 @@ export const registerReactionHandler = (socket: AnonSocket, nsp: Namespace): voi
       // sender's other tabs — so an optimistic bubble and a partner bubble settle
       // from ONE code path rather than an ack path and a broadcast path that can
       // disagree. `except` keeps the originating socket from seeing it twice.
-      const event = toReactionEvent(outcome);
-      nsp.to(`anon:${outcome.partnerAnonId}`).emit(MATCH_REACTION, event);
-      nsp.to(`anon:${socket.anonId}`).except(socket.id).emit(MATCH_REACTION, event);
-      socket.emit(MATCH_REACTION, event);
+      // `by` is per recipient: the partner sees `them`, the sender's sockets `me`.
+      nsp
+        .to(`anon:${outcome.partnerAnonId}`)
+        .emit(MATCH_REACTION, toReactionEvent(outcome, 'them'));
+      const mine = toReactionEvent(outcome, 'me');
+      nsp.to(`anon:${socket.anonId}`).except(socket.id).emit(MATCH_REACTION, mine);
+      socket.emit(MATCH_REACTION, mine);
 
       ack?.({ ok: true, messageId });
     },
     {
-      before: () => reactionLimiter.allow(socket.id),
+      // Keyed by anonId, not socket id: a reconnect must not reset the allowance.
+      before: () => reactionLimiter.allow(socket.anonId),
       // Without these the middleware falls back to message copy — "Too many
       // messages" when the caller tapped an emoji — and, worse, sends no code, so
       // the client has nothing to branch on and can only put prose on screen.
@@ -87,11 +95,4 @@ export const registerReactionHandler = (socket: AnonSocket, nsp: Namespace): voi
       onError: (err) => logger.warn({ err, anonId: socket.anonId }, 'ANON_REACT error'),
     }
   );
-};
-
-export const clearReactionLimiter = (socketId: string): void => {
-  // Called from the /anon disconnect handler, which cannot await. `remove` is
-  // async on a Redis limiter, so make the fire-and-forget explicit — it never
-  // rejects, so there is no dangling promise.
-  void reactionLimiter.remove(socketId);
 };

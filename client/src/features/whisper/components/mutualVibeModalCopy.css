@@ -58,3 +58,27 @@
 }
 
 
+
+/* Connect window: a plain readout, no pulsing — the number is the urgency. */
+.mvs-timer {
+  margin: 0.55rem auto 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.85);
+  font-variant-numeric: tabular-nums;
+}
+
+.mvs-note {
+  margin: 0.55rem auto 0;
+  max-width: 20rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgb(235 236 236 / 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mvs-kicker__dot,
+  .mvs-headline {
+    animation: none;
+  }
+}

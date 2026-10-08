@@ -1,11 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { getRedis } from '../config/redis.js';
 import { logger } from '../utils/logger.js';
-
-export type SocketRateLimiter = {
-  allow(socketId: string): Promise<boolean>;
-  remove(socketId: string): Promise<void>;
-};
+import type { SocketRateLimiter } from '../types/anonSocket.js';
 
 /**
  * Redis key for one limiter × one socket.

@@ -33,6 +33,7 @@ import {
   adminImpersonationLogsQuerySchema,
   adminLoginSchema,
   adminRemoveMemberParamSchema,
+  adminReportIdParamSchema,
   adminReportsQuerySchema,
   adminReportReviewSchema,
   adminUsersQuerySchema,
@@ -96,6 +97,7 @@ adminRouter.get(
 adminRouter.patch(
   '/reports/:id',
   requireAdmin,
+  validate(adminReportIdParamSchema, 'params'),
   validate(adminReportReviewSchema, 'body'),
   reviewReportController
 );

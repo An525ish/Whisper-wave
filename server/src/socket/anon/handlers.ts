@@ -21,7 +21,7 @@ import {
   anonNoPayloadSchema,
 } from '../../validators/anon.js';
 import { emitMatchFound, emitMatchFoundToSocket } from './emitMatchFound.js';
-import { clearReactionLimiter, registerReactionHandler } from './reactionHandler.js';
+import { registerReactionHandler } from './reactionHandler.js';
 import {
   getSession,
   getActiveSessionId,
@@ -30,7 +30,7 @@ import {
   getPartner,
   getWaitingCard,
   setWaitingCardUser,
-  reenqueue,
+  enqueue,
   queueSize,
   recordLike,
   isVibeUnlocked,
@@ -39,6 +39,7 @@ import {
   endSessionNow,
   acceptAnonMessage,
   checkWhisperQuota,
+  checkSkipQuota,
   relayMessage,
   notifyMatchEnded,
   pairOrEnqueue,
@@ -46,10 +47,10 @@ import {
 } from '../../services/match/index.js';
 import { logger } from '../../utils/logger.js';
 import { AppError } from '../../utils/AppError.js';
-import { ackOf, emitError, failureCodeFor } from './shared.js';
-import type { AnonSocket } from './types.js';
+import { ackOf, clientMessage, emitError, failureCodeFor, likeFailureCodeFor } from './shared.js';
+import type { AnonSocket } from '../../types/anonSocket.js';
 import type { Namespace } from 'socket.io';
-import type { WaitingCard } from '../../types/match.js';
+import type { LikeSocketAck, WaitingCard } from '../../types/match.js';
 /**
  * The abuse-relevant /anon caps live on Redis.
  *
@@ -61,7 +62,15 @@ import type { WaitingCard } from '../../types/match.js';
  */
 const msgLimiter = makeRedisSocketRateLimiter('anon-msg', 20, 10_000);
 const likeLimiter = makeRedisSocketRateLimiter('anon-like', 5, 30_000);
-/** Requeue spam guard — one at a time is plenty, and each attempt costs a scan. */
+/**
+ * Requeue spam guard — one at a time is plenty, and each attempt costs a scan.
+ * Shared by `ANON_REQUEUE` and `ANON_NEXT` (a skip requeues too): each event takes
+ * ONE token from it, and the internal `requeueSelf` never takes another.
+ *
+ * All three Redis limiters above are keyed by ANONID, not socket id: a
+ * reconnecting client gets a new socket id, so a socket-keyed cap would reset on
+ * every reconnect and could be bypassed by simply reconnecting.
+ */
 const requeueLimiter = makeRedisSocketRateLimiter('anon-requeue', 3, 15_000);
 
 /**
@@ -80,11 +89,14 @@ const requeueLimiter = makeRedisSocketRateLimiter('anon-requeue', 3, 15_000);
  * this cap never touches a real person. Its job is to absorb a runaway loop, and
  * a per-connection `Map` absorbs that completely: a socket is held by exactly one
  * process for its whole life, so there is no cross-instance gap to close here.
+ * Keyed by socket id (and freed on disconnect) because nothing is persisted and a
+ * reconnect "resetting" it gains an attacker nothing.
  */
 const typingLimiter = makeSocketRateLimiter(12, 10_000);
 
 /**
- * On socket connect: resume an existing match, or (re)join the queue.
+ * On socket connect: resume an existing match, or (re)join the queue — or, for a
+ * resume-only handshake, ONLY resume.
  * Must be called AFTER applyAnonAuth sets socket.anonId.
  */
 export const handleAnonConnect = async (
@@ -98,13 +110,21 @@ export const handleAnonConnect = async (
   // We're back — cancel any pending disconnect grace period.
   await clearPresence(anonId);
 
+  // Resume-only handshake (page refresh mid-match): replay the live session or say
+  // there is none — and NOTHING else. Before the card write below on purpose: this
+  // path must never create or modify a card, enqueue, or count quota.
+  if (socket.resumeOnly) {
+    await resumeOnly(socket, anonId);
+    return;
+  }
+
   // Bind this anonId to the account that owns this connection, now that we know
   // whether there is one. A signed-out socket CLEARS any link a previous signed-in
   // one wrote, so signing out actually sheds the account — otherwise the next
   // person to hold this anonId would inherit the previous one's blocks and
   // quota. Done before the resume check so a match formed while signed in is
-  // still attributable afterwards.
-  await setWaitingCardUser(anonId, socket.userId);
+  // still attributable afterwards. Returns the (updated) card so it is read once.
+  const card = await setWaitingCardUser(anonId, socket.userId);
 
   // 1. Resume an interrupted match (page refresh / flaky network).
   const activeSessionId = await getActiveSessionId(anonId);
@@ -133,29 +153,60 @@ export const handleAnonConnect = async (
     }
   }
 
-  // 2. Re-enter the queue with the identity we already hold.
+  // 2. No identity at all (first ever visit, or the 24 h card lapsed).
+  //    Tell the client to submit the picker again instead of dead-ending.
+  if (!card) {
+    emitError(socket, 'Your whisper session expired. Pick an alias to rejoin.');
+    socket.emit(SESSION_EXPIRED, { reason: 'no_identity' });
+    return;
+  }
+
+  // 3. Enter the queue — the ONLY place a fresh join is enqueued, and only after
+  //    every gate above (account elsewhere, active match) has passed. POST
+  //    /api/match/join just saves the identity card.
   //
   //    Guests are never capped. Signed-in accounts are, and this is the first
   //    point in the lifecycle where the account is known — the /anon handshake is
-  //    what reads the `accessToken` cookie. Costs one INCR, off the match scan,
-  //    so `tryMatchFromQueue`'s bounded cost is untouched.
-  const quota = await checkWhisperQuota(socket.userId);
+  //    what reads the `accessToken` cookie. A refresh or reconnect inside the
+  //    marker window is the same whisper and is not counted again.
+  const quota = await checkWhisperQuota(socket.userId, anonId);
   if (quota instanceof AppError) {
     emitError(socket, quota.message, 'quota_exceeded');
     return;
   }
 
-  const card = await getWaitingCard(anonId);
-  if (card) {
-    await reenqueue(anonId);
-    await attemptPair(socket, nsp, card);
+  await enterQueue(socket, nsp, card);
+};
+
+/**
+ * Resume an existing active session for this anonId, or emit SESSION_EXPIRED
+ * (`reason: 'no_session'`) to this socket. Read-only on queue, card and quota.
+ */
+const resumeOnly = async (socket: AnonSocket, anonId: string): Promise<void> => {
+  const activeSessionId = await getActiveSessionId(anonId);
+  const session = activeSessionId ? await getSession(activeSessionId) : null;
+  if (session?.status === 'active' && isParticipant(session, anonId)) {
+    await emitMatchFoundToSocket(socket, anonId, session);
     return;
   }
+  socket.emit(SESSION_EXPIRED, { reason: 'no_session' });
+};
 
-  // 3. No identity at all (first ever visit, or the 24 h card lapsed).
-  //    Tell the client to submit the picker again instead of dead-ending.
-  emitError(socket, 'Your whisper session expired. Pick an alias to rejoin.');
-  socket.emit(SESSION_EXPIRED, { reason: 'no_identity' });
+/**
+ * Put this user on the queue and try to pair them. The enqueue refuses (returns
+ * false) when the anonId already holds an active match — a second tab racing a
+ * pairing must not put a matched user back into the queue.
+ */
+const enterQueue = async (
+  socket: AnonSocket,
+  nsp: Namespace,
+  card: WaitingCard
+): Promise<void> => {
+  if (!(await enqueue(socket.anonId))) {
+    logger.debug({ anonId: socket.anonId }, 'Skipped enqueue — already in an active match');
+    return;
+  }
+  await attemptPair(socket, nsp, card);
 };
 
 /**
@@ -170,6 +221,9 @@ const attemptPair = async (
   const result = await pairOrEnqueue(card);
 
   if (!result.paired) {
+    // Somebody else paired us first and is about to emit MATCH_FOUND to our room —
+    // a QUEUE_JOINED now could land after it and flip the client back to waiting.
+    if (result.claimedByOther) return;
     socket.emit(QUEUE_JOINED, { position: 'unknown', queueSize: await queueSize() });
     return;
   }
@@ -194,8 +248,7 @@ const requeueSelf = async (socket: AnonSocket, nsp: Namespace): Promise<void> =>
     emitError(socket, 'Your whisper session expired. Pick an alias to rejoin.');
     return;
   }
-  await reenqueue(socket.anonId);
-  await attemptPair(socket, nsp, card);
+  await enterQueue(socket, nsp, card);
 };
 
 /** Register all inbound event handlers for a connected /anon socket. */
@@ -220,7 +273,10 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
         // `code` is what the client branches on. Without it the only way for the
         // client to recognise a dead session is to pattern-match the prose, which
         // drifts the moment either side rewords an error.
-        const message = err instanceof Error ? err.message : 'Message not sent';
+        const message = clientMessage(err, 'Message not sent');
+        if (!(err instanceof AppError)) {
+          logger.warn({ err, anonId: socket.anonId }, 'ANON_MESSAGE failed unexpectedly');
+        }
         const code = failureCodeFor(err) ?? 'session_ended';
         ack?.({ ok: false, id, reason: message, code });
         emitError(socket, message, code);
@@ -228,16 +284,25 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
       }
 
       if (!outcome.accepted) {
-        ack?.({ ok: false, id: outcome.id, reason: outcome.reason });
-        socket.emit(MATCH_MESSAGE_REJECTED, { id: outcome.id, message: outcome.reason });
+        ack?.({
+          ok: false,
+          id: outcome.id,
+          reason: outcome.reason,
+          ...(outcome.code ? { code: outcome.code } : {}),
+        });
+        // A duplicate id means the ORIGINAL bubble is fine — telling the client the
+        // message was rejected would flip that delivered bubble to "failed".
+        if (outcome.code !== 'duplicate_id') {
+          socket.emit(MATCH_MESSAGE_REJECTED, { id: outcome.id, message: outcome.reason });
+        }
         return;
       }
 
-      relayMessage(nsp, outcome.partnerAnonId, outcome.message);
+      relayMessage(nsp, socket.anonId, socket.id, outcome.partnerAnonId, outcome.message);
       ack?.({ ok: true, id });
     },
     {
-      before: () => msgLimiter.allow(socket.id),
+      before: () => msgLimiter.allow(socket.anonId),
       onError: (err) => logger.warn({ err, anonId: socket.anonId }, 'ANON_MESSAGE error'),
     }
   );
@@ -273,13 +338,19 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
     socket,
     ANON_LIKE,
     anonNoPayloadSchema,
-    async () => {
+    async (_data, ...rest: unknown[]) => {
+      // Optional ack — old clients send none. MATCH_ERROR etc. are still emitted
+      // alongside it so they keep working unchanged.
+      const ack = ackOf<LikeSocketAck>(rest);
       try {
         const session = await requireActiveParticipant(socket.sessionId, socket.anonId);
         const sessionId = session.sessionId;
 
         if (!(await isVibeUnlocked(sessionId, session))) {
-          return emitError(socket, 'Chat a little longer before sending a vibe.');
+          const reason = 'Chat a little longer before sending a vibe.';
+          emitError(socket, reason);
+          ack?.({ ok: false, code: 'locked', reason });
+          return;
         }
 
         const result = await recordLike(sessionId, socket.anonId);
@@ -291,6 +362,7 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
           // window must be replayable rather than a one-shot emit.
           nsp.to(`anon:${partnerAnonId}`).emit(SOMEONE_VIBING);
           nsp.to(`anon:${partnerAnonId}`).emit(MATCH_PARTNER_VIBED, { sessionId });
+          ack?.({ ok: true, mutual: false });
           return;
         }
 
@@ -298,12 +370,23 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
         socket.emit(MUTUAL_LIKE, { connectToken: result.tokenA });
         nsp.to(`anon:${partnerAnonId}`).emit(MUTUAL_LIKE, { connectToken: result.tokenB });
         logger.info({ sessionId }, 'Mutual anon like');
+        ack?.({ ok: true, mutual: true });
       } catch (err) {
-        emitError(socket, err instanceof Error ? err.message : 'Could not send a vibe');
+        if (!(err instanceof AppError)) {
+          logger.warn({ err, anonId: socket.anonId }, 'ANON_LIKE failed unexpectedly');
+        }
+        const reason = clientMessage(err, 'Could not send a vibe');
+        emitError(socket, reason);
+        ack?.({ ok: false, code: likeFailureCodeFor(err), reason });
       }
     },
     {
-      before: () => likeLimiter.allow(socket.id),
+      before: () => likeLimiter.allow(socket.anonId),
+      rejections: {
+        rateLimited: { reason: 'Easy — too many vibes.', code: 'rate_limited' },
+        invalidPayload: { reason: 'Could not send a vibe', code: 'error' },
+        handlerFailed: { reason: 'Could not send a vibe', code: 'error' },
+      },
       onError: (err) => logger.warn({ err, anonId: socket.anonId }, 'ANON_LIKE error'),
     }
   );
@@ -338,9 +421,25 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
         }
       }
 
+      // A skip is a new whisper, so it counts against a signed-in account's cap —
+      // after the old session is already torn down, because the user clearly meant
+      // to leave it whether or not they may start another.
+      const quota = await checkSkipQuota(socket.userId);
+      if (quota instanceof AppError) {
+        emitError(socket, quota.message, 'quota_exceeded');
+        return;
+      }
+
       await requeueSelf(socket, nsp);
     },
-    { onError: (err) => logger.warn({ err, anonId: socket.anonId }, 'ANON_NEXT error') }
+    {
+      // Without this a client could loop skip → scan with no ceiling at all.
+      before: () => requeueLimiter.allow(socket.anonId),
+      rejections: {
+        rateLimited: { reason: 'Easy — you are skipping a bit fast.', code: 'rate_limited' },
+      },
+      onError: (err) => logger.warn({ err, anonId: socket.anonId }, 'ANON_NEXT error'),
+    }
   );
 
   // ── ANON_REQUEUE ──────────────────────────────────────────────────────────
@@ -362,23 +461,20 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
       await requeueSelf(socket, nsp);
     },
     {
-      before: () => requeueLimiter.allow(socket.id),
+      before: () => requeueLimiter.allow(socket.anonId),
       onError: (err) => logger.warn({ err, anonId: socket.anonId }, 'ANON_REQUEUE error'),
     }
   );
 
   // ── DISCONNECT ────────────────────────────────────────────────────────────
   socket.on('disconnect', () => {
-    // Fire and forget on purpose — `remove` is async on the Redis limiters, and
-    // these callers are disconnect handlers that cannot await anything. It never
-    // rejects, so nothing is left dangling.
-    void msgLimiter.remove(socket.id);
-    void likeLimiter.remove(socket.id);
+    // Only the in-process typing limiter is socket-keyed and needs freeing. The
+    // Redis limiters are keyed by anonId on purpose (a reconnect must not reset
+    // them) and expire by TTL. Fire and forget: `remove` never rejects.
     void typingLimiter.remove(socket.id);
-    void requeueLimiter.remove(socket.id);
-    clearReactionLimiter(socket.id);
 
-    // Grace period: a dropped socket is not proof of departure.
-    void handleSocketDrop(nsp, socket.anonId, socket.sessionId);
+    // Grace period: a dropped socket is not proof of departure. Ignored when the
+    // same anonId still has another live socket (a second tab).
+    void handleSocketDrop(nsp, socket.anonId, socket.sessionId, socket.id);
   });
 };

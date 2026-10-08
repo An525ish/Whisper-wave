@@ -1,7 +1,0 @@
-[partner] joined as RailPal | anonId=***
-[partner] socket connected
-[partner] MATCH_FOUND partner = undefined session = 099605de-05d3-4629-8138-4d2e4dcc338b
-[partner] sent ack = {"ok":true}
-[partner] sent ack = {"ok":true}
-[partner] sent ack = {"ok":true}
-[partner] sent ack = {"ok":true}

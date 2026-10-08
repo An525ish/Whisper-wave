@@ -14,7 +14,7 @@
     135deg,
     var(--color-void) 0%,
     var(--color-void-dark) 60%,
-    var(--color-void-gradTo) 100%
+    var(--color-void-grad-to) 100%
   );
   box-shadow:
     0 8px 28px -8px var(--color-void-light),
@@ -24,9 +24,7 @@
 /* WaitingRoom also drives shared `auth-stage` animations via inline
    styles, so neutralise them here for reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  .auth-stage__chip,
   .auth-stage__bar,
-  .auth-stage__chip-dot,
   .auth-stage__signal span {
     animation: none !important;
   }

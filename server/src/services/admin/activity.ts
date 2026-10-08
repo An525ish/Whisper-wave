@@ -4,7 +4,7 @@ import type {
   AdminActivityEventsPage,
   AdminActivityPresence,
 } from '../../types/admin.js';
-import type { AdminActivityEventsQuery } from '../../validators/admin.js';
+import type { AdminActivityEventsQuery } from '../../types/adminInput.js';
 import {
   getOnlineUserIds,
   getPresenceSize,

@@ -1,6 +1,9 @@
+import { getRedis } from '../../config/redis.js';
 import { logger } from '../../utils/logger.js';
 import * as reportRepo from '../../repositories/report.js';
-import { getSession, getPartner, isParticipant, blockAnonId } from '../match/index.js';
+import { blockAnonId } from '../match/block.js';
+import { REDIS_KEYS, TTL } from '../match/keys.js';
+import { getPartner, getSession, isParticipant } from '../match/session.js';
 import type { ModerationReason, ReportReason } from '../../types/match.js';
 
 /** Coarse moderation bucket → the report category a human reviewer will see. */
@@ -21,16 +24,31 @@ export type AutoReportInput = {
 /**
  * Server-initiated abuse report.
  *
- * The moderation filter flags a small number of unambiguous categories. Rather
- * than silently dropping those messages we file a report AND mutually block the
- * pair, so the sender cannot re-enter the queue and immediately match the same
- * victim again. Review happens manually via `GET /api/admin/report`.
+ * Only the SEVERE categories reach here (CSAM-adjacent, violence threats — see
+ * `moderation.ts`). Rather than silently dropping those messages we file a report
+ * AND mutually block the pair, so the sender cannot re-enter the queue and
+ * immediately match the same victim again. Review happens manually via
+ * `GET /api/admin/reports`.
+ *
+ * Deduplicated per (session, category) with a SET NX marker: without it a sender
+ * could repeat a flagged message and mint one report (and one Mongo write) per
+ * send. If Redis cannot answer, the report is skipped and logged — the message
+ * itself is already blocked.
  *
  * Never throws — a report failure must not break message relay.
  */
 export const fileAutoReport = async (input: AutoReportInput): Promise<void> => {
   const { sessionId, reporterAnonId, reason } = input;
   try {
+    const first = await getRedis().set(
+      REDIS_KEYS.autoReported(sessionId, reason),
+      '1',
+      'EX',
+      TTL.autoReport,
+      'NX'
+    );
+    if (first !== 'OK') return; // already reported for this category in this session
+
     const session = await getSession(sessionId);
     if (!session || !isParticipant(session, reporterAnonId)) return;
 
@@ -59,13 +77,9 @@ export const fileAutoReport = async (input: AutoReportInput): Promise<void> => {
     );
   } catch (err) {
     logger.error({ err, sessionId }, 'Failed to file auto-report');
+    // Release the dedupe marker so the next flagged message can retry the report.
+    await getRedis()
+      .del(REDIS_KEYS.autoReported(sessionId, reason))
+      .catch((e: unknown) => logger.warn({ err: e, sessionId }, 'Failed to release auto-report marker'));
   }
-};
-
-/**
- * Fire-and-forget variant used by the message path. Distinguishes "the filter
- * already decided to report" from "this category also warrants a report".
- */
-export const maybeAutoReport = async (input: AutoReportInput): Promise<void> => {
-  await fileAutoReport(input);
 };

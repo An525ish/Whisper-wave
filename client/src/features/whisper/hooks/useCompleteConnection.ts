@@ -2,18 +2,19 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth';
+import useErrors from '@/shared/hooks/useError';
+import { track } from '@/shared/lib/analytics';
 import { completeConnection } from '../api/connection';
 import { useAnonStore } from '../stores/anonStore';
-import { WHISPER_CONNECT_TOKEN_KEY } from '../constants';
-import { ANALYTICS, track } from '@/shared/lib/analytics';
+import { WHISPER_CONNECT_INTENT, WHISPER_CONNECT_TOKEN_KEY, WHISPER_EVENTS } from '../constants';
 
 /**
  * Finish a Whisper "connect & reveal".
  *
- * Three outcomes, all of which used to live in the modal's component body:
- *  - signed out → stash the token and bounce to /auth
+ *  - signed out → stash the token and send them to /auth (the only redirect)
  *  - signed in, partner hasn't connected yet → stay put and say so
- *  - both connected → a real DM exists, drop the user into it
+ *  - both connected → record it in the store; `useWhisperFlow` opens the DM once
+ *  - signed in but the call failed → a toast, NOT a bounce to a login they already did
  */
 export function useCompleteConnection() {
   const navigate = useNavigate();
@@ -21,34 +22,26 @@ export function useCompleteConnection() {
   const setConnected = useAnonStore((s) => s.setConnected);
   const [waiting, setWaiting] = useState(false);
 
-  const goToAuth = (connectToken: string) => {
-    sessionStorage.setItem(WHISPER_CONNECT_TOKEN_KEY, connectToken);
-    navigate('/auth', { state: { intent: 'whisper-connect' } });
-  };
-
   const mutation = useMutation({
     mutationFn: (connectToken: string) => completeConnection(connectToken),
     onSuccess: (res) => {
       if (res.data.status === 'connected') {
-        track(ANALYTICS.WHISPER_DM_OPENED, { source: 'mutual_vibe_modal' });
         setConnected(res.data.chatId, res.data.connectionId);
-        navigate(`/chat/${res.data.chatId}`);
         return;
       }
       setWaiting(true);
     },
-    onError: (_err, connectToken) => {
-      // An expired/absent session is the expected path for a guest — send them
-      // to sign in rather than showing a dead-end error.
-      goToAuth(connectToken);
-    },
   });
+
+  useErrors([{ isError: mutation.isError, error: mutation.error }]);
 
   const connect = (connectToken: string) => {
     setWaiting(false);
     if (!user) {
-      track(ANALYTICS.WHISPER_DM_OPENED, { source: 'auth_redirect' });
-      goToAuth(connectToken);
+      // Not a DM open — the guest has only been sent to sign in.
+      track(WHISPER_EVENTS.CONNECT_AUTH_REDIRECT, {});
+      sessionStorage.setItem(WHISPER_CONNECT_TOKEN_KEY, connectToken);
+      navigate('/auth', { state: { intent: WHISPER_CONNECT_INTENT } });
       return;
     }
     mutation.mutate(connectToken);
@@ -58,9 +51,5 @@ export function useCompleteConnection() {
     connect,
     isPending: mutation.isPending,
     isWaitingForPartner: waiting,
-    error:
-      mutation.isError && mutation.error instanceof Error
-        ? mutation.error.message
-        : null,
   };
 }

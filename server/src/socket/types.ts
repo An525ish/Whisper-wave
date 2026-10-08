@@ -4,7 +4,7 @@ import type { LeanUser } from '../types/user.js';
 export type {
   SocketNewMessagePayload as NewMessagePayload,
   SocketTypingPayload as TypingPayload,
-} from '../validators/socket.js';
+} from '../types/input.js';
 
 export type SocketSession = {
   io: Server;

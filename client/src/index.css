@@ -39,7 +39,7 @@
   --color-void-bright: #8b6bff;
   --color-void-light: #5a3fd626;
   --color-void-dark: #3d2b6e;
-  --color-void-gradTo: #017a4a;
+  --color-void-grad-to: #017a4a;
 
   --color-red: #ff5863;
   --color-red-light: #ff586333;
@@ -2043,7 +2043,6 @@
   height: 1.15rem;
   flex-shrink: 0;
 }
-
 
 @media (prefers-reduced-motion: reduce) {
   .auth-ambience__glow--a,

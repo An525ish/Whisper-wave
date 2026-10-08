@@ -19,7 +19,7 @@ import type {
   SignUpStartInput,
   SignUpUpdateUsernameInput,
   SignUpVerifyInput,
-} from '../../validators/auth.js';
+} from '../../types/input.js';
 import { normalizeEmail } from '../../utils/normalize.js';
 import {
   assertAcceptableEmail,

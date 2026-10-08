@@ -1,10 +1,6 @@
-import { WHISPER_CONNECT_TOKEN_KEY } from '../constants';
-import { useAnonStore } from '../stores/anonStore';
-import { readAliases } from '../utils/connectToken';
-
 type Props = {
-  /** True when the user arrived here from the mutual-vibe reveal flow. */
-  active: boolean;
+  /** The two aliases from the match; null hides the banner. */
+  names: { self: string; them: string } | null;
   onStayAnonymous: () => void;
 };
 
@@ -13,21 +9,11 @@ type Props = {
  *
  * This is the emotional hook that gets the account created — a user who just
  * had a real moment with a stranger should never face a generic "Create account"
- * form. Owns its own token read and alias precedence so `pages/Auth.tsx` only
- * decides whether to render it.
+ * form. Presentational: `useWhisperAuthIntent` resolves the aliases.
  */
-export default function WhisperConnectNotice({ active, onStayAnonymous }: Props) {
-  const storeAlias = useAnonStore((s) => s.displayName);
-  const partnerAlias = useAnonStore((s) => s.partnerName);
-
-  if (!active) return null;
-
-  // Live store values beat the token: they reflect what the user actually
-  // matched as, including any session resume.
-  const tokenAliases = readAliases(sessionStorage.getItem(WHISPER_CONNECT_TOKEN_KEY));
-  const self = storeAlias || tokenAliases?.self;
-  const them = partnerAlias || tokenAliases?.partner;
-  if (!self || !them) return null;
+export default function WhisperConnectNotice({ names, onStayAnonymous }: Props) {
+  if (!names) return null;
+  const { self, them } = names;
 
   return (
     <div className="mb-4">

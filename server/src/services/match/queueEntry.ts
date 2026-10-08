@@ -1,46 +1,44 @@
 import { AppError } from '../../utils/AppError.js';
 import { v4 as uuid } from 'uuid';
-import type { Gender, VibeTag, WaitingCard } from '../../types/match.js';
-import { dequeue, deleteWaitingCard, reenqueue, saveWaitingCard } from './index.js';
-
-export type JoinQueueInput = {
-  displayName: string;
-  vibeTags: VibeTag[];
-  gender: Gender;
-};
-
-export type JoinQueueResult = {
-  anonId: string;
-  /** TRUE when a NEW identity was minted — the caller should set the cookie. */
-  isNewIdentity: boolean;
-};
+import type { IdentityCardInput, IdentityCardResult, WaitingCard } from '../../types/match.js';
+import { dequeue, deleteWaitingCard, getWaitingCard, saveWaitingCard } from './queue.js';
+import { clearJoinCounted } from './quota.js';
 
 /**
- * Register a user in the matchmaking queue.
+ * Register an anon user's identity card (alias, vibes, gender) — and nothing else.
+ *
+ * This deliberately does NOT enqueue. Enqueueing here ran before the quota,
+ * already-matched and active-session checks, so a refused user still sat in the
+ * queue and could be paired. The only place that enqueues is the `/anon` socket
+ * connect handler, after those gates (see `socket/anon/handlers.ts`).
  *
  * Owns the "reuse the existing anonId or mint one" decision so the controller
  * only has to set the cookie. An existing identity is reused deliberately: a
  * user who backs out of a chat and rejoins should keep their alias rather than
- * be asked to type it again.
- *
- * Note the identity card is *not* deleted here — the queue list is the queue.
+ * be asked to type it again. The account link (`userId`) on that card is kept —
+ * it is written by the socket, not by this guest-safe endpoint, and dropping it
+ * here would shed the account's blocks and quota until the next socket connect.
  */
-export const joinQueue = async (
-  input: JoinQueueInput,
+export const saveIdentityCard = async (
+  input: IdentityCardInput,
   existingAnonId: string | undefined
-): Promise<JoinQueueResult> => {
+): Promise<IdentityCardResult> => {
   const anonId = existingAnonId ?? uuid();
+  const existing = existingAnonId ? await getWaitingCard(anonId) : null;
 
-  await saveWaitingCard({
+  const card: WaitingCard = {
     anonId,
     displayName: input.displayName,
     vibeTags: input.vibeTags,
     gender: input.gender,
+    ...(existing?.userId ? { userId: existing.userId } : {}),
     joinedAt: Date.now(),
-  } satisfies WaitingCard);
+  };
+  await saveWaitingCard(card);
 
-  // Idempotent — a refresh/rejoin can't create duplicate queue entries.
-  await reenqueue(anonId);
+  // Submitting the picker again is a NEW whisper, so the previous join's
+  // "already counted" marker must not swallow it. Only signed-in joins have one.
+  if (existing?.userId) await clearJoinCounted(anonId);
 
   return { anonId, isNewIdentity: !existingAnonId };
 };

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/features/auth';
-import { useConnectionOrigin, vibeTagLabel } from '@/features/whisper';
+import { useConnectionOrigin } from '../hooks/useConnectionOrigin';
+import { vibeTagLabel } from '../utils/vibeTag';
 
 /**
  * "How we met" strip for the DM header.

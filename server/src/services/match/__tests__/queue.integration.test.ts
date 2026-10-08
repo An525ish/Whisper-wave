@@ -5,6 +5,7 @@ import {
   enqueue,
   dequeue,
   reenqueue,
+  purgeQueue,
   saveWaitingCard,
   getWaitingCard,
   setIdentityAlias,
@@ -15,14 +16,23 @@ import {
   createSession,
   getSession,
   endSession,
-  bufferMessage,
   getBufferedMessages,
+  getMessageCounts,
   isParticipant,
   getUserActiveSessions,
 } from '../session.js';
 import { blockAnonId } from '../block.js';
-import { REDIS_KEYS } from '../keys.js';
-import { card, skipUnlessRedis, useTestRedis } from './redisHarness.js';
+import { recordLike } from '../like.js';
+import { REDIS_KEYS, TTL } from '../keys.js';
+import { meetsVibeGate, VIBE_UNLOCK } from '../vibeEligibility.js';
+import type { WaitingCard } from '../../../types/match.js';
+import { bufferTestMessage, card, skipUnlessRedis, useTestRedis } from './redisHarness.js';
+
+/** The matched partner's anonId, or null — what these tests care about. */
+const tryMatch = async (self: WaitingCard): Promise<string | null> => {
+  const result = await tryMatchFromQueue(self);
+  return result.outcome === 'matched' ? result.partnerAnonId : null;
+};
 
 /**
  * Integration tests for the Redis matching core.
@@ -78,7 +88,7 @@ describe('queue matching (Redis integration)', () => {
     }
 
     const results = await Promise.all(
-      matchers.map((self) => tryMatchFromQueue(card(self, ['music', 'gaming'])))
+      matchers.map((self) => tryMatch(card(self, ['music', 'gaming'])))
     );
 
     const winners = results.filter((r): r is string => Boolean(r));
@@ -118,7 +128,7 @@ describe('queue matching (Redis integration)', () => {
     await enqueue('match-no');
     await enqueue('seeker');
 
-    const partner = await tryMatchFromQueue(card('seeker', ['music', 'gaming']));
+    const partner = await tryMatch(card('seeker', ['music', 'gaming']));
     assert.equal(partner, 'match-yes');
 
     await getRedis().del(REDIS_KEYS.queue);
@@ -133,7 +143,7 @@ describe('queue matching (Redis integration)', () => {
     await dequeue('narcissist');
     await saveWaitingCard(card('narcissist'));
     await enqueue('narcissist');
-    assert.equal(await tryMatchFromQueue(card('narcissist')), null);
+    assert.equal(await tryMatch(card('narcissist')), null);
     await getRedis().del(REDIS_KEYS.queue);
   });
 
@@ -152,15 +162,105 @@ describe('queue matching (Redis integration)', () => {
       await enqueue(id);
     }
 
+    // The matcher must itself be queued (the claim checks that); it arrives last,
+    // so it is at the head — outside the tail-anchored window, as in production.
+    await saveWaitingCard(card('seeker'));
+    await enqueue('seeker');
+
     // No vibe tags on the seeker, so every candidate scores 0 and the tie-break
     // decides: the longest wait must win.
-    const partner = await tryMatchFromQueue(card('seeker'));
+    const partner = await tryMatch(card('seeker'));
     assert.equal(partner, oldest, 'a head-anchored scan window would starve the longest waiter');
 
     await getRedis().del(REDIS_KEYS.queue);
-    for (const id of [oldest, ...others]) {
+    for (const id of [oldest, ...others, 'seeker']) {
       await getRedis().del(REDIS_KEYS.waiting(id));
     }
+  });
+
+  it('never double-matches two joiners who are both queued and scan simultaneously', async (t) => {
+    skipUnlessRedis(t);
+    // The mutual-claim case: A and B are both in the queue and both scan at once.
+    // Each sees the other as the best candidate. Without the "self must still be
+    // queued" check in the claim, A claims B and B claims A — two sessions, and
+    // each user gets two partners.
+    const a = 'mutual-a';
+    const b = 'mutual-b';
+    await getRedis().del(REDIS_KEYS.queue);
+    for (const id of [a, b]) {
+      await saveWaitingCard(card(id, ['music']));
+      await enqueue(id);
+    }
+
+    const results = await Promise.all([
+      tryMatchFromQueue(card(a, ['music'])),
+      tryMatchFromQueue(card(b, ['music'])),
+    ]);
+
+    const matched = results.filter((r) => r.outcome === 'matched');
+    assert.equal(matched.length, 1, 'exactly ONE session must be formed');
+    const loser = results.find((r) => r.outcome !== 'matched');
+    assert.equal(loser?.outcome, 'self_claimed', 'the claimed side must stand down, not re-queue');
+    assert.equal(await queueSize(), 0, 'after a pair neither anonId may remain queued');
+
+    await getRedis().del(REDIS_KEYS.queue);
+    for (const id of [a, b]) await getRedis().del(REDIS_KEYS.waiting(id));
+  });
+
+  it('never gives anyone two partners when many queued joiners scan at once', async (t) => {
+    skipUnlessRedis(t);
+    const ids = Array.from({ length: 8 }, (_, i) => `swarm-${i}`);
+    await getRedis().del(REDIS_KEYS.queue);
+    for (const id of ids) {
+      await saveWaitingCard(card(id));
+      await enqueue(id);
+    }
+
+    const results = await Promise.all(ids.map((id) => tryMatchFromQueue(card(id))));
+
+    // Every pair is (matcher, claimed). Nobody may appear in two pairs, and a
+    // claimed user must not also have claimed someone.
+    const seen = new Set<string>();
+    results.forEach((r, i) => {
+      if (r.outcome !== 'matched') return;
+      for (const id of [ids[i], r.partnerAnonId]) {
+        assert.equal(seen.has(id), false, `${id} was placed in two pairs`);
+        seen.add(id);
+      }
+    });
+    const stillQueued = await getRedis().lrange(REDIS_KEYS.queue, 0, -1);
+    for (const id of seen) assert.equal(stillQueued.includes(id), false, `${id} paired but still queued`);
+
+    await getRedis().del(REDIS_KEYS.queue);
+    for (const id of ids) await getRedis().del(REDIS_KEYS.waiting(id));
+  });
+
+  it('refuses to enqueue an anonId that already holds an active match', async (t) => {
+    skipUnlessRedis(t);
+    await getRedis().del(REDIS_KEYS.queue);
+    await createSession({
+      sessionId: 'sess-guard',
+      anon1: 'guard-a',
+      anon2: 'guard-b',
+      name1: 'one',
+      name2: 'two',
+      tags1: [],
+      tags2: [],
+    });
+    assert.equal(await enqueue('guard-a'), false, 'a matched user must not re-enter the queue');
+    assert.equal(await queueSize(), 0);
+    await endSession('sess-guard');
+    assert.equal(await enqueue('guard-a'), true, 'once the match is over they may queue again');
+    await getRedis().del(REDIS_KEYS.queue);
+  });
+
+  it('purges the queue at boot', async (t) => {
+    skipUnlessRedis(t);
+    await getRedis().del(REDIS_KEYS.queue);
+    await enqueue('ghost-1');
+    await enqueue('ghost-2');
+    await purgeQueue();
+    assert.equal(await queueSize(), 0);
   });
 
   /**
@@ -197,7 +297,9 @@ describe('queue matching (Redis integration)', () => {
     await saveWaitingCard(card('scan-bystander'));
     await enqueue('scan-bystander');
 
-    const partner = await tryMatchFromQueue({ ...card(BLOCKER), userId: 'scan-blocker-acct' });
+    await enqueue(BLOCKER);
+
+    const partner = await tryMatch({ ...card(BLOCKER), userId: 'scan-blocker-acct' });
     assert.notEqual(partner, VICTIM_NEW, 'a signed-in account shed its block via a new anonId');
     assert.equal(partner, 'scan-bystander', 'the unblocked candidate should still match');
 
@@ -226,7 +328,9 @@ describe('queue matching (Redis integration)', () => {
     await saveWaitingCard(card('self-stranger'));
     await enqueue('self-stranger');
 
-    const partner = await tryMatchFromQueue({ ...card('self-laptop-1'), userId: MINE });
+    await enqueue('self-laptop-1');
+
+    const partner = await tryMatch({ ...card('self-laptop-1'), userId: MINE });
     assert.equal(partner, 'self-stranger', 'an account must not be matched with itself');
 
     await getRedis().del(REDIS_KEYS.queue);
@@ -347,14 +451,115 @@ describe('anon session lifecycle (Redis integration)', () => {
       tags1: [],
       tags2: [],
     });
-    await bufferMessage('sess-msg', { from: 'm1', content: 'first', sentAt: 1 });
-    await bufferMessage('sess-msg', { from: 'm2', content: 'second', sentAt: 2 });
+    await bufferTestMessage('sess-msg', { from: 'm1', content: 'first', sentAt: 1 });
+    await bufferTestMessage('sess-msg', { from: 'm2', content: 'second', sentAt: 2 });
     const messages = await getBufferedMessages('sess-msg');
     assert.deepEqual(
       messages.map((m) => m.content),
       ['first', 'second'],
       'conversation replay must read chronologically'
     );
+  });
+
+  it('rejects a reused message id and does not count it twice', async (t) => {
+    skipUnlessRedis(t);
+    await getRedis().del(REDIS_KEYS.messages('sess-dup'));
+    await getRedis().del(REDIS_KEYS.meta('sess-dup'));
+    await createSession({
+      sessionId: 'sess-dup',
+      anon1: 'd1',
+      anon2: 'd2',
+      name1: 'one',
+      name2: 'two',
+      tags1: [],
+      tags2: [],
+    });
+    assert.equal(await bufferTestMessage('sess-dup', { id: 'same', from: 'd1', content: 'a', sentAt: 1 }), true);
+    assert.equal(await bufferTestMessage('sess-dup', { id: 'same', from: 'd2', content: 'b', sentAt: 2 }), false);
+    assert.equal((await getBufferedMessages('sess-dup')).length, 1);
+    assert.deepEqual(await getMessageCounts('sess-dup'), { countA: 1, countB: 0 });
+    // Messages without an id are never "duplicates" of each other.
+    assert.equal(await bufferTestMessage('sess-dup', { from: 'd1', content: 'c', sentAt: 3 }), true);
+    assert.equal(await bufferTestMessage('sess-dup', { from: 'd1', content: 'c', sentAt: 4 }), true);
+    await endSession('sess-dup');
+  });
+
+  it('counts per side beyond the buffer cap, so the vibe gate cannot re-lock', async (t) => {
+    skipUnlessRedis(t);
+    await getRedis().del(REDIS_KEYS.messages('sess-vibe'));
+    await getRedis().del(REDIS_KEYS.meta('sess-vibe'));
+    await createSession({
+      sessionId: 'sess-vibe',
+      anon1: 'v1',
+      anon2: 'v2',
+      name1: 'one',
+      name2: 'two',
+      tags1: [],
+      tags2: [],
+    });
+    // 60 from one side, 2 from the other: the last-50 buffer holds none of the
+    // early messages from side B's perspective, but the counters remember.
+    for (let i = 0; i < 2; i++) {
+      await bufferTestMessage('sess-vibe', { from: 'v2', content: `b${i}`, sentAt: i });
+    }
+    for (let i = 0; i < 60; i++) {
+      await bufferTestMessage('sess-vibe', { from: 'v1', content: `a${i}`, sentAt: 100 + i });
+    }
+    const counts = await getMessageCounts('sess-vibe');
+    assert.deepEqual(counts, { countA: 60, countB: 2 });
+    assert.equal(
+      (await getBufferedMessages('sess-vibe')).filter((m) => m.from === 'v2').length,
+      0,
+      'precondition: side B has fallen out of the buffer'
+    );
+    const old = Date.now() - VIBE_UNLOCK.minSessionMs - 1;
+    assert.equal(meetsVibeGate({ createdAt: old, ...counts }), true);
+    await endSession('sess-vibe');
+  });
+
+  it('deletes the transcript and counters when a session ends, keeping only the record', async (t) => {
+    skipUnlessRedis(t);
+    const s = 'sess-end-clean';
+    await createSession({
+      sessionId: s,
+      anon1: 'e1',
+      anon2: 'e2',
+      name1: 'one',
+      name2: 'two',
+      tags1: [],
+      tags2: [],
+    });
+    await bufferTestMessage(s, { id: 'm-1', from: 'e1', content: 'secret', sentAt: 1 });
+    await getRedis().sadd(REDIS_KEYS.likes(s), 'e1');
+    assert.equal(await getRedis().exists(REDIS_KEYS.messages(s)), 1, 'precondition');
+
+    await endSession(s);
+
+    for (const key of [REDIS_KEYS.messages(s), REDIS_KEYS.meta(s), REDIS_KEYS.likes(s)]) {
+      assert.equal(await getRedis().exists(key), 0, `${key} survived the end of its session`);
+    }
+    // The record is kept (briefly) so a connectToken can still resolve the anonIds.
+    assert.equal((await getSession(s))?.status, 'ending');
+    const ttl = await getRedis().ttl(REDIS_KEYS.session(s));
+    assert.ok(ttl > 0 && ttl <= 3600, `expected a <= 1h TTL on the ended record, got ${ttl}`);
+  });
+
+  it('bounds the likes set with a TTL', async (t) => {
+    skipUnlessRedis(t);
+    const s = 'sess-like-ttl';
+    await createSession({
+      sessionId: s,
+      anon1: 'l1',
+      anon2: 'l2',
+      name1: 'one',
+      name2: 'two',
+      tags1: [],
+      tags2: [],
+    });
+    await recordLike(s, 'l1');
+    const ttl = await getRedis().ttl(REDIS_KEYS.likes(s));
+    assert.ok(ttl > 0 && ttl <= TTL.session, `likes key must expire, got ${ttl}`);
+    await endSession(s);
   });
 
   it('caps the buffer so a long chat cannot grow Redis without bound', async (t) => {
@@ -370,7 +575,7 @@ describe('anon session lifecycle (Redis integration)', () => {
       tags2: [],
     });
     for (let i = 0; i < 60; i++) {
-      await bufferMessage('sess-cap', { from: 'c1', content: `m${i}`, sentAt: i });
+      await bufferTestMessage('sess-cap', { from: 'c1', content: `m${i}`, sentAt: i });
     }
     const messages = await getBufferedMessages('sess-cap');
     assert.equal(messages.length, 50, 'buffer should cap at TTL.maxMessages');

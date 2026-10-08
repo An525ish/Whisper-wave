@@ -1,44 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { VIBE_GATE_TICK_MS } from '../constants';
 import { isVibeUnlocked } from '../utils/isVibeUnlocked';
+import { useNowWhile } from './useNowWhile';
 import type { AnonMessage } from '../types';
 
-/** How often to re-evaluate the time-based part of the gate. */
-const TICK_MS = 5000;
+interface Params {
+  likeSent: boolean;
+  mutualLike: boolean;
+  partnerVibed: boolean;
+  /** The partner left — the thread can no longer become a connection. */
+  ended: boolean;
+}
 
 /**
  * Drives the vibe-unlock gate: whether the like button is available, and
  * whether the one-shot "vibe check" prompt should be showing.
  *
- * Only ticks while the gate is closed — once eligible, there's nothing left to
- * wait for, so the component stops re-rendering.
+ * The clock only ticks while the gate is closed and the thread is live — once
+ * eligible there is nothing left to wait for.
  */
 export function useVibeUnlock(
   messages: AnonMessage[],
   matchedAt: number | null,
-  opts: {
-    likeSent: boolean;
-    mutualLike: boolean;
-    partnerVibed: boolean;
-    /** The partner left — the thread can no longer become a connection. */
-    ended: boolean;
-  }
+  { likeSent, mutualLike, partnerVibed, ended }: Params
 ) {
-  const [now, setNow] = useState(() => Date.now());
+  // Mirror of the gate, adjusted during render, so the clock can stop once open.
+  const [gateOpen, setGateOpen] = useState(false);
+  const now = useNowWhile(!ended && !gateOpen, VIBE_GATE_TICK_MS);
   const vibeUnlocked = isVibeUnlocked(messages, matchedAt, now);
-
-  useEffect(() => {
-    if (vibeUnlocked || opts.ended) return;
-    const id = window.setInterval(() => setNow(Date.now()), TICK_MS);
-    return () => window.clearInterval(id);
-  }, [vibeUnlocked, opts.ended]);
+  if (vibeUnlocked !== gateOpen) setGateOpen(vibeUnlocked);
 
   return {
     vibeUnlocked,
-    showVibePrompt:
-      vibeUnlocked &&
-      !opts.ended &&
-      !opts.likeSent &&
-      !opts.mutualLike &&
-      !opts.partnerVibed,
+    showVibePrompt: vibeUnlocked && !ended && !likeSent && !mutualLike && !partnerVibed,
   };
 }

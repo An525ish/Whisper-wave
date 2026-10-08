@@ -1,6 +1,7 @@
 import { useId } from 'react';
+import { aliasFirstName } from '../utils/alias';
 import { vibeTagLabel } from '../utils/vibeTag';
-import type { ThreadSummary } from '../utils/threadSummary';
+import type { ThreadSummary } from '../types';
 import './threadSummaryCard.css';
 
 type Props = {
@@ -31,7 +32,7 @@ export default function ThreadSummaryCard({
   secondaryLabel,
 }: Props) {
   const headingId = useId();
-  const firstAlias = partnerAlias.trim().split(/\s+/)[0] || 'them';
+  const firstAlias = aliasFirstName(partnerAlias, 'them');
 
   return (
     <section className="tsc" aria-labelledby={headingId}>

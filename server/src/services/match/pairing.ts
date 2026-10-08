@@ -1,43 +1,41 @@
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import type { AnonSession, PairResult, WaitingCard } from '../../types/match.js';
-import {
-  deleteSession,
-  dequeue,
-  getWaitingCard,
-  reenqueue,
-  tryMatchFromQueue,
-  createSession,
-  generateSessionId,
-  getSession,
-  isParticipant,
-} from './index.js';
+import { getWaitingCard, reenqueue, tryMatchFromQueue, generateSessionId } from './queue.js';
+import { createSession, deleteSession, getSession, isParticipant } from './session.js';
 
 /**
- * Attempt to pair `self` with whoever is waiting. Returns `{ paired: false }`
- * when nobody suitable is available — the caller should leave the user queued.
+ * Attempt to pair `self` — who MUST already be in the queue — with whoever is
+ * waiting. Returns `{ paired: false }` when nobody suitable is available (or when
+ * someone else paired us first) — the caller should leave the user queued.
  *
- * Concurrency: the claim inside `tryMatchFromQueue` is an atomic Lua `LREM`, so
- * two simultaneous matchers can never claim the same candidate. That is why
- * there is no global lock here. If session creation fails after the claim, both
- * sides are put back on the queue and the half-built session is deleted —
- * otherwise the partner would wait forever for a `MATCH_FOUND` that never fires.
+ * Concurrency: the claim inside `tryMatchFromQueue` is one atomic Lua script that
+ * checks self is still queued, claims the candidate and removes BOTH from the
+ * queue. Two simultaneous matchers can therefore never claim the same candidate,
+ * nor claim each other, and after a successful pair neither anonId is left in the
+ * queue. That is why there is no global lock and no follow-up dequeue here. If
+ * session creation fails after the claim, both sides are put back on the queue and
+ * the half-built session is deleted — otherwise the partner would wait forever for
+ * a `MATCH_FOUND` that never fires.
  */
 export const pairOrEnqueue = async (self: WaitingCard): Promise<PairResult> => {
-  const partnerAnonId = await tryMatchFromQueue(self);
-  if (!partnerAnonId) return { paired: false };
+  const attempt = await tryMatchFromQueue(self);
+  if (attempt.outcome === 'self_claimed') return { paired: false, claimedByOther: true };
+  if (attempt.outcome === 'none') return { paired: false };
+  const { partnerAnonId } = attempt;
 
   const partner = await getWaitingCard(partnerAnonId);
 
   if (!partner) {
-    // We already LREM'd them off the queue, so they are no longer waiting.
-    // Put them back rather than silently dropping them from matchmaking.
+    // The claim removed BOTH of us from the queue. The partner has no identity
+    // card (it expired between scan and claim), so they are not a matchable
+    // person and are dropped; self goes back so they keep waiting.
     logger.warn(
       { anonId: self.anonId, partnerAnonId },
-      'Claimed partner had no identity card — requeued'
+      'Claimed partner had no identity card — dropped, self requeued'
     );
-    await reenqueue(partnerAnonId).catch((err: unknown) =>
-      logger.warn({ err, partnerAnonId }, 'Failed to requeue partner with no identity card')
+    await reenqueue(self.anonId).catch((err: unknown) =>
+      logger.warn({ err, anonId: self.anonId }, 'Failed to requeue self after card-less claim')
     );
     return { paired: false };
   }
@@ -59,10 +57,8 @@ export const pairOrEnqueue = async (self: WaitingCard): Promise<PairResult> => {
       ...(partner.userId ? { userId2: partner.userId } : {}),
     });
 
-    // Both are now IN a match, so neither should sit in the queue.
+    // Both are now IN a match and the claim already removed both from the queue.
     // Identity cards are intentionally kept (so either can rejoin later).
-    await Promise.all([dequeue(self.anonId), dequeue(partnerAnonId)]);
-
     return { paired: true, sessionId, createdAt: created.createdAt, partner, self };
   } catch (err) {
     logger.error(

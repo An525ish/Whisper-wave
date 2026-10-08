@@ -5,15 +5,19 @@ import {
   VISIBLE_PRESETS,
 } from '../constants';
 import { normalizeVibeTag, vibeTagLabel } from '../utils/vibeTag';
-import type { Gender, VibeTag } from '../types';
+import type { VibeTag } from '../types';
 
-type TagPickerProps = {
+type Props = {
   tags: VibeTag[];
   onChange: (next: VibeTag[]) => void;
 };
 
-/** The vibe tag pill input: type custom tags or pick from presets. */
-export function TagPicker({ tags, onChange }: TagPickerProps) {
+/**
+ * The vibe tag pill input: type custom tags (capped at `MAX_TAGS`) or pick from
+ * presets. Free-text tags are a documented deviation from a fixed list — the
+ * server canonicalises them.
+ */
+export default function TagPicker({ tags, onChange }: Props) {
   const [custom, setCustom] = useState('');
   const [showAll, setShowAll] = useState(false);
   const full = tags.length >= MAX_TAGS;
@@ -138,126 +142,5 @@ export function TagPicker({ tags, onChange }: TagPickerProps) {
         )}
       </div>
     </div>
-  );
-}
-
-/**
- * Astronomical-style symbols drawn as paths rather than typed as unicode.
- *
- * `♀ ♂ ⚧` were text nodes, so they inherited the button's `font-semibold` and
- * got synthetically emboldened, and `⚧` fell back to whatever font had it —
- * all three read as soft and slightly out of focus at 15px. Vector strokes stay
- * sharp at any size and inherit `currentColor`, so the selected state still
- * tints them.
- */
-type GenderIcon = {
-  /** A single circle per symbol — Venus/Mars/⚧ are all circle-plus-strokes. */
-  circle: { cx: number; cy: number; r: number };
-  paths: string[];
-};
-
-const GENDER_OPTIONS: { value: Gender; label: string; icon: GenderIcon }[] = [
-  // Venus: circle over a cross.
-  {
-    value: 'female',
-    label: 'Female',
-    icon: {
-      circle: { cx: 12, cy: 8.5, r: 5 },
-      paths: ['M12 13.5V21', 'M8.5 17.25h7'],
-    },
-  },
-  // Mars: circle with an arrow to the upper right.
-  {
-    value: 'male',
-    label: 'Male',
-    icon: {
-      circle: { cx: 10, cy: 14, r: 5 },
-      paths: ['M13.5 10.5L20 4', 'M15.5 4H20v4.5'],
-    },
-  },
-  // ⚧: circle, arrow, and a crossbar across the stem.
-  {
-    value: 'other',
-    label: 'Other',
-    icon: {
-      circle: { cx: 8.5, cy: 16, r: 4.5 },
-      paths: ['M11.7 12.8L19.5 5', 'M15 5h4.5v4.5', 'M12.6 8.2l3.7 3.7'],
-    },
-  },
-];
-
-/**
- * Gender — exclusive selection, expressed as a toggle group.
- *
- * Tapping the selected option clears it, so "no answer" is reachable without
- * a separate Skip button: the field is optional, nothing selected IS the
- * default. Uses `role="radio"` + `aria-checked` with a real `null` state rather
- * than `aria-pressed`, since only one can ever be active.
- */
-export function GenderPicker({
-  value,
-  onChange,
-}: {
-  value: Gender | null;
-  onChange: (g: Gender | null) => void;
-}) {
-  return (
-    <fieldset>
-      <legend className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-body-700">
-        Gender
-        <span className="rounded-full border border-white/[0.09] bg-white/[0.03] px-2 py-[3px] text-[10px] font-medium normal-case tracking-normal text-body-600">
-          optional
-        </span>
-      </legend>
-      <div role="radiogroup" aria-label="Gender" className="flex flex-wrap gap-2">
-        {GENDER_OPTIONS.map((opt) => {
-          const active = value === opt.value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => onChange(active ? null : opt.value)}
-              className={[
-                'group flex items-center gap-2.5 rounded-full border px-4.5 py-2.5 text-[13.5px] font-semibold leading-none transition-all duration-200 ease-out active:scale-[0.97]',
-                active
-                  ? 'border-green/50 bg-green/[0.15] text-green shadow-[0_0_0_1px_rgba(1,195,109,0.14),0_3px_14px_-3px_rgba(1,195,109,0.4)]'
-                  : 'border-white/[0.09] bg-white/[0.035] text-body-300 hover:-translate-y-px hover:border-green/35 hover:bg-green/[0.08] hover:text-white hover:shadow-[0_4px_14px_-4px_rgba(1,195,109,0.3)]',
-              ].join(' ')}
-            >
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.9"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-                focusable="false"
-                className={[
-                  'shrink-0 transition-colors',
-                  active
-                    ? 'text-green'
-                    : 'text-body-500 group-hover:text-green/80',
-                ].join(' ')}
-              >
-                <circle
-                  cx={opt.icon.circle.cx}
-                  cy={opt.icon.circle.cy}
-                  r={opt.icon.circle.r}
-                />
-                {opt.icon.paths.map((d) => (
-                  <path key={d} d={d} />
-                ))}
-              </svg>
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-    </fieldset>
   );
 }

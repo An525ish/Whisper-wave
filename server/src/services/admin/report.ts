@@ -1,20 +1,9 @@
-import type { z } from 'zod';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import * as reportRepo from '../../repositories/report.js';
 import { blockAnonId } from '../match/index.js';
-import type {
-  adminReportsQuerySchema,
-  adminReportReviewSchema,
-} from '../../validators/admin.js';
-
-export type ReportQueuePage = {
-  reports: Awaited<ReturnType<typeof reportRepo.findUnreviewed>>;
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
-};
+import type { AdminReportReviewBody, AdminReportsQuery } from '../../types/adminInput.js';
+import type { ReportQueuePage } from '../../types/report.js';
 
 /**
  * The moderation queue.
@@ -24,7 +13,7 @@ export type ReportQueuePage = {
  * review" the whole abuse strategy depends on wasn't actually possible.
  */
 export const listReports = async (
-  query: z.infer<typeof adminReportsQuerySchema>
+  query: AdminReportsQuery
 ): Promise<ReportQueuePage> => {
   const { page, limit } = query;
   const skip = (page - 1) * limit;
@@ -45,7 +34,7 @@ export const listReports = async (
  */
 export const reviewReport = async (
   id: string,
-  input: z.infer<typeof adminReportReviewSchema>
+  input: AdminReportReviewBody
 ) => {
   const updated = await reportRepo.markReviewed(id, input.reviewed);
   if (!updated) throw new AppError(404, 'Report not found');

@@ -1,15 +1,4 @@
-import type { AnonMessage, VibeTag } from '../types';
-
-/** What the panel shows about the thread you're currently in (or just left). */
-export type ThreadStats = {
-  /** Whole minutes in the thread, floored. */
-  minutes: number;
-  totalMessages: number;
-  myMessages: number;
-  theirMessages: number;
-  /** Tags both sides picked — the thing that made the match plausible. */
-  sharedTags: VibeTag[];
-};
+import type { AnonMessage, ThreadStats, VibeTag } from '../types';
 
 /**
  * Derive the "this thread" summary.
@@ -28,8 +17,8 @@ export const threadStats = (
   const mine = messages.filter((m) => m.from === 'me').length;
   const theirs = messages.length - mine;
 
-  const theirs_ = new Set(partnerTags.map((t) => t.toLowerCase()));
-  const sharedTags = myTags.filter((t) => theirs_.has(t.toLowerCase()));
+  const partnerSet = new Set(partnerTags.map((t) => t.toLowerCase()));
+  const sharedTags = myTags.filter((t) => partnerSet.has(t.toLowerCase()));
 
   return {
     minutes: matchedAt ? Math.max(0, Math.floor((now - matchedAt) / 60_000)) : 0,
@@ -38,10 +27,4 @@ export const threadStats = (
     theirMessages: theirs,
     sharedTags,
   };
-};
-
-/** "4 min together" / "just met" — the panel's headline stat. */
-export const formatDuration = (minutes: number): string => {
-  if (minutes < 1) return 'Just met';
-  return `${minutes} min together`;
 };

@@ -11,7 +11,7 @@ Scope decisions settled Sep 2026:
   "Personal". Anonymous *connections* are persisted and listed with their origin
   story (`Connection.originAnonSession` + `ConnectionOriginStrip`).
 - **No concurrent anonymous chats.** One active session per anon identity.
-  Sequential, with a short-lived Redis archive for the thread you just left.
+  Sequential; the thread you just left is not archived (transcripts die with the session).
 - Guests are never capped. Any quota applies to **signed-in** users only.
 
 ---
@@ -68,9 +68,9 @@ polling, so none of them cost a request on a healthy connection:
 2. **Ack path** — a rejected send settles the bubble as failed (so the typed text
    is visibly unsent) and then transitions to `partner_left`.
 3. **`MATCH_ERROR` path** — covers likes and typing, where there is no ack.
-4. **Reconnect** — already present: the client re-emits `ANON_REQUEUE` on every
-   socket `connect`, and the server answers with either a `MATCH_FOUND` replay or
-   a fresh queue entry.
+4. **Reconnect** — on every socket `connect` the server resumes the session
+   (`MATCH_FOUND` replay) or creates a fresh queue entry; the client no longer
+   emits `ANON_REQUEUE` itself.
 
 Verified live by forcing the exact desync (flipping the session to `ending` in
 Redis with **no** disconnect emitted, via `server/scripts/dev-desync.mjs`): the
@@ -768,3 +768,13 @@ These were identified in a full mobile UI/UX audit against iPhone SE (375×667px
 - Tablet (768–1024px): 2-column chat list + conversation side-by-side is already wired (`md:` breakpoints) — verify it looks right and doesn't have the "two narrow columns" problem
 - Admin routes: no mobile layout — add `AdminWrapper` mobile-aware padding
 - Landing page `TranscriptHero` CTA: `absolute bottom-[3%]` has no `env(safe-area-inset-bottom)` compensation — add `pb-[env(safe-area-inset-bottom)]` wrapper -->
+
+---
+
+## Post-review follow-ups (deferred from the PR #3 review)
+
+- Client test runner (vitest) is not set up — client logic is untested.
+- `rate-limit-redis` for the HTTP limiters before running more than one instance.
+- Report admin UI — `GET /api/admin/reports` / `PATCH /api/admin/reports/:id` exist, no panel yet.
+- Refresh-restore limits of the whisper room — see the `features/whisper` notes.
+- `socket.io-redis` adapter before horizontal scaling.

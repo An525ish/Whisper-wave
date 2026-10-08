@@ -1,7 +1,8 @@
 import type { RequestHandler } from 'express';
 import { submitReport } from '../services/report.js';
 import { catchAsync } from '../utils/catchAsync.js';
-import type { SubmitReportBody } from '../validators/match.js';
+import { anonIdSchema } from '../validators/anon.js';
+import type { SubmitReportBody } from '../types/input.js';
 
 /**
  * POST /api/report
@@ -11,8 +12,8 @@ import type { SubmitReportBody } from '../validators/match.js';
  * live in the service.
  */
 export const submitReportController: RequestHandler = catchAsync(async (req, res) => {
-  const reporterAnonId =
-    (req.cookies as Record<string, string | undefined> | undefined)?.['anonId'] ?? null;
+  const parsedAnonId = anonIdSchema.safeParse(req.cookies?.['anonId']);
+  const reporterAnonId = parsedAnonId.success ? parsedAnonId.data : null;
 
   await submitReport({
     ...(req.body as SubmitReportBody),

@@ -1,5 +1,5 @@
 import type { AnonSession, VibeGateInput } from '../../types/match.js';
-import { getBufferedMessages } from './session.js';
+import { getMessageCounts } from './session.js';
 
 /** Keep in sync with client/src/features/whisper/utils/isVibeUnlocked.ts */
 export const VIBE_UNLOCK = {
@@ -31,15 +31,17 @@ export const meetsVibeGate = ({
   return true;
 };
 
-/** Redis-backed wrapper used by the ANON_LIKE handler. */
+/**
+ * Redis-backed wrapper used by the ANON_LIKE handler.
+ *
+ * Reads the per-side counters, NOT the buffered messages: the buffer is capped at
+ * the last 50, so a long chat would shed its early messages and a gate computed
+ * from it could re-lock itself.
+ */
 export async function isVibeUnlocked(
   sessionId: string,
   session: AnonSession
 ): Promise<boolean> {
-  const messages = await getBufferedMessages(sessionId);
-  return meetsVibeGate({
-    createdAt: session.createdAt,
-    countA: messages.filter((m) => m.from === session.anon1).length,
-    countB: messages.filter((m) => m.from === session.anon2).length,
-  });
+  const { countA, countB } = await getMessageCounts(sessionId);
+  return meetsVibeGate({ createdAt: session.createdAt, countA, countB });
 }

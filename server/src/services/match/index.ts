@@ -10,11 +10,11 @@ export {
   saveWaitingCard,
   getWaitingCard,
   setWaitingCardUser,
-  touchWaitingCard,
   deleteWaitingCard,
   setIdentityAlias,
   enqueue,
   reenqueue,
+  purgeQueue,
   dequeue,
   queueSize,
   tryMatchFromQueue,
@@ -27,35 +27,36 @@ export {
   getSession,
   getActiveSessionId,
   getUserActiveSessions,
-  touchSession,
   isParticipant,
   getPartner,
   endSession,
   deleteSession,
-  bufferMessage,
+  recordMessage,
+  getMessageCounts,
   getBufferedMessages,
 } from './session.js';
 
 export { recordLike } from './like.js';
-export { joinQueue, leaveQueue } from './queueEntry.js';
+export { saveIdentityCard, leaveQueue } from './queueEntry.js';
 export { blockAnonId, isBlocked, findBlockedCandidates } from './block.js';
-export { issueConnectToken, verifyConnectToken } from './connectToken.js';
+export { issueConnectToken, verifyConnectToken, resolveTokenAnonIds } from './connectToken.js';
 export { isVibeUnlocked, meetsVibeGate, VIBE_UNLOCK } from './vibeEligibility.js';
 export {
   clearPresence,
   handleSocketDrop,
   endSessionNow,
+  startPresenceSweeper,
   stopAllPresenceSweeps,
 } from './presence.js';
 export { pairOrEnqueue, requireActiveParticipant } from './pairing.js';
 export {
   acceptAnonMessage,
   relayMessage,
+  toWireMessage,
   notifyMatchEnded,
 } from './messaging.js';
 export {
   inspectMessage,
-  shouldAutoReport,
   rejectionMessage,
 } from './moderation.js';
 export {
@@ -67,6 +68,8 @@ export {
 export {
   DAILY_WHISPER_LIMIT,
   checkWhisperQuota,
+  checkSkipQuota,
+  clearJoinCounted,
   consumeWhisperQuota,
   peekWhisperQuota,
 } from './quota.js';

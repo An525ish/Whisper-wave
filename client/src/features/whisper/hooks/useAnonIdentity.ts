@@ -1,35 +1,26 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/features/auth';
+import { IDENTITY_SAVE_DEBOUNCE_MS, SAVED_HINT_MS } from '../constants';
 import { useAnonStore } from '../stores/anonStore';
 import {
   clearStoredIdentity,
   readStoredIdentity,
   writeStoredIdentity,
-  type StoredIdentity,
 } from '../utils/anonIdentityStorage';
-import type { Gender, VibeTag } from '../types';
-
-/** How long the "saved" confirmation stays up after an edit. */
-const SAVED_HINT_MS = 1600;
+import type { Gender, StoredIdentity, VibeTag } from '../types';
 
 /**
  * Read/write the anonymous identity from the panel.
  *
- * Two things this deliberately does NOT do:
- *
- * - **It does not push edits to the server.** The Redis identity card is
- *   overwritten wholesale by `POST /api/match/join` on the next join, so
- *   updating the store is sufficient — there is no endpoint to call and no
- *   round-trip to wait on.
- * - **It does not change who you are mid-thread.** A partner already received
- *   the alias you matched with; silently swapping it would make the header, the
- *   "you" avatar and their view disagree. Edits apply from the *next* match, and
- *   the panel says so.
- *
- * A third, less obvious one: it does **not** derive the alias from the signed-in
- * account. The alias is what the other party sees, so defaulting it to someone's
- * real name would de-anonymise them to a stranger. The account only scopes where
- * the alias is remembered.
+ * - **Edits reach the server with the NEXT match.** They mark the identity dirty
+ *   in the store; `useAnonSocket.sendNext` rewrites the card (`POST /match/join`)
+ *   before it re-queues, because the server re-queues from the stored card.
+ * - **It does not change who you are mid-thread.** A partner already received the
+ *   alias you matched with; swapping it would make the header, the "you" avatar
+ *   and their view disagree. The thread keeps `sessionAlias`.
+ * - It does **not** derive the alias from the signed-in account: the alias is what
+ *   the other party sees, so defaulting it to a real name would de-anonymise them.
+ *   The account only scopes where the alias is remembered.
  */
 export function useAnonIdentity() {
   const displayName = useAnonStore((s) => s.displayName);
@@ -38,7 +29,15 @@ export function useAnonIdentity() {
   const accountId = useAuthStore((s) => s.user?._id);
 
   const [remember, setRemember] = useState<boolean>(() => readStoredIdentity(accountId) !== null);
+  const [rememberFor, setRememberFor] = useState(accountId);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const saveTimerRef = useRef<number | null>(null);
+
+  // The saved-state follows the account: switching accounts re-reads it.
+  if (rememberFor !== accountId) {
+    setRememberFor(accountId);
+    setRemember(readStoredIdentity(accountId) !== null);
+  }
 
   // First visit of a returning guest: restore before they submit the picker.
   useEffect(() => {
@@ -56,24 +55,62 @@ export function useAnonIdentity() {
     return () => window.clearTimeout(id);
   }, [savedAt]);
 
-  const flashSaved = useCallback(() => setSavedAt(Date.now()), []);
+  /** Write the CURRENT store identity to localStorage. */
+  const persistNow = useCallback(() => {
+    const s = useAnonStore.getState();
+    writeStoredIdentity(
+      { displayName: s.displayName, vibeTags: s.vibeTags, gender: s.gender },
+      accountId
+    );
+  }, [accountId]);
+
+  const cancelPersist = useCallback(() => {
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+  }, []);
+
+  // Typing an alias fires per keystroke; coalesce the localStorage writes, and
+  // flush a pending one on unmount so the last edit is never lost.
+  useEffect(
+    () => () => {
+      if (saveTimerRef.current === null) return;
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+      persistNow();
+    },
+    [persistNow]
+  );
 
   const apply = useCallback(
-    (next: Partial<StoredIdentity>, persist: boolean) => {
+    (next: Partial<StoredIdentity>) => {
       const state = useAnonStore.getState();
-      const identity: StoredIdentity = {
-        displayName: next.displayName ?? state.displayName,
-        vibeTags: next.vibeTags ?? state.vibeTags,
-        gender: next.gender ?? state.gender,
-      };
-      state.setIdentityFields(identity.displayName, identity.vibeTags, identity.gender);
-
-      if (persist) writeStoredIdentity(identity, accountId);
-      else clearStoredIdentity(accountId);
-      setRemember(persist);
-      flashSaved();
+      state.editIdentity(
+        next.displayName ?? state.displayName,
+        next.vibeTags ?? state.vibeTags,
+        next.gender ?? state.gender
+      );
+      if (remember) {
+        cancelPersist();
+        saveTimerRef.current = window.setTimeout(() => {
+          saveTimerRef.current = null;
+          persistNow();
+        }, IDENTITY_SAVE_DEBOUNCE_MS);
+        setSavedAt(Date.now());
+      }
     },
-    [accountId, flashSaved]
+    [remember, cancelPersist, persistNow]
+  );
+
+  const changeRemember = useCallback(
+    (value: boolean) => {
+      setRemember(value);
+      cancelPersist();
+      if (value) persistNow();
+      else clearStoredIdentity(accountId);
+    },
+    [accountId, cancelPersist, persistNow]
   );
 
   return {
@@ -83,27 +120,9 @@ export function useAnonIdentity() {
     gender: (gender === 'prefer_not_to_say' ? null : gender) as Gender | null,
     remember,
     justSaved: savedAt !== null,
-    /** The signed-in account scoping this alias, if any. Null for a guest. */
-    accountId: accountId ?? null,
-    setAlias: (value: string) => apply({ displayName: value }, remember),
-    setTags: (value: VibeTag[]) => apply({ vibeTags: value }, remember),
-    setGender: (value: Gender | null) =>
-      apply({ gender: value ?? 'prefer_not_to_say' }, remember),
-    setRemember: (value: boolean) => {
-      setRemember(value);
-      const state = useAnonStore.getState();
-      if (value) {
-        writeStoredIdentity(
-          {
-            displayName: state.displayName,
-            vibeTags: state.vibeTags,
-            gender: state.gender,
-          },
-          accountId
-        );
-      } else {
-        clearStoredIdentity(accountId);
-      }
-    },
+    setAlias: (value: string) => apply({ displayName: value }),
+    setTags: (value: VibeTag[]) => apply({ vibeTags: value }),
+    setGender: (value: Gender | null) => apply({ gender: value ?? 'prefer_not_to_say' }),
+    setRemember: changeRemember,
   };
 }

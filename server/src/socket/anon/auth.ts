@@ -2,10 +2,11 @@ import cookieParser from 'cookie-parser';
 import type { Request, Response } from 'express';
 import type { IncomingMessage } from 'http';
 import type { ExtendedError } from 'socket.io';
-import type { AnonSocket } from './types.js';
+import type { AnonSocket } from '../../types/anonSocket.js';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { verifyToken } from '../../utils/token.js';
+import { anonIdSchema } from '../../validators/anon.js';
 
 /** The parsed request shape cookie-parser produces. */
 type CookieRequest = IncomingMessage & { cookies?: Record<string, string> };
@@ -27,6 +28,10 @@ type CookieRequest = IncomingMessage & { cookies?: Record<string, string> };
  * account. The alias is still chosen by the client, because the *other* party
  * would otherwise see someone's real account name inside an anonymous chat.
  * `userId` is carried for blocking, quota and cross-tab state only.
+ *
+ * Resume-only handshake (`auth: { resume: true }`): the cookie is still required
+ * and validated exactly the same, but nothing else is — no identity card is needed,
+ * because that connect never enqueues. See `handleAnonConnect`.
  */
 export const applyAnonAuth = (
   socket: AnonSocket,
@@ -39,9 +44,12 @@ export const applyAnonAuth = (
     }
 
     const cookies = (socket.request as CookieRequest).cookies;
-    const anonId = cookies?.['anonId'];
+    // The cookie is client-controlled, so it is validated, not trusted: it ends up
+    // in Redis keys, room names and `anonId:reaction` set members. Anything that is
+    // not a UUID is rejected exactly like a missing cookie.
+    const parsed = anonIdSchema.safeParse(cookies?.['anonId']);
 
-    if (!anonId) {
+    if (!parsed.success) {
       next(
         new AppError(
           401,
@@ -51,11 +59,17 @@ export const applyAnonAuth = (
       return;
     }
 
-    socket.anonId = anonId;
+    socket.anonId = parsed.data;
+    // Strict `true`: a client-controlled value, and anything else is a normal join.
+    socket.resumeOnly = isResumeHandshake(socket.handshake?.auth);
     socket.userId = verifiedUserId(cookies?.['accessToken']);
     next();
   });
 };
+
+/** `auth: { resume: true }` on the Socket.IO handshake — resume-only connect. */
+export const isResumeHandshake = (auth: unknown): boolean =>
+  typeof auth === 'object' && auth !== null && (auth as { resume?: unknown }).resume === true;
 
 /**
  * The account id behind an access token, or undefined.
