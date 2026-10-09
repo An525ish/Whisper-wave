@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { ApiError } from '@/shared/lib/api/client';
 import { joinQueue, leaveQueue } from '../api/match';
 import { useAnonStore } from '../stores/anonStore';
 import { clearResumeFlag } from '../utils/resumeFlag';
@@ -32,6 +33,9 @@ export function useJoinQueueMutation() {
     onError: (err) => {
       const store = useAnonStore.getState();
       store.setStatus('idle');
+      // 409 = this browser already has a live chat; the picker shows a modal for it
+      // (see useWhisperFlow), so an inline error would say the same thing twice.
+      if (err instanceof ApiError && err.status === 409) return;
       store.setError(
         err instanceof Error ? err.message : 'Could not reach the void'
       );

@@ -13,8 +13,11 @@ export function useThreadStats(myTags: VibeTag[], active: boolean): ThreadStats 
   const messages = useAnonStore((s) => s.messages);
   const partnerTags = useAnonStore((s) => s.partnerTags);
   const matchedAt = useAnonStore((s) => s.matchedAt);
+  const endedAt = useAnonStore((s) => s.endedAt);
   const now = useNowWhile(active, THREAD_STATS_TICK_MS);
 
   if (!active) return null;
-  return threadStats(messages, myTags, partnerTags, matchedAt, now);
+  // Once the partner has left the thread is over: freeze its length there
+  // instead of letting "together" keep counting up.
+  return threadStats(messages, myTags, partnerTags, matchedAt, endedAt ?? now);
 }

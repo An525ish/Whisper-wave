@@ -1,5 +1,7 @@
 import dayjs from 'dayjs';
+import ReadReceipt from '@/shared/components/ui/icons/ReadReceipt';
 import MessageReactionBar from './MessageReactionBar';
+import { linkify } from '../utils/linkify';
 import type { AnonMessage, AnonReaction } from '../types';
 
 const fmt = (ms: number): string => dayjs(ms).format('h:mm A');
@@ -17,9 +19,11 @@ type Props = {
 };
 
 /**
- * One message row. Bubble geometry, radii and timestamp treatment come straight
- * from the logged-in chat (`bubble-in`/`bubble-out` + the same padding contract).
- * Spacing is padding, never margin, because the virtualizer measures the row box.
+ * One message row. Bubble geometry, fills, radii and timestamp treatment come
+ * straight from the logged-in chat (`bubble-in`/`bubble-out` + the same padding
+ * contract), so moving between the two chats does not change how a message looks.
+ * Links are tappable, styled like the main chat's. Spacing is padding, never
+ * margin, because the virtualizer measures the row box.
  */
 export default function AnonMessageBubble({
   msg,
@@ -31,6 +35,23 @@ export default function AnonMessageBubble({
 }: Props) {
   const isMe = msg.from === 'me';
   const failed = isMe && msg.delivery === 'failed';
+
+  // Same markup twice: invisible in the text flow to reserve the stamp's footprint
+  // (so it can never sit on the last word), and absolutely positioned for real.
+  const stamp = (
+    <>
+      <span>{fmt(msg.sentAt)}</span>
+      {isMe && !failed && (
+        msg.delivery === 'sending' ? (
+          <span className="acr-time__state" aria-label="Sending"> ·</span>
+        ) : (
+          <span className="ml-2 inline-flex shrink-0 items-center" aria-label="Sent">
+            <ReadReceipt read={false} />
+          </span>
+        )
+      )}
+    </>
+  );
 
   return (
     <div
@@ -51,24 +72,36 @@ export default function AnonMessageBubble({
       >
         <div className="relative min-w-0 max-w-full">
           <p className="m-0 text-sm leading-[19px] wrap-break-word whitespace-pre-wrap text-body">
-            {msg.content}
-            {/* Reserve the timestamp's footprint on the last line so the
-                absolute stamp can never sit on top of the last word. */}
+            {linkify(msg.content).map((segment, i) =>
+              segment.kind === 'link' ? (
+                <a
+                  key={i}
+                  href={segment.href}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="break-all text-[#53bdeb] hover:underline"
+                >
+                  {segment.text}
+                </a>
+              ) : (
+                segment.text
+              )
+            )}
             {isTail && (
-              <span aria-hidden className="pointer-events-none ml-2 inline-flex h-[19px] select-none items-center whitespace-nowrap align-bottom text-[11px] leading-none tabular-nums opacity-0">
-                {fmt(msg.sentAt)}
+              <span
+                aria-hidden
+                className="pointer-events-none ml-2 inline-flex h-[19px] select-none items-center whitespace-nowrap align-bottom text-[11px] leading-none tabular-nums opacity-0"
+              >
+                {stamp}
               </span>
             )}
           </p>
           {isTail && (
             <time
               dateTime={new Date(msg.sentAt).toISOString()}
-              className={`pointer-events-none absolute bottom-0 right-0 translate-y-1 select-none text-[11px] leading-none tabular-nums ${isMe ? 'text-body-700' : 'text-body-300'}`}
+              className={`pointer-events-none absolute bottom-0 right-0 inline-flex h-[19px] translate-y-1 select-none items-center whitespace-nowrap text-[11px] leading-none tabular-nums ${isMe ? 'text-body-700' : 'text-body-300'}`}
             >
-              {fmt(msg.sentAt)}
-              {msg.delivery === 'sending' && (
-                <span className="acr-time__state" aria-label="Sending"> ·</span>
-              )}
+              {stamp}
             </time>
           )}
         </div>

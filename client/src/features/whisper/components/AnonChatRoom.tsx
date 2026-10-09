@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import AnonChatHeader from './AnonChatHeader';
 import AnonMessageList from './AnonMessageList';
 import AnonComposer from './AnonComposer';
-import AnonProfileHost from './AnonProfileHost';
+import AnonProfileShell from './AnonProfileShell';
 import ChatAlert from './ChatAlert';
 import LeaveConfirm from './LeaveConfirm';
 import MutualBar from './MutualBar';
@@ -14,9 +14,10 @@ import ThreadSummaryCard from './ThreadSummaryCard';
 import VibeNudge from './VibeNudge';
 import VibePrompt from './VibePrompt';
 import VibeWaiting from './VibeWaiting';
+import { useChannelSignals } from '../hooks/useChannelSignals';
 import { useThreadEnd } from '../hooks/useThreadEnd';
 import { useVibeUnlock } from '../hooks/useVibeUnlock';
-import { MAX_MESSAGE_LENGTH } from '../constants';
+import { ANON_COMPOSER_ID, FRESH_THREAD_MESSAGES, MAX_MESSAGE_LENGTH } from '../constants';
 import type {
   AnonMessage,
   AnonReaction,
@@ -76,13 +77,14 @@ type Props = {
 const likeTitle = (
   vibeUnlocked: boolean,
   likeSent: boolean,
-  mutualLike: boolean
+  mutualLike: boolean,
+  progress: number
 ): string => {
   if (mutualLike) return 'It’s a vibe — open a DM';
   if (likeSent) return 'Vibe sent — waiting for them';
   return vibeUnlocked
     ? 'Send a vibe'
-    : 'Chat a little longer to unlock vibes';
+    : `Vibes unlock as you chat — ${Math.round(progress * 100)}%`;
 };
 
 /**
@@ -128,7 +130,7 @@ export default function AnonChatRoom({
   onOpenMutualModal,
   onDismissError,
 }: Props) {
-  const { vibeUnlocked, showVibePrompt } = useVibeUnlock(messages, matchedAt, {
+  const { vibeUnlocked, vibeProgress, showVibePrompt } = useVibeUnlock(messages, matchedAt, {
     likeSent,
     mutualLike,
     partnerVibed,
@@ -136,6 +138,7 @@ export default function AnonChatRoom({
   });
 
   const { summary } = useThreadEnd(matchedAt);
+  const { sparks, sharedTags } = useChannelSignals();
 
   // Local, dismissible mirrors. The underlying facts (partner liked, prompt
   // eligibility) stay in the store; these only control what is on screen. The
@@ -163,29 +166,34 @@ export default function AnonChatRoom({
 
   const handleSend = () => {
     const text = draft.trim();
-    if (!text || overLimit) return;
+    if (!text || overLimit || socketDegraded) return;
     onSend(text);
     onClearDraft();
   };
 
+  // A spark only fills the composer — it never sends, so the words still go out as
+  // the user's own after they've had a chance to change them.
+  const handlePickSpark = (text: string) => {
+    onDraftChange(text);
+    document.getElementById(ANON_COMPOSER_ID)?.focus();
+  };
+
   return (
-    <div className="acr-shell">
+    <AnonProfileShell
+      partnerTyping={partnerTyping}
+      partnerLeft={partnerLeft}
+      onPickSpark={handlePickSpark}
+    >
       <Helmet>
         <title>{`Whispering with ${partnerName} · Whisper Wave`}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
       <div className="acr-root">
-        <div className="acr-ambience" aria-hidden>
-          <div className="acr-ambience__glow acr-ambience__glow--a" />
-          <div className="acr-ambience__glow acr-ambience__glow--b" />
-          <div className="acr-ambience__grain" />
-          <div className="acr-ambience__vignette" />
-        </div>
-
         <AnonChatHeader
           partnerName={partnerName}
           partnerTags={partnerTags}
+          partnerTyping={partnerTyping}
           socketDegraded={socketDegraded}
           reconnecting={reconnecting}
           likeDisabled={likeDisabled}
@@ -193,7 +201,8 @@ export default function AnonChatRoom({
           mutualLike={mutualLike}
           partnerVibed={partnerVibed}
           vibeUnlocked={vibeUnlocked}
-          likeTitle={likeTitle(vibeUnlocked, likeSent, mutualLike)}
+          vibeProgress={vibeProgress}
+          likeTitle={likeTitle(vibeUnlocked, likeSent, mutualLike, vibeProgress)}
           onLike={onLike}
           onSkip={onRequestSkip}
           onReport={() => setReportOpen(true)}
@@ -207,7 +216,10 @@ export default function AnonChatRoom({
             partnerTyping={partnerTyping}
             startedAt={matchedAt}
             live={!partnerLeft}
+            sharedTags={sharedTags}
+            sparks={sparks}
             scrollRef={scrollRef}
+            onPickSpark={handlePickSpark}
             onRetry={onRetry}
             onReact={onReact}
           />
@@ -248,10 +260,11 @@ export default function AnonChatRoom({
           summary && !partnerLeftDismissed ? (
             <ThreadSummaryCard
               summary={summary}
+              myAlias={myName}
               partnerAlias={partnerName}
               onFindSomeoneNew={onFindSomeoneNew}
-              onSecondary={onStayOnEndedThread}
-              secondaryLabel="Stay and re-read it"
+              onClose={onStayOnEndedThread}
+              closeLabel="Stay and re-read it"
             />
           ) : (
             <ThreadEndedBar onFindSomeoneNew={onFindSomeoneNew} />
@@ -260,8 +273,12 @@ export default function AnonChatRoom({
           <AnonComposer
             draft={draft}
             overLimit={overLimit}
+            sparks={sparks}
+            fresh={messages.length < FRESH_THREAD_MESSAGES}
+            disabled={socketDegraded}
             onDraftChange={onDraftChange}
             onSend={handleSend}
+            onPickSpark={handlePickSpark}
           />
         )}
 
@@ -287,10 +304,6 @@ export default function AnonChatRoom({
 
         {confirmKind && <LeaveConfirm kind={confirmKind} onResolve={onResolveConfirm} />}
       </div>
-
-      {/* Identity panel: a column at `lg`, a sheet below. One spatial grammar
-          with the logged-in chat — conversation centre, context right. */}
-      <AnonProfileHost />
-    </div>
+    </AnonProfileShell>
   );
 }

@@ -24,25 +24,6 @@
   );
 }
 
-.mvs-orbit {
-  position: absolute;
-  inset: 6%;
-  z-index: 3;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 120deg,
-    transparent 0deg,
-    rgb(1 195 109 / 0.55) 70deg,
-    rgb(139 107 255 / 0.45) 140deg,
-    transparent 220deg
-  );
-  mask: radial-gradient(circle, transparent 62%, black 63%, black 66%, transparent 67%);
-  -webkit-mask: radial-gradient(circle, transparent 62%, black 63%, black 66%, transparent 67%);
-  opacity: 0.85;
-  animation: mvs-orbit-spin 14s linear infinite;
-  pointer-events: none;
-}
-
 .mvs-resonance {
   position: absolute;
   left: 50%;

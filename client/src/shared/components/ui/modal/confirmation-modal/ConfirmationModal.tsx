@@ -13,6 +13,8 @@ type ConfirmationModalProps = {
   cancelLabel?: string;
   variant?: ConfirmationVariant;
   icon?: ReactNode;
+  /** Single-button notice: only the confirm button is shown. */
+  hideCancel?: boolean;
 };
 
 const ConfirmationModal = ({
@@ -24,11 +26,29 @@ const ConfirmationModal = ({
   cancelLabel = 'No',
   variant = 'danger',
   icon,
+  hideCancel = false,
 }: ConfirmationModalProps) => {
   const titleId = useId();
   const descriptionId = useId();
   const [entered, setEntered] = useState(false);
   const isDanger = variant === 'danger';
+  const tone = {
+    danger: {
+      glow: 'bg-[radial-gradient(ellipse_at_top,rgba(255,88,99,0.18),transparent_70%)]',
+      badge: 'border-red/30 bg-red/12 text-red',
+      confirm: 'bg-red hover:bg-red/90',
+    },
+    warning: {
+      glow: 'bg-[radial-gradient(ellipse_at_top,rgba(255,153,51,0.18),transparent_70%)]',
+      badge: 'border-orange/30 bg-orange/12 text-orange',
+      confirm: 'bg-orange hover:bg-orange/90 text-black',
+    },
+    default: {
+      glow: 'bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.16),transparent_70%)]',
+      badge: 'border-green/30 bg-green/12 text-green',
+      confirm: 'bg-green hover:bg-green/90 text-black',
+    },
+  }[variant];
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setEntered(true));
@@ -71,19 +91,11 @@ const ConfirmationModal = ({
         }`}
       >
         <div
-          className={`pointer-events-none absolute inset-x-0 top-0 h-28 ${
-            isDanger
-              ? 'bg-[radial-gradient(ellipse_at_top,rgba(255,88,99,0.18),transparent_70%)]'
-              : 'bg-[radial-gradient(ellipse_at_top,rgba(1,195,109,0.16),transparent_70%)]'
-          }`}
+          className={`pointer-events-none absolute inset-x-0 top-0 h-28 ${tone.glow}`}
         />
 
         <div
-          className={`relative mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border ${
-            isDanger
-              ? 'border-red/30 bg-red/12 text-red'
-              : 'border-green/30 bg-green/12 text-green'
-          }`}
+          className={`relative mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl border ${tone.badge}`}
         >
           {icon ??
             (isDanger ? (
@@ -108,23 +120,21 @@ const ConfirmationModal = ({
           </p>
         ) : null}
 
-        <div className="relative mt-6 grid grid-cols-2 gap-2.5">
-          <button
-            type="button"
-            onClick={() => resolve(false)}
-            className="h-11 rounded-xl border border-white/12 bg-white/5 text-sm font-medium text-body transition hover:bg-white/10 hover:text-white hover:filter-none active:filter-none"
-          >
-            {cancelLabel}
-          </button>
+        <div className={`relative mt-6 grid gap-2.5 ${hideCancel ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {!hideCancel && (
+            <button
+              type="button"
+              onClick={() => resolve(false)}
+              className="h-11 rounded-xl border border-white/12 bg-white/5 text-sm font-medium text-body transition hover:bg-white/10 hover:text-white hover:filter-none active:filter-none"
+            >
+              {cancelLabel}
+            </button>
+          )}
           <button
             type="button"
             autoFocus
             onClick={() => resolve(true)}
-            className={`h-11 rounded-xl text-sm font-semibold text-white-pure shadow-md transition hover:filter-none active:filter-none ${
-              isDanger
-                ? 'bg-red hover:bg-red/90'
-                : 'bg-green hover:bg-green/90 text-black'
-            }`}
+            className={`h-11 rounded-xl text-sm font-semibold text-white-pure shadow-md transition hover:filter-none active:filter-none ${tone.confirm}`}
           >
             {confirmLabel}
           </button>

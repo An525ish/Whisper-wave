@@ -10,9 +10,9 @@
 /** Preset suggestions shown in the picker (canonical underscore form). */
 export const ALL_VIBE_TAGS: readonly string[] = [
   'cozy', 'deep_talks', 'gaming', 'chaotic', 'music',
-  'overthinker', 'night_owl', 'creative', 'bookworm', 'foodie',
-  'fitness', 'travel', 'anime', 'movies', 'philosophy',
-  'memes', 'coding', 'art', 'sports', 'random',
+  'overthinker', 'night_owl', 'creative', 'foodie', 'fitness',
+  'travel', 'anime', 'movies', 'philosophy', 'memes',
+  'coding', 'art', 'sports', 'random',
 ];
 
 /** Rows of presets visible before the "+N more" toggle. */
@@ -232,3 +232,55 @@ export const WHISPER_EVENTS = {
   /** Match ended — once per session, with durationMs and messageCount. */
   SESSION_END: 'whisper_session_end',
 } as const;
+
+// ── Waiting-room radar ─────────────────────────────────────────────────────
+
+/**
+ * Where other queued people appear on the waiting-room radar (SVG viewBox 360,
+ * centred on 180,180). Every point stays inside the green ring (radius 118) —
+ * the radar's edge. One slot is used per *other* person actually queued, so the
+ * radar never shows more people than exist — see `WaitingRadar`.
+ */
+export const RADAR_BLIP_SLOTS = [
+  { x: 273.5, y: 234 },
+  { x: 86.5, y: 234 },
+  { x: 91.5, y: 118 },
+  { x: 216.9, y: 78.5 },
+  { x: 253.3, y: 153.3 },
+  { x: 173.2, y: 257.7 },
+] as const;
+
+/** How many chips sit on the radar ring (matches the 3-tag picker limit). */
+export const RADAR_FLOAT_MAX_CHIPS = 3;
+
+/**
+ * Stand-in labels when the user joined with no vibe tags — soft “signals in
+ * the void” so the ring still feels alive without faking their identity.
+ */
+export const RADAR_WHISPER_CHIPS = [
+  'soft static',
+  'open channel',
+  'night hum',
+  'untitled',
+  'listening',
+  'drift signal',
+  'low light',
+  'somewhere',
+] as const;
+
+// ── Profile rail a11y ──────────────────────────────────────────────────────
+
+/** The "them | you" tabs, referenced by the tab buttons and the panel's `aria-labelledby`. */
+export const PROFILE_TAB_IDS = {
+  them: 'acp-tab-them',
+  you: 'acp-tab-you',
+} as const;
+
+/** The single tabpanel the active tab controls. */
+export const PROFILE_PANEL_ID = 'acp-tabpanel';
+
+/** The composer textarea — sparks drop an opener into it and focus it. */
+export const ANON_COMPOSER_ID = 'acr-composer-input';
+
+/** Under this many messages a thread is "young": openers say "break the ice". */
+export const FRESH_THREAD_MESSAGES = 4;

@@ -236,6 +236,40 @@ export type ThreadStats = {
   sharedTags: VibeTag[];
 };
 
+/** Your vibe tags against theirs, split for the overlap view. */
+export type VibeOverlap = {
+  /** In both, in your casing. */
+  shared: VibeTag[];
+  onlyMine: VibeTag[];
+  onlyTheirs: VibeTag[];
+};
+
+/** A suggested opener the user can drop into the composer. */
+export type Spark = {
+  key: string;
+  emoji: string;
+  text: string;
+};
+
+/** A link that appeared in the thread, newest first in lists. */
+export type ThreadLink = {
+  url: string;
+  /** Hostname without a leading `www.` — what the row shows. */
+  host: string;
+  from: 'me' | 'them';
+  sentAt: number;
+};
+
+/** How often each side has used one curated reaction in this thread. */
+export type ReactionTally = {
+  reaction: AnonReaction;
+  me: number;
+  them: number;
+};
+
+/** Which half of the profile rail is showing. */
+export type ProfileTab = 'them' | 'you';
+
 /** Everything the end-of-thread card needs, derived in one pure pass. */
 export type ThreadSummary = {
   /** Clamped at 0. Never negative, never NaN. */

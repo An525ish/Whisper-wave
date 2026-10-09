@@ -5,6 +5,7 @@ import { setIdentityAlias } from '../queue.js';
 import { blockAnonId, findBlockedCandidates, isBlocked } from '../block.js';
 import { createSession, endSession, getUserActiveSessions } from '../session.js';
 import { REDIS_KEYS } from '../keys.js';
+import { saveIdentityCard } from '../queueEntry.js';
 import { skipUnlessRedis, useTestRedis } from './redisHarness.js';
 
 /**
@@ -194,6 +195,45 @@ describe('per-account session index', () => {
     // Or the account would read as "already in a whisper" until the TTL lapsed,
     // which is a support ticket nobody can fix.
     assert.deepEqual(await getUserActiveSessions(u, 'idx-gone-other'), []);
+    await resetIdentities(ids);
+  });
+});
+
+describe('second tab of one browser (same anonId)', () => {
+  it('refuses to save a card while the anonId holds a live match, and allows it again after', async (t) => {
+    skipUnlessRedis(t);
+    const ids = ['tab-a', 'tab-b'];
+    await resetIdentities(ids);
+    const input = { displayName: 'second tab', vibeTags: [], gender: 'prefer_not_to_say' as const };
+
+    await createSession({
+      sessionId: 'tab-session',
+      anon1: 'tab-a',
+      anon2: 'tab-b',
+      name1: 'one',
+      name2: 'two',
+      tags1: [],
+      tags2: [],
+    });
+
+    await assert.rejects(() => saveIdentityCard(input, 'tab-a'), {
+      statusCode: 409,
+    });
+
+    // Once the chat ends the same browser may start a new one.
+    await endSession('tab-session');
+    const saved = await saveIdentityCard(input, 'tab-a');
+    assert.equal(saved.anonId, 'tab-a');
+
+    // A brand-new browser (no cookie) is never refused.
+    const fresh = await saveIdentityCard(input, undefined);
+    assert.equal(fresh.isNewIdentity, true);
+
+    await getRedis().del(
+      REDIS_KEYS.waiting('tab-a'),
+      REDIS_KEYS.waiting(fresh.anonId),
+      REDIS_KEYS.session('tab-session')
+    );
     await resetIdentities(ids);
   });
 });

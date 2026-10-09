@@ -3,7 +3,7 @@
    ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
-  .mvs-orbit,
+  .auth-stage__orbit,
   .mvs-wave--you,
   .mvs-wave--them,
   .mvs-lock__person--you,

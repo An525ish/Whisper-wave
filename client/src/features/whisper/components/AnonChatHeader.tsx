@@ -1,9 +1,12 @@
+import VibeHeart from './VibeHeart';
+import { useProfileViewStore } from '../stores/profileViewStore';
 import { vibeTagLabel, avatarGradient } from '../utils/vibeTag';
 import type { VibeTag } from '../types';
 
 type Props = {
   partnerName: string;
   partnerTags: VibeTag[];
+  partnerTyping: boolean;
   socketDegraded: boolean;
   reconnecting: boolean;
   likeDisabled: boolean;
@@ -11,6 +14,8 @@ type Props = {
   mutualLike: boolean;
   partnerVibed: boolean;
   vibeUnlocked: boolean;
+  /** How close the vibe gate is to opening, 0–1 — fills the heart's ring. */
+  vibeProgress: number;
   likeTitle: string;
   onLike: () => void;
   /** Asks for confirmation before skipping a live match. */
@@ -19,15 +24,19 @@ type Props = {
 };
 
 /**
- * Anonymous chat header: back/report, partner identity, and the persistent
- * like affordance.
+ * The conversation header: back, who you're talking to, the vibe heart, report.
  *
- * The like lives here permanently because it is the conversion funnel — a
- * one-shot prompt that can be permanently dismissed is not enough.
+ * Same shell as the logged-in chat's header (`ConversationHeader`) so the two read
+ * as one product. Tapping the partner opens their profile (the sheet below `lg`,
+ * their tab at `lg`).
+ *
+ * The heart lives here permanently because it is the conversion funnel — a one-shot
+ * prompt that can be permanently dismissed is not enough.
  */
 export default function AnonChatHeader({
   partnerName,
   partnerTags,
+  partnerTyping,
   socketDegraded,
   reconnecting,
   likeDisabled,
@@ -35,15 +44,18 @@ export default function AnonChatHeader({
   mutualLike,
   partnerVibed,
   vibeUnlocked,
+  vibeProgress,
   likeTitle,
   onLike,
   onSkip,
   onReport,
 }: Props) {
+  const openProfile = useProfileViewStore((s) => s.openSheet);
+
   return (
     <header className="acr-header">
       <div className="acr-header__card">
-        <div className="flex min-w-0 items-center gap-0">
+        <div className="acr-header__row">
           <button
             type="button"
             onClick={onSkip}
@@ -55,69 +67,57 @@ export default function AnonChatHeader({
             </svg>
           </button>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <div className="acr-avatar" style={{ background: avatarGradient(partnerName) }}>
-              <span className="acr-avatar__ring" aria-hidden />
+          <div className="acr-identity">
+            <div className="acr-avatar" style={{ background: avatarGradient(partnerName) }} aria-hidden>
               {partnerName.charAt(0).toUpperCase()}
-              <span
-                className={`acr-avatar__dot${socketDegraded ? ' acr-avatar__dot--warn' : ''}`}
-                aria-hidden
-              />
+              <span className={`acr-avatar__dot${socketDegraded ? ' acr-avatar__dot--warn' : ''}`} />
             </div>
 
-            <div className="min-w-0 flex-1">
+            <div className="acr-identity__text">
               <div className="acr-name-row">
                 <p className="acr-name">{partnerName}</p>
                 <span className="acr-pill">anon</span>
               </div>
-              {partnerTags.length > 0 ? (
+
+              {socketDegraded ? (
+                <p className="acr-status acr-status--warn" role="status">
+                  {reconnecting ? 'Reconnecting…' : 'Connection lost — retrying…'}
+                </p>
+              ) : partnerTyping ? (
+                <p className="acr-status" role="status">
+                  typing…
+                </p>
+              ) : partnerTags.length > 0 ? (
                 <div className="acr-tags">
                   {partnerTags.map((t) => (
                     <span key={t} className="acr-tag">{vibeTagLabel(t)}</span>
                   ))}
                 </div>
-              ) : socketDegraded ? (
-                <p className="acr-status acr-status--warn" role="status">
-                  {reconnecting ? 'Reconnecting…' : 'Connection lost — retrying…'}
-                </p>
               ) : (
-                <p className="acr-status">
-                  <span className="acr-wave" aria-hidden>
-                    <span /><span /><span /><span />
-                  </span>
-                  in the void with you
-                </p>
+                <p className="acr-status">in the void with you</p>
               )}
             </div>
+
+            {/* Stretched over the avatar + name so the whole identity block is the
+                target, without nesting block content inside a <button>. */}
+            <button
+              type="button"
+              className="acr-identity__hit"
+              onClick={() => openProfile('them')}
+              aria-label={`View ${partnerName}'s profile`}
+            />
           </div>
 
-          {/* The persistent like. It is NOT disabled before the unlock gate —
-              a dead control that explains itself on tap is friendlier than one
-              that silently refuses, and the header heart must stay reachable
-              after the one-shot prompt is dismissed. */}
-          <button
-            type="button"
-            onClick={onLike}
+          <VibeHeart
+            progress={vibeProgress}
+            unlocked={vibeUnlocked}
+            sent={likeSent}
+            mutual={mutualLike}
+            partnerVibed={partnerVibed}
             disabled={likeDisabled}
             title={likeTitle}
-            aria-label={likeTitle}
-            aria-pressed={likeSent || mutualLike}
-            className={[
-              'acr-like',
-              mutualLike ? 'acr-like--mutual' : '',
-              likeSent && !mutualLike ? 'acr-like--sent' : '',
-              partnerVibed && !likeSent ? 'acr-like--ping' : '',
-              !vibeUnlocked && !likeSent && !mutualLike ? 'acr-like--locked' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden
-              fill={likeSent || mutualLike ? 'currentColor' : 'none'}
-              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1 7.8 7.7 7.8-7.7 1-1a5.5 5.5 0 0 0 0-7.8z" />
-            </svg>
-          </button>
+            onClick={onLike}
+          />
 
           <button
             type="button"

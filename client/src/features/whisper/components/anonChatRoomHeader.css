@@ -1,16 +1,16 @@
-﻿/* ============================================================
-   WHISPER - AnonChatRoom header (.acr-header*, .acr-back,
-   .acr-avatar*, .acr-like*, .acr-report*)
+/* ============================================================
+   WHISPER — AnonChatRoom header (`.acr-header*`, `.acr-avatar*`)
+
+   The same shell as the logged-in chat's `ConversationHeader`:
+   `rounded-xl border-white/10 bg-[rgba(33,26,42,.48)]
+   backdrop-blur-xl`. The heart is in anonVibeHeart.css.
 
    Split out of anonChatRoom.css purely to stay under the 350-line
    ceiling; colocated next to the component either way.
    ============================================================ */
 
-/* ── Header ─────────────────────────────────────────────────── */
-
 /* Same gutter and same capped width as the thread and the composer — see the
-   tokens on `.acr-shell`. The header used to be full-bleed above a narrower
-   conversation. */
+   tokens on `.acr-shell`. */
 .acr-header {
   position: absolute;
   z-index: 30;
@@ -28,34 +28,20 @@
 }
 
 .acr-header__card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 1.15rem;
+  border-radius: 0.75rem;
   border: 1px solid rgb(255 255 255 / 0.1);
-  background: linear-gradient(165deg, rgb(57 48 70 / 0.72) 0%, rgb(33 26 42 / 0.55) 100%);
-  box-shadow:
-    0 16px 40px rgb(0 0 0 / 0.35),
-    inset 0 1px 0 rgb(255 255 255 / 0.06);
-  backdrop-filter: blur(22px) saturate(140%);
-  -webkit-backdrop-filter: blur(22px) saturate(140%);
-  padding: 0.5rem 0.65rem 0.5rem 0.35rem;
+  background: rgb(33 26 42 / 0.48);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.24);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
 }
 
-.acr-header__card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 10%;
-  right: 10%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(1 195 109 / 0.45) 40%,
-    color-mix(in srgb, var(--color-void-bright) 35%, transparent) 60%,
-    transparent
-  );
-  pointer-events: none;
+.acr-header__row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.4rem 0.55rem 0.4rem 0.3rem;
 }
 
 .acr-back {
@@ -75,49 +61,66 @@
   color: #fff;
 }
 
+/* ── Identity ────────────────────────────────────────────────── */
+.acr-identity {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+/* Stretched over the avatar + name: the whole block opens their profile. */
+.acr-identity__hit {
+  position: absolute;
+  inset: -0.2rem -0.35rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.acr-identity__hit:hover {
+  background: rgb(255 255 255 / 0.04);
+}
+
+.acr-identity__hit:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 1px;
+}
+
+.acr-identity__text {
+  min-width: 0;
+  flex: 1;
+}
+
 .acr-avatar {
   position: relative;
   display: grid;
-  height: 2.85rem;
-  width: 2.85rem;
+  height: 2.75rem;
+  width: 2.75rem;
   flex-shrink: 0;
   place-items: center;
   border-radius: 999px;
+  border: 2px solid rgb(255 255 255 / 0.1);
   font-size: 0.95rem;
   font-weight: 700;
   color: #fff;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.12);
-}
-
-.acr-avatar__ring {
-  position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  border: 1px solid rgb(1 195 109 / 0.35);
-  opacity: 0.65;
-  animation: acr-avatar-ring 3s ease-in-out infinite;
-}
-
-@keyframes acr-avatar-ring {
-  0%, 100% { opacity: 0.35; transform: scale(1); }
-  50% { opacity: 0.75; transform: scale(1.04); }
 }
 
 .acr-avatar__dot {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  right: -2px;
+  bottom: -2px;
   height: 0.65rem;
   width: 0.65rem;
   border-radius: 999px;
-  border: 2px solid rgb(33 26 42 / 0.9);
+  border: 2px solid rgb(33 26 42);
   background: var(--color-green);
-  box-shadow: 0 0 8px rgb(1 195 109 / 0.85);
 }
 
 .acr-avatar__dot--warn {
   background: rgb(236 195 71 / 0.95);
-  box-shadow: 0 0 8px rgb(236 195 71 / 0.5);
 }
 
 .acr-name-row {
@@ -129,81 +132,71 @@
 
 .acr-name {
   overflow: hidden;
+  margin: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.2;
-  color: #fff;
+  color: var(--color-body, #ebecec);
 }
 
+/* The one place the "void" hue lives in the room: a quiet marker that this is an
+   anonymous conversation, so nobody mistakes it for a normal DM. */
 .acr-pill {
   flex-shrink: 0;
   border-radius: 999px;
-  border: 1px solid rgb(255 255 255 / 0.08);
-  background: rgb(255 255 255 / 0.04);
-  padding: 0.1rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--color-void-bright) 35%, transparent);
+  background: color-mix(in srgb, var(--color-void) 18%, transparent);
+  padding: 0.08rem 0.45rem;
   font-size: 0.55rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgb(235 236 236 / 0.5);
+  color: color-mix(in srgb, var(--color-void-bright) 60%, white);
 }
 
 .acr-status {
-  margin-top: 0.15rem;
+  margin: 0.15rem 0 0;
   font-size: 0.7rem;
   line-height: 1.3;
-  color: rgb(1 195 109 / 0.9);
+  color: var(--color-green);
 }
 
-.acr-status--warn { color: rgb(250 220 140 / 0.95); }
+.acr-status--warn {
+  color: rgb(250 220 140 / 0.95);
+}
 
+/* Their vibes scroll sideways rather than clipping: on a phone a long list used
+   to cut the last tag off with no way to see it. */
 .acr-tags {
   display: flex;
   margin-top: 0.2rem;
   gap: 0.35rem;
-  overflow: hidden;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+}
+
+.acr-tags::-webkit-scrollbar {
+  display: none;
 }
 
 .acr-tag {
   flex-shrink: 0;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--color-void-bright) 28%, transparent);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--color-void) 20%, transparent),
-    rgb(1 195 109 / 0.08)
-  );
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.05);
   padding: 0.1rem 0.5rem;
   font-size: 0.62rem;
   font-weight: 500;
-  color: color-mix(in srgb, var(--color-void-bright) 55%, white);
+  color: rgb(235 236 236 / 0.7);
 }
 
-.acr-wave {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 0.65rem;
-  margin-right: 0.25rem;
-  vertical-align: middle;
-}
-
-.acr-wave span {
-  display: block;
-  width: 2px;
-  border-radius: 1px;
-  background: rgb(1 195 109 / 0.85);
-  animation: acr-wave-bar 1.1s ease-in-out infinite;
-}
-
-.acr-wave span:nth-child(1) { height: 40%; animation-delay: 0s; }
-.acr-wave span:nth-child(2) { height: 100%; animation-delay: 0.15s; }
-.acr-wave span:nth-child(3) { height: 65%; animation-delay: 0.3s; }
-.acr-wave span:nth-child(4) { height: 85%; animation-delay: 0.08s; }
-
-@keyframes acr-wave-bar {
-  0%, 100% { transform: scaleY(0.45); opacity: 0.45; }
-  50% { transform: scaleY(1); opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .acr-back,
+  .acr-identity__hit {
+    transition: none;
+  }
 }

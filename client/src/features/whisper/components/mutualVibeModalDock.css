@@ -141,12 +141,6 @@
   box-shadow: 0 16px 40px -20px rgb(1 195 109 / 0.45);
 }
 
-@keyframes mvs-orbit-spin {
-  to {
-    rotate: 360deg;
-  }
-}
-
 @keyframes mvs-wave-you {
   0%,
   100% {
@@ -307,7 +301,7 @@
 }
 
 .mvs-stage--modal .auth-stage__rings,
-.mvs-stage--modal .mvs-orbit {
+.mvs-stage--modal .auth-stage__orbit {
   overflow: visible;
 }
 

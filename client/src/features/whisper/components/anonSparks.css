@@ -1,0 +1,118 @@
+/* ============================================================
+   WHISPER — sparks (`.apn-spark*`)
+
+   One-tap conversation openers, shown in the stranger's panel and in the
+   composer's menu. Rows use the same surface as the shared-link rows
+   (`bg-background-alt/70`, hairline ring that turns green on hover).
+   ============================================================ */
+
+.apn-sparks__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.apn-sparks__sub {
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: rgb(235 236 236 / 0.45);
+}
+
+.apn-sparks__more {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 0.7rem;
+  color: rgb(235 236 236 / 0.6);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.apn-sparks__more:hover {
+  background: rgb(255 255 255 / 0.07);
+  color: #fff;
+}
+
+.apn-sparks__more:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 1px;
+}
+
+.apn-sparks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.apn-spark {
+  display: flex;
+  width: 100%;
+  min-height: 3rem;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 0.75rem;
+  background: rgb(35 29 44 / 0.7);
+  box-shadow: inset 0 0 0 1px rgb(53 47 61 / 0.4);
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  transition: box-shadow 160ms ease;
+}
+
+.apn-spark:hover:not(:disabled) {
+  box-shadow: inset 0 0 0 1px rgb(1 195 109 / 0.35);
+}
+
+.apn-spark:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+.apn-spark:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.apn-spark__emoji {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 0.6rem;
+  background: rgb(255 255 255 / 0.06);
+  font-size: 1.05rem;
+}
+
+.apn-spark__text {
+  flex: 1;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: rgb(235 236 236 / 0.92);
+}
+
+.apn-spark__go {
+  flex-shrink: 0;
+  color: var(--color-green);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.apn-spark:hover:not(:disabled) .apn-spark__go,
+.apn-spark:focus-visible .apn-spark__go {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apn-spark,
+  .apn-spark__go,
+  .apn-sparks__more {
+    transition: none;
+  }
+}

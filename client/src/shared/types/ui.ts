@@ -39,7 +39,7 @@ export type ConfirmationResult = {
   accept: boolean;
 };
 
-export type ConfirmationVariant = 'danger' | 'default';
+export type ConfirmationVariant = 'danger' | 'default' | 'warning';
 
 export type ButtonVariant = 'primary' | 'danger' | 'outlineGreen' | 'outlineRed' | 'ghost';
 

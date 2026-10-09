@@ -6,6 +6,7 @@ import { formatCountdown } from '../utils/formatCountdown';
 import { vibeTagLabel } from '../utils/vibeTag';
 import WhisperDialog from './WhisperDialog';
 import type { VibeTag } from '../types';
+import './whisperShared.css';
 import './mutualVibeModal.css';
 import './mutualVibeModalCopy.css';
 import './mutualVibeModalDock.css';
@@ -65,7 +66,7 @@ export default function MutualVibeModal({
     >
       <div className="auth-stage mvs-stage mvs-stage--modal" aria-hidden>
         <div className="auth-stage__glow" />
-        <div className="mvs-orbit" />
+        <div className="auth-stage__orbit auth-stage__orbit--mid" />
 
         <svg className="auth-stage__rings" viewBox="0 0 360 360" fill="none">
           <circle className="auth-stage__ring" cx="180" cy="180" r="78" />

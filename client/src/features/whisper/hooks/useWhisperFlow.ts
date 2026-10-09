@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { track } from '@/shared/lib/analytics';
+import { ApiError } from '@/shared/lib/api/client';
 import { RESUME_DEADLINE_MS, RESUME_ENDED_NOTICE, WHISPER_EVENTS } from '../constants';
 import { useAnonStore } from '../stores/anonStore';
 import { trackSessionEnd } from '../stores/trackSessionEnd';
@@ -35,6 +36,7 @@ export function useWhisperFlow() {
   const partnerName = useAnonStore((s) => s.partnerName);
   const partnerTags = useAnonStore((s) => s.partnerTags);
   const queueSize = useAnonStore((s) => s.queueSize);
+  const vibeTags = useAnonStore((s) => s.vibeTags);
 
   // Like state
   const likeSent = useAnonStore((s) => s.likeSent);
@@ -164,12 +166,15 @@ export function useWhisperFlow() {
       },
       loading: joinMutation.isPending,
       error,
+      alreadyChatting: joinMutation.error instanceof ApiError && joinMutation.error.status === 409,
+      onDismissAlreadyChatting: joinMutation.reset,
     },
     waiting: {
       displayName,
       socketConnected,
       reconnecting,
       queueSize,
+      vibeTags,
       resuming: status === 'resuming',
       onLeave: leaveMutation.mutate,
     },

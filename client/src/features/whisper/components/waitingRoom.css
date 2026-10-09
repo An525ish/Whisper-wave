@@ -6,6 +6,26 @@
    checks prefers-reduced-motion itself.
    ============================================================ */
 
+.wr-stage {
+  width: min(100%, 18.5rem);
+  overflow: visible;
+}
+
+/* The shared auth rings are tuned for the login art. On the search stage
+   they need to read as the outer circles around the bubbles. */
+.wr-stage .auth-stage__ring {
+  stroke: rgb(235 236 236 / 0.16);
+  stroke-width: 1.25;
+}
+
+.wr-stage .auth-stage__ring--b {
+  stroke: rgb(1 195 109 / 0.34);
+}
+
+.wr-stage .auth-stage__ring--c {
+  stroke: rgb(139 107 255 / 0.3);
+}
+
 @keyframes wr-ghost-fade {
   0%, 100% { opacity: 0; transform: translateY(0); }
   20%, 80% { opacity: 1; }

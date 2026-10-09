@@ -4,17 +4,10 @@ import { groupMessages } from '@/shared/utils/groupMessages';
 import { THREAD_EXPIRY_TICK_MS, THREAD_LIFETIME_MS } from '../constants';
 import { useNowWhile } from '../hooks/useNowWhile';
 import { useThreadVirtualizer } from '../hooks/useThreadVirtualizer';
-import { avatarGradient } from '../utils/vibeTag';
+import { expiryLabel } from '../utils/expiryLabel';
+import AnonFirstContact from './AnonFirstContact';
 import AnonMessageBubble from './AnonMessageBubble';
-import type { AnonMessage, AnonReaction } from '../types';
-
-const expiryLabel = (msLeft: number): string => {
-  const mins = Math.floor(msLeft / 60_000);
-  if (mins < 1) return 'under a minute';
-  if (mins < 60) return `${mins} min`;
-  const hours = Math.floor(mins / 60);
-  return hours < 24 ? `${hours}h ${mins % 60}m` : `${Math.floor(hours / 24)}d`;
-};
+import type { AnonMessage, AnonReaction, Spark, VibeTag } from '../types';
 
 type Props = {
   myName: string;
@@ -24,8 +17,13 @@ type Props = {
   /** Session start; drives the expiry line. Null hides it. */
   startedAt: number | null;
   live: boolean;
+  /** Vibes you both picked, for the first-contact line. */
+  sharedTags: VibeTag[];
+  /** Openers offered on the empty thread. */
+  sparks: Spark[];
   /** The scrolling `<main>` that hosts this list. */
   scrollRef: RefObject<HTMLElement | null>;
+  onPickSpark: (text: string) => void;
   onRetry: (id: string) => void;
   onReact: (messageId: string, reaction: AnonReaction) => void;
 };
@@ -45,7 +43,10 @@ export default function AnonMessageList({
   partnerTyping,
   startedAt,
   live,
+  sharedTags,
+  sparks,
   scrollRef,
+  onPickSpark,
   onRetry,
   onReact,
 }: Props) {
@@ -80,24 +81,13 @@ export default function AnonMessageList({
         );
       case 'empty':
         return (
-          <div className="acr-empty">
-            <div className="acr-empty__link" aria-hidden>
-              <div className="acr-empty__orb acr-empty__orb--you" style={{ background: avatarGradient(myName) }}>
-                {myName.charAt(0).toUpperCase()}
-              </div>
-              <div className="acr-empty__bridge" />
-              <div className="acr-empty__orb acr-empty__orb--them" style={{ background: avatarGradient(partnerName) }}>
-                {partnerName.charAt(0).toUpperCase()}
-              </div>
-            </div>
-            <div>
-              <p className="acr-empty__title">You&apos;re linked</p>
-              <p className="acr-empty__sub">
-                Two strangers, same wavelength. Break the ice — this thread
-                doesn&apos;t stick around.
-              </p>
-            </div>
-          </div>
+          <AnonFirstContact
+            myName={myName}
+            partnerName={partnerName}
+            sharedTags={sharedTags}
+            sparks={sparks}
+            onPickSpark={onPickSpark}
+          />
         );
       case 'typing':
         return <TypingDots label={`${partnerName} is typing`} className="acr-new-l mt-3" />;

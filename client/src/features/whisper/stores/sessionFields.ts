@@ -13,6 +13,7 @@ export const sessionFields = {
   partnerVibed: false,
   matchedAt: null as number | null,
   sessionAlias: null as string | null,
+  sessionTags: null as VibeTag[] | null,
   partnerLeftPromptDismissed: false,
   endedAt: null as number | null,
   sessionEndTracked: false,

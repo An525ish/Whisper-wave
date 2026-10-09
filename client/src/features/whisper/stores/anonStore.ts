@@ -43,6 +43,8 @@ type AnonState = {
    * editable from the profile panel; this is what the *current thread* is called.
    */
   sessionAlias: string | null;
+  /** Your vibe tags as they were when this match began — what the partner saw. */
+  sessionTags: VibeTag[] | null;
   /** "Stay here" was chosen, so the thread-ended card collapsed to a bar. */
   partnerLeftPromptDismissed: boolean;
   /** When the partner left (Unix ms) — freezes the thread-ended summary. */
@@ -186,6 +188,7 @@ export const useAnonStore = create<AnonState>((set, get) => ({
         // Freeze the alias this match started with. The partner already has it,
         // so renaming mid-thread must not change what the thread calls you.
         sessionAlias: same ? (s.sessionAlias ?? s.displayName) : s.displayName,
+        sessionTags: same ? (s.sessionTags ?? s.vibeTags) : s.vibeTags,
         status: 'matched' as const,
         reconnecting: false,
         error: null,

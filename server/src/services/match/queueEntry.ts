@@ -3,6 +3,11 @@ import { v4 as uuid } from 'uuid';
 import type { IdentityCardInput, IdentityCardResult, WaitingCard } from '../../types/match.js';
 import { dequeue, deleteWaitingCard, getWaitingCard, saveWaitingCard } from './queue.js';
 import { clearJoinCounted } from './quota.js';
+import { getActiveSessionId, getSession } from './session.js';
+
+/** Shown to the second tab/window of a browser that already holds a live chat. */
+export const ALREADY_CHATTING_MESSAGE =
+  "You're already chatting with someone in another tab or window of this browser. Finish or leave that chat first.";
 
 /**
  * Register an anon user's identity card (alias, vibes, gender) — and nothing else.
@@ -24,6 +29,17 @@ export const saveIdentityCard = async (
   existingAnonId: string | undefined
 ): Promise<IdentityCardResult> => {
   const anonId = existingAnonId ?? uuid();
+
+  // The anonId is a cookie, so every tab of this browser IS this identity. A second
+  // tab picking an alias would be dropped into the first tab's live chat (the socket
+  // replays it), i.e. a stranger-looking "new match" that is really the same one.
+  // Refuse instead. Refresh-resume is unaffected: it never calls this endpoint.
+  if (existingAnonId) {
+    const activeId = await getActiveSessionId(existingAnonId);
+    const active = activeId ? await getSession(activeId) : null;
+    if (active?.status === 'active') throw new AppError(409, ALREADY_CHATTING_MESSAGE);
+  }
+
   const existing = existingAnonId ? await getWaitingCard(anonId) : null;
 
   const card: WaitingCard = {

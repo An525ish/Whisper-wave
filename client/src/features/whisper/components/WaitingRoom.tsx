@@ -1,5 +1,8 @@
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import AuthAmbience from './AuthAmbience';
+import WaitingRadar from './WaitingRadar';
+import type { VibeTag } from '../types';
+import './whisperShared.css';
 import './waitingRoom.css';
 
 type Props = {
@@ -9,6 +12,8 @@ type Props = {
   reconnecting: boolean;
   /** Approximate number of people queued. 0 means "nobody is here right now". */
   queueSize: number | null;
+  /** The user's own vibes, shown floating around the radar (wave bar kept clear). */
+  vibeTags: VibeTag[];
   /** Restoring a chat after a refresh, not searching for a new one. */
   resuming?: boolean;
   onLeave: () => void;
@@ -19,6 +24,7 @@ export default function WaitingRoom({
   socketConnected,
   reconnecting,
   queueSize,
+  vibeTags,
   resuming = false,
   onLeave,
 }: Props) {
@@ -39,8 +45,10 @@ export default function WaitingRoom({
       <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-7 px-4 text-center">
 
         {/* Stage — decorative, so hidden from assistive tech */}
-        <div className="auth-stage relative" aria-hidden style={{ width: 'min(100%, 18rem)' }}>
+        <div className="auth-stage wr-stage relative" aria-hidden>
           <div className="auth-stage__glow" />
+          <div className="auth-stage__orbit auth-stage__orbit--outer" />
+          <div className="auth-stage__orbit auth-stage__orbit--mid" />
 
           {/* Concentric rings */}
           <svg className="auth-stage__rings" viewBox="0 0 360 360" fill="none">
@@ -49,6 +57,8 @@ export default function WaitingRoom({
             <circle className="auth-stage__ring auth-stage__ring--c" cx="180" cy="180" r="158" />
             <path className="auth-stage__arc" d="M52 180 A128 128 0 0 1 180 52" strokeLinecap="round" />
           </svg>
+
+          <WaitingRadar queueSize={resuming ? null : queueSize} vibeTags={resuming ? [] : vibeTags} quiet={emptyQueue} />
 
           {/* Center — two chat bubbles converging. When nobody else is queued
               the right bubble dims: a literal depiction of "no one to talk to

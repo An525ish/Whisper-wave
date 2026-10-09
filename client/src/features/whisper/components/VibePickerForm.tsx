@@ -14,7 +14,6 @@ import type { JoinQueuePayload } from '../types';
 type Props = {
   onJoin: (payload: JoinQueuePayload) => void;
   loading: boolean;
-  error: string | null;
 };
 
 /**
@@ -23,7 +22,7 @@ type Props = {
  * One column, in the order it's answered: who you are → who you're looking for
  * → consent → go.
  */
-export default function VibePickerForm({ onJoin, loading, error }: Props) {
+export default function VibePickerForm({ onJoin, loading }: Props) {
   const signedIn = useAuthStore((s) => s.user !== null);
   const {
     control,
@@ -147,15 +146,6 @@ export default function VibePickerForm({ onJoin, loading, error }: Props) {
           </span>
         </span>
       </label>
-
-      {error && (
-        <p
-          role="alert"
-          className="rounded-xl border border-red/20 bg-red/8 px-4 py-3 text-sm text-red"
-        >
-          {error}
-        </p>
-      )}
 
       <div className="flex flex-col gap-2.5">
         <button

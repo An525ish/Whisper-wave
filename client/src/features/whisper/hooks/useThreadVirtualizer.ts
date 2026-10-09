@@ -4,10 +4,10 @@ import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import { NEAR_BOTTOM_PX } from '../constants';
 import type { AnonMessage, ThreadRow } from '../types';
 
-const LEAD_ROW_PX = 56;
-const EMPTY_ROW_PX = 260;
+const LEAD_ROW_PX = 52;
+const EMPTY_ROW_PX = 400;
 const MESSAGE_ROW_PX = 64;
-const TYPING_ROW_PX = 40;
+const TYPING_ROW_PX = 48;
 
 interface Params {
   scrollRef: RefObject<HTMLElement | null>;

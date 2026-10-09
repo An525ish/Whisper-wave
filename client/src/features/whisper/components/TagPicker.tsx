@@ -61,9 +61,9 @@ export default function TagPicker({ tags, onChange }: Props) {
           than just disappearing the input, so the control never jumps. */}
       <div
         className={[
-          'flex min-h-[46px] flex-wrap items-center gap-1.5 rounded-xl border bg-black-dark/80 px-3 py-2 transition-all duration-200',
+          'tag-picker__field flex min-h-[46px] flex-wrap items-center gap-1.5 rounded-xl border bg-black-dark/80 px-3 py-2 transition-all duration-200',
           full
-            ? 'border-green/30 bg-green/[0.04]'
+            ? 'tag-picker__field--full border-green/30 bg-green/[0.04]'
             : 'border-white/10 focus-within:border-green/55 focus-within:bg-black-dark focus-within:shadow-[0_0_0_3px_rgba(1,195,109,0.18)]',
         ].join(' ')}
       >
