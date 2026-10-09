@@ -1,0 +1,199 @@
+/* ============================================================
+   WHISPER — AnonChatRoom: the composer (`.acr-composer*`, `.acr-send*`)
+   Colocated continuation of anonChatRoom.css. (The heart is in
+   anonVibeHeart.css.)
+
+   The logged-in composer's surface (`COMPOSER_SHELL_CLASS`: border-border,
+   bg-primary/40, green focus) with a spark menu on the left and a send
+   button on the right. Its edges are the same as the header and the thread:
+   `--acr-gutter` and `--acr-column` on `.acr-shell`.
+   ============================================================ */
+
+.acr-composer-wrap {
+  flex-shrink: 0;
+  padding: 0.35rem var(--acr-gutter, 0.85rem) max(0.65rem, env(safe-area-inset-bottom));
+}
+
+.acr-composer-wrap > * {
+  width: 100%;
+  max-width: var(--acr-column);
+  margin-inline: auto;
+}
+
+/* Over the 2000-char limit. The ring warns on the way up; this is the hard stop,
+   so it stays loud. */
+.acr-limit {
+  margin: 0 0 0.4rem;
+  padding: 0 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgb(255 138 146 / 0.95);
+}
+
+/* ── The shell ───────────────────────────────────────────────── */
+.acr-composer {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.2rem;
+  border-radius: 1.5rem;
+  border: 1px solid var(--color-border);
+  background: rgb(42 33 54 / 0.4);
+  padding: 0.3rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.acr-composer:focus-within {
+  border-color: rgb(1 195 109 / 0.45);
+  box-shadow: 0 0 0 3px rgb(1 195 109 / 0.08);
+}
+
+.acr-composer__input {
+  width: 100%;
+  min-width: 0;
+  max-height: 8rem;
+  min-height: 2.5rem;
+  flex: 1;
+  resize: none;
+  overflow-y: auto;
+  background: transparent;
+  padding: 0.6rem 0.35rem;
+  font-size: 16px;
+  line-height: 1.3rem;
+  color: var(--color-body, #ebecec);
+  outline: none;
+}
+
+.acr-composer__input::placeholder {
+  color: rgb(235 236 236 / 0.38);
+}
+
+@media (min-width: 768px) {
+  .acr-composer__input {
+    font-size: 0.875rem;
+  }
+}
+
+/* No connection to them: the whole control reads as unavailable, not just the
+   send button. */
+.acr-composer--disabled {
+  opacity: 0.6;
+}
+
+.acr-composer--disabled .acr-composer__input,
+.acr-composer--disabled .acr-composer__spark,
+.acr-composer--disabled .acr-send {
+  cursor: not-allowed;
+}
+
+/* ── Spark button + menu ─────────────────────────────────────── */
+.acr-composer__spark {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  color: rgb(235 236 236 / 0.6);
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.acr-composer__spark:hover,
+.acr-composer__spark--open {
+  background: rgb(255 255 255 / 0.06);
+  color: var(--color-green);
+}
+
+.acr-composer__menu {
+  position: absolute;
+  bottom: calc(100% + 0.55rem);
+  left: 0;
+  z-index: 60;
+  width: min(100%, 24rem);
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-background-alt);
+  padding: 0.85rem;
+  box-shadow: 0 20px 44px -16px rgb(0 0 0 / 0.7);
+  animation: acr-menu-rise 0.2s ease-out;
+}
+
+/* ── Send ────────────────────────────────────────────────────── */
+.acr-send {
+  position: relative;
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.08);
+  color: rgb(255 255 255 / 0.4);
+  transition: background 0.22s ease, color 0.22s ease, transform 0.18s ease;
+}
+
+/* Something to say: the button takes the app's green gradient. */
+.acr-send--ready {
+  background: var(--background-image-gradient-green);
+  color: #fff;
+}
+
+.acr-send:enabled:active {
+  transform: scale(0.94);
+}
+
+.acr-send:disabled {
+  cursor: default;
+}
+
+.acr-send__icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0.1rem 0.1rem 0 0;
+  fill: currentColor;
+}
+
+/* How full the message is — appears from 70%, warms to amber, then red. */
+.acr-send__ring {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  pointer-events: none;
+}
+
+.acr-send__arc {
+  stroke: rgb(250 220 140 / 0.9);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 22px 22px;
+}
+
+.acr-send__arc--hot {
+  stroke: rgb(255 120 130);
+}
+
+.acr-composer__spark:focus-visible,
+.acr-send:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+@keyframes acr-menu-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acr-composer,
+  .acr-composer__spark,
+  .acr-send {
+    transition: none;
+  }
+
+  .acr-composer__menu {
+    animation: none;
+  }
+
+}

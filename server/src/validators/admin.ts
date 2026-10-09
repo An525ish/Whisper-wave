@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { objectIdField } from './fields.js';
 
 export const adminLoginSchema = z.object({
   secretKey: z.string().min(1, 'Secret key is required'),
@@ -6,6 +7,23 @@ export const adminLoginSchema = z.object({
 
 export const adminIdParamSchema = z.object({
   id: z.string().min(1, 'ID is required'),
+});
+
+/** Moderation queue pagination. */
+export const adminReportsQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(50),
+});
+
+/** `:id` of a report — must be an ObjectId or the repository would throw a CastError. */
+export const adminReportIdParamSchema = z.object({
+  id: objectIdField,
+});
+
+/** Mark a report reviewed; optionally extend the block between the pair. */
+export const adminReportReviewSchema = z.object({
+  reviewed: z.boolean().default(true),
+  blockAnonId: z.boolean().default(false),
 });
 
 export const adminRemoveMemberParamSchema = z.object({
@@ -57,14 +75,3 @@ export const adminImpersonationLogsQuerySchema = z.object({
 export const adminDeleteAttachmentsSchema = z.object({
   messageIds: z.array(z.string().min(1)).min(1).max(100),
 });
-
-export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
-export type AdminIdParam = z.infer<typeof adminIdParamSchema>;
-export type AdminRemoveMemberParam = z.infer<typeof adminRemoveMemberParamSchema>;
-export type AdminActivityEventsQuery = z.infer<typeof adminActivityEventsQuerySchema>;
-export type AdminUsersQuery = z.infer<typeof adminUsersQuerySchema>;
-export type AdminGroupsQuery = z.infer<typeof adminGroupsQuerySchema>;
-export type AdminMessagesQuery = z.infer<typeof adminMessagesQuerySchema>;
-export type AdminAttachmentsQuery = z.infer<typeof adminAttachmentsQuerySchema>;
-export type AdminImpersonationLogsQuery = z.infer<typeof adminImpersonationLogsQuerySchema>;
-export type AdminDeleteAttachmentsBody = z.infer<typeof adminDeleteAttachmentsSchema>;

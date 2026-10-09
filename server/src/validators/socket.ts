@@ -20,7 +20,3 @@ export const socketReactionSchema = z.object({
   // Accepts Unicode emoji sequences (incl. ZWJ + variation selectors); rejects plain ASCII/HTML
   emoji: z.string().min(1).max(20).regex(/^\p{Emoji}/u, 'Must start with an emoji character'),
 });
-
-export type SocketNewMessagePayload = z.infer<typeof socketNewMessageSchema>;
-export type SocketTypingPayload = z.infer<typeof socketTypingSchema>;
-export type SocketReactionPayload = z.infer<typeof socketReactionSchema>;

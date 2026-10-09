@@ -12,8 +12,16 @@ type BarChartProps = {
   label?: string;
 };
 
+const EMPTY_SERIES = [0, 0, 0, 0, 0, 0, 0];
+
 const BarChart = ({ labels = [], values = [], label = 'Messages' }: BarChartProps) => {
-  const series = values.length > 0 ? values : [0, 0, 0, 0, 0, 0, 0];
+  // Module-level constant as the empty fallback so the identity is stable
+  // across renders — otherwise the `data` memo below (and the chart redraw it
+  // triggers) would be rebuilt on every render.
+  const series = useMemo(
+    () => (values.length > 0 ? values : EMPTY_SERIES),
+    [values],
+  );
   const yBounds = countChartYBounds(series);
 
   const data = useMemo(

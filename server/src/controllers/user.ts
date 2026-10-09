@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import type { ValidatedRequest } from '../middlewares/validate.js';
 import { userService } from '../services/index.js';
-import type { SearchUserQuery, UpdateProfileInput } from '../validators/request.js';
+import type { SearchUserQuery, UpdateProfileInput } from '../types/input.js';
 import type { UploadableFile } from '../types/message.js';
 import { catchAsync } from '../utils/catchAsync.js';
 

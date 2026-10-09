@@ -1,0 +1,71 @@
+/* Signed-in strip on the whisper picker (`.sin-*`).
+   Colocated per the CSS-homes rule. Reads as a quiet footnote under "Enter the
+   void" rather than a badge — the point is reassurance, not emphasis. */
+
+.sin {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(1 195 109 / 0.16);
+  background: rgb(1 195 109 / 0.05);
+  padding: 0.6rem 0.8rem;
+  /* The panel heading above is centred; this block left-aligns so its own two
+     lines agree with each other rather than one hugging the left and the other
+     floating in the middle. */
+  text-align: left;
+  animation: sin-rise 220ms ease-out;
+}
+
+.sin__who {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: rgb(235 236 236 / 0.82);
+}
+
+.sin__badge {
+  display: inline-grid;
+  height: 1.05rem;
+  width: 1.05rem;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  background: rgb(1 195 109 / 0.2);
+  color: var(--color-green);
+}
+
+/* Truncates rather than wrapping mid-word — a long handle must not reflow the
+   whole strip onto three lines. */
+.sin__name {
+  overflow: hidden;
+  font-weight: 600;
+  color: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sin__detail {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: rgb(235 236 236 / 0.48);
+}
+
+@keyframes sin-rise {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sin {
+    animation: none;
+  }
+}

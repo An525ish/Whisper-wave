@@ -5,7 +5,7 @@ import { flushNotifications, friendRequestService, joinUsersToChatRoom, leaveUse
 import { REFETCH_CHATS } from '../constants/socket-events.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { param } from '../utils/http.js';
-import type { GetMyFriendsQuery } from '../validators/request.js';
+import type { GetMyFriendsQuery } from '../types/input.js';
 
 const getIo = (req: { app: { get: (key: string) => unknown } }): Server | undefined =>
   req.app.get('io') as Server | undefined;

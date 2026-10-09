@@ -4,6 +4,7 @@ import type { Socket } from 'socket.io';
 import cookieParser from 'cookie-parser';
 import * as userRepo from '../repositories/user.js';
 import { AppError } from '../utils/AppError.js';
+import { logger } from '../utils/logger.js';
 import { verifyToken } from '../utils/token.js';
 
 /** JWT-only auth — no DB hit on every HTTP request. */
@@ -27,6 +28,31 @@ export const auth = (req: Request, _res: Response, next: NextFunction): void => 
   } catch (error) {
     next(error);
   }
+};
+
+/**
+ * Best-effort auth for guest-accessible routes. Sets `req.userId` when a valid
+ * accessToken cookie is present; never errors when it is absent or invalid —
+ * the request simply proceeds as a guest.
+ */
+export const optionalAuth = (req: Request, _res: Response, next: NextFunction): void => {
+  const accessToken = (req.cookies as { accessToken?: string } | undefined)
+    ?.accessToken;
+
+  if (accessToken) {
+    try {
+      const payload = verifyToken(accessToken);
+      req.userId = payload.id;
+      if (payload.impersonated) {
+        req.isImpersonated = true;
+        req.impersonatingAdminId = payload.adminId;
+      }
+    } catch (err) {
+      // Expired/forged token on a guest-accessible route: treat as a guest.
+      logger.debug({ err }, 'optionalAuth: ignoring invalid access token');
+    }
+  }
+  next();
 };
 
 type CookieRequest = IncomingMessage & {

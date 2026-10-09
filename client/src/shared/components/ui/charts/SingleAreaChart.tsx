@@ -8,6 +8,8 @@ import { useChart } from '@/shared/components/ui/charts/useChart';
 
 export type SparkVariant = 'blue' | 'gold' | 'green' | 'coral' | 'yellow';
 
+const EMPTY_SERIES = [0, 0, 0, 0, 0, 0, 0];
+
 const SPARK_THEMES: Record<
   SparkVariant,
   { line: string; fillTop: string; fillBottom: string; hover: string }
@@ -61,7 +63,13 @@ const SingleAreaChart = ({
   inset = false,
 }: SingleAreaChartProps) => {
   const theme = SPARK_THEMES[variant];
-  const series = values.length > 0 ? values : [0, 0, 0, 0, 0, 0, 0];
+  // Module-level constant as the empty fallback so the identity is stable
+  // across renders — otherwise the `data` memo below (and the chart redraw it
+  // triggers) would be rebuilt on every render.
+  const series = useMemo(
+    () => (values.length > 0 ? values : EMPTY_SERIES),
+    [values],
+  );
   const yBounds = countChartYBounds(series);
 
   const data = useMemo(

@@ -112,6 +112,7 @@ export type {
   CreateMessageInput,
   MessageRecord,
   UpdateMessagePatch,
+  ToggleMessageReactionInput,
 } from './message.js';
 export type {
   IRequestFields,
@@ -126,3 +127,123 @@ export type {
   GetMyFriendsInput,
 } from './friend-request.js';
 export type { LinkPreviewData } from './linkPreview.js';
+// `normalizeVibeTag` is a runtime value, so it needs a value re-export — the
+// `types/` barrel is the one place shared domain exports live.
+export { normalizeVibeTag } from './match.js';
+export type { AnonSocket, SocketRateLimiter } from './anonSocket.js';
+export type {
+  // Vibe
+  Gender,
+  VibeTag,
+  // Redis session state
+  SessionStatus,
+  AnonSession,
+  CreateSessionInput,
+  MatchIdentity,
+  // Reveal flow
+  ConnectTokenPayload,
+  VerifiedConnectToken,
+  // Mongo document shapes
+  IConnectionFields,
+  IReportFields,
+  ReportReason,
+  // Queue / pairing
+  WaitingCard,
+  MatchCandidate,
+  MatchAttempt,
+  PairResult,
+  IdentityCardInput,
+  IdentityCardResult,
+  WhisperQuota,
+  // Messaging
+  StoredAnonMessage,
+  BufferedAnonMessage,
+  AnonMessageSide,
+  AcceptMessageResult,
+  AnonFailureCode,
+  AnonMessageAck,
+  SocketAck,
+  AnonLikeAck,
+  AnonLikeFailureCode,
+  LikeSocketAck,
+  // Vibe reactions
+  AnonReaction,
+  AnonReactionAction,
+  AnonReactionAck,
+  AnonReactionEvent,
+  AnonMessageReactions,
+  AnonMessageReactionsBySide,
+  AnonSessionReactions,
+  ReactionSocketAck,
+  // Likes
+  LikeResult,
+  SessionMessageCounts,
+  // Vibe eligibility
+  VibeGateInput,
+  // Moderation
+  ModerationReason,
+  MessageVerdict,
+  // Connection origin story
+  ConnectionOrigin,
+} from './match.js';
+export type {
+  PendingConnectionSideDoc,
+  PendingConnectionStatusDoc,
+  IPendingConnectionDocFields,
+  IPendingConnection,
+  ConnectionLean,
+  CreateConnectionInput,
+  CompleteConnectionResult,
+  ConnectionAnnouncement,
+  CompleteConnectionOutcome,
+} from './connection.js';
+export type {
+  SubmitReportInput,
+  CreateReportInput,
+  ReportQueuePage,
+  ReportLean,
+} from './report.js';
+export type {
+  AdminLoginInput,
+  AdminIdParam,
+  AdminRemoveMemberParam,
+  AdminActivityEventsQuery,
+  AdminUsersQuery,
+  AdminGroupsQuery,
+  AdminMessagesQuery,
+  AdminAttachmentsQuery,
+  AdminImpersonationLogsQuery,
+  AdminDeleteAttachmentsBody,
+  AdminReportsQuery,
+  AdminReportReviewBody,
+} from './adminInput.js';
+export type {
+  GoogleSignInInput,
+  SignUpStartInput,
+  SignUpVerifyInput,
+  SignUpResendInput,
+  SignUpUpdateUsernameInput,
+  SignUpCompleteInput,
+  SignInInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+  UsernameCheckQuery,
+  GetChatDetailsQuery,
+  PageQuery,
+  LinkPreviewQuery,
+  JoinQueueBody,
+  SubmitReportBody,
+  CompleteConnectionBody,
+  GetMessagesQuery,
+  SearchMessagesQuery,
+  JumpToDateQuery,
+  ListActiveDatesQuery,
+  SearchUserQuery,
+  GetMyFriendsQuery,
+  UpdateProfileInput,
+  SocketNewMessagePayload,
+  SocketTypingPayload,
+  SocketReactionPayload,
+  SignUploadBody,
+  CommitAttachmentsBody,
+} from './input.js';

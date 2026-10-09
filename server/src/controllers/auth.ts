@@ -18,7 +18,7 @@ import type {
   SignUpUpdateUsernameInput,
   SignUpVerifyInput,
   UsernameCheckQuery,
-} from '../validators/auth.js';
+} from '../types/input.js';
 
 export const startSignUp: RequestHandler = catchAsync(async (req, res) => {
   const result = await authService.startSignUp(req.body as SignUpStartInput);

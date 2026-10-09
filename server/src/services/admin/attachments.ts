@@ -1,6 +1,6 @@
 import * as messageRepo from '../../repositories/message.js';
 import type { AdminAttachmentsPage } from '../../types/admin.js';
-import type { AdminAttachmentsQuery } from '../../validators/admin.js';
+import type { AdminAttachmentsQuery } from '../../types/adminInput.js';
 import { trimOptional } from '../../utils/normalize.js';
 import { parseBeforeCursor } from './shared.js';
 

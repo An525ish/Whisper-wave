@@ -14,5 +14,3 @@ export const linkPreviewQuerySchema = z.object({
       }
     }, 'Only http/https URLs are allowed'),
 });
-
-export type LinkPreviewQuery = z.infer<typeof linkPreviewQuerySchema>;

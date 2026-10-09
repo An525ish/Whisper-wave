@@ -1,0 +1,129 @@
+﻿/* ============================================================
+   WHISPER — AnonChatRoom (`.acr-*`)
+
+   Colocated per the CSS-homes rule: one-off composites live next to
+   the component that uses them, not appended to the root index.css.
+
+   The room deliberately reuses the logged-in chat's surfaces and green accent
+   so moving between the two is not a visual jump; the "void" hue is kept to
+   the entry screens and the small `anon` marker.
+   ============================================================ */
+
+/* Row shell: the conversation plus, at `lg`, the profile rail. Below that the
+   panel becomes a sheet, so this stays a single column and nothing shifts.
+
+   Both tokens are declared once here and consumed by three separate stylesheets,
+   so the header, the thread and the composer share one inset and one width and
+   cannot drift apart.
+
+   `--acr-column` caps the conversation rather than letting it run the full pane:
+   a ~890px pane with 22rem bubbles puts the two sides so far apart it stops
+   reading as one exchange. Capped at 48rem it keeps ~60px of slack a side in a
+   26rem-panel layout — small enough that it reads as breathing room rather than
+   the floating column an earlier 44rem cap produced. */
+.acr-shell {
+  --acr-gutter: 0.85rem;
+  --acr-column: 48rem;
+
+  position: relative;
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.acr-root {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  /* The logged-in chat's surface: the green "glass" glow (`bg-glass-background`)
+     under the same 75% dark wash (`rgba(33,26,42,.75)`), so the room reads as that
+     chat rather than a flat panel. */
+  background:
+    linear-gradient(rgb(33 26 42 / 0.75), rgb(33 26 42 / 0.75)),
+    var(--background-image-glass-background),
+    var(--color-background);
+}
+
+/* Profile rail — hidden until the logged-in app would show its profile pane. At `lg`
+   the shell uses `AppWrapper`'s `<main>` inset and gap, with the chat taking the
+   remaining width and this column kept to a side-panel width. Its first child is the You / Them switch
+   (the header slot above the panel in the main app), then the panel. */
+.acr-profile {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .acr-shell {
+    gap: 0.75rem;
+    padding: 0.5rem 1rem 0.75rem;
+  }
+
+  /* Rounded like the main chat's pane (`md:rounded-xl`). */
+  .acr-root {
+    flex: 1 1 0;
+    border-radius: 0.75rem;
+  }
+
+  .acr-profile {
+    display: flex;
+    min-height: 0;
+    min-width: 0;
+    flex: 0 0 clamp(20rem, 27vw, 25rem);
+    flex-direction: column;
+  }
+}
+
+/* Below `lg` the panel is a sheet, so it needs a way in. Sits above the
+   composer rather than in the corner, where it would cover the send button. */
+.acr-profile-fab {
+  position: fixed;
+  right: 0.9rem;
+  bottom: 5.75rem;
+  /* Under the composer (z 40) so its opener menu can open over this orb. */
+  z-index: 35;
+  border-radius: 999px;
+  padding: 0.2rem;
+  transition: transform 180ms ease;
+}
+
+.acr-profile-fab:hover {
+  transform: translateY(-1px);
+}
+
+.acr-profile-fab__orb {
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.92);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.4);
+}
+
+.acr-profile-fab :focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .acr-profile-fab {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acr-profile-fab {
+    transition: none;
+  }
+
+  .acr-profile-fab:hover {
+    transform: none;
+  }
+}

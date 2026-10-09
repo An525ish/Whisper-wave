@@ -1,7 +1,7 @@
 # Whisper Wave — User Journey (backend view)
 
 > Living document. What the user does, and what **we** do on the server, at every step.
-> Last updated: Aug 2026
+> Last updated: Oct 2026
 >
 > Product: [`PRODUCT.md`](./PRODUCT.md) · Tech + cost: [`TECH.md`](./TECH.md)
 
@@ -44,28 +44,27 @@ Two kinds of identity:
 
 **Backend:** Almost nothing.
 - Frontend loads (static).
-- Optional `GET /health` if we ping the API.
+- Optional `GET /health` (liveness) if we ping the API; `/ready` also checks Redis.
 - No cookie yet. No DB write.
 
 ---
 
 ### A1. They pick a vibe name and hit “Find someone”
 
-**User:** Types a name (e.g. `midnight_fox`), maybe 2–3 vibe tags, maybe gender. Hits Find.
+**User:** Types a name (e.g. `midnight_fox`), up to 3 freeform vibe tags, maybe gender, and ticks the 18+ box. Hits Find.
 
 **Backend:** `POST /api/match/join` (no login required)
 
-1. Validate body (name required, tags optional, gender optional).
-2. Create `anonId` = random UUID.
-3. Set httpOnly cookie `anonId` (so we know this browser in later socket calls).
-4. Save a short “waiting card” in Redis:
-   - `match:waiting:{anonId}` → `{ displayName, vibeTags, gender, joinedAt }`
-   - TTL ~ 10–15 min (if they go idle, they drop out of queue).
-5. Put `anonId` at the end of the queue:
-   - Free user → `match:queue:global`
-   - (Premium filter is Journey D — skip for now.)
-6. Try to match immediately (see A2).
-7. Respond: `{ ok: true, status: "queued" | "matched" }`.
+1. Validate body (name, tags ≤ 3 freeform, optional gender, 18+ attestation).
+2. Reuse the `anonId` cookie or create one (random UUID, httpOnly).
+3. Save the **identity card** in Redis: `match:waiting:{anonId}` → `{ displayName, vibeTags, gender, joinedAt }`, **TTL 24 h**, refreshed on every interaction.
+4. Respond `{ ok: true }`.
+
+`/join` does **not** queue anyone. The queue entry is created when the client's `/anon` socket connects, after the quota (signed-in users only) and active-session gates. Then:
+
+- Free user → `anonId` is added to `match:queue:global`.
+- (Premium filter is Journey D — not built.)
+- Matching is tried immediately (see A2).
 
 **We do not:** create a User, save to Mongo, log IP as a profile.
 
@@ -75,60 +74,47 @@ Two kinds of identity:
 
 **User:** Sees a waiting animation.
 
-**Backend:** Same request as A1, or a tiny matcher that runs on every join.
+**Backend:** A matcher runs on every queue entry. Claiming is atomic (Lua `LREM`, no global lock).
 
-Logic (cheap, no extra worker):
+1. Is someone already waiting (and not blocked, not the same account)?
+2. **No** → this user waits. Socket event `QUEUE_JOINED`.
+3. **Yes** → claim that person atomically.
+4. Create `sessionId`; write `match:session:{sessionId}` (anonIds, names, tags, `status: active`), TTL 24 h.
+5. Empty likes set `match:likes:{sessionId}`.
+6. Emit `MATCH_FOUND` to both: partner's **display name + vibe tags only**. **We never send anonIds to the client.**
+7. Both sockets join the session room.
 
-1. Look at the queue. Is there already someone waiting?
-2. **No** → this user just waits. Socket event `QUEUE_JOINED`.
-3. **Yes** → pop that person + this person.
-4. Create `sessionId` (room id).
-5. Write Redis hash `match:session:{sessionId}`:
-   - `anon1`, `anon2`, names, tags, `status: active`, `createdAt`
-   - TTL 24h after last activity (or shorter — product choice).
-6. Empty likes set: `match:likes:{sessionId}`.
-7. Tell both sockets `MATCH_FOUND`:
-   - Partner’s **display name + vibe tags only**
-   - Never send the other person’s `anonId` to the client (harder to stalk/replay).
-8. Put both sockets in Socket.IO room `sessionId`.
-
-**We do not:** write this pair to Mongo. If the server restarts and Redis is empty, the match is gone — that is OK for anonymous.
+**We do not:** write this pair to Mongo.
 
 ---
 
 ### A3. They chat (anonymous)
 
-**User:** Types messages, maybe typing indicator.
+**User:** Types messages, maybe a typing indicator, may react to a message.
 
 **Backend:** Socket.IO namespace `/anon` (not the logged-in namespace).
 
 | User does | Client sends | We do |
 |---|---|---|
-| Types a message | `ANON_MESSAGE` `{ sessionId, content }` | Check cookie `anonId` is actually in this session. Relay to the **other** socket only. Do **not** save in Mongo. Optional: keep last few lines in a Redis list with TTL (only if we want refresh-to-not-lose-the-thread). Default: **relay only**. |
-| Starts typing | `ANON_TYPING_START` | Forward to partner. Nothing stored. |
-| Stops typing | `ANON_TYPING_STOP` | Forward to partner. Nothing stored. |
+| Types a message | `ANON_MESSAGE` `{ content, messageId }` | Verify the cookie `anonId` is in this session. Moderate + length/rate checks. **Ack** the sender (or `MATCH_MESSAGE_REJECTED`). Relay to the partner as `MATCH_MESSAGE` with `from: 'them'` (sender sees `'me'`). Keep the **last 50 messages** in `match:messages:{sessionId}` (TTL 24 h) so a refresh or the 45 s reconnect grace doesn't blank the thread. Never Mongo. |
+| Reacts to a message | `ANON_REACT` | Curated set only; stored in `match:reactions:*`; `MATCH_REACTION` to both. Sending the same reaction again removes it. |
+| Starts/stops typing | `ANON_TYPING_START/STOP` | Forward to partner. Nothing stored. |
 
-If content looks empty / too long → drop it (Zod / simple max length). Rate-limit messages so bots can’t flood.
-
-**We do not:** attachments, voice notes, read receipts (free anon). Those are connected or premium.
+**We do not:** attachments, voice notes, read receipts (free anon). When the session ends, the buffer and reactions are **deleted**.
 
 ---
 
 ### A4. They tap Like
 
-**User:** Hits the vibe/like button.
+**User:** Hits the vibe/like button. It unlocks only after the vibe gate (≥ 90 s, ≥ 2 messages from each side, ≥ 5 total; per-side counters).
 
-**Backend:** Socket `ANON_LIKE` `{ sessionId }` (or `POST /api/match/like`)
+**Backend:** Socket `ANON_LIKE`
 
-1. Confirm `anonId` belongs to this session.
+1. Confirm `anonId` belongs to this session and the gate is met.
 2. `SADD match:likes:{sessionId} {anonId}`.
 3. Count likes:
-   - **Only 1 like:** optionally emit a vague `SOMEONE_VIBING` to the room (not “X liked you”). Or emit nothing — product choice. Do **not** reveal who.
-   - **2 likes (mutual):** emit `MUTUAL_LIKE` to both, with a short-lived `connectToken` (JWT, ~10 min) containing:
-     - `sessionId`
-     - this user’s `anonId`
-     - partner `anonId`
-     - both vibe names + tags (for the “how we met” story)
+   - **1 like:** emit a vague `SOMEONE_VIBING` and set the replayable `MATCH_PARTNER_VIBED` flag for the partner. Never reveals who.
+   - **2 likes (mutual):** emit `MUTUAL_LIKE` to both with a short-lived `connectToken` (JWT, ~10 min) containing `sessionId` and both vibe names + tags (for “how we met”). **No anonIds in the token.**
 
 **We do not:** create accounts yet. Like is only Redis.
 
@@ -138,15 +124,14 @@ If content looks empty / too long → drop it (Zod / simple max length). Rate-li
 
 **User:** “Not it. Next.”
 
-**Backend:** `ANON_NEXT` or `POST /api/match/next`
+**Backend:** `ANON_NEXT`
 
-1. Mark session `ended` / delete Redis session + likes.
-2. Tell partner `MATCH_DISCONNECTED` (“they left”).
-3. Remove skipper from this room.
-4. Put skipper back in the queue (same as A1–A2) **or** wait until they hit Find again.
-5. Partner is **not** automatically re-queued unless they tap Find again (clearer UX, less surprise).
+1. End the session; delete the Redis session, likes, message buffer and reactions.
+2. Tell the partner `MATCH_DISCONNECTED` (“they left”); they return to idle.
+3. The skipper is re-queued by the server on `ANON_NEXT` (the client first refreshes the card via `POST /api/match/join`).
+4. The partner is **not** silently requeued — they must tap Find again.
 
-**Result:** that stranger is gone. No Mongo row. No way to look them up. That is the product.
+**Result:** that stranger is gone. No Mongo row. That is the product.
 
 ---
 
@@ -156,9 +141,9 @@ If content looks empty / too long → drop it (Zod / simple max length). Rate-li
 
 **Backend:** Socket `disconnect` on `/anon`
 
-1. If they were only in queue → remove from Redis queue + waiting card.
-2. If they were in a live session → same as A5 for the partner (`MATCH_DISCONNECTED`), delete session.
-3. Cookie `anonId` may still exist in the browser. Next visit they can get a **new** `anonId` (old one is useless without Redis). That’s fine.
+1. Only in queue → removed from the queue (the identity card stays until TTL).
+2. In a live session → a **45 s grace period** starts (`match:presence:{anonId}` + a sweep entry). A reconnect (refresh, flaky network) resumes the session and replays the buffer.
+3. If the grace lapses → same as A5 for the partner (`MATCH_DISCONNECTED`), session and transcript deleted. The sweeper is armed on demand and at boot; the queue is purged at boot.
 
 ---
 
@@ -166,65 +151,39 @@ If content looks empty / too long → drop it (Zod / simple max length). Rate-li
 
 **User:** Sees “it’s a vibe” → Connect.
 
-**Backend:** They already have `connectToken` from A4.  
-If we want a dedicated call: `POST /api/match/connect` `{ sessionId }` → re-issue token if still valid.
-
-Then the **frontend** shows signup (new) or login (already have an account).
-
-Nothing permanent until A8/A9 succeeds.
+**Backend:** They already have `connectToken` from `MUTUAL_LIKE`. The client **holds it in sessionStorage** (it survives the sign-in/up redirect, not a closed tab). Nothing permanent until A8/A9 succeeds.
 
 ---
 
 ### A8. New user signs up to keep this person
 
-**User:** Email/username + password + avatar (same as today’s signup), plus hidden `connectToken`.
+**User:** Signs up (or signs in) through the normal auth screens; the origin story is shown on them.
 
-**Backend:** `POST /api/auth/signup` with `connectToken`
+**Backend:** Normal auth first, **then** `POST /api/connection/complete` with the token — the connect step is **not** part of signup.
 
-1. Validate signup fields. Hash password. Upload avatar (Cloudinary) — same as Phase 1 auth.
-2. Verify `connectToken` (signature + not expired + session still makes sense).
-3. Create **User** in Mongo. Set httpOnly **auth** cookie (`accessToken`).
-4. Upsert **PendingConnection** in Mongo (this is the bridge):
+1. Signup/signin as in Phase 1 (R2/ImageKit avatar, httpOnly auth cookie).
+2. `POST /api/connection/complete` `{ connectToken }` (authenticated): verify signature/expiry, bind the caller's `userId` to their own side only, reject one account on both sides.
+3. Upsert **PendingConnection** (`sessionId`, two sides with `userId | null`, names, tags, 7-day expiry).
+4. Respond `{ status: "waiting_for_them" }`.
 
-```
-PendingConnection {
-  sessionId,
-  sides: [
-    { anonId, userId | null, displayName, vibeTags },
-    { anonId, userId | null, displayName, vibeTags }
-  ],
-  expiresAt   // e.g. 7 days
-}
-```
+**Why pending?** The other person may not have an account yet.
 
-5. This user is side A → we set `userId` on their side. Partner’s `userId` is still `null`.
-6. Respond: account created + `{ connectionStatus: "waiting_for_them" }`.
-7. They can use the logged-in app, but **this** DM does not exist yet.
-
-**Why pending?** The other person may not have an account. We cannot create a 2-user Chat until both exist.
-
-**We do not:** create Chat/Message yet. We do not keep the Redis anon transcript (unless we later decide to copy a snippet into origin story).
+**We do not:** create Chat/Message yet, or copy any anonymous message into the origin story.
 
 ---
 
 ### A9. The other person also connects (or they already had an account)
 
-**User B:** Signs up **or** logs in with the same `connectToken` / `POST /api/connection/complete` (if already logged in).
+**User B:** Signs up **or** signs in, then calls `POST /api/connection/complete` with their own token.
 
 **Backend:**
 
-1. Verify token / auth.
-2. Find `PendingConnection` by `sessionId`.
-3. Set B’s `userId`.
-4. Now both sides have `userId` → **complete**:
-   - Create **Chat** (DM, `groupChat: false`, members `[userA, userB]`).
-   - Create **Connection** `{ users, chat, originNames, originVibeTags, originAnonSession, connectedAt }`.
-   - Delete or mark pending as `completed`.
-   - Delete Redis session if still there.
-5. Emit to both (authenticated socket `/`): `CONNECTION_READY` `{ chatId }` so the UI opens the real DM.
-6. From here, messages go through the **normal** connected pipeline (Mongo).
+1. Verify token + auth; find `PendingConnection` by `sessionId`; set B's side.
+2. Both sides have `userId` → **complete**: create **Chat** (DM), create **Connection** (`pairKey` unique per user pair), remove the pending record.
+3. Emit to both: `CONNECTION_READY` on the `/anon` socket (if still connected) and **`WHISPER_CONNECTION_READY`** (+ `REFETCH_CHATS`) on the authenticated `/` socket, so the UI opens the real DM.
+4. From here, messages use the **normal** connected pipeline (Mongo).
 
-If B never comes back: pending expires. A keeps their account. They just don’t get that DM. Harsh, but honest.
+If B never comes back: pending expires after 7 days; A gets no notification.
 
 ---
 
@@ -239,7 +198,7 @@ If B never comes back: pending expires. A keeps their account. They just don’t
 | Load chat list | `GET /api/chat/get-my-chats` — Mongo `Chat` where `members` includes `userId`. Each item includes `unreadCount` from `ChatRead` cursor + Message counts. JWT auth. |
 | Open a chat | `GET /api/chat/get-chat-details`, `GET /api/message/get-messages/:chatId` — paged. Client calls `PUT /api/chat/:chatId/read` to upsert `ChatRead`, `$addToSet` `Message.readBy`, emit `CHAT_READ` to peers (DM receipts). |
 | Send text | Authenticated Socket.IO `/` → `NEW_MESSAGE`. Save **Message** in Mongo. Update `chat.lastMessage`. Emit `NEW_MESSAGE` + `NEW_MESSAGE_ALERT` (receivers only) + `REFETCH_CHATS`. |
-| Send files | `POST /api/message/send-attachments` — compress → Cloudinary → Message + lastMessage. Alert excludes sender. |
+| Send files | `POST /api/message/send-attachments` — compress → R2 (ImageKit delivery) → Message + lastMessage. Alert excludes sender. |
 | Typing | `START_TYPING` / `STOP_TYPING` — relay only. |
 | Read / unread | Per-user `ChatRead` (`chat`+`user` unique). Unread = messages from others with `createdAt > lastReadAt` (no cursor → count all from others). DM receipts via `readBy` + `CHAT_READ`. `PUT /api/chat/read-all` marks every chat read. Message notification “Clear all” dismisses the inbox only and does not change unread. |
 | Friend request / groups / profile | Existing REST routes, still Mongo. New chats init `ChatRead` for members at create time. Groups use `creator` + `admins[]` roles (creator/admin can delete any message; creator-only clear-all / delete group / promote admins). |
@@ -252,7 +211,7 @@ Disconnect here does **not** delete the person. That’s the difference from ano
 
 ### B1. Open app
 
-**User:** Comes back, still logged in (cookie) or hits login.
+**User:** Comes back, still logged in (cookie) or hits login. Signed-in users can also reach `/whisper` from the chat-list menu (Journey C).
 
 **Backend:**
 - `POST /api/auth/signin` if needed → set cookie.
@@ -269,13 +228,14 @@ Same as A10. Friend requests, groups, media, logout (`POST /api/auth/signout` cl
 
 ## Journey C — Logged-in user goes anonymous again
 
-**User:** Has an account, wants another stranger. Hits Find someone (maybe from a “Whisper” tab).
+**User:** Has an account, wants another stranger. Chat-list menu → “Whisper — talk to someone new” → `/whisper`.
 
-**Backend:** Same as A1–A6, with one extra:
+**Backend:** Same as A1–A6, with extras:
 
-1. They already have JWT **and** we may still set/use `anonId` for the stranger session (keep anon identity separate from account so the partner never sees `userId`).
-2. If they later Connect with a new stranger → skip signup, just `POST /api/connection/complete` with `connectToken` + auth cookie (A9).
-3. Premium flags are read from Mongo `Subscription` (Journey D) to pick the queue.
+1. They keep their JWT **and** get an `anonId` for the stranger session (anon identity stays separate so the partner never sees `userId`).
+2. Signed-in users have a rolling 24 h whisper quota (`match:whispers:{userId}`); an account can't match its own other device (`match:user:{userId}`).
+3. If they Connect with the stranger → skip signup, `POST /api/connection/complete` with the token + auth cookie (A9).
+4. Premium flags (Journey D) are not built yet.
 
 **We still do not** put this anon chat in their chat list unless both connect.
 

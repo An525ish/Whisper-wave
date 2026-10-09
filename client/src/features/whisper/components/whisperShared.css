@@ -1,0 +1,73 @@
+/* ============================================================
+   WHISPER — shared entry-screen styles.
+
+   The `.whisper-cta` gradient and the entry CTA tokens are used by
+   more than one component, so they get one home rather than being
+   duplicated per component.
+   ============================================================ */
+
+/* Green→void diagonal. The void stop used to be pushed to 130% so the
+   two hues never actually met, leaving a muddy purple-black; this is
+   tuned so the blend is intentional. */
+.whisper-cta {
+  background: linear-gradient(
+    135deg,
+    var(--color-void) 0%,
+    var(--color-void-dark) 60%,
+    var(--color-void-grad-to) 100%
+  );
+  box-shadow:
+    0 8px 28px -8px var(--color-void-light),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+
+/* Spinning outer ring shared by the mutual-vibe stage and the waiting room. */
+.auth-stage__orbit {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  background: conic-gradient(
+    from 120deg,
+    transparent 0deg,
+    rgb(1 195 109 / 0.55) 70deg,
+    rgb(139 107 255 / 0.45) 140deg,
+    transparent 220deg
+  );
+  animation: auth-orbit-spin 14s linear infinite;
+}
+
+.auth-stage__orbit--mid {
+  inset: 6%;
+  z-index: 3;
+  opacity: 0.85;
+  mask: radial-gradient(circle, transparent 62%, black 63%, black 66%, transparent 67%);
+  -webkit-mask: radial-gradient(circle, transparent 62%, black 63%, black 66%, transparent 67%);
+}
+
+.auth-stage__orbit--outer {
+  inset: 0;
+  z-index: 2;
+  opacity: 0.8;
+  animation-duration: 20s;
+  animation-direction: reverse;
+  mask: radial-gradient(circle, transparent 78%, black 79%, black 82%, transparent 83%);
+  -webkit-mask: radial-gradient(circle, transparent 78%, black 79%, black 82%, transparent 83%);
+}
+
+@keyframes auth-orbit-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* WaitingRoom also drives shared `auth-stage` animations via inline
+   styles, so neutralise them here for reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .auth-stage__bar,
+  .auth-stage__signal span,
+  .auth-stage__orbit {
+    animation: none !important;
+  }
+
+  .whisper-cta { transition: none; }
+}

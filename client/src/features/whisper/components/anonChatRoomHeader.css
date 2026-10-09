@@ -1,0 +1,202 @@
+/* ============================================================
+   WHISPER — AnonChatRoom header (`.acr-header*`, `.acr-avatar*`)
+
+   The same shell as the logged-in chat's `ConversationHeader`:
+   `rounded-xl border-white/10 bg-[rgba(33,26,42,.48)]
+   backdrop-blur-xl`. The heart is in anonVibeHeart.css.
+
+   Split out of anonChatRoom.css purely to stay under the 350-line
+   ceiling; colocated next to the component either way.
+   ============================================================ */
+
+/* Same gutter and same capped width as the thread and the composer — see the
+   tokens on `.acr-shell`. */
+.acr-header {
+  position: absolute;
+  z-index: 30;
+  inset-inline: 0;
+  top: max(0.55rem, env(safe-area-inset-top));
+  padding-inline: var(--acr-gutter);
+  pointer-events: none;
+}
+
+.acr-header > * {
+  pointer-events: auto;
+  width: 100%;
+  max-width: var(--acr-column);
+  margin-inline: auto;
+}
+
+.acr-header__card {
+  border-radius: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(33 26 42 / 0.48);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.24);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.acr-header__row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.4rem 0.55rem 0.4rem 0.3rem;
+}
+
+.acr-back {
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  color: rgb(235 236 236 / 0.75);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.acr-back:hover {
+  background: rgb(255 255 255 / 0.06);
+  color: #fff;
+}
+
+/* ── Identity ────────────────────────────────────────────────── */
+.acr-identity {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+/* Stretched over the avatar + name: the whole block opens their profile. */
+.acr-identity__hit {
+  position: absolute;
+  inset: -0.2rem -0.35rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.acr-identity__hit:hover {
+  background: rgb(255 255 255 / 0.04);
+}
+
+.acr-identity__hit:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 1px;
+}
+
+.acr-identity__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.acr-avatar {
+  position: relative;
+  display: grid;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid rgb(255 255 255 / 0.1);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.acr-avatar__dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  height: 0.65rem;
+  width: 0.65rem;
+  border-radius: 999px;
+  border: 2px solid rgb(33 26 42);
+  background: var(--color-green);
+}
+
+.acr-avatar__dot--warn {
+  background: rgb(236 195 71 / 0.95);
+}
+
+.acr-name-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.acr-name {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-body, #ebecec);
+}
+
+/* The one place the "void" hue lives in the room: a quiet marker that this is an
+   anonymous conversation, so nobody mistakes it for a normal DM. */
+.acr-pill {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-void-bright) 35%, transparent);
+  background: color-mix(in srgb, var(--color-void) 18%, transparent);
+  padding: 0.08rem 0.45rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-void-bright) 60%, white);
+}
+
+.acr-status {
+  margin: 0.15rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: var(--color-green);
+}
+
+.acr-status--warn {
+  color: rgb(250 220 140 / 0.95);
+}
+
+/* Their vibes scroll sideways rather than clipping: on a phone a long list used
+   to cut the last tag off with no way to see it. */
+.acr-tags {
+  display: flex;
+  margin-top: 0.2rem;
+  gap: 0.35rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, #000 88%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+}
+
+.acr-tags::-webkit-scrollbar {
+  display: none;
+}
+
+.acr-tag {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(255 255 255 / 0.05);
+  padding: 0.1rem 0.5rem;
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: rgb(235 236 236 / 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acr-back,
+  .acr-identity__hit {
+    transition: none;
+  }
+}

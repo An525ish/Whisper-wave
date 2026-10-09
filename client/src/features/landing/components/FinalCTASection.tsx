@@ -24,7 +24,7 @@ const FinalCTASection = () => {
           Pick a name, say what you mean, and see who&apos;s on the other end. If it&apos;s a vibe, you keep them.
         </p>
 
-        <Link to="/auth" className="final-cta__button">
+        <Link to="/whisper" className="final-cta__button">
           <span>Meet a stranger</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path

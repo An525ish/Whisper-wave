@@ -8,7 +8,13 @@ type SocketEventMap = Record<string, SocketEventHandler>;
 
 const useSocketEvent = (socket: Socket, events: SocketEventMap): void => {
   const eventsRef = useRef(events);
-  eventsRef.current = events;
+
+  // Refreshed in an effect (never during render) so the subscription below is
+  // registered once per socket: callers routinely pass a fresh `events` object
+  // every render and must not re-register listeners for it.
+  useEffect(() => {
+    eventsRef.current = events;
+  }, [events]);
 
   useEffect(() => {
     const wrappers = Object.keys(eventsRef.current).map((event) => {

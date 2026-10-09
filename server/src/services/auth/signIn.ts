@@ -2,7 +2,7 @@ import { compare, hash } from 'bcrypt';
 import * as userRepo from '../../repositories/user.js';
 import type { AuthResult } from '../../types/user.js';
 import { AppError } from '../../utils/AppError.js';
-import type { SignInInput } from '../../validators/auth.js';
+import type { SignInInput } from '../../types/input.js';
 import { issueAuthResult } from './shared.js';
 
 // A pre-hashed dummy value used for constant-time comparison when user is not

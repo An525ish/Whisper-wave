@@ -10,6 +10,7 @@ import { formatLastSeen, normalizeMemberIds } from '@/shared/utils/helpers';
 import SelectModeActions from '@/features/chat/components/conversation/header/SelectActions';
 import DefaultActions from '@/features/chat/components/conversation/header/HeaderActions';
 import HeaderDialogs from '@/features/chat/components/conversation/header/HeaderDialogs';
+import { ConnectionOriginStrip } from '@/features/whisper';
 import type { ConversationPanelHandle } from '@/features/chat/components/conversation/ConversationPanel';
 import type { ChatDetailsResponse } from '@/features/chat/types/chat';
 
@@ -339,6 +340,9 @@ const ConversationHeader = ({
           </div>
         </div>
       </header>
+
+      {/* "How we met" — renders nothing unless this DM came from a Whisper match. */}
+      <ConnectionOriginStrip chatId={groupChat ? undefined : chatId} />
     </>
   );
 };

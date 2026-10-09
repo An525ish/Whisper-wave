@@ -1,0 +1,284 @@
+/* ============================================================
+   WHISPER - AnonChatRoom: vibe prompts and mutual bar (.acr-*)
+   Colocated continuation of anonChatRoomControls.css.
+
+   Everything that appears between the thread and the composer is a card
+   capped to the SAME column as the header, thread and composer — they used
+   to run edge to edge, wider than the conversation above them.
+   ============================================================ */
+
+/* One shared frame for the cards below. */
+.acr-vibe-prompt,
+.acr-vibe-nudge,
+.acr-vibe-wait,
+.acr-mutual-bar,
+.acr-ended-bar {
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+  width: calc(100% - 2 * var(--acr-gutter, 0.85rem));
+  max-width: var(--acr-column);
+  margin: 0 auto 0.4rem;
+}
+
+/* ── Vibe prompt: the gate just opened ───────────────────────── */
+.acr-vibe-prompt {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.85rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-background-alt);
+  box-shadow: 0 16px 40px -16px rgb(0 0 0 / 0.55);
+  padding: 0.9rem 0.95rem;
+  animation: acr-prompt-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.acr-vibe-prompt__icon {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--background-image-gradient-green);
+  color: #fff;
+}
+
+.acr-vibe-prompt__kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-green);
+}
+
+.acr-vibe-prompt__title {
+  margin: 0.25rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.acr-vibe-prompt__sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgb(235 236 236 / 0.58);
+}
+
+.acr-vibe-prompt__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.acr-vibe-prompt__yes {
+  flex: 1;
+  border-radius: 999px;
+  background: var(--background-image-gradient-green);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  transition: filter 0.15s ease;
+}
+
+.acr-vibe-prompt__yes:hover {
+  filter: brightness(1.08);
+}
+
+.acr-vibe-prompt__nah {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  padding: 0.65rem 0.95rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgb(235 236 236 / 0.6);
+  transition: background 0.15s ease;
+}
+
+.acr-vibe-prompt__nah:hover {
+  background: rgb(255 255 255 / 0.09);
+}
+
+/* ── Nudge: they vibed first ─────────────────────────────────── */
+.acr-vibe-nudge {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(1 195 109 / 0.3);
+  background: var(--color-background-alt);
+  padding: 0.65rem 0.75rem 0.65rem 0.95rem;
+  animation: acr-prompt-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.acr-vibe-nudge__copy { min-width: 0; flex: 1; }
+
+.acr-vibe-nudge__title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.acr-vibe-nudge__sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: rgb(235 236 236 / 0.62);
+}
+
+.acr-vibe-nudge__cta {
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--background-image-gradient-green);
+  padding: 0.5rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  transition: filter 0.15s ease;
+}
+
+.acr-vibe-nudge__cta:hover { filter: brightness(1.08); }
+
+.acr-vibe-nudge__dismiss {
+  flex-shrink: 0;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  border: none;
+  background: rgb(255 255 255 / 0.07);
+  font-size: 1.1rem;
+  line-height: 1;
+  color: rgb(235 236 236 / 0.55);
+}
+
+/* ── Waiting: I vibed, they haven't answered ─────────────────── */
+.acr-vibe-wait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: rgb(42 33 54 / 0.4);
+  padding: 0.5rem 0.85rem;
+  font-size: 0.75rem;
+  color: rgb(235 236 236 / 0.65);
+}
+
+.acr-vibe-wait__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--color-green);
+  animation: auth-pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── Mutual: the window to open a DM ─────────────────────────── */
+.acr-mutual-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(1 195 109 / 0.35);
+  background: var(--color-background-alt);
+  padding: 0.7rem 0.85rem 0.7rem 1rem;
+}
+
+.acr-mutual-bar__cta {
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--background-image-gradient-green);
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  transition: filter 0.15s ease;
+}
+
+.acr-mutual-bar__cta:hover {
+  filter: brightness(1.08);
+}
+
+/* ── Ended: the thread is over, re-reading it ────────────────── */
+.acr-ended-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-background-alt);
+  padding: 0.6rem 0.65rem 0.6rem 1rem;
+  margin-bottom: max(0.65rem, env(safe-area-inset-bottom));
+}
+
+.acr-ended-bar__text {
+  min-width: 0;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: rgb(235 236 236 / 0.6);
+}
+
+.acr-ended-bar__cta {
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--background-image-gradient-green);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  transition: filter 0.15s ease;
+}
+
+.acr-ended-bar__cta:hover {
+  filter: brightness(1.08);
+}
+
+@keyframes acr-prompt-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── Focus visibility ─────────────────────────────────────────
+   The UA default outline is often invisible on the dark surface, so
+   make it explicit — but ONLY for controls that have no focus
+   treatment of their own. Text fields already carry the auth
+   chrome's `focus:border-green/55` + glow; adding an outline on
+   top of that produced a doubled green border. */
+.acr-root :focus-visible,
+.auth-shell :focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Fields draw their own focus state — suppress the ring. */
+.acr-root input:focus-visible,
+.acr-root textarea:focus-visible,
+.auth-shell input:focus-visible,
+.auth-shell textarea:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acr-vibe-prompt,
+  .acr-vibe-nudge,
+  .acr-vibe-wait__dot {
+    animation: none !important;
+  }
+
+  .acr-vibe-prompt__yes,
+  .acr-vibe-nudge__cta,
+  .acr-ended-bar__cta,
+  .acr-mutual-bar__cta {
+    transition: none;
+  }
+}

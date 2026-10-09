@@ -1,3 +1,4 @@
+import type { Types } from 'mongoose';
 import { Chat } from '../models/chat.js';
 import type {
   ChatLastMessage,
@@ -44,6 +45,31 @@ export const findDirectChatsForMember = async (
   Chat.find({ groupChat: false, members: userId })
     .select('members')
     .lean<DirectChatMembers[]>();
+
+/**
+ * Find the existing 1-1 chat between exactly two users, if there is one.
+ *
+ * Used by the Whisper connect flow so revealing identities never produces a
+ * duplicate DM when the two accounts already talk. Matched on exactly two
+ * members (a group chat that happens to contain both is not a DM).
+ */
+export const findDirectChatBetween = async (
+  userIdA: string,
+  userIdB: string
+): Promise<DirectChatMembers | null> => {
+  const [a, b] = [userIdA, userIdB].sort();
+  const candidates = await Chat.find({ groupChat: false, members: { $all: [a, b] } })
+    .select('members')
+    .lean<DirectChatMembers[]>();
+
+  return (
+    candidates.find(
+      (c) =>
+        c.members.length === 2 &&
+        c.members.map((m) => m.toString()).sort().join('_') === `${a}_${b}`
+    ) ?? null
+  );
+};
 
 export const findMyChatsPage = async (
   userId: string,
@@ -111,6 +137,45 @@ export const updateLastMessage = async (
 
 export const clearLastMessage = async (id: string): Promise<void> => {
   await Chat.findByIdAndUpdate(id, { $unset: { lastMessage: 1 } });
+};
+
+/** Hide the chat from one member's list only — everyone else still sees it. */
+export const addToDeletedFor = async (
+  id: string,
+  userId: string
+): Promise<void> => {
+  await Chat.findByIdAndUpdate(id, { $addToSet: { deletedFor: userId } });
+};
+
+/**
+ * Move one member's `clearedFor` cursor forward.
+ *
+ * Returns the matched count so the caller can decide whether to insert. The
+ * filter has to carry `'clearedFor.user'` as well as `_id`: the positional
+ * `$set` below only lands on a chat that already has an entry for THIS user, so
+ * a `_id`-only match would report a hit and silently skip the update. Callers
+ * must therefore insert when this returns 0, and must not collapse the pair
+ * into a single upsert.
+ */
+export const touchClearedFor = async (
+  id: string,
+  userId: Types.ObjectId,
+  at: Date
+): Promise<number> => {
+  const result = await Chat.updateOne(
+    { _id: id, 'clearedFor.user': userId },
+    { $set: { 'clearedFor.$.at': at } }
+  );
+  return result.matchedCount;
+};
+
+/** Fallback for `touchClearedFor`: the member had no `clearedFor` entry yet. */
+export const pushClearedFor = async (
+  id: string,
+  userId: Types.ObjectId,
+  at: Date
+): Promise<void> => {
+  await Chat.updateOne({ _id: id }, { $push: { clearedFor: { user: userId, at } } });
 };
 
 export const deleteById = async (id: string): Promise<boolean> => {
