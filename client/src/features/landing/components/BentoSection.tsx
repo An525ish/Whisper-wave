@@ -3,6 +3,7 @@ import { useScrollReveal } from '@/features/landing/hooks/useScrollReveal';
 import HoloMesh from '@/features/landing/components/ui/HoloMesh';
 import IncognitoGlyph from '@/features/landing/components/ui/IncognitoGlyph';
 import { cn } from '@/shared/utils/cn';
+import { ROUTES } from '@/shared/constants/routes';
 
 /**
  * "Why Whisper Wave" — an asymmetric frosted-glass bento. Each tile carries ONE
@@ -416,7 +417,7 @@ const SparkPassTeaser = () => (
           </div>
         </div>
         <Link
-          to="/spark-pass"
+          to={ROUTES.sparkPass}
           className="lw-sheen inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-lw-teal/40 bg-lw-teal/10 px-4 py-2 text-[0.82rem] font-medium text-lw-teal-2 transition-colors hover:bg-lw-teal/20 sm:self-auto"
         >
           Get early access

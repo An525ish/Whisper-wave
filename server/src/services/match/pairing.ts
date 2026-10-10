@@ -1,5 +1,6 @@
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
+import * as connectionRepo from '../../repositories/connection.js';
 import type { AnonSession, PairResult, WaitingCard } from '../../types/match.js';
 import { getWaitingCard, reenqueue, tryMatchFromQueue, generateSessionId } from './queue.js';
 import { createSession, deleteSession, getSession, isParticipant } from './session.js';
@@ -19,7 +20,16 @@ import { createSession, deleteSession, getSession, isParticipant } from './sessi
  * a `MATCH_FOUND` that never fires.
  */
 export const pairOrEnqueue = async (self: WaitingCard): Promise<PairResult> => {
-  const attempt = await tryMatchFromQueue(self);
+  // Accounts never rematch someone they already keep: one indexed lookup per
+  // join (signed-in users only), held for the scan window instead of looked up
+  // per candidate. Guests have no accounts and skip this entirely.
+  const connectedUserIds = self.userId
+    ? await connectionRepo.listPartnerUserIds(self.userId).catch((err: unknown) => {
+        logger.warn({ err, anonId: self.anonId }, 'Failed to load connections — pairing without the skip');
+        return new Set<string>();
+      })
+    : new Set<string>();
+  const attempt = await tryMatchFromQueue(self, connectedUserIds);
   if (attempt.outcome === 'self_claimed') return { paired: false, claimedByOther: true };
   if (attempt.outcome === 'none') return { paired: false };
   const { partnerAnonId } = attempt;

@@ -18,6 +18,7 @@ import AvatarSkeleton from '@/shared/components/ui/skeletons/AvatarSkeleton';
 import { AVATAR_FALLBACK } from '@/shared/constants/app';
 import { getInitial } from '@/shared/utils/helpers';
 import type { FriendsResponse, CreateGroupResult } from '@/features/chat/types/chat';
+import { ROUTES } from '@/shared/constants/routes';
 
 type CreateGroupPanelProps = {
   onCreated?: () => void;
@@ -86,7 +87,7 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
       return;
     }
 
-    navigate(`/chat/${chatId}`);
+    navigate(ROUTES.chat(chatId));
   };
 
   if (error) {

@@ -49,7 +49,7 @@
 }
 
 /* Profile rail — hidden until the logged-in app would show its profile pane. At `lg`
-   the shell uses `AppWrapper`'s `<main>` inset and gap, with the chat taking the
+   the shell uses `ChatsLayout`'s `<main>` inset and gap, with the chat taking the
    remaining width and this column kept to a side-panel width. Its first child is the You / Them switch
    (the header slot above the panel in the main app), then the panel. */
 .acr-profile {

@@ -46,6 +46,17 @@ const ReportAbuse = () => (
     </section>
 
     <section>
+      <h2>Grievance officer</h2>
+      <p>
+        Our grievance officer handles complaints about content on Whisper Wave — including requests to remove
+        intimate or sexual content. Write to{' '}
+        <a href="mailto:grievance@whisperwave.app">grievance@whisperwave.app</a> and we acknowledge every complaint
+        within 24 hours. Nudity, sexual or impersonation complaints are actioned within 2 hours; all other
+        complaints are resolved within 7 days.
+      </p>
+    </section>
+
+    <section>
       <h2>If someone is in danger</h2>
       <p>
         Whisper Wave isn&apos;t an emergency service. If you or someone else is in immediate danger, contact your local

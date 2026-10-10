@@ -69,25 +69,38 @@ export const deleteManyMessagesSchema = z.object({
     .max(50),
 });
 
-export const sendGifSchema = z.object({
-  chatId: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid chat id'),
-  gifId: z.string().min(1).max(100),
-  gifUrl: z
-    .string()
-    .url()
-    .refine((u) => new URL(u).hostname.endsWith('klipy.com'), {
-      message: 'Media URL must be from klipy.com',
-    }),
-  gifTitle: z.string().max(200).optional(),
-  mimeType: z
-    .enum(['image/gif', 'image/png', 'image/webp', 'image/jpeg'])
-    .optional(),
-  kind: z.enum(['gif', 'meme']).optional(),
-  replyToMessageId: z
-    .string()
-    .regex(/^[a-f\d]{24}$/i, 'Invalid message id')
-    .optional(),
-});
+export const sendGifSchema = z
+  .object({
+    chatId: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid chat id'),
+    gifId: z.string().min(1).max(100),
+    gifUrl: z.string().url(),
+    gifTitle: z.string().max(200).optional(),
+    mimeType: z
+      .enum(['image/gif', 'image/png', 'image/webp', 'image/jpeg'])
+      .optional(),
+    kind: z.enum(['gif', 'meme']).optional(),
+    replyToMessageId: z
+      .string()
+      .regex(/^[a-f\d]{24}$/i, 'Invalid message id')
+      .optional(),
+  })
+  .superRefine((val, ctx) => {
+    // Provider allow-list per kind: chat attachments must come from a known
+    // source, never an arbitrary URL (spoofed "attachments" otherwise).
+    const host = new URL(val.gifUrl).hostname;
+    const ok =
+      val.kind === 'meme' ? host.endsWith('memegen.link') : host.endsWith('klipy.com');
+    if (!ok) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['gifUrl'],
+        message:
+          val.kind === 'meme'
+            ? 'Meme URL must be from memegen.link'
+            : 'Media URL must be from klipy.com',
+      });
+    }
+  });
 
 export const forwardMessagesSchema = z.object({
   sourceChatId: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid chat id'),

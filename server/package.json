@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit",
     "test": "cross-env NODE_ENV=test tsx --test \"src/**/*.test.ts\"",
     "test:unit": "cross-env NODE_ENV=test tsx --test \"src/services/match/__tests__/matchCore.test.ts\"",
+    "measure:whisper": "cross-env NODE_ENV=test tsx scripts/measure-whisper-commands.ts",
     "cleanup-deleted-attachments:dry": "DRY_RUN=true tsx --env-file=.env scripts/cleanup-deleted-attachments.ts",
     "cleanup-deleted-attachments": "tsx --env-file=.env scripts/cleanup-deleted-attachments.ts",
     "migrate-cloudinary-to-r2:dry": "DRY_RUN=true tsx --env-file=.env scripts/migrate-cloudinary-to-r2.ts",

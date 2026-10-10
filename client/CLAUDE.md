@@ -91,11 +91,12 @@ src/
 │   ├── admin/AdminAuth.tsx
 │   └── legal/Privacy.tsx  Terms.tsx  ReportAbuse.tsx
 │
-├── layout/                   # App-shell layout wrappers (AppWrapper, AdminWrapper)
+├── layout/                   # App-shell layout wrappers (HubShell, ChatsLayout,
+│                             #   hubNav, useAppSocketEvents, AdminWrapper)
 │                             #   app-wide presence/alert sockets OK here; message cache in features
 │
 ├── features/                 # THE BUSINESS FUNCTIONALITY — one folder per domain
-│   └── <domain>/             #   auth · chat · admin · profile · notifications · landing
+│   └── <domain>/             #   auth · chat · whisper · hub · admin · profile · notifications · landing
 │       ├── api/              #   HTTP helpers via shared api client — no logic, no UI
 │       ├── components/       #   this domain's React components (may nest by sub-area)
 │       ├── hooks/            #   useXxxQueries / useXxxMutations / useXxx / queryKeys.ts
@@ -132,6 +133,8 @@ or `layout/`. No domain code in `shared/`.
 - Is it generic and reusable by any area, knowing nothing about the domain?
   → `shared/…`
 - Is it a URL the user navigates to? → `pages/…` (and it just composes features).
+- Is it app chrome (nav, shell frame, app-wide sockets)? → `layout/…`
+  (`HubShell` for everyone incl. guests, `ChatsLayout` for the messages app).
 - Is it app wiring (router/providers/query client)? → `app/…`
 
 ---
@@ -371,7 +374,7 @@ const { register, handleSubmit } = useForm<FormValues>({ mode: 'onChange' });
 ### Before you consider a change done
 - No file exceeds 350 lines; no `console.*`; no `any`; no `shared → features` import.
 - No inline query keys; no second HTTP client; no new undeclared `VITE_*`.
-- Run **`npm run typecheck`** and **`npm run lint`** — both must pass.
+- Run **`npm run typecheck`**, **`npm run lint`** and **`npm test`** — all must pass.
 - New logic that isn't trivially obvious gets a test or a manual-verification note.
 
 ---

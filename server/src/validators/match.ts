@@ -32,7 +32,7 @@ export const joinQueueSchema = z.object({
   }),
 });
 
-const reportReason = z.enum([
+export const reportReason = z.enum([
   'inappropriate_content',
   'harassment',
   'spam',
@@ -65,6 +65,19 @@ export const submitReportSchema = z.discriminatedUnion('targetType', [
   }),
 ]);
 
-export const completeConnectionSchema = z.object({
-  connectToken: z.string().min(1, 'connectToken is required'),
+export const completeConnectionSchema = z.union([
+  z.object({
+    connectToken: z.string().min(1, 'connectToken is required'),
+  }),
+  z.object({
+    /** Mutual-like claim id (the session) — the tab-closing alternative to a token. */
+    claimId: z.string().min(1, 'claimId is required'),
+  }),
+]);
+
+/** `DELETE /api/connection/pending/:id` — `claim:<sessionId>` or `pending:<sessionId>`. */
+export const pendingIdParamSchema = z.object({
+  id: z
+    .string()
+    .regex(/^(claim|pending):[A-Za-z0-9_-]+$/, 'Unknown pending connection'),
 });

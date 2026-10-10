@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { cn } from '@/shared/utils/cn';
 import type { MatchArcPhase } from '@/features/landing/types';
+import { ROUTES } from '@/shared/constants/routes';
 
 const focusRing =
   'outline-none focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-lw-teal-2';
@@ -367,7 +368,7 @@ const HeroCopy = ({ phase }: Props) => {
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3 max-[900px]:justify-center">
         <Link
-          to="/whisper"
+          to={ROUTES.whisper}
           className={cn(
             'lw-sheen group inline-flex min-w-[12.5rem] items-center justify-center gap-2.5 rounded-full border border-white-pure/20 px-[26px] py-[15px]',
             'text-[1.02rem] font-semibold text-white-pure no-underline',

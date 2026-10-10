@@ -7,6 +7,7 @@ import { toErrorMessage } from '@/shared/utils/helpers';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/shared/constants/routes';
 
 const OPS_TOOLS = [
   {
@@ -183,7 +184,7 @@ const AdminLogin = () => {
         </p>
 
         <Link
-          to="/auth"
+          to={ROUTES.auth}
           className="text-center text-sm text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
         >
           ← Login as user

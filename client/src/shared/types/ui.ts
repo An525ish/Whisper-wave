@@ -21,6 +21,18 @@ export type TabItem = {
   icon?: ReactNode;
 };
 
+/** One destination in the app's primary navigation (rail on desktop, tab bar on mobile). */
+export type NavItem = {
+  id: string;
+  label: string;
+  to: string;
+  icon: ReactNode;
+  /** Attention count (e.g. unread). Zero or absent hides the badge. */
+  badge?: number;
+  /** The one action the nav wants you to take: drawn as a filled button on the tab bar. */
+  emphasis?: boolean;
+};
+
 export type TabVariant = 'underline' | 'pills';
 
 export type DropdownOption = {

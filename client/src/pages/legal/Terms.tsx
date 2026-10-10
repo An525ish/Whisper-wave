@@ -46,6 +46,16 @@ const Terms = () => (
     </section>
 
     <section>
+      <h2>Rooms</h2>
+      <p>
+        Live rooms are public, ephemeral group conversations. Messages vanish when the room empties or restarts, and
+        rooms keep only the house rules you accept on entry. Creating a room makes you its host: you agree to enforce
+        its rules and understand abusive rooms are closed and banned without warning. When someone reports a message,
+        we keep a small snapshot around it (what was said, by which alias, when) so a human can review it.
+      </p>
+    </section>
+
+    <section>
       <h2>Ending access</h2>
       <p>
         You can stop using Whisper Wave at any time. We may suspend or remove access if these terms are broken, if

@@ -3,6 +3,12 @@ import type { ApiSuccess } from '@/shared/types';
 import type { AdminStats } from '@/features/admin/types';
 import type {
   AdminActivityEventsPage,
+  ModAuditEntry,
+  AdminReportsPage,
+  AdminRoomBan,
+  AdminRoomBanInput,
+  AdminRoomRow,
+  AdminRoomUpsert,
   AdminActivityFilter,
   AdminActivityPresence,
   AdminAttachmentsPage,
@@ -139,3 +145,35 @@ export const getImpersonationLogs = (params: { limit?: number; before?: string }
     limit: params.limit ?? IMPERSONATION_LOGS_PAGE_SIZE,
     before: params.before,
   });
+
+export const listAdminRooms = () =>
+  api.get<ApiSuccess & { rooms: AdminRoomRow[] }>('/admin/rooms');
+
+export const upsertAdminRoom = (room: AdminRoomUpsert) =>
+  api.put<ApiSuccess & { room: AdminRoomRow }>('/admin/rooms', room);
+
+export const closeRoomInstance = (instanceId: string, reason?: string) =>
+  api.post<ApiSuccess>(`/admin/rooms/instances/${instanceId}/close`, reason ? { reason } : {});
+
+export const listRoomBans = () =>
+  api.get<ApiSuccess & { bans: AdminRoomBan[] }>('/admin/room-bans');
+
+export const banRoomIdentity = (ban: AdminRoomBanInput) =>
+  api.post<ApiSuccess & { ban: AdminRoomBan }>('/admin/room-bans', ban);
+
+export const liftRoomBan = (id: string) => api.delete<ApiSuccess>(`/admin/room-bans/${id}`);
+
+export const setFeatureFlag = (feature: 'rooms' | 'games' | 'memes', enabled: boolean) =>
+  api.post<ApiSuccess & { features: Record<'rooms' | 'games' | 'memes', boolean> }>('/admin/features', {
+    feature,
+    enabled,
+  });
+
+export const listAdminReports = (page = 1) =>
+  api.get<{ success: boolean; data: AdminReportsPage }>('/admin/reports', { page });
+
+export const reviewAdminReport = (id: string, reviewed: boolean) =>
+  api.patch<ApiSuccess>(`/admin/reports/${id}`, { reviewed });
+
+export const listModAudit = () =>
+  api.get<{ success: boolean; data: { entries: ModAuditEntry[] } }>('/admin/mod-audit');

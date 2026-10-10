@@ -13,6 +13,7 @@ import HeaderDialogs from '@/features/chat/components/conversation/header/Header
 import { ConnectionOriginStrip } from '@/features/whisper';
 import type { ConversationPanelHandle } from '@/features/chat/components/conversation/ConversationPanel';
 import type { ChatDetailsResponse } from '@/features/chat/types/chat';
+import { ROUTES } from '@/shared/constants/routes';
 
 type ChatHeaderProps = {
   chatId?: string;
@@ -220,7 +221,7 @@ const ConversationHeader = ({
                 </button>
               ) : (
                 <Link
-                  to="/"
+                  to={ROUTES.chats}
                   replace
                   className="inline-flex h-11 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
                   aria-label="Back to chats"

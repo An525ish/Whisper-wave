@@ -8,6 +8,7 @@ import { BentoSection } from '@/features/landing';
 import { SafetySection } from '@/features/landing';
 import { FinalCTASection } from '@/features/landing';
 import { LandingFooter } from '@/features/landing';
+import { ROUTES } from '@/shared/constants/routes';
 
 type LandingState = { scrollTo?: string } | null;
 
@@ -21,7 +22,7 @@ const Landing = () => {
 
     // Wipe from history immediately — prevents re-scroll on refresh.
     // Use '/' not '.' — relative "." on an index route becomes "?index".
-    navigate('/', { replace: true, state: null });
+    navigate(ROUTES.landing, { replace: true, state: null });
 
     const t = window.setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });

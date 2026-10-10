@@ -3,15 +3,32 @@ import type { IReportFields } from '../types/match.js';
 
 export type IReport = IReportFields & Document;
 
+/**
+ * Evidence snapshot subdocument: the reported message plus neighbours, alias
+ * + text + timestamp only. This is the narrow, disclosed exception to "rooms
+ * leave no transcript" — kept only when someone reports.
+ */
+const evidenceItemSchema = new Schema(
+  {
+    alias: { type: String, required: true },
+    text: { type: String, required: true },
+    ts: { type: Number, required: true },
+  },
+  { _id: false }
+);
+
 const reportSchema = new Schema<IReport>(
   {
     reporter: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     reporterAnonId: { type: String, default: null },
-    targetType: { type: String, enum: ['user', 'anonSession'], required: true },
+    reporterGid: { type: String, default: null },
+    targetType: { type: String, enum: ['user', 'anonSession', 'roomMessage'], required: true },
     targetUserId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     targetAnonId: { type: String, default: null },
     sessionId: { type: String, default: null },
     chatId: { type: Schema.Types.ObjectId, ref: 'Chat', default: null },
+    roomSlug: { type: String, default: null },
+    evidence: { type: [evidenceItemSchema], default: null },
     reason: {
       type: String,
       enum: ['inappropriate_content', 'harassment', 'spam', 'underage', 'other'],

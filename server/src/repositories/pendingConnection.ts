@@ -42,6 +42,56 @@ export const findBySessionId = async (sessionId: string): Promise<PendingLean | 
   PendingConnection.findOne({ sessionId }).lean<PendingLean>();
 
 /**
+ * Rows where this account is bound and the partner is not — "waiting for
+ * them". Only `pending` rows: `processing` is mid-completion (the announce
+ * will resolve it), `completed` is already a DM, `expired` is dead.
+ */
+export const findWaitingForUser = async (userId: string): Promise<PendingLean[]> =>
+  PendingConnection.find({
+    status: 'pending',
+    $or: [
+      { 'sides.0.userId': new Types.ObjectId(userId), 'sides.1.userId': null },
+      { 'sides.1.userId': new Types.ObjectId(userId), 'sides.0.userId': null },
+    ],
+  })
+    .sort({ createdAt: -1 })
+    .lean<PendingLean[]>();
+
+/**
+ * Release this account's seat (cancel flow). The partner's side is left alone
+ * to expire — they get no signal, per the neutral-copy rule.
+ */
+export const unbindUser = async (sessionId: string, userId: string): Promise<boolean> => {
+  const id = new Types.ObjectId(userId);
+  const res = await PendingConnection.updateOne(
+    { sessionId, $or: [{ 'sides.0.userId': id }, { 'sides.1.userId': id }] },
+    [
+      {
+        $set: {
+          sides: {
+            $map: {
+              input: '$sides',
+              as: 'side',
+              in: {
+                $mergeObjects: [
+                  '$$side',
+                  {
+                    userId: {
+                      $cond: [{ $eq: ['$$side.userId', id] }, null, '$$side.userId'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ]
+  );
+  return res.modifiedCount > 0;
+};
+
+/**
  * Atomically claim processing rights — prevents two simultaneous /connection/complete
  * calls from both trying to create the final Connection document.
  *

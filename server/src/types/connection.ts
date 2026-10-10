@@ -69,3 +69,18 @@ export type CompleteConnectionOutcome = {
   /** Null unless this call actually completed (or re-completed) the connection. */
   announce: ConnectionAnnouncement | null;
 };
+
+/**
+ * One row of `GET /api/connection/pending` — something this account still
+ * owes a whisper connection, or is owed. Copy stays neutral: the client never
+ * learns whether the other side has an account.
+ */
+export type PendingConnectionItem = {
+  /** `claim:<sessionId>` (redeemable by me) or `pending:<sessionId>` (waiting for them). */
+  id: string;
+  sessionId: string;
+  origin: { partnerAlias: string; tags: VibeTag[] };
+  /** ISO timestamp when this item expires. */
+  expiresAt: string;
+  state: 'action_needed' | 'waiting_for_partner';
+};

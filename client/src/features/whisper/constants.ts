@@ -25,6 +25,9 @@ export const MAX_DISPLAY_NAME_LENGTH = 24;
 /** Mirrors the server cap in `server/src/socket/anon/handlers.ts`. */
 export const MAX_MESSAGE_LENGTH = 2000;
 
+/** Characters of the last message shown in the live-whisper pill. */
+export const LIVE_PILL_PREVIEW_MAX = 48;
+
 /** Debounce before we tell the partner we stopped typing. */
 export const TYPING_IDLE_MS = 1500;
 
@@ -231,6 +234,8 @@ export const WHISPER_EVENTS = {
   REPORT: 'whisper_report',
   /** Match ended — once per session, with durationMs and messageCount. */
   SESSION_END: 'whisper_session_end',
+  /** The live-whisper pill was tapped to return to the thread. */
+  PILL_CLICK: 'whisper_pill_click',
 } as const;
 
 // ── Waiting-room radar ─────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { isRouteErrorResponse, Link, useRouteError } from 'react-router-dom';
 import { RELOAD_KEY, RELOAD_COOLDOWN_MS } from '@/shared/constants/app';
+import { ROUTES } from '@/shared/constants/routes';
 
 function isStaleChunkError(error: unknown): boolean {
   const message =
@@ -58,7 +59,7 @@ const RouteError = () => {
             >
               Reload
             </button>
-            <Link to="/" className="text-sm font-medium text-green hover:text-green/85">
+            <Link to={ROUTES.landing} className="text-sm font-medium text-green hover:text-green/85">
               Go home
             </Link>
           </div>
@@ -82,7 +83,7 @@ const RouteError = () => {
           >
             Reload
           </button>
-          <Link to="/" className="text-sm font-medium text-green hover:text-green/85">
+          <Link to={ROUTES.landing} className="text-sm font-medium text-green hover:text-green/85">
             Go home
           </Link>
         </div>

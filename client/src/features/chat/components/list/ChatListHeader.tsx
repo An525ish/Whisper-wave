@@ -2,6 +2,7 @@ import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react'
 import Searchbar from '@/shared/components/ui/Searchbar';
 import { AccountBar } from '@/features/profile';
 import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/shared/constants/routes';
 import DotsMenu from '@/shared/components/ui/DotsMenu';
 import ChatIcon from '@/shared/components/ui/icons/Chat';
 import ReadReceipt from '@/shared/components/ui/icons/ReadReceipt';
@@ -71,7 +72,7 @@ const ChatListHeader = ({
       id: 'whisper',
       label: 'Whisper — talk to someone new',
       icon: <ChatIcon className="h-3.5 w-3.5 fill-current" />,
-      onSelect: () => navigate('/whisper'),
+      onSelect: () => navigate(ROUTES.whisper),
     },
   ], [unreadCount, handleMarkAllRead, onOpenNew, navigate]);
 

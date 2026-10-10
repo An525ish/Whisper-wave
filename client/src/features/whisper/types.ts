@@ -195,6 +195,28 @@ export type CompleteConnectionResponse = {
       };
 };
 
+/** One row of `GET /api/connection/pending`. Copy stays neutral server-side. */
+export type PendingConnectionItem = {
+  /** `claim:<sessionId>` (redeemable by me) or `pending:<sessionId>` (waiting for them). */
+  id: string;
+  sessionId: string;
+  origin: { partnerAlias: string; tags: VibeTag[] };
+  /** ISO timestamp when this item expires. */
+  expiresAt: string;
+  state: 'action_needed' | 'waiting_for_partner';
+};
+
+export type PendingListResponse = {
+  success: boolean;
+  data: { items: PendingConnectionItem[] };
+};
+
+/** `GET /api/match/quota` — members only; guests are never capped. */
+export type WhisperQuotaResponse = {
+  success: boolean;
+  data: { limit: number; remaining: number };
+};
+
 /** The "how we met" story for a DM that began as an anonymous match. */
 export type ConnectionOrigin = {
   connectionId: string;
@@ -292,7 +314,7 @@ export type NextSource = 'chat' | 'partner_left' | 'report';
 export type LeaveConfirmKind = 'leave' | 'skip';
 
 /** Where a DM open came from — analytics label only. */
-export type DmOpenSource = 'whisper' | 'resume_after_auth' | 'connection_ready';
+export type DmOpenSource = 'whisper' | 'resume_after_auth' | 'connection_ready' | 'pending';
 
 /** One row of the virtualized thread. */
 export type ThreadRow =
@@ -300,3 +322,11 @@ export type ThreadRow =
   | { kind: 'empty' }
   | { kind: 'typing' }
   | { kind: 'message'; index: number };
+
+/** What `WhisperSessionProvider` shares: the owned socket plus typing state. */
+export type WhisperSession = {
+  /** The `/anon` connection. Owned by the provider; screens only send through it. */
+  socketRef: AnonSocketRef;
+  partnerTyping: boolean;
+  setPartnerTyping: (v: boolean) => void;
+};

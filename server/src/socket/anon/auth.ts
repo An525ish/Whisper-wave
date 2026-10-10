@@ -4,9 +4,14 @@ import type { IncomingMessage } from 'http';
 import type { ExtendedError } from 'socket.io';
 import type { AnonSocket } from '../../types/anonSocket.js';
 import { AppError } from '../../utils/AppError.js';
-import { logger } from '../../utils/logger.js';
-import { verifyToken } from '../../utils/token.js';
-import { anonIdSchema } from '../../validators/anon.js';
+import {
+  ACCESS_COOKIE,
+  ANON_COOKIE,
+  GID_COOKIE,
+  parseAnonId,
+  parseGid,
+  verifiedUserId,
+} from '../identity.js';
 
 /** The parsed request shape cookie-parser produces. */
 type CookieRequest = IncomingMessage & { cookies?: Record<string, string> };
@@ -47,9 +52,9 @@ export const applyAnonAuth = (
     // The cookie is client-controlled, so it is validated, not trusted: it ends up
     // in Redis keys, room names and `anonId:reaction` set members. Anything that is
     // not a UUID is rejected exactly like a missing cookie.
-    const parsed = anonIdSchema.safeParse(cookies?.['anonId']);
+    const anonId = parseAnonId(cookies?.[ANON_COOKIE]);
 
-    if (!parsed.success) {
+    if (!anonId) {
       next(
         new AppError(
           401,
@@ -59,10 +64,13 @@ export const applyAnonAuth = (
       return;
     }
 
-    socket.anonId = parsed.data;
+    socket.anonId = anonId;
+    // Stable guest id for abuse control (bans, rate limits). Optional here —
+    // the /rooms and /play namespaces require it; /anon only carries it.
+    socket.gid = parseGid(cookies?.[GID_COOKIE]);
     // Strict `true`: a client-controlled value, and anything else is a normal join.
     socket.resumeOnly = isResumeHandshake(socket.handshake?.auth);
-    socket.userId = verifiedUserId(cookies?.['accessToken']);
+    socket.userId = verifiedUserId(cookies?.[ACCESS_COOKIE]);
     next();
   });
 };
@@ -70,22 +78,3 @@ export const applyAnonAuth = (
 /** `auth: { resume: true }` on the Socket.IO handshake — resume-only connect. */
 export const isResumeHandshake = (auth: unknown): boolean =>
   typeof auth === 'object' && auth !== null && (auth as { resume?: unknown }).resume === true;
-
-/**
- * The account id behind an access token, or undefined.
- *
- * Never throws: an invalid token is the normal case for a guest and for a
- * signed-in user whose 15-minute access cookie has simply expired, and neither
- * may be locked out of Whisper by it. The refresh flow is the HTTP client's job.
- *
- * Logs a warning without the token, so a signing-key problem is still visible.
- */
-const verifiedUserId = (token: string | undefined): string | undefined => {
-  if (!token) return undefined;
-  try {
-    return verifyToken(token).id;
-  } catch (err) {
-    logger.debug({ err }, 'Anon socket presented an unusable accessToken — staying anonymous');
-    return undefined;
-  }
-};

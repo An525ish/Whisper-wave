@@ -14,4 +14,5 @@ export { default as ImageViewerReplyBar } from './components/ImageViewerReplyBar
 
 export { CHAT_HEADER_FADE_CLASS } from './constants/chat';
 export { usePresenceStore } from './stores/presence';
+export type { ChatsResponse } from './types/chat';
 export * from './hooks';

@@ -6,12 +6,15 @@ import * as chatRepo from '../repositories/chat.js';
 import * as chatReadRepo from '../repositories/chatRead.js';
 import { deleteSession, getSession } from './match/session.js';
 import { verifyConnectToken } from './match/connectToken.js';
+import { deleteClaim, peekClaim, takeClaim } from './match/claim.js';
+import { TTL } from './match/keys.js';
 import { logger } from '../utils/logger.js';
 import type { ConnectionOrigin, VibeTag } from '../types/match.js';
 import type {
   CompleteConnectionOutcome,
   CompleteConnectionResult,
   ConnectionLean,
+  PendingConnectionItem,
   PendingConnectionSideDoc,
 } from '../types/connection.js';
 
@@ -135,17 +138,7 @@ const ensureConnection = async (params: {
  * Called after a user signs up or logs in via a connectToken.
  *
  * Step 1: Verify the connectToken.
- * Step 2: Find-or-create the PendingConnection and atomically bind this user to
- *         the seat (`side`) their token names (once only — replay-safe).
- * Step 3: If both sides have userIds → complete the connection.
- * Step 4: Return status so the client knows whether to wait or open the DM.
- *
- * Race protection: claimForProcessing atomically moves 'pending' → 'processing'
- * (and re-takes claims stale for > 60 s). Only one caller wins; the other gets
- * 'waiting_for_partner' and learns of completion via the CONNECTION_READY event.
- *
- * Realtime fan-out is NOT done here (services must not depend on sockets): the
- * returned `announce` tells the controller what to emit.
+ * Steps 2-7: shared with the claim path (see `bindAndComplete`).
  */
 export const completeConnection = async (
   connectToken: string,
@@ -165,6 +158,28 @@ export const completeConnection = async (
   ];
   seats[side] = { userId: null, displayName, vibeTags };
   seats[partnerSide] = { userId: null, displayName: partnerName, vibeTags: partnerTags };
+  return bindAndComplete({ sessionId, side, seats }, userId);
+};
+
+/**
+ * Steps 2-7 of completion, shared by the token and claim paths.
+ *
+ * Race protection: claimForProcessing atomically moves 'pending' → 'processing'
+ * (and re-takes claims stale for > 60 s). Only one caller wins; the other gets
+ * 'waiting_for_partner' and learns of completion via the CONNECTION_READY event.
+ *
+ * Realtime fan-out is NOT done here (services must not depend on sockets): the
+ * returned `announce` tells the controller what to emit.
+ */
+const bindAndComplete = async (
+  params: {
+    sessionId: string;
+    side: 0 | 1;
+    seats: [PendingConnectionSideDoc, PendingConnectionSideDoc];
+  },
+  userId: string
+): Promise<CompleteConnectionOutcome> => {
+  const { sessionId, side, seats } = params;
   const pending = await pendingRepo.findOrCreate(sessionId, seats);
 
   if (pending.status === 'completed') {
@@ -314,4 +329,137 @@ export const getConnectionOrigin = async (
     partnerUsername: partner?.username,
     partnerAvatar: partner?.avatar?.url,
   };
+};
+
+/**
+ * Complete via a mutual-like claim instead of a `connectToken`.
+ *
+ * The claim is keyed by the caller's `anonId` cookie — the same browser that
+ * was in the session — so the cookie is as strong a proof of seat as the
+ * token was. `claimId` names the session being redeemed and must match the
+ * claim, or this is a replay against the wrong match.
+ *
+ * The claim is consumed only after the seat binds: a transient failure leaves
+ * it intact for retry, and rebinding the same seat is idempotent.
+ */
+export const completeConnectionWithClaim = async (
+  claimId: string,
+  userId: string,
+  callerAnonId: string | undefined
+): Promise<CompleteConnectionOutcome> => {
+  if (!callerAnonId) {
+    throw new AppError(401, 'No anonymous session on this browser — start a whisper first');
+  }
+  const claim = await peekClaim(callerAnonId);
+  if (!claim) {
+    throw new AppError(410, 'That mutual vibe expired — find them again in a new whisper');
+  }
+  if (claim.sessionId !== claimId) {
+    throw new AppError(404, 'That pending connection is not on this browser');
+  }
+
+  const side = claim.seat;
+  const partnerSide = side === 0 ? 1 : 0;
+  const seats: [PendingConnectionSideDoc, PendingConnectionSideDoc] = [
+    { userId: null, displayName: '', vibeTags: [] },
+    { userId: null, displayName: '', vibeTags: [] },
+  ];
+  seats[side] = { userId: null, displayName: claim.originNames[side], vibeTags: claim.originTags[side] };
+  seats[partnerSide] = {
+    userId: null,
+    displayName: claim.originNames[partnerSide],
+    vibeTags: claim.originTags[partnerSide],
+  };
+  const outcome = await bindAndComplete({ sessionId: claim.sessionId, side, seats }, userId);
+
+  const taken = await takeClaim(callerAnonId).catch((err: unknown) => {
+    logger.warn({ err, sessionId: claim.sessionId }, 'Failed to consume redeemed claim');
+    return null;
+  });
+  if (!taken) {
+    logger.info(
+      { sessionId: claim.sessionId, userId },
+      'Claim already consumed — seat bind was idempotent, returning its outcome'
+    );
+  }
+  return outcome;
+};
+
+/**
+ * Everything this account still owes a whisper connection — or is owed.
+ *
+ * Two sources, one list: Redis claims on this browser's `anonId` (my turn to
+ * act) plus Mongo rows where I am bound and the partner is not (waiting for
+ * them). Copy is neutral on purpose: the client never learns whether the
+ * other side has an account.
+ */
+export const listPendingForUser = async (
+  userId: string,
+  callerAnonId: string | undefined
+): Promise<PendingConnectionItem[]> => {
+  const items: PendingConnectionItem[] = [];
+
+  if (callerAnonId) {
+    const claim = await peekClaim(callerAnonId);
+    if (claim) {
+      const partnerSide = claim.seat === 0 ? 1 : 0;
+      items.push({
+        id: `claim:${claim.sessionId}`,
+        sessionId: claim.sessionId,
+        origin: {
+          partnerAlias: claim.originNames[partnerSide],
+          tags: claim.originTags[partnerSide],
+        },
+        expiresAt: new Date(claim.createdAt + TTL.claim * 1000).toISOString(),
+        state: 'action_needed',
+      });
+    }
+  }
+
+  const rows = await pendingRepo.findWaitingForUser(userId);
+  for (const row of rows) {
+    const mine = row.sides[0].userId?.toString() === userId ? 0 : 1;
+    const partner = row.sides[mine === 0 ? 1 : 0];
+    items.push({
+      id: `pending:${row.sessionId}`,
+      sessionId: row.sessionId,
+      origin: { partnerAlias: partner.displayName, tags: partner.vibeTags },
+      expiresAt: row.expiresAt.toISOString(),
+      state: 'waiting_for_partner',
+    });
+  }
+
+  return items;
+};
+
+/**
+ * Cancel one pending item. A claim is deleted outright; a Mongo row releases
+ * only my seat — the partner's side is left to expire, and they get no signal.
+ */
+export const cancelPending = async (
+  id: string,
+  userId: string,
+  callerAnonId: string | undefined
+): Promise<void> => {
+  const separator = id.indexOf(':');
+  const kind = separator === -1 ? '' : id.slice(0, separator);
+  const sessionId = separator === -1 ? '' : id.slice(separator + 1);
+
+  if (kind === 'claim') {
+    if (!callerAnonId) throw new AppError(404, 'Pending connection not found');
+    const claim = await peekClaim(callerAnonId);
+    if (!claim || claim.sessionId !== sessionId) {
+      throw new AppError(404, 'Pending connection not found');
+    }
+    await deleteClaim(callerAnonId);
+    return;
+  }
+
+  if (kind === 'pending') {
+    const released = await pendingRepo.unbindUser(sessionId, userId);
+    if (!released) throw new AppError(404, 'Pending connection not found');
+    return;
+  }
+
+  throw new AppError(404, 'Pending connection not found');
 };

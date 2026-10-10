@@ -16,6 +16,11 @@ export type AnonSocket = Socket & {
    */
   userId?: string;
   /**
+   * Stable guest id (`gid` cookie) for abuse control. Optional on /anon —
+   * carried, not required. The /rooms and /play namespaces require it.
+   */
+  gid?: string;
+  /**
    * The handshake carried `auth: { resume: true }`: this socket may only RESUME an
    * existing match. It never enqueues, never touches the identity card and never
    * counts quota.

@@ -244,3 +244,94 @@ export type AdminImpersonationLogsPage = {
   hasMore: boolean;
   total?: number;
 };
+
+export type AdminReportRow = {
+  _id: string;
+  reporterAnonId: string | null;
+  reporterGid: string | null;
+  targetType: 'user' | 'anonSession' | 'roomMessage';
+  targetUserId: string | null;
+  targetAnonId: string | null;
+  sessionId: string | null;
+  chatId: string | null;
+  roomSlug: string | null;
+  evidence: Array<{ alias: string; text: string; ts: number }> | null;
+  reason: 'inappropriate_content' | 'harassment' | 'spam' | 'underage' | 'other';
+  details: string | null;
+  reviewed: boolean;
+  createdAt: string;
+};
+
+export type AdminReportsPage = {
+  reports: AdminReportRow[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+};
+
+export type ModAuditEntry = {
+  _id: string;
+  actorKind: 'mod' | 'admin';
+  actorLabel: string;
+  actorUserId: string | null;
+  actorGid: string | null;
+  action: string;
+  target: string | null;
+  roomSlug: string | null;
+  instanceId: string | null;
+  detail: string | null;
+  createdAt: string;
+};
+
+export type AdminRoomRow = {
+  slug: string;
+  title: string;
+  description: string;
+  rules: string[];
+  lang: string;
+  official: boolean;
+  hours: {
+    days: number[];
+    start: string;
+    end: string;
+    tz: string;
+  } | null;
+  capSoft: number;
+  capHard: number;
+  visibility: 'official' | 'public' | 'unlisted';
+  listingRequestedAt: string | null;
+  createdAt: string;
+  open: boolean;
+  instances: Array<{ n: number; online: number }>;
+};
+
+export type AdminRoomUpsert = {
+  slug: string;
+  title: string;
+  description: string;
+  rules: string[];
+  lang: string;
+  official: boolean;
+  hours: AdminRoomRow['hours'];
+  visibility: 'official' | 'public' | 'unlisted';
+};
+
+export type AdminRoomBan = {
+  _id: string;
+  roomSlug: string | null;
+  gid: string | null;
+  userId: string | null;
+  until: string;
+  reason: string;
+  by: string;
+  createdAt: string;
+};
+
+export type AdminRoomBanInput = {
+  roomSlug: string | null;
+  gid?: string | null;
+  userId?: string | null;
+  minutes: number;
+  reason: string;
+};

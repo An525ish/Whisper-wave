@@ -247,3 +247,20 @@ export type {
   SignUploadBody,
   CommitAttachmentsBody,
 } from './input.js';
+export type { HubFeatures, HubSummary } from './hub.js';
+export type { GuestIdentity, MemberIdentity, Identity } from './identity.js';
+export type { MemeCategory, JokeItem, MemeFeedPage } from './meme.js';
+export type {
+  RoomVisibility,
+  RoomRole,
+  RoomHours,
+  IRoomFields,
+  IRoomBanFields,
+  RoomMemberIdentity,
+  RoomMessageCheck,
+  RoomErrorCode,
+  RoomModVerdict,
+  LiveRoomMember,
+  LiveRoomMessage,
+  RoomSocket,
+} from './room.js';

@@ -11,6 +11,7 @@ import type {
   FriendRequestNotifyItemProps,
 } from '@/features/notifications/types';
 import CountBadge from '@/shared/components/ui/CountBadge';
+import { ROUTES } from '@/shared/constants/routes';
 
 dayjs.extend(relativeTime);
 
@@ -43,7 +44,7 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
 
   return (
     <Link
-      to={`/chat/${id}`}
+      to={ROUTES.chat(id)}
       className="flex items-center gap-2 rounded-2xl px-2 py-2.5 transition hover:bg-gradient-row-hover"
     >
       <AvatarCard avatars={[avatar]} avatarClassName="shadow-none" />

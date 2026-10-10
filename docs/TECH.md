@@ -227,7 +227,8 @@ successful reveal writes to Mongo.
 Queues need atomic claim operations. Mongo has no native queue primitive, and a
 `findOneAndUpdate` poll races under concurrency. Anon sessions must also *die*
 when users leave — TTL is built for that. See `PHASE2.md` for the full rationale
-and the cost model (free tier ≈ 60–70 sessions/day, an estimate).
+and the cost model (measured Oct 2026: ~154 cmds per 10-message mutual-like
+session ≈ ~3,200 sessions/month on the 500K cmds/month Upstash free tier).
 
 Server: the `ioredis` client library with explicit `host`/`port`/`tls.servername` so TLS SNI is set
 correctly for Upstash (passing a `rediss://` URL string skips SNI and fails with
@@ -247,7 +248,7 @@ should hit; `/ready` is what a load balancer should gate traffic on.
 | `match:messages:{sessionId}` | List | 24 h | Last 50 messages, so a refresh doesn't blank the thread. |
 | `match:active:{anonId}` | String | 24 h | anonId → current sessionId (reconnect replay). |
 | `match:presence:{anonId}` | String | **45 s** | Set when a socket drops. The match is only torn down when this lapses — a network blip must not end the conversation. |
-| `match:blocked:{anonId}` | Set | 30 d | Blocked partners. Checked both ways before pairing. |
+| `match:blocked:{anonId}` | Set | 30 d | Blocked partners. Checked both ways before pairing. Sets are also keyed by `userId` (DM reports), and the read path checks every identity each side holds. |
 | `match:reactions:{sessionId}:{messageId}` | Set | 24 h | `anonId:reaction` members. Deleted when the session ends. |
 | `match:user:{userId}` | Set | 24 h | Signed-in account → sessionIds it holds (stops matching your own other device). |
 | `match:whispers:{userId}` | Counter | 24 h rolling | Signed-in users' whisper quota window. |
@@ -257,6 +258,7 @@ should hit; `/ready` is what a load balancer should gate traffic on.
 | `match:meta:{sessionId}` | Hash | 24 h | Per-side message counters (`c1`,`c2`) for the vibe gate + token-issue counter (`tk`). Deleted when the session ends. |
 | `match:autoreport:{sessionId}:{category}` | String | 24 h | Dedupe key so a sender cannot mint unlimited auto-reports. |
 | `match:joined:{anonId}` | String | 10 min | Marks a counted fresh join so refreshes/reconnects don't burn the signed-in quota. |
+| `match:claim:{anonId}` | String (JSON) | 7 d | Mutual-like claim for one seat (names/tags, no anonIds) — survives a closed tab so the connection can be redeemed after sign-in. Deleted on redeem. |
 
 Transcripts (`match:messages:*`, `match:reactions:*`) are deleted when a session ends.
 

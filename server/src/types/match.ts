@@ -120,15 +120,26 @@ export type IConnectionFields = {
 export type IReportFields = {
   reporter: Types.ObjectId | null; // null = anonymous reporter
   reporterAnonId: string | null;
-  targetType: 'user' | 'anonSession';
+  reporterGid: string | null;
+  targetType: 'user' | 'anonSession' | 'roomMessage';
   targetUserId: Types.ObjectId | null;
   targetAnonId: string | null;
   sessionId: string | null;
   chatId: Types.ObjectId | null;
+  /** Room context snapshot (reported message + neighbours, alias + text + ts). */
+  roomSlug: string | null;
+  evidence: RoomEvidenceItem[] | null;
   reason: ReportReason;
   details: string | null;
   reviewed: boolean;
   createdAt: Date;
+};
+
+/** One line of a report evidence snapshot — alias, text and time only. No IPs. */
+export type RoomEvidenceItem = {
+  alias: string;
+  text: string;
+  ts: number;
 };
 
 export type ReportReason =

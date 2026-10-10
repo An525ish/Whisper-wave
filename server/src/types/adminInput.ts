@@ -13,6 +13,11 @@ import type {
   adminReportsQuerySchema,
   adminUsersQuerySchema,
 } from '../validators/admin.js';
+import type {
+  adminFeatureFlagSchema,
+  adminRoomBanSchema,
+  adminRoomUpsertSchema,
+} from '../validators/rooms.js';
 
 // Validated admin request shapes. Schemas (validators/admin.ts) stay the single
 // source of truth; types are derived here so services never import validators/.
@@ -28,3 +33,6 @@ export type AdminImpersonationLogsQuery = z.infer<typeof adminImpersonationLogsQ
 export type AdminDeleteAttachmentsBody = z.infer<typeof adminDeleteAttachmentsSchema>;
 export type AdminReportsQuery = z.infer<typeof adminReportsQuerySchema>;
 export type AdminReportReviewBody = z.infer<typeof adminReportReviewSchema>;
+export type AdminRoomUpsertBody = z.infer<typeof adminRoomUpsertSchema>;
+export type AdminRoomBanBody = z.infer<typeof adminRoomBanSchema>;
+export type AdminFeatureFlagBody = z.infer<typeof adminFeatureFlagSchema>;

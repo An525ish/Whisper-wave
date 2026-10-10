@@ -14,7 +14,12 @@ export { default as LoginForm } from './components/LoginForm';
 export { default as RegisterForm } from './components/RegisterForm';
 
 export { useAuthStore } from './store';
-export { useResetPasswordMutation, useSignOutMutation, useUpdateProfileMutation } from './hooks';
+export {
+  useProfileQuery,
+  useResetPasswordMutation,
+  useSignOutMutation,
+  useUpdateProfileMutation,
+} from './hooks';
 export { validateConfirmPassword, validatePassword } from './utils/authValidators';
 
 export type { ResetPasswordForm } from './types';

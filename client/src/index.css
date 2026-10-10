@@ -59,6 +59,8 @@
 
   --font-sans: 'DM Sans', sans-serif;
   --font-display: 'DM Serif Display', serif;
+  /* Hub-only micro-labels (eyebrows, HUD chips). Space Mono ships in index.html. */
+  --font-hw-mono: 'Space Mono', ui-monospace, monospace;
 
   --shadow-glowBlue: 0 0 10px rgba(0, 0, 255, 0.8);
   --shadow-glowGreen: 0 0 10px rgba(0, 255, 0, 0.8);

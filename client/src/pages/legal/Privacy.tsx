@@ -21,6 +21,11 @@ const Privacy = () => (
           <strong>Technical data</strong> — basic device and connection info needed to run the service and keep it
           secure.
         </li>
+        <li>
+          <strong>Guest identifiers</strong> — random, httpOnly cookies with no account attached: the anonymous
+          session id (24 hours) and a stable guest id (30 days) used only for safety — abuse control, rate-limit
+          continuity, and restoring your persona on return visits.
+        </li>
       </ul>
     </section>
 

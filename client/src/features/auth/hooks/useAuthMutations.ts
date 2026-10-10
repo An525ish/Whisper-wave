@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as authApi from '@/features/auth/api/auth';
 import { queryKeys } from '@/features/chat';
 import { useAuthStore } from '@/features/auth/store';
+import { authKeys } from './queryKeys';
 
 export function useSignInMutation() {
   const setUser = useAuthStore((s) => s.setUser);
@@ -11,7 +12,7 @@ export function useSignInMutation() {
     mutationFn: authApi.signIn,
     onSuccess: (res) => {
       setUser(res.data);
-      queryClient.setQueryData(queryKeys.profile, res.data);
+      queryClient.setQueryData(authKeys.profile, res.data);
     },
   });
 }
@@ -48,7 +49,7 @@ export function useCompleteSignUpMutation() {
     mutationFn: authApi.completeSignUp,
     onSuccess: (res) => {
       setUser(res.data);
-      queryClient.setQueryData(queryKeys.profile, res.data);
+      queryClient.setQueryData(authKeys.profile, res.data);
     },
   });
 }
@@ -74,7 +75,7 @@ export function useGoogleSignInMutation() {
     mutationFn: authApi.googleSignIn,
     onSuccess: (res) => {
       setUser(res.data);
-      queryClient.setQueryData(queryKeys.profile, res.data);
+      queryClient.setQueryData(authKeys.profile, res.data);
     },
   });
 }
@@ -100,7 +101,7 @@ export function useUpdateProfileMutation() {
     onSuccess: (res) => {
       if (res.user) {
         setUser(res.user);
-        queryClient.setQueryData(queryKeys.profile, res.user);
+        queryClient.setQueryData(authKeys.profile, res.user);
       }
       void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
     },

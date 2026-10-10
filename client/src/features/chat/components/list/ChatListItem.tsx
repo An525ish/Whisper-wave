@@ -1,10 +1,12 @@
 import { memo } from 'react';
 import AvatarCard from '@/shared/components/ui/AvatarCard';
 import ReadReceipt from '@/shared/components/ui/icons/ReadReceipt';
+import WaveIcon from '@/shared/components/ui/icons/Wave';
 import { Link } from 'react-router-dom';
 import { getFirstName, formatChatTime } from '@/shared/utils/helpers';
 import CountBadge from '@/shared/components/ui/CountBadge';
 import type { ChatLastMessage } from '@/features/chat/types/chat';
+import { ROUTES } from '@/shared/constants/routes';
 
 type ChatListItemProps = {
   avatar?: string[];
@@ -17,6 +19,8 @@ type ChatListItemProps = {
   lastMessage?: ChatLastMessage | null;
   unreadCount?: number;
   currentUserId: string;
+  /** Set when this DM began as an anonymous whisper match. */
+  origin?: 'whisper' | null;
 };
 
 const ChatListItem = ({
@@ -30,6 +34,7 @@ const ChatListItem = ({
   lastMessage,
   unreadCount = 0,
   currentUserId,
+  origin,
 }: ChatListItemProps) => {
   const hasUnread = unreadCount > 0;
   const senderId = lastMessage?.sender?._id
@@ -59,7 +64,7 @@ const ChatListItem = ({
   };
 
   return (
-    <Link to={`/chat/${id}`} className="select-none">
+    <Link to={ROUTES.chat(id)} className="select-none">
       <div
         className={`flex cursor-pointer items-center gap-1 rounded-xl px-3 py-3.5 transition active:scale-[0.99] md:gap-2 md:rounded-lg md:p-4 gradient-border hover:bg-gradient-row-hover ${
           isActive
@@ -82,7 +87,17 @@ const ChatListItem = ({
                   : 'font-medium text-body'
               }`}
             >
+              {origin === 'whisper' && (
+                <span role="img" aria-label="Started on Whisper" className="mr-1 inline-flex align-middle">
+                  <WaveIcon className="h-3.5 w-3.5 text-green" />
+                </span>
+              )}
               {name}
+              {origin === 'whisper' && hasUnread && (
+                <span className="ml-1.5 rounded-full bg-green/15 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-green">
+                  New
+                </span>
+              )}
             </p>
             <p
               className={`shrink-0 whitespace-nowrap text-[11px] md:text-xs ${

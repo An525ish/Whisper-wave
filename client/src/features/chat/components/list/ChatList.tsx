@@ -65,7 +65,7 @@ const ChatList = ({
         >
           {virtualizer.getVirtualItems().map((item) => {
             const data = chats[item.index];
-            const { avatar, name, _id, groupChat, members, lastMessage, unreadCount } = data;
+            const { avatar, name, _id, groupChat, members, lastMessage, unreadCount, origin } = data;
             const avatarUrls = (Array.isArray(avatar) ? avatar : avatar ? [avatar] : []).filter(
               (url): url is string => Boolean(url),
             );
@@ -91,6 +91,7 @@ const ChatList = ({
                   isActive={isActive}
                   unreadCount={unreadCount}
                   id={_id}
+                  origin={origin}
                   lastMessage={lastMessage}
                   currentUserId={selfId}
                 />

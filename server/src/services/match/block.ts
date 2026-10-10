@@ -90,6 +90,27 @@ export const blockAnonId = async (blocker: string, target: string): Promise<void
   );
 };
 
+/**
+ * Block two accounts from rematching, by userId.
+ *
+ * For connected-DM reports: the report names accounts, not anonIds, and the
+ * pair may never have shared an anonymous session — so there is no anonId to
+ * hang the block on. UserId-keyed sets are first-class block keys (the read
+ * path checks every identity each side holds), and they survive the very thing
+ * anon-keyed blocks cannot: both parties signing in fresh.
+ */
+export const blockUsers = async (
+  blockerUserId: string,
+  targetUserId: string
+): Promise<void> => {
+  const pipe = getRedis().pipeline();
+  pipe.sadd(REDIS_KEYS.blocked(blockerUserId), targetUserId);
+  pipe.expire(REDIS_KEYS.blocked(blockerUserId), TTL.blocked);
+  pipe.sadd(REDIS_KEYS.blocked(targetUserId), blockerUserId);
+  pipe.expire(REDIS_KEYS.blocked(targetUserId), TTL.blocked);
+  await pipe.exec();
+};
+
 /** Check whether `blocker` has blocked `target`, under either identity. */
 export const isBlocked = async (
   blocker: MatchIdentity,

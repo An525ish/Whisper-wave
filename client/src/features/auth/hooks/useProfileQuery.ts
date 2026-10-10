@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { authApi } from '@/features/auth';
-import { queryKeys } from '@/features/chat/hooks';
-import { useAuthStore } from '@/features/auth';
 import { ApiError } from '@/shared/lib/api/client';
+import * as authApi from '../api/auth';
+import { useAuthStore } from '../store';
+import { authKeys } from './queryKeys';
 
+/** Loads the signed-in session and releases the app's boot gate once it settles. */
 export function useProfileQuery(enabled = true) {
   const setUser = useAuthStore((s) => s.setUser);
   const setImpersonated = useAuthStore((s) => s.setImpersonated);
@@ -14,7 +15,7 @@ export function useProfileQuery(enabled = true) {
   // queryFn is pure — no store writes inside to avoid double-fire under React Strict Mode.
   // TQ v5 removed onSuccess/onError; sync store via useEffect instead.
   const query = useQuery({
-    queryKey: queryKeys.profile,
+    queryKey: authKeys.profile,
     queryFn: authApi.getProfile,
     enabled,
     staleTime: 60_000,

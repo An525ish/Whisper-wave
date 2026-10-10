@@ -11,6 +11,7 @@ import type { Gender, VibeTag } from '../types';
 import './anonPartnerPanel.css';
 import './anonPartnerCards.css';
 import './anonSelfPanel.css';
+import { ROUTES } from '@/shared/constants/routes';
 
 type Props = {
   /** `column` is a standing side panel, `sheet` the bottom sheet below `lg`. */
@@ -146,7 +147,7 @@ export default function AnonSelfPanel({
                 Chats here vanish when you leave. An account keeps the connection and lets you
                 message them for real.
               </p>
-              <Link to="/auth" className="asc__cta-btn">
+              <Link to={ROUTES.auth} className="asc__cta-btn">
                 Create an account
               </Link>
             </div>

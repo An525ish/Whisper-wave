@@ -65,6 +65,15 @@ export const REDIS_KEYS = {
   /** Throttle key for the "partner left for real" broadcast. */
   presenceNotified: (sessionId: string) => `match:presence-notified:${sessionId}`,
   /**
+   * anonId → the mutual-like claim that survives a closed tab.
+   *
+   * Written for BOTH seats at mutual like (names/tags included, never anonIds
+   * beyond the key itself). After sign-in the owner redeems it via
+   * `POST /api/connection/complete { claimId }` instead of a `connectToken`
+   * that died with `sessionStorage`. Deleted on redeem or expiry.
+   */
+  claim: (anonId: string) => `match:claim:${anonId}`,
+  /**
    * Sorted set of anonIds whose disconnect grace period has not lapsed yet,
    * scored by deadline (epoch ms). `ZRANGEBYSCORE` finds what is due and `ZREM`
    * atomically claims it, so any process can sweep and no two ever do.
@@ -151,6 +160,11 @@ export const TTL = {
   joinCounted: 10 * 60, // 10 min
   /** Auto-report dedupe window — one report per (session, category). */
   autoReport: 24 * 60 * 60, // 24 h — matches TTL.session
+  /**
+   * Mutual-like claim lifetime. Matches the `PendingConnection` document TTL,
+   * so the Redis shortcut and the Mongo row expire together.
+   */
+  claim: 7 * 24 * 60 * 60, // 7 d
 } as const;
 
 /**

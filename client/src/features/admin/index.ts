@@ -25,4 +25,10 @@ export const adminRouteLoaders = {
     import('./components/activity/Activity').then((m) => ({ Component: m.default })),
   media: () =>
     import('./components/attachments/Attachments').then((m) => ({ Component: m.default })),
+  rooms: () =>
+    import('./components/rooms/Rooms').then((m) => ({ Component: m.default })),
+  reports: () =>
+    import('./components/reports/Reports').then((m) => ({ Component: m.default })),
+  audit: () =>
+    import('./components/audit/Audit').then((m) => ({ Component: m.default })),
 } as const;

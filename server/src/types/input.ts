@@ -35,6 +35,7 @@ import type {
   socketReactionSchema,
   socketTypingSchema,
 } from '../validators/socket.js';
+import type { memesQuerySchema } from '../validators/memes.js';
 import type { commitAttachmentsSchema, signUploadSchema } from '../validators/upload.js';
 
 // Validated (non-admin) request shapes. Schemas in validators/ stay the single
@@ -62,6 +63,9 @@ export type LinkPreviewQuery = z.infer<typeof linkPreviewQuerySchema>;
 export type JoinQueueBody = z.infer<typeof joinQueueSchema>;
 export type SubmitReportBody = z.infer<typeof submitReportSchema>;
 export type CompleteConnectionBody = z.infer<typeof completeConnectionSchema>;
+
+// memes
+export type MemesQuery = z.infer<typeof memesQuerySchema>;
 
 // message
 export type GetMessagesQuery = z.infer<typeof getMessagesQuerySchema>;

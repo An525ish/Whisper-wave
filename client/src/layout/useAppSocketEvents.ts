@@ -1,49 +1,43 @@
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSocket } from '@/shared/lib/socket/SocketProvider';
 import useSocketEvent from '@/shared/hooks/useSocketEvent';
 import { SOCKET_EVENTS } from '@/shared/constants/socket';
+import { TYPING_STALE_MS } from '@/shared/constants/app';
 import { useNotificationsStore } from '@/features/notifications';
 import { usePresenceStore } from '@/features/chat';
-import { useProfileUiStore } from '@/features/profile';
-import { useAuthStore } from '@/features/auth';
-import { useWhisperConnectResume, useWhisperConnectionReady } from '@/features/whisper';
-import { Title } from '@/features/notifications';
-import { GhostBanner } from '@/features/auth';
-import { ChatListPanel } from '@/features/chat';
-import { ProfileHeader } from '@/features/profile';
-import { ProfilePanel } from '@/features/profile';
-import { ProfileSheet } from '@/features/profile';
-import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
-import { TYPING_STALE_MS } from '@/shared/constants/app';
+import { useWhisperConnectionReady } from '@/features/whisper';
 import type {
   NewMessageAlertPayload,
   OnlineUsersPayload,
-  UserPresencePayload,
   TypingPayload,
+  UserPresencePayload,
 } from '@/shared/types/socket';
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { useParams } from 'react-router-dom';
 
-type AppWrapperProps = {
-  children: ReactNode;
-};
+interface Params {
+  /**
+   * The open conversation to stay quiet for — an alert for this chat is
+   * already visible, so notifying would double-ping. Stale values double
+   * notify, so the caller passes the live route param on every render.
+   */
+  suppressedChatId?: string;
+}
 
-// A NEW_MESSAGE socket frame carries more, but here we only read chatId to clear
-// the typing indicator. The full payload is a chat-domain type in chat/types.
+// A NEW_MESSAGE socket frame carries more, but here we only read chatId to
+// clear the typing indicator. The full payload is a chat-domain type.
 type NewMessagePayload = {
   chatId: string;
 };
 
-const AppWrapper = ({ children }: AppWrapperProps) => {
+/**
+ * App-wide realtime subscriptions: notifications, presence and typing.
+ *
+ * Mounted once by the hub shell for signed-in users. Owns the typing stale
+ * timers (with unmount cleanup, so StrictMode double-mounts are safe) and
+ * subscribes through `useSocketEvent`'s ref indirection, so handler identity
+ * churn never re-subscribes the socket.
+ */
+export function useAppSocketEvents({ suppressedChatId }: Params): void {
   const socket = useSocket();
-  const { chatId } = useParams();
-  const isChatOpen = Boolean(chatId);
-
-  // Finish a Whisper "connect & reveal" if the guest just signed in and landed
-  // here (mounted in the authed shell, so it never touches the guest bundle).
-  useWhisperConnectResume();
-  const isNarrowProfile = useMediaQuery('(max-width: 1023px)');
-  const viewSelfProfile = useProfileUiStore((s) => s.viewSelfProfile);
-  const closeSelfProfile = useProfileUiStore((s) => s.closeSelfProfile);
   const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
@@ -83,24 +77,21 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
   );
 
   useEffect(() => {
+    const timeouts = typingTimeoutsRef.current;
     return () => {
-      for (const timeout of typingTimeoutsRef.current.values()) {
+      for (const timeout of timeouts.values()) {
         clearTimeout(timeout);
       }
-      typingTimeoutsRef.current.clear();
+      timeouts.clear();
     };
   }, []);
 
-  useEffect(() => {
-    closeSelfProfile();
-  }, [chatId, closeSelfProfile]);
-
   const newMessageAlertHandler = useCallback(
     (res: NewMessageAlertPayload) => {
-      if (res.chatId === chatId) return;
+      if (res.chatId === suppressedChatId) return;
       addMessageNotification({ chatId: res.chatId });
     },
-    [addMessageNotification, chatId],
+    [addMessageNotification, suppressedChatId],
   );
 
   const newRequestHandler = useCallback(() => {
@@ -181,48 +172,4 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
   );
 
   useSocketEvent(socket, events as Parameters<typeof useSocketEvent>[1]);
-
-  const isImpersonated = useAuthStore((s) => s.isImpersonated);
-
-  return (
-    <>
-      <Title />
-      {isImpersonated && <GhostBanner />}
-
-      <main className="flex h-dvh min-h-0 gap-0 overflow-hidden p-0 pb-[env(safe-area-inset-bottom)] md:gap-2 md:px-3 md:pb-2 md:pt-1.5 lg:gap-3 lg:px-4 lg:pb-3 lg:pt-2">
-        {/* Phone/tablet portrait: one pane. md+: list + chat. lg+: + profile. */}
-        <aside
-          className={`min-h-0 min-w-0 flex-1 bg-background md:rounded-xl md:bg-transparent ${
-            isChatOpen ? 'hidden md:block' : 'block'
-          }`}
-        >
-          <ChatListPanel />
-        </aside>
-
-        <section
-          className={`min-h-0 min-w-0 flex-col ${
-            isChatOpen
-              ? 'flex flex-1 md:flex-2'
-              : 'hidden md:flex md:flex-2'
-          }`}
-        >
-          {children}
-        </section>
-
-        <aside className="relative hidden min-h-0 min-w-0 flex-1 lg:flex lg:flex-col">
-          <ProfileHeader />
-          <ProfilePanel />
-        </aside>
-      </main>
-
-      <ProfileSheet
-        open={viewSelfProfile && isNarrowProfile}
-        onClose={closeSelfProfile}
-        forceSelf
-        title="Edit profile"
-      />
-    </>
-  );
-};
-
-export default AppWrapper;
+}

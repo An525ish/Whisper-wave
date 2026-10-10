@@ -240,7 +240,11 @@ const claimCandidate = async (
  * `self_claimed` means another matcher paired us first; the caller must do
  * nothing, because the claimer emits `MATCH_FOUND` to our room.
  */
-export const tryMatchFromQueue = async (self: WaitingCard): Promise<MatchAttempt> => {
+export const tryMatchFromQueue = async (
+  self: WaitingCard,
+  /** Account ids this user already keeps — never rematch them anonymously. */
+  connectedUserIds: ReadonlySet<string> = new Set()
+): Promise<MatchAttempt> => {
   const redis = getRedis();
 
   // Tail-anchored window = the longest-waiting entries.
@@ -297,6 +301,9 @@ export const tryMatchFromQueue = async (self: WaitingCard): Promise<MatchAttempt
     const card = cards[i];
     if (!card) return; // stale queue entry
     if (blocked.has(anonId)) return;
+    // Already connected accounts never rematch anonymously — the DM is reused
+    // on Connect instead. Free: the card is already in hand.
+    if (card.userId && connectedUserIds.has(card.userId)) return;
     // Never match an account with itself. A signed-in user on a phone and a
     // laptop is two anonIds and one account, and the anonId filter above cannot
     // see that — so without this the same person is handed their own other tab,

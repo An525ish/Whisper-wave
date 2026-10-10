@@ -14,6 +14,35 @@ Scope decisions settled Sep 2026:
   Sequential; the thread you just left is not archived (transcripts die with the session).
 - Guests are never capped. Any quota applies to **signed-in** users only.
 
+Hub audit gaps (HUB_PLAN §3.3) — resolved in Phase 0–1, Oct 2026:
+
+- Connected-DM reports now write userId-keyed Redis blocks (`blockUsers`) — a
+  reported account can no longer rematch the reporter anonymously.
+- Pairing skips candidates the account already keeps (one indexed
+  `Connection` lookup per join) — the DM is reused on Connect instead.
+- A guest who closes the tab after a mutual vibe redeems via Redis claims
+  (`match:claim:{anonId}`, 7 d) + `GET /api/connection/pending`, visible as
+  chat-list ghost rows — the `sessionStorage` token is no longer the only proof.
+- Quota is client-visible (`GET /api/match/quota` → hub card "N left today").
+- Resolved by design: the `connectToken` `jti` stays unconsumed — seat-binding
+  already rejects cross-account replays (403), same-user replays are
+  idempotent-success, and single-use tokens would turn double-submits and
+  crash-retries into 409s without stopping first-use theft (see HUB_PLAN
+  §7.2.8).
+
+Rooms safety backlog (HUB_PLAN §9.3) — shipped Oct 2026: room lock/unlock +
+per-instance slow override (mod menu + header controls), shadow-mute (sender
+echo only), self-harm resources card (detection flags support, never bans or
+reports), moderation audit trail (mod actions + admin ban/close/feature-flips,
+admin list endpoint), mid-session hours enforcement, admin reports panel with
+SLA ages.
+
+Trust ladder (3b core) — shipped Oct 2026: computed `new → standard →
+trusted` (7 d + clean 30 d), resolved once at room join (hot path stays
+Mongo-free), trusted members may post links, trusted creators list instantly,
+admin bans record strikes, template `mods` assign volunteers. Remaining 3b:
+game-night hosting, unlisted invites.
+
 ---
 
 ## Anonymous chat — free-tier roadmap (agreed)

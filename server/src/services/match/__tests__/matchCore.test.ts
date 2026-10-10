@@ -29,6 +29,7 @@ describe('redis keys', () => {
       REDIS_KEYS.meta(session),
       REDIS_KEYS.autoReported(session, 'sexual'),
       REDIS_KEYS.joinCounted(anon),
+      REDIS_KEYS.claim(anon),
     ];
     for (const key of keys) {
       assert.ok(key.startsWith('match:'), `${key} is not namespaced`);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { BASE_URL } from '@/shared/constants/app';
 import { SOCKET_LIFECYCLE } from '@/shared/constants/socket';
@@ -122,10 +122,4 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Param
   }, [shouldConnect]);
 
   return socketRef;
-}
-
-/** Partner typing indicator state, colocated with the socket that drives it. */
-export function usePartnerTyping(): [boolean, (v: boolean) => void] {
-  const [typing, setTyping] = useState(false);
-  return [typing, setTyping];
 }

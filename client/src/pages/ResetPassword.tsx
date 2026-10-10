@@ -9,6 +9,7 @@ import { PRODUCT_VOICE } from '@/shared/constants/app';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { ROUTES } from '@/shared/constants/routes';
 
 export default function ResetPassword() {
   const [params] = useSearchParams();
@@ -30,7 +31,7 @@ export default function ResetPassword() {
         token,
         password: data.password,
       });
-      navigate('/auth', { replace: true });
+      navigate(ROUTES.auth, { replace: true });
     } catch (error) {
       toast.error(toErrorMessage(error));
     }
@@ -96,7 +97,7 @@ export default function ResetPassword() {
                 Update password
               </AuthSubmit>
               <Link
-                to="/auth"
+                to={ROUTES.auth}
                 className="text-center text-sm text-body-300 transition hover:text-green focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
               >
                 ← Back to sign in
@@ -109,7 +110,7 @@ export default function ResetPassword() {
               Open the link from your email, or start recovery again from the
               sign-in screen.
             </div>
-            <AuthSubmit type="button" onClick={() => navigate('/auth')}>
+            <AuthSubmit type="button" onClick={() => navigate(ROUTES.auth)}>
               Back to sign in
             </AuthSubmit>
           </div>

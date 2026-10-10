@@ -1,4 +1,5 @@
 export { auth, optionalAuth } from './auth.js';
+export { ensureGid } from './gid.js';
 export { applySocketAuth, socketAuth } from './auth.js';
 export { requireAdmin } from './adminAuth.js';
 export { globalErrorHandler } from './error.js';

@@ -39,6 +39,11 @@ during implementation. This section is the accurate one.
 | Transcripts expire by TTL only | Transcripts (message buffer + reactions) are **deleted when a session ends** | The product promise: gone means gone. |
 | Single shared message counter for the gate | Vibe gate uses **per-side counters** | The "≥ 2 from each side" rule needs per-side counts; recomputing from the buffer was lossy past 50 messages. |
 | Sweeper armed per disconnect | Sweeper armed **on demand and at boot**; the queue is **purged at boot** | A process restart used to orphan grace periods and leave stale queue entries. |
+| `connectToken` in `sessionStorage` is the only post-mutual proof | **Mutual-like claims** (`match:claim:{anonId}`, 7 d) for both seats, redeemable via `POST /api/connection/complete { claimId }` | The token died with the tab (~10 min). A guest who closed the tab after a mutual vibe lost the connection. The `anonId` cookie survives the tab, so it is as strong a proof of seat. |
+| Pending connections visible only inside the whisper room | `GET /api/connection/pending` + `DELETE /api/connection/pending/:id`, ghost rows in the chat list | A member whose partner had not connected yet had no surface outside the room. Claims show as "your move", rows as "waiting for them". |
+| Connected-DM reports do not affect matching | User-target reports also write userId-keyed Redis blocks | A reported account met the reporter again anonymously the next day. |
+| Already-connected pairs can rematch anonymously | Pairing skips candidates the account already keeps (one indexed lookup per join) | Rematching people who already have a DM is a dead session; the DM is reused on Connect instead. |
+| Chat list has no whisper origin | `origin: 'whisper' \| null` on list rows, glyph + New tag in the client | The "how we met" story was only inside the DM, never on the list. |
 
 ### The vibe-eligibility gate (not in the original plan)
 
@@ -57,14 +62,11 @@ and `client/src/features/whisper/utils/isVibeUnlocked.ts` — keep them in sync.
 
 ### Known follow-ups (not blockers)
 
-- **Redis cost.** Upstash free is 10k commands/day; `tryMatchFromQueue` is O(n)
-  per join. **Estimate (not measured):** ~150 commands for a 10-message chat
-  (buffer writes, counters, presence, likes, cleanup) ≈ 60–70 sessions/day on
-  Upstash free, then PAYG. Measure before relying on it. See Cost Analysis below.
+- **Redis cost.** Upstash free is **500K commands/month** (the old "10k/day" figure was stale). **Measured Oct 2026** with `npm run measure:whisper`: ~154 commands for a 10-message mutual-like session (join 6, pair 16, chat 91, likes 19, end 22) ≈ **~3,200 sessions/month ≈ 108/day**. `tryMatchFromQueue` is O(n) per join — that scan, not session storage, is the scaling ceiling.
 - **HTTP rate limiters are in-memory.** Move them to `rate-limit-redis` before
   running more than one instance.
-- **No client test runner.** vitest is not set up; client logic (e.g. the vibe
-  gate) is only covered by server-side tests and manual passes.
+- **Client tests are unit-only.** `vitest run` covers pure utils/schemas
+  (`src/**/*.test.ts`, happy-dom); no DOM rendering or component tests yet.
 - **Refresh-restore limits.** See the `features/whisper` notes for what a page
   refresh can and cannot restore.
 - **No socket.io-redis adapter.** Single-process only. Required before

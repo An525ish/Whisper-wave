@@ -38,6 +38,19 @@ export const anonCookieOptions: CookieOptions = {
   secure: isProd,
 };
 
+/**
+ * Stable guest identity cookie (30 days, see `GID_COOKIE_TTL_DAYS`).
+ * Minted by the `ensureGid` middleware on first API contact.
+ * httpOnly so the client can't read/forge the gid — same `sameSite`/`secure`
+ * posture as `anonId`, since it travels on the same requests.
+ */
+export const gidCookieOptions: CookieOptions = {
+  maxAge: env.GID_COOKIE_TTL_DAYS * 24 * 60 * 60 * 1000,
+  sameSite: isProd ? 'none' : 'lax',
+  httpOnly: true,
+  secure: isProd,
+};
+
 export const corsOptions: CorsOptions = {
   origin: [
     ...(env.CLIENT_URL ? [env.CLIENT_URL] : []),

@@ -17,12 +17,12 @@ import { joinQueue } from '../api/match';
 import { useAnonStore } from '../stores/anonStore';
 import { trackSessionEnd } from '../stores/trackSessionEnd';
 import { isVibeUnlocked } from '../utils/isVibeUnlocked';
-import { useAnonSocketLifecycle } from './useAnonSocketLifecycle';
 import type {
   AnonLikeAck,
   AnonMessageAck,
   AnonReaction,
   AnonReactionAck,
+  AnonSocketRef,
   NextSource,
 } from '../types';
 
@@ -36,20 +36,13 @@ const TIMEOUT_REASON = 'No reply from the server — tap to resend.';
 
 /**
  * The imperative half of the anon socket: send actions over the connection
- * owned by `useAnonSocketLifecycle`.
+ * owned by `WhisperSessionProvider` (via `useAnonSocketLifecycle`).
  *
  * Every message send is **acked**. Messages are appended optimistically but marked
  * `sending` until the server confirms, so a message rejected by moderation or
  * the rate limiter can never sit in the thread looking delivered.
  */
-export function useAnonSocket(
-  onPartnerTyping: (isTyping: boolean) => void,
-  onError: (msg: string) => void
-) {
-  const socketRef = useAnonSocketLifecycle({
-    onPartnerTyping,
-    onSocketError: onError,
-  });
+export function useAnonSocket(socketRef: AnonSocketRef, onError: (msg: string) => void) {
 
   /** Emit a message and settle its optimistic bubble from the ack. */
   const emitWithAck = useCallback(

@@ -1,0 +1,1243 @@
+/**
+ * Midnight-shore atmosphere for the hub home. Colocated (not in index.css):
+ * these keyframes belong to exactly one screen.
+ *
+ * Motion contract: everything decorative freezes under
+ * `prefers-reduced-motion`, and entrance states end visible — content is
+ * never stuck at opacity 0 without animation.
+ */
+
+.hw-hero {
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(90, 63, 214, 0.28) 0%, transparent 55%),
+    radial-gradient(90% 70% at 50% 115%, rgba(1, 195, 109, 0.1) 0%, transparent 60%),
+    rgb(33 26 42);
+}
+
+.hw-atmo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hw-moon {
+  position: absolute;
+  top: -3.5rem;
+  left: 50%;
+  width: 11rem;
+  height: 11rem;
+  margin-left: -5.5rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(139, 107, 255, 0.35) 0%, rgba(139, 107, 255, 0.08) 45%, transparent 70%);
+  filter: blur(4px);
+  animation: hw-drift 14s ease-in-out infinite alternate;
+}
+
+.hw-tide {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -45%;
+  height: 75%;
+  background: radial-gradient(50% 100% at 50% 100%, rgba(1, 195, 109, 0.12) 0%, transparent 70%);
+  animation: hw-drift 11s ease-in-out infinite alternate-reverse;
+}
+
+.hw-star {
+  position: absolute;
+  border-radius: 9999px;
+  background: #ebecec;
+  animation: hw-twinkle 5s ease-in-out infinite;
+}
+
+.hw-star-dim {
+  opacity: 0.45;
+}
+
+@keyframes hw-drift {
+  from {
+    transform: translate3d(-1.5rem, 0, 0);
+  }
+  to {
+    transform: translate3d(1.5rem, 0.75rem, 0);
+  }
+}
+
+@keyframes hw-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* Illustration motion — slow, ambient, never the focus. */
+.hw-float {
+  animation: hw-float 7s ease-in-out infinite;
+}
+
+.hw-spin-slow {
+  animation: hw-spin 26s linear infinite;
+}
+
+.hw-ping-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hw-ping 3.2s ease-out infinite;
+}
+
+@keyframes hw-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes hw-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hw-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+.hw-rise {
+  opacity: 0;
+  animation: hw-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--hw-d, 0ms);
+}
+
+@keyframes hw-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-moon,
+  .hw-tide,
+  .hw-star,
+  .hw-float,
+  .hw-spin-slow,
+  .hw-ping-ring,
+  .hw-rise,
+  .hw-orbit,
+  .hw-eq-bar,
+  .hw-blink-dot {
+    animation: none;
+  }
+
+  .hw-roomcard,
+  .hw-roomcard__arrow {
+    transition: none;
+  }
+
+  .hw-roomcard:hover,
+  .hw-roomcard--closed:hover {
+    transform: none;
+  }
+
+  .hw-moon,
+  .hw-tide,
+  .hw-star {
+    opacity: 0.5;
+  }
+
+  .hw-rise {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Landing-grade surface system, hub-scoped ─────────────────────────── */
+
+/** Film grain overlay: feTurbulence noise, barely-there, blend overlay. */
+.hw-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/** Glass panel: layered light, deep blur, inner highlights. */
+.hw-glass {
+  background:
+    linear-gradient(158deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 42%, rgba(139, 107, 255, 0.07)),
+    linear-gradient(158deg, rgba(42, 33, 56, 0.92), rgba(26, 20, 36, 0.95));
+  backdrop-filter: blur(26px) saturate(155%);
+  -webkit-backdrop-filter: blur(26px) saturate(155%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 40px 90px -30px rgba(6, 3, 16, 0.9),
+    0 12px 40px -14px rgba(90, 63, 214, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/** Rim light: gradient border via masked pseudo-layer. Host must be relative. */
+.hw-rim {
+  position: relative;
+}
+
+.hw-rim::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(150deg, rgba(139, 107, 255, 0.65) 0%, transparent 38%, transparent 60%, rgba(1, 195, 109, 0.5) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/** Iridescent display text: violet → teal clip. */
+.hw-iri {
+  background: linear-gradient(100deg, #b6a4ff, #35e0c8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/** Aurora blobs: screen-blend color fields, slow drift. */
+.hw-aurora {
+  position: absolute;
+  border-radius: 9999px;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: hw-aurora 22s ease-in-out infinite alternate;
+}
+
+@keyframes hw-aurora {
+  from {
+    transform: translate3d(-4%, -2%, 0) scale(1.05);
+  }
+  to {
+    transform: translate3d(5%, 3%, 0) scale(1.18);
+  }
+}
+
+/** Slow orbit for dashed rings (transform-origin set inline per SVG). */
+.hw-orbit {
+  animation: hw-spin 32s linear infinite;
+}
+
+.hw-orbit-rev {
+  animation: hw-spin-rev 46s linear infinite;
+}
+
+@keyframes hw-spin-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/** Waveform EQ bars (whisper section ambience). */.hw-eq-bar {
+  width: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #7dffb8, #01c36d 60%, #019c57);
+  transform-origin: bottom;
+  animation: hw-eq 1.15s ease-in-out infinite;
+}
+
+@keyframes hw-eq {
+  0%,
+  100% {
+    transform: scaleY(0.34);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/** HUD micro-labels: mono, tracked, faint. */
+.hw-hud {
+  font-family: var(--font-hw-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/** Section eyebrows: plain-language pills, never codes. */
+.hw-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    0 8px 22px -10px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 0.36rem 0.8rem;
+  font-family: var(--font-hw-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-body-700);
+}
+
+.hw-eyebrow__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #b6a4ff;
+  box-shadow: 0 0 8px rgba(182, 164, 255, 0.8);
+}
+
+.hw-eyebrow--live {
+  border-color: rgba(1, 195, 109, 0.4);
+  background:
+    linear-gradient(180deg, rgba(1, 195, 109, 0.14), rgba(1, 195, 109, 0.04)),
+    rgba(13, 9, 18, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(1, 195, 109, 0.1),
+    0 8px 26px -8px rgba(1, 195, 109, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: var(--color-green);
+}
+
+.hw-eyebrow--live .hw-eyebrow__dot {
+  background: var(--color-green);
+  box-shadow: 0 0 8px rgba(1, 195, 109, 0.9);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+.hw-eyebrow--soon {
+  border-style: dashed;
+  border-color: rgba(235, 236, 236, 0.2);
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-body-300);
+}
+
+/* ── Room cards: art tile, words, status, hours, doorway ──────────── */
+
+.hw-roomcard {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.85rem 0.9rem 0.85rem 0.85rem;
+  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+}
+
+.hw-roomcard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(1, 195, 109, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 18px 44px -20px rgba(0, 0, 0, 0.8);
+}
+
+.hw-roomcard--live {
+  border-color: rgba(1, 195, 109, 0.3);
+  background:
+    linear-gradient(180deg, rgba(1, 195, 109, 0.07), rgba(1, 195, 109, 0.015)),
+    rgba(255, 255, 255, 0.025);
+}
+
+.hw-roomcard--live:hover {
+  border-color: rgba(1, 195, 109, 0.55);
+  box-shadow:
+    0 18px 44px -20px rgba(0, 0, 0, 0.8),
+    0 12px 36px -18px rgba(1, 195, 109, 0.5);
+}
+
+.hw-roomcard--closed {
+  opacity: 0.62;
+}
+
+.hw-roomcard--closed:hover {
+  transform: none;
+}
+
+/** Art tile: deterministic gradient + initial letter per room. */
+.hw-roomart {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.hw-roomart--0 {
+  background:
+    radial-gradient(90% 90% at 30% 15%, rgba(139, 107, 255, 0.65), transparent 65%),
+    linear-gradient(150deg, #3d2b6e, #1a1520);
+}
+
+.hw-roomart--1 {
+  background:
+    radial-gradient(90% 90% at 30% 15%, rgba(53, 224, 200, 0.5), transparent 65%),
+    linear-gradient(150deg, #123f39, #101a18);
+}
+
+.hw-roomart--2 {
+  background:
+    radial-gradient(90% 90% at 30% 15%, rgba(1, 195, 109, 0.5), transparent 65%),
+    linear-gradient(150deg, #134434, #101a15);
+}
+
+.hw-roomart--3 {
+  background:
+    radial-gradient(90% 90% at 30% 15%, rgba(86, 152, 255, 0.55), transparent 65%),
+    linear-gradient(150deg, #26355c, #141a26);
+}
+
+.hw-roomart__pulse {
+  position: absolute;
+  right: 0.4rem;
+  top: 0.4rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-green);
+  box-shadow: 0 0 8px rgba(1, 195, 109, 0.9);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+/** Status pill inside a room card. */
+.hw-roomstatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.18rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-body-300);
+}
+
+.hw-roomstatus__dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.hw-roomstatus--live {
+  border-color: rgba(1, 195, 109, 0.45);
+  background: rgba(1, 195, 109, 0.12);
+  color: var(--color-green);
+}
+
+.hw-roomstatus--live .hw-roomstatus__dot {
+  background: var(--color-green);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+.hw-roomstatus--closed {
+  border-style: dashed;
+  background: transparent;
+}
+
+/** Hours chip: only scheduled rooms carry one. */
+.hw-roomhours {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-family: var(--font-hw-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--color-body-300);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/** Doorway arrow: always visible for touch, lifts on hover. */
+.hw-roomcard__arrow {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-body-300);
+  font-size: 0.95rem;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.group:hover .hw-roomcard__arrow {
+  background: var(--color-green);
+  border-color: var(--color-green);
+  color: #06130d;
+  transform: translateX(2px);
+}
+
+/** Floating glass chips (presence, counts). */
+.hw-chip {
+  border: 1px solid rgba(235, 236, 236, 0.12);
+  background: rgba(42, 33, 54, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+/** Live dot with halo. */
+.hw-live-dot {
+  box-shadow: 0 0 6px #01c36d;
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+@keyframes hw-blink-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* ── Page canvas + landing-grade backdrop ─────────────────────────── */
+
+.hw-page {
+  background:
+    radial-gradient(ellipse 90% 55% at 12% 0%, rgba(139, 107, 255, 0.09), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 88% 30%, rgba(53, 224, 200, 0.05), transparent 55%),
+    var(--color-background);
+}
+
+.hw-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hw-mesh {
+  position: absolute;
+  inset: 0;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(235, 236, 236, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(235, 236, 236, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 75% 60% at 50% 18%, black 20%, transparent 78%);
+}
+
+.hw-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform, opacity;
+}
+
+.hw-glow--violet {
+  top: -12%;
+  left: -8%;
+  width: min(60vw, 540px);
+  height: min(60vw, 540px);
+  background: radial-gradient(circle, rgba(139, 107, 255, 0.3) 0%, transparent 68%);
+  animation: hw-glow-a 10s ease-in-out infinite;
+}
+
+.hw-glow--teal {
+  top: 22%;
+  right: -14%;
+  width: min(56vw, 500px);
+  height: min(56vw, 500px);
+  background: radial-gradient(circle, rgba(53, 224, 200, 0.12) 0%, transparent 70%);
+  animation: hw-glow-b 14s ease-in-out infinite reverse;
+}
+
+.hw-glow--green {
+  top: 55%;
+  left: 30%;
+  width: min(40vw, 360px);
+  height: min(40vw, 360px);
+  background: radial-gradient(circle, rgba(1, 195, 109, 0.09) 0%, transparent 70%);
+  animation: hw-glow-a 16s ease-in-out infinite;
+}
+
+@keyframes hw-glow-a {
+  0%, 100% { transform: translate(-8%, -6%) scale(1); opacity: 0.55; }
+  50% { transform: translate(6%, 4%) scale(1.12); opacity: 0.85; }
+}
+
+@keyframes hw-glow-b {
+  0%, 100% { transform: translate(10%, 8%) scale(1); opacity: 0.4; }
+  50% { transform: translate(-12%, -4%) scale(1.15); opacity: 0.7; }
+}
+
+.hw-ripples {
+  position: absolute;
+  top: -6%;
+  left: 50%;
+  width: min(110vw, 820px);
+  height: min(110vw, 820px);
+  translate: -50% 0;
+  opacity: 0.9;
+}
+
+.hw-ripple {
+  stroke: rgba(139, 107, 255, 0.28);
+  fill: none;
+  transform-origin: 400px 400px;
+  animation: hw-ripple 7s ease-out infinite;
+}
+
+.hw-ripple--2 { animation-delay: 1.6s; stroke: rgba(1, 195, 109, 0.22); }
+.hw-ripple--3 { animation-delay: 3.2s; stroke: rgba(235, 236, 236, 0.09); }
+.hw-ripple--4 { animation-delay: 4.8s; stroke: rgba(53, 224, 200, 0.14); }
+
+@keyframes hw-ripple {
+  0% { opacity: 0.55; stroke-width: 1.25; }
+  70% { opacity: 0; stroke-width: 0.4; }
+  100% { opacity: 0; }
+}
+
+.hw-sine {
+  stroke: rgba(1, 195, 109, 0.4);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 12 10;
+  animation: hw-sine-draw 8s ease-in-out infinite;
+}
+
+@keyframes hw-sine-draw {
+  0%, 100% { stroke-dashoffset: 0; opacity: 0.35; }
+  50% { stroke-dashoffset: 40; opacity: 0.7; }
+}
+
+.hw-signal {
+  position: absolute;
+  right: 6%;
+  top: 5.5rem;
+  display: none;
+  gap: 5px;
+  align-items: flex-end;
+  height: 42px;
+  opacity: 0.6;
+}
+
+@media (min-width: 768px) {
+  .hw-signal { display: flex; }
+}
+
+.hw-signal span {
+  width: 3px;
+  border-radius: 999px;
+  background: var(--color-green);
+  animation: hw-signal-bars 2.8s ease-in-out infinite;
+}
+
+.hw-signal span:nth-child(1) { height: 28%; }
+.hw-signal span:nth-child(2) { height: 55%; animation-delay: 0.25s; }
+.hw-signal span:nth-child(3) { height: 82%; animation-delay: 0.5s; }
+.hw-signal span:nth-child(4) { height: 42%; animation-delay: 0.75s; }
+
+@keyframes hw-signal-bars {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+}
+
+.hw-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 70% at 50% 30%,
+    transparent 35%,
+    rgba(26, 21, 32, 0.7) 100%
+  );
+}
+
+/* ── Hero status pill ─────────────────────────────────────────────── */
+
+.hw-statuspill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(235, 236, 236, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  color: var(--color-body-300);
+}
+
+.hw-statuspill__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--color-green);
+  box-shadow: 0 0 0 0 rgba(1, 195, 109, 0.45);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+/* ── Sheen sweep for primary CTAs + door cards ────────────────────── */
+
+.hw-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.hw-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.18) 48%, transparent 62%);
+  transform: translateX(-120%);
+  transition: transform 0.55s ease;
+  pointer-events: none;
+}
+
+.hw-sheen:hover::after {
+  transform: translateX(120%);
+}
+
+/* ── Cove stage (quiet-circle treatment, home retune) ────────────── */
+
+.hw-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+  isolation: isolate;
+}
+
+.hw-stage__glow {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 107, 255, 0.26) 0%, transparent 68%);
+  filter: blur(8px);
+  z-index: 0;
+}
+
+.hw-stage__rings {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hw-stage__ring {
+  fill: none;
+  stroke: rgba(235, 236, 236, 0.08);
+  stroke-width: 1;
+}
+
+.hw-stage__ring--b {
+  stroke: rgba(139, 107, 255, 0.22);
+  stroke-dasharray: 4 10;
+  animation: hw-spin 28s linear infinite;
+  transform-origin: 180px 180px;
+}
+
+.hw-stage__ring--c {
+  stroke: rgba(53, 224, 200, 0.16);
+  stroke-dasharray: 2 14;
+  animation: hw-spin-rev 40s linear infinite;
+  transform-origin: 180px 180px;
+}
+
+.hw-stage__arc {
+  fill: none;
+  stroke: rgba(53, 224, 200, 0.6);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 6px rgba(53, 224, 200, 0.35));
+  animation: hw-arc-breathe 4.5s ease-in-out infinite;
+  transform-origin: 180px 180px;
+}
+
+@keyframes hw-arc-breathe {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+}
+
+.hw-stage__scene {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  z-index: 1;
+  width: 94%;
+  height: auto;
+  translate: -50% -50%;
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.35));
+  animation: hw-scene-float 7s ease-in-out infinite;
+}
+
+@keyframes hw-scene-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+.hw-drifter--l { animation: hw-drifter-l 6s ease-in-out infinite; }
+.hw-drifter--r { animation: hw-drifter-r 6s ease-in-out infinite reverse; }
+
+@keyframes hw-drifter-l {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(3px, -5px); }
+}
+
+@keyframes hw-drifter-r {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-3px, -5px); }
+}
+
+.hw-thread {
+  animation: hw-thread-dash 3s linear infinite;
+}
+
+@keyframes hw-thread-dash {
+  to { stroke-dashoffset: -22; }
+}
+
+.hw-stage__wave {
+  position: absolute;
+  left: 50%;
+  bottom: 7%;
+  z-index: 3;
+  translate: -50% 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  height: 2.75rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(26, 21, 32, 0.6);
+  border: 1px solid rgba(235, 236, 236, 0.09);
+  backdrop-filter: blur(8px);
+}
+
+.hw-stage__bar {
+  display: block;
+  width: 3px;
+  height: 42%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #7dffb8, #01c36d 60%, #019c57);
+  transform-origin: bottom center;
+  animation: hw-eq 1.15s ease-in-out infinite;
+}
+
+.hw-stage__bar:nth-child(3n) { height: 58%; }
+.hw-stage__bar:nth-child(5n) { height: 72%; }
+
+.hw-stage__chip {
+  position: absolute;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(235, 236, 236, 0.1);
+  background: rgba(42, 33, 54, 0.82);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-body-700);
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
+.hw-stage__chip--a {
+  top: 5%;
+  right: 1%;
+  animation: hw-scene-float 6.5s ease-in-out infinite;
+}
+
+.hw-stage__chip--b {
+  bottom: 24%;
+  left: 0;
+  color: #ebecec;
+  border-color: rgba(139, 107, 255, 0.3);
+  font-family: var(--font-hw-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  animation: hw-scene-float 7.2s ease-in-out infinite reverse;
+}
+
+.hw-stage__chip-dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--color-green);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+.hw-stage__chip-anon {
+  color: #b6a4ff;
+}
+
+@media (max-width: 767px) {
+  .hw-stage { max-width: 22rem; }
+}
+
+/* ── Door cards ───────────────────────────────────────────────────── */
+
+.hw-door__glow {
+  position: absolute;
+  inset: auto;
+  top: -30%;
+  left: 10%;
+  right: 10%;
+  height: 70%;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.hw-door__glow--whisper {
+  background: radial-gradient(circle, rgba(1, 195, 109, 0.22), transparent 70%);
+}
+
+.hw-door__glow--rooms {
+  background: radial-gradient(circle, rgba(139, 107, 255, 0.25), transparent 70%);
+}
+
+.hw-door__glow--memes {
+  background: radial-gradient(circle, rgba(53, 224, 200, 0.16), transparent 70%);
+}
+
+.hw-door__glyph {
+  position: relative;
+  height: 3.5rem;
+  width: 3.5rem;
+}
+
+.hw-door {
+  box-shadow:
+    0 24px 60px -28px rgba(6, 3, 16, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* ── Section card glows ───────────────────────────────────────────── */
+
+.hw-cardglow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.hw-cardglow--rooms {
+  top: -20%;
+  right: -10%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(139, 107, 255, 0.16), transparent 70%);
+}
+
+.hw-cardglow--memes {
+  top: -30%;
+  left: -8%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(53, 224, 200, 0.1), transparent 70%);
+}
+
+.hw-cardglow--play {
+  bottom: -30%;
+  right: 10%;
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(1, 195, 109, 0.1), transparent 70%);
+}
+
+.hw-cardglow--shore {
+  top: -60%;
+  left: 20%;
+  right: 20%;
+  height: 200%;
+  border-radius: 0;
+  filter: blur(50px);
+  background: radial-gradient(ellipse, rgba(139, 107, 255, 0.1), transparent 70%);
+}
+
+.hw-driftcard {
+  box-shadow: 0 14px 34px -18px rgba(0, 0, 0, 0.7);
+}
+
+/* ── Reduced motion: freeze the whole shore ───────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-glow,
+  .hw-ripple,
+  .hw-sine,
+  .hw-signal span,
+  .hw-stage__ring--b,
+  .hw-stage__ring--c,
+  .hw-stage__arc,
+  .hw-stage__scene,
+  .hw-stage__bar,
+  .hw-stage__chip,
+  .hw-stage__chip-dot,
+  .hw-statuspill__dot,
+  .hw-drifter--l,
+  .hw-drifter--r,
+  .hw-thread {
+    animation: none !important;
+  }
+
+  .hw-stage__bar {
+    transform: scaleY(0.7);
+    opacity: 0.75;
+  }
+}
+
+@media (max-width: 767px) {
+  .hw-ripples,
+  .hw-glow--green,
+  .hw-stage__chip {
+    display: none;
+  }
+
+  .hw-glow--violet,
+  .hw-glow--teal,
+  .hw-ripple,
+  .hw-sine {
+    animation: none;
+  }
+}
+
+/* ── Meme drift: a sideways hand of joke cards ────────────────────── */
+
+.hw-driftwrap {
+  margin-inline: -1rem;
+  padding-inline: 1rem;
+  mask-image: linear-gradient(90deg, transparent 0, #000 3%, #000 97%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 3%, #000 97%, transparent 100%);
+}
+
+@media (min-width: 768px) {
+  .hw-driftwrap {
+    margin-inline: -1.5rem;
+    padding-inline: 1.5rem;
+  }
+}
+
+.hw-driftscroll {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 0.5rem 0.25rem 0.75rem;
+}
+
+.hw-memecard {
+  display: flex;
+  flex-direction: column;
+  width: 13.5rem;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  overflow: hidden;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(170deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 45%),
+    linear-gradient(170deg, rgba(42, 33, 56, 0.94), rgba(26, 20, 36, 0.96));
+  box-shadow:
+    0 18px 44px -20px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transform: rotate(var(--hw-tilt, 0deg));
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hw-memecard:hover {
+  transform: rotate(0deg) translateY(-4px);
+  border-color: rgba(1, 195, 109, 0.4);
+  box-shadow:
+    0 22px 50px -18px rgba(1, 195, 109, 0.35),
+    0 18px 44px -20px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.hw-memecard:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+.hw-memecard__img {
+  position: relative;
+  display: block;
+  height: 9.5rem;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.hw-memecard__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.hw-memecard:hover .hw-memecard__photo {
+  transform: scale(1.05);
+}
+
+.hw-memecard__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 55%, rgba(13, 9, 18, 0.55) 100%);
+  pointer-events: none;
+}
+
+.hw-memecard__cat {
+  position: absolute;
+  left: 0.55rem;
+  top: 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(13, 9, 18, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0.15rem 0.55rem;
+  font-family: var(--font-hw-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b6a4ff;
+}
+
+.hw-memecard__num {
+  position: absolute;
+  right: 0.65rem;
+  top: 0.55rem;
+  font-family: var(--font-hw-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: rgba(235, 236, 236, 0.55);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+.hw-memecard__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.8rem 0.8rem;
+  min-height: 7.5rem;
+}
+
+.hw-memecard__setup {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.hw-memecard__delivery {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--color-body-300);
+}
+
+.hw-memecard__go {
+  margin-top: auto;
+  padding-top: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--color-green);
+  opacity: 0.75;
+  transition: opacity 0.2s ease;
+}
+
+.hw-memecard:hover .hw-memecard__go {
+  opacity: 1;
+}
+
+/* end-of-hand tile: the way into the full tap */
+.hw-memecard--more {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border-style: dashed;
+  border-color: rgba(1, 195, 109, 0.35);
+  background: rgba(1, 195, 109, 0.05);
+  transform: none;
+}
+
+.hw-memecard--more:hover {
+  transform: translateY(-4px);
+  border-color: rgba(1, 195, 109, 0.6);
+  background: rgba(1, 195, 109, 0.09);
+}
+
+.hw-more__icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin-top: 1.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(1, 195, 109, 0.35);
+  background: rgba(1, 195, 109, 0.1);
+  color: var(--color-green);
+}
+
+.hw-more__icon svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.hw-more__body {
+  align-items: center;
+  min-height: 0;
+}

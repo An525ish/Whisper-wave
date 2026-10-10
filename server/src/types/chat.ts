@@ -143,6 +143,8 @@ export type ChatListItem = {
   members: Array<{ toString(): string }>;
   lastMessage: ChatListLastMessage | null;
   unreadCount: number;
+  /** Set when this DM began as an anonymous whisper match. */
+  origin: 'whisper' | null;
 };
 
 export type UserChatWithLastMessage = {

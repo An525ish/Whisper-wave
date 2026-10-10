@@ -7,6 +7,7 @@ import {
   useUnfriendMutation,
   useDeleteGroupMutation,
 } from '@/features/chat/hooks/useMessageMutations';
+import { ROUTES } from '@/shared/constants/routes';
 
 type OtherMember = { _id: string; name: string; avatar?: string; isAdmin?: boolean };
 
@@ -48,7 +49,7 @@ export function useConversationHeaderActions({
   const handleConfirmationModal = useCallback(async ({ accept }: { accept: boolean }) => {
     if (accept) {
       await leaveGroup(null, { chatId: chatId ?? '' });
-      navigate('/');
+      navigate(ROUTES.chats);
     }
     setIsConfirmLeave(false);
   }, [chatId, leaveGroup, navigate]);
@@ -65,13 +66,13 @@ export function useConversationHeaderActions({
   const handleCreatorLeaveConfirm = useCallback(async (newCreatorId?: string) => {
     await leaveGroup(null, { chatId: chatId ?? '', newCreatorId });
     setIsCreatorLeaveDialog(false);
-    navigate('/');
+    navigate(ROUTES.chats);
   }, [chatId, leaveGroup, navigate]);
 
   const handleDeleteChatConfirm = useCallback(async ({ accept }: { accept: boolean }) => {
     if (accept) {
       await deleteChatForMe(null, chatId ?? '');
-      navigate('/');
+      navigate(ROUTES.chats);
     }
     setIsConfirmDeleteChat(false);
   }, [chatId, deleteChatForMe, navigate]);
@@ -79,7 +80,7 @@ export function useConversationHeaderActions({
   const handleUnfriendConfirm = useCallback(async ({ accept }: { accept: boolean }) => {
     if (accept) {
       await unfriend(null, chatId ?? '');
-      navigate('/');
+      navigate(ROUTES.chats);
     }
     setIsConfirmUnfriend(false);
   }, [chatId, navigate, unfriend]);
@@ -87,7 +88,7 @@ export function useConversationHeaderActions({
   const handleDeleteGroupConfirm = useCallback(async ({ accept }: { accept: boolean }) => {
     if (accept) {
       await deleteGroup(null, chatId ?? '');
-      navigate('/');
+      navigate(ROUTES.chats);
     }
     setIsConfirmDeleteGroup(false);
   }, [chatId, deleteGroup, navigate]);

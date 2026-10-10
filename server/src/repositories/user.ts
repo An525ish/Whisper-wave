@@ -16,6 +16,32 @@ import type {
 export const findByIdLean = async (id: string): Promise<LeanUser | null> =>
   User.findById(id).lean<LeanUser>();
 
+/** Unfiltered-feed opt-in flag — false for guests, new members, and opt-outs. */
+export const getMemeUnfiltered = async (id: string): Promise<boolean> => {
+  const user = await User.findById(id).select('memeUnfiltered').lean<{ memeUnfiltered?: boolean } | null>();
+  return user?.memeUnfiltered === true;
+};
+
+/** Flip the opt-in. Enabling stamps the 18+ self-declaration time. */
+export const setMemeUnfiltered = async (id: string, on: boolean): Promise<void> => {
+  if (on) {
+    await User.updateOne(
+      { _id: id },
+      { $set: { memeUnfiltered: true, memeUnfilteredAt: new Date() } }
+    );
+  } else {
+    await User.updateOne(
+      { _id: id },
+      { $set: { memeUnfiltered: false }, $unset: { memeUnfilteredAt: 1 } }
+    );
+  }
+};
+
+/** Append an abuse strike (trust decays by age — no removal needed). */
+export const pushStrike = async (id: string, reason: string): Promise<void> => {
+  await User.updateOne({ _id: id }, { $push: { strikes: { reason, at: new Date() } } });
+};
+
 export const findByUsername = async (
   username: string
 ): Promise<LeanUser | null> => User.findOne({ username }).lean<LeanUser>();

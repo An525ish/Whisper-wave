@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import ChatHeader from '@/features/chat/components/list/ChatListHeader';
 import ChatTabView from '@/features/chat/components/list/ChatTabView';
+import { PendingGhostRows } from '@/features/whisper';
 import AddMemberIcon from '@/shared/components/ui/icons/AddMember';
 import NewConnectDialog, { type NewConnectTab } from '@/features/chat/components/dialogs/NewConnectDialog';
 
@@ -25,6 +26,7 @@ const ChatListPanel = () => {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
+        <PendingGhostRows />
         <ChatTabView searchText={searchText} />
       </div>
 

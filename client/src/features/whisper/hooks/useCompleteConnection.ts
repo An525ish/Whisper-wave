@@ -7,6 +7,7 @@ import { track } from '@/shared/lib/analytics';
 import { completeConnection } from '../api/connection';
 import { useAnonStore } from '../stores/anonStore';
 import { WHISPER_CONNECT_INTENT, WHISPER_CONNECT_TOKEN_KEY, WHISPER_EVENTS } from '../constants';
+import { ROUTES } from '@/shared/constants/routes';
 
 /**
  * Finish a Whisper "connect & reveal".
@@ -23,7 +24,7 @@ export function useCompleteConnection() {
   const [waiting, setWaiting] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: (connectToken: string) => completeConnection(connectToken),
+    mutationFn: (connectToken: string) => completeConnection({ connectToken }),
     onSuccess: (res) => {
       if (res.data.status === 'connected') {
         setConnected(res.data.chatId, res.data.connectionId);
@@ -41,7 +42,7 @@ export function useCompleteConnection() {
       // Not a DM open — the guest has only been sent to sign in.
       track(WHISPER_EVENTS.CONNECT_AUTH_REDIRECT, {});
       sessionStorage.setItem(WHISPER_CONNECT_TOKEN_KEY, connectToken);
-      navigate('/auth', { state: { intent: WHISPER_CONNECT_INTENT } });
+      navigate(ROUTES.auth, { state: { intent: WHISPER_CONNECT_INTENT } });
       return;
     }
     mutation.mutate(connectToken);

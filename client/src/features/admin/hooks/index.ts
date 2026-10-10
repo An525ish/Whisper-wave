@@ -47,6 +47,26 @@ export {
   useAdminActivityEventsQuery,
 } from '@/features/admin/hooks/useAdminActivity';
 
+// Rooms / bans / feature flags
+export {
+  useAdminRoomsQuery,
+  useUpsertRoomMutation,
+  useCloseInstanceMutation,
+  useRoomBansQuery,
+  useBanIdentityMutation,
+  useLiftBanMutation,
+  useFeatureFlagMutation,
+} from '@/features/admin/hooks/useAdminRooms';
+
+// Reports queue
+export {
+  useAdminReportsQuery,
+  useReviewReportMutation,
+} from '@/features/admin/hooks/useAdminReports';
+
+// Moderation audit trail
+export { useModAuditQuery } from '@/features/admin/hooks/useAdminAudit';
+
 // Composed page view-models
 export { useActivityPage } from '@/features/admin/hooks/useActivityPage';
 export { useAttachmentsPage } from '@/features/admin/hooks/useAttachmentsPage';

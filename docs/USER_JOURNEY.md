@@ -151,7 +151,7 @@ Two kinds of identity:
 
 **User:** Sees “it’s a vibe” → Connect.
 
-**Backend:** They already have `connectToken` from `MUTUAL_LIKE`. The client **holds it in sessionStorage** (it survives the sign-in/up redirect, not a closed tab). Nothing permanent until A8/A9 succeeds.
+**Backend:** They already have `connectToken` from `MUTUAL_LIKE`. The client **holds it in sessionStorage** (it survives the sign-in/up redirect, not a closed tab). The server also wrote a **claim** (`match:claim:{anonId}`, 7 d) for their seat at mutual like — if the tab closes, the `anonId` cookie is still proof of the seat after sign-in. Nothing permanent until A8/A9 succeeds.
 
 ---
 
@@ -162,9 +162,9 @@ Two kinds of identity:
 **Backend:** Normal auth first, **then** `POST /api/connection/complete` with the token — the connect step is **not** part of signup.
 
 1. Signup/signin as in Phase 1 (R2/ImageKit avatar, httpOnly auth cookie).
-2. `POST /api/connection/complete` `{ connectToken }` (authenticated): verify signature/expiry, bind the caller's `userId` to their own side only, reject one account on both sides.
+2. `POST /api/connection/complete` `{ connectToken }` (authenticated): verify signature/expiry, bind the caller's `userId` to their own side only, reject one account on both sides. After a closed tab, `{ claimId }` (the session) redeems the Redis claim on this browser's `anonId` instead — same seat-binding path.
 3. Upsert **PendingConnection** (`sessionId`, two sides with `userId | null`, names, tags, 7-day expiry).
-4. Respond `{ status: "waiting_for_them" }`.
+4. Respond `{ status: "waiting_for_them" }`. The claim is consumed only after the seat binds, so a transient failure stays retryable.
 
 **Why pending?** The other person may not have an account yet.
 
@@ -211,7 +211,7 @@ Disconnect here does **not** delete the person. That’s the difference from ano
 
 ### B1. Open app
 
-**User:** Comes back, still logged in (cookie) or hits login. Signed-in users can also reach `/whisper` from the chat-list menu (Journey C).
+**User:** Comes back, still logged in (cookie) or hits login. Members land on the hub (`/home`); the Whisper card shows their remaining quota for the day.
 
 **Backend:**
 - `POST /api/auth/signin` if needed → set cookie.
@@ -228,16 +228,30 @@ Same as A10. Friend requests, groups, media, logout (`POST /api/auth/signout` cl
 
 ## Journey C — Logged-in user goes anonymous again
 
-**User:** Has an account, wants another stranger. Chat-list menu → “Whisper — talk to someone new” → `/whisper`.
+**User:** Has an account, wants another stranger. Hub nav → Whisper → `/whisper`. The session survives navigating to Chats or Home and back — a pill above the tab bar shows the live state and returns to the thread. Only the explicit Leave/Skip buttons end it.
 
 **Backend:** Same as A1–A6, with extras:
 
-1. They keep their JWT **and** get an `anonId` for the stranger session (anon identity stays separate so the partner never sees `userId`).
-2. Signed-in users have a rolling 24 h whisper quota (`match:whispers:{userId}`); an account can't match its own other device (`match:user:{userId}`).
+1. They keep their JWT **and** get an `anonId` for the stranger session (anon identity stays separate so the partner never sees `userId`). Every API caller also carries a `gid` (stable 30-day guest id for abuse control).
+2. Signed-in users have a rolling 24 h whisper quota (`match:whispers:{userId}`), readable via `GET /api/match/quota`; an account can't match its own other device (`match:user:{userId}`), and never rematches an account it already keeps (connected ids preloaded per join).
 3. If they Connect with the stranger → skip signup, `POST /api/connection/complete` with the token + auth cookie (A9).
-4. Premium flags (Journey D) are not built yet.
+4. Until the partner connects: `GET /api/connection/pending` lists the row, shown as a ghost row in the chat list ("waiting for them", expiry, cancel). When both connect, the DM carries `origin: 'whisper'` on the list row.
+5. Premium flags (Journey D) are not built yet.
 
-**We still do not** put this anon chat in their chat list unless both connect.
+**We still do not** put an unconnected anon chat in their chat list — only ghost rows for in-flight connections.
+
+---
+
+## Journey E — Guest uses the hub (no account)
+
+**User:** Opens the app without signing in. Landing → Enter → `/home`: a launcher (Whisper live, Rooms/Play/Memes as honest "soon" teasers), no wall. They can whisper end-to-end as a guest; persistence (chats, saves) is the account's reward.
+
+**Backend:**
+
+1. First API contact mints a `gid` cookie (30 d, httpOnly) via `ensureGid`; every request resolves to one `Identity` shape (guest `{gid, anonId?}` or member `{userId, gid?, anonId?}`).
+2. `GET /api/hub/summary` returns server-driven feature flags (rooms/games/memes ship dark) — the client hides disabled nav items.
+3. Guests are never quota-capped; bans key on `gid` + `userId` so they survive sign-in.
+4. Mutual like writes a claim per seat (`match:claim:{anonId}`, 7 d). A guest who closes the tab signs in later and redeems via `GET /api/connection/pending` → `POST /api/connection/complete { claimId }` (A8).
 
 ---
 

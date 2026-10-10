@@ -12,6 +12,8 @@
 
 Whisper Wave is an anonymous chat app for Gen Z built around serendipity — you connect with a random stranger, no profile, no algorithm. If you vibe, you connect for real. If you don't, they're gone forever. That tension is the product.
 
+The app is becoming a **hub**: a home page with several ways to meet people (one stranger, a room, a game, a meme), where the persistent chat app is one destination inside it. Guests get a persona and every meeting surface; accounts get persistence. See [`HUB_PLAN.md`](./HUB_PLAN.md) — Phases 0–1 (shell, nav, whisper-in-hub, pending connections) are shipped; Rooms/Games/Memes are planned, each behind a server flag.
+
 The name works on two levels: "Whisper" = anonymous, ephemeral, secret. "Wave" = reaching out, connection, social energy.
 
 ---
@@ -283,6 +285,26 @@ See: [`TECH.md`](./TECH.md) for decision log.
 - New controllers: match, connection
 - **No live Stripe yet** unless we ship Spark Pass in the same phase
 
+### Hub Phases 0–1 — ✅ SHIPPED — $0
+- Hub shell (`HubShell` + `ChatsLayout`, rail + tab bar), `/home` launcher, `/chats` relocation with legacy redirect
+- Whisper session survives navigation (`WhisperSessionProvider` + live pill)
+- Mutual-like claims (tab-closing fix), pending ghost rows, client-visible quota, whisper-origin list markers
+- Stable guest identity (`gid` cookie + shared resolver); DM reports block rematching; pairing skips kept accounts
+- Measured Redis cost: ~154 cmds/session (see `HUB_PLAN.md` §10.3)
+
+### Hub Phase 2 — Laughs — ✅ SHIPPED — $0
+- JokeAPI v2 (no key, safe-mode + full blacklist, 3 safe categories) rendered through Memegen URLs, proxied + cached server-side with provider blocklist and stale fallback
+- Shuffle feed (chips, infinite scroll, local reactions/saves/hides, find-someone interstitials), Home Memes tab + `/memes`, member save sync, share-to-Chat via the GIF pipeline (`kind: 'meme'`, per-kind host allow-list)
+
+### Hub Phase 3a — Rooms — ✅ SHIPPED (dark until staffed hours + safety review) — $0
+- `/rooms` namespace (join/message/leave/react, acked, zero Redis per message), in-memory registry with soft/hard placement, alias disambiguation
+- Automod (slow mode, word list, link block, duplicate/flood suppression), per-gid rate limits, room/user/global bans (dual-key, TTL)
+- Mod tools: delete, mute, kick (+15-min ban), shadow-mute, lock/unlock, slow override; Wave bot prompts; mid-session hours enforcement
+- Reports with evidence snapshots + auto-hide at 3 reporters; self-harm resources card (never bans); moderation audit trail
+- 4 official rooms (seeded) + user creation (unlisted default, host rules-accept, trusted auto-listing); trust ladder (`new → standard → trusted`) with link privileges
+- Admin: rooms/bans/panic-card/reports/audit surfaces; on-call runbook; kill-switch flags
+- Still gated: first-post challenge (needs Turnstile), lawyer pass, public user rooms (3b)
+
 ### Phase 3 — Premium + Safety — first time we may spend
 - Stripe (free to integrate; we only pay % of real Spark Pass payments)
 - Content moderation APIs (paid — only after revenue)
@@ -313,6 +335,9 @@ See: [`TECH.md`](./TECH.md) for decision log.
 
 ## Non-Goals (for now)
 - Video/audio calls in anonymous phase (Phase 3+ only)
-- Public group rooms / Whisper Stories
+- Whisper Stories
 - AI companion
 - Desktop app
+
+(Public group rooms were a non-goal until the hub plan: official, moderated,
+time-boxed Rooms are now planned — see [`HUB_PLAN.md`](./HUB_PLAN.md) §7.3.)

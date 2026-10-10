@@ -19,8 +19,8 @@ pages  ──▶  features  ──▶  shared
 src/
   app/            router, providers, queryClient, RouteError (wiring only)
   pages/          thin route entries — compose features + read route params only
-  layout/         AppWrapper, AdminWrapper (app-wide presence/alerts OK here)
-  features/<domain>/   auth · chat · admin · profile · notifications · landing
+  layout/         HubShell, ChatsLayout, AdminWrapper (app-wide presence/alerts OK here)
+  features/<domain>/   auth · chat · whisper · hub · admin · profile · notifications · landing
       api/        HTTP helpers via shared api client (no logic/UI)
       components/  hooks/  stores/  utils/
       hooks/queryKeys.ts   ALL TanStack query keys for this domain

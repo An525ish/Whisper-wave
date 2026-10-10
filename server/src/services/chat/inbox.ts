@@ -1,6 +1,7 @@
 import { CHAT_READ } from '../../constants/socket-events.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as chatReadRepo from '../../repositories/chatRead.js';
+import * as connectionRepo from '../../repositories/connection.js';
 import * as messageRepo from '../../repositories/message.js';
 import type {
   ChatDetailsPopulated,
@@ -18,6 +19,7 @@ import type {
   RealtimeNotify,
 } from '../../types/chat.js';
 import { AppError } from '../../utils/AppError.js';
+import { logger } from '../../utils/logger.js';
 import { getGroupRole } from '../../utils/groupRole.js';
 import { resolveGroupAvatarUrls, toListLastMessage } from './shared.js';
 
@@ -44,6 +46,13 @@ export const getMyChats = async (
     chatReadRepo.findByUserAndChats(userId, chatIds),
     messageRepo.findReadStateByIds(lastMessageIds),
   ]);
+  const origins = await connectionRepo
+    .findChatsWithConnections(chatIds.map(String))
+    .catch((err: unknown) => {
+      // Decorative marker — a failed lookup hides glyphs, never the inbox.
+      logger.warn({ err, userId }, 'Failed to load whisper origins for chat list');
+      return new Set<string>();
+    });
   const lastReadByChat = new Map(
     reads.map((r) => [r.chat.toString(), r.lastReadAt])
   );
@@ -95,6 +104,7 @@ export const getMyChats = async (
           ),
       unreadCount: unreadByChat.get(chatId) ?? 0,
       createdAt,
+      origin: origins.has(chatId) ? ('whisper' as const) : null,
     };
   });
 

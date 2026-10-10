@@ -1,4 +1,4 @@
-import AppWrapper from '@/layout/AppWrapper';
+import ChatsLayout from '@/layout/ChatsLayout';
 import { ConversationHeader as ChatHeader } from '@/features/chat';
 import { MessageSearch as ChatSearch } from '@/features/chat';
 import { ConversationPanel as ChatsViewPanel, type ConversationPanelHandle } from '@/features/chat';
@@ -104,7 +104,7 @@ const Chat = () => {
   }, []);
 
   return (
-    <AppWrapper>
+    <ChatsLayout>
       <div className="relative flex h-full min-h-0 flex-col overflow-x-clip bg-background md:bg-transparent md:pt-1">
         {/* Soft top fade so scrolled messages dissolve under the floating header */}
         <div
@@ -170,7 +170,7 @@ const Chat = () => {
           onClose={() => setProfileOpen(false)}
         />
       </div>
-    </AppWrapper>
+    </ChatsLayout>
   );
 };
 
