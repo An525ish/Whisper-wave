@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import BottomSheet from '@/shared/components/ui/BottomSheet';
 import { useReportRoomMutation } from '../hooks/useRoomMutations';
+import RoomSheetHead from './RoomSheetHead';
+import './rooms.css';
 
 const REASONS = [
   { id: 'inappropriate_content', label: 'Inappropriate content' },
@@ -35,29 +37,62 @@ const RoomReportSheet = ({ slug, messageId, onClose }: Props) => {
 
   return (
     <BottomSheet open={messageId !== null} onClose={onClose} labelledBy="room-report-title">
-      <div className="px-5 pb-6 pt-2">
-        <h2 id="room-report-title" className="text-lg font-semibold text-white">
-          Report message
-        </h2>
-        <p className="mt-1 text-sm text-body-300">
+      <div className="rm-sheetbody">
+        <RoomSheetHead
+          titleId="room-report-title"
+          tone="red"
+          eyebrow="Breaking the vibe?"
+          title="Report message"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M5 21V4"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+              <path
+                d="M5 4h13l-2.5 4L18 12H5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          }
+        />
+        <p className="rm-sheetsub">
           Reports go to a human reviewer. Three reports from different people hide the message for everyone.
         </p>
-        <div role="radiogroup" aria-label="Reason" className="mt-3 flex flex-col gap-1">
-          {REASONS.map((r) => (
-            <label
-              key={r.id}
-              className="flex cursor-pointer items-center gap-2.5 rounded-xl px-2 py-2 text-sm text-body hover:bg-white/5"
-            >
-              <input
-                type="radio"
-                name="room-report-reason"
-                checked={reason === r.id}
-                onChange={() => setReason(r.id)}
-                className="accent-green"
-              />
-              {r.label}
-            </label>
-          ))}
+        <div role="radiogroup" aria-label="Reason" className="rm-options">
+          {REASONS.map((r) => {
+            const selected = reason === r.id;
+            return (
+              <label key={r.id} className={`rm-option${selected ? ' rm-option--on' : ''}`}>
+                <input
+                  type="radio"
+                  name="room-report-reason"
+                  checked={selected}
+                  onChange={() => setReason(r.id)}
+                  className="sr-only"
+                />
+                <span aria-hidden className="rm-option__radio">
+                  {selected && (
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path
+                        d="M5 13l4 4L19 7"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </span>
+                {r.label}
+              </label>
+            );
+          })}
         </div>
         <textarea
           value={details}
@@ -66,13 +101,13 @@ const RoomReportSheet = ({ slug, messageId, onClose }: Props) => {
           maxLength={500}
           rows={2}
           aria-label="Details"
-          className="mt-3 w-full rounded-xl border border-border/60 bg-white/[0.03] px-3 py-2 text-sm text-body outline-none placeholder:text-body-700 focus:border-green/50"
+          className="rm-textarea"
         />
         <button
           type="button"
           onClick={submit}
           disabled={report.isPending}
-          className="mt-4 w-full rounded-3xl bg-gradient-action-button-green px-5 py-2.5 text-sm font-medium text-body transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="rm-joinbtn"
         >
           {report.isPending ? 'Reporting…' : 'Send report'}
         </button>

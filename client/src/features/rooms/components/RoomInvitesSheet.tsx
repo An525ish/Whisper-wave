@@ -2,6 +2,8 @@ import toast from 'react-hot-toast';
 import BottomSheet from '@/shared/components/ui/BottomSheet';
 import { useCopyToClipboard } from '@/shared/hooks/useCopyToClipboard';
 import { useCreateInviteMutation, useRevokeInviteMutation, useRoomInvitesQuery } from '../hooks/useRoomInvites';
+import RoomSheetHead from './RoomSheetHead';
+import './rooms.css';
 
 type Props = {
   slug: string;
@@ -40,34 +42,53 @@ const RoomInvitesSheet = ({ slug, open, onClose }: Props) => {
 
   return (
     <BottomSheet open={open} onClose={onClose} labelledBy="room-invites-title">
-      <div className="px-5 pb-6 pt-2">
-        <h2 id="room-invites-title" className="text-lg font-semibold text-white">
-          Invite links
-        </h2>
-        <p className="mt-1 text-sm text-body-300">
-          Anyone with a link can join. Each join uses it up once against its limit.
+      <div className="rm-sheetbody">
+        <RoomSheetHead
+          titleId="room-invites-title"
+          tone="green"
+          eyebrow="Spread the word"
+          title="Invite links"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path
+                d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+              <path
+                d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          }
+        />
+        <p className="rm-sheetsub">
+          Anyone with a link can walk straight in. Each join uses it up once against its limit.
         </p>
         <button
           type="button"
           onClick={mint}
           disabled={create.isPending}
-          className="mt-3 w-full rounded-3xl bg-gradient-action-button-green px-5 py-2.5 text-sm font-medium text-body transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="rm-joinbtn"
         >
-          {create.isPending ? 'Creating…' : 'New invite link'}
+          {create.isPending ? 'Creating…' : '+ New invite link'}
         </button>
 
-        <ul className="mt-4 flex flex-col gap-2" aria-label="Active invite links">
+        <ul className="rm-invites" aria-label="Active invite links">
           {invites?.map((invite) => (
-            <li key={invite.id} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3 py-2">
-              <span className="min-w-0 text-sm text-body-300">
-                {invite.maxUses === null ? 'Unlimited' : `${invite.uses}/${invite.maxUses} used`}
+            <li key={invite.id} className="rm-invite">
+              <span className="rm-invite__meta">
+                <b>{invite.maxUses === null ? 'Unlimited' : `${invite.uses}/${invite.maxUses} used`}</b>
                 {' · '}
                 {expiryLabel(invite.expiresAt)}
               </span>
               <button
                 type="button"
                 onClick={() => revoke.mutate(invite.id)}
-                className="shrink-0 text-xs font-medium text-red hover:underline"
+                className="rm-invite__btn rm-invite__btn--danger"
               >
                 Revoke
               </button>
@@ -75,7 +96,7 @@ const RoomInvitesSheet = ({ slug, open, onClose }: Props) => {
           ))}
         </ul>
         {invites?.length === 0 && (
-          <p className="mt-3 text-sm text-body-700">No links yet — mint the first one above.</p>
+          <p className="rm-emptyline">No links yet — mint the first one above.</p>
         )}
       </div>
     </BottomSheet>

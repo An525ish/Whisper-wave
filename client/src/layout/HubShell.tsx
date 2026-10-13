@@ -119,7 +119,7 @@ const AuthedHubShell = () => {
       hidePill={Boolean(inWhisper)}
       footer={
         <div className="flex justify-center">
-          <AccountBar variant="account" />
+          <AccountBar variant="account" menuPlacement="up" avatarOnly />
         </div>
       }
     />

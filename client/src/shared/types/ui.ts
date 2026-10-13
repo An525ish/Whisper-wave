@@ -39,6 +39,7 @@ export type DropdownOption = {
   label: string;
   Icon?: ComponentType<IconProps>;
   handler: () => void;
+  danger?: boolean;
 };
 
 export type CarouselMember = Pick<User, '_id' | 'name'> & {

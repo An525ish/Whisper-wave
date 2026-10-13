@@ -6,6 +6,8 @@ import BottomSheet from '@/shared/components/ui/BottomSheet';
 import { useDeleteRoomMutation, useRequestListingMutation, useUpdateRoomMutation } from '../hooks/useRoomMutations';
 import { useRoomInfo } from '../hooks/useRoomsQueries';
 import { editRoomFormSchema, editRoomRules, type EditRoomForm } from '../utils/roomValidators';
+import RoomSheetHead from './RoomSheetHead';
+import './rooms.css';
 
 type Props = {
   slug: string;
@@ -76,17 +78,29 @@ const SettingsForm = ({ slug, initial, onClose }: FormProps) => {
     );
   };
 
-  const inputClass =
-    'mt-1.5 w-full rounded-xl border border-border/60 bg-white/[0.03] px-4 py-2.5 text-body outline-none placeholder:text-body-700 focus:border-green/50';
-  const errorClass = 'mt-1 text-xs text-red';
+  const inputClass = 'rm-input';
+  const errorClass = 'rm-error';
 
   return (
-    <div className="px-5 pb-6 pt-2">
-      <h2 id="room-settings-title" className="text-lg font-semibold text-white">
-        Room settings
-      </h2>
+    <div className="rm-sheetbody">
+      <RoomSheetHead
+        titleId="room-settings-title"
+        eyebrow="Host controls"
+        title="Room settings"
+        icon={
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden>
+            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+            <path
+              d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14.2 3h-4l-.4 2.5a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2l.4 2.5h4l.4-2.5a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.06-.4.1-.8.1-1.2z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+          </svg>
+        }
+      />
 
-      <form onSubmit={handleSubmit(submit)} className="mt-3 flex flex-col gap-3">
+      <form onSubmit={handleSubmit(submit)} className="mt-4 flex flex-col gap-3">
         <div>
           <label htmlFor="room-settings-title-input" className="text-sm font-medium text-body">Title</label>
           <input id="room-settings-title-input" {...register('title')} maxLength={60} className={inputClass} />
@@ -107,37 +121,41 @@ const SettingsForm = ({ slug, initial, onClose }: FormProps) => {
         <button
           type="submit"
           disabled={update.isPending}
-          className="rounded-3xl bg-gradient-action-button-green px-5 py-2.5 text-sm font-medium text-body transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="rm-joinbtn"
         >
           {update.isPending ? 'Saving…' : 'Save changes'}
         </button>
       </form>
 
-      <div className="mt-5 border-t border-border/50 pt-4">
+      <div className="rm-sect">
         <button
           type="button"
           onClick={() => request.mutate(slug, { onSuccess: () => setRequested(true) })}
           disabled={request.isPending || requested}
-          className="w-full rounded-3xl border border-green/40 px-5 py-2.5 text-sm font-medium text-green transition hover:bg-green/10 disabled:opacity-50"
+          className="rm-joinbtn"
         >
-          {requested ? 'Listing requested ✓ — the Wave team reviews new rooms' : 'Request lobby listing'}
+          {requested ? 'Listing requested ✓' : 'Request lobby listing'}
         </button>
-        <p className="mt-2 text-xs text-body-700">
-          Unlisted rooms are invite-only. Approval puts this room in the public lobby.
+        <p className="rm-sect__note">
+          {requested
+            ? 'The Wave team reviews new rooms.'
+            : 'Unlisted rooms are invite-only. Approval puts this room in the public lobby.'}
         </p>
       </div>
 
-      <div className="mt-4 border-t border-border/50 pt-4">
+      <div className="rm-sect">
         {!confirmDelete ? (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(true)}
-            className="text-sm font-medium text-red hover:underline"
-          >
-            Delete this room…
-          </button>
+          <div className="rm-danger">
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="rm-danger__btn"
+            >
+              Delete this room…
+            </button>
+          </div>
         ) : (
-          <div role="alertdialog" aria-label="Confirm room deletion">
+          <div role="alertdialog" aria-label="Confirm room deletion" className="rm-danger">
             <p className="text-sm text-body">
               Delete this room for everyone? Live threads end, the template goes away. Reports and bans stay on record.
             </p>
