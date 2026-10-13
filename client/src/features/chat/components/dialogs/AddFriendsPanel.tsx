@@ -10,7 +10,7 @@ import FriendSuggestionListItem from '@/shared/components/ui/FriendSuggestionLis
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import AvatarSkeleton from '@/shared/components/ui/skeletons/AvatarSkeleton';
 import type { SearchUsersResponse } from '@/features/chat/types/chat';
-import { SEARCH_DEBOUNCE_MS } from '@/features/chat/constants/chat';
+import { SEARCH_DEBOUNCE_MS } from '@/shared/constants/app';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 
 /** Add-friends body — used inside NewConnectDialog tabs. */

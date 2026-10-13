@@ -104,7 +104,7 @@ const MomentsSection = () => {
           </p>
 
           <Link
-            to="/auth"
+            to="/whisper"
             className={cn(
               'lw-sheen group mt-8 inline-flex items-center gap-2.5 rounded-full px-7 py-3.5 text-[1rem] font-semibold text-white-pure no-underline',
               'bg-[linear-gradient(135deg,var(--color-lw-violet),var(--color-lw-violet-deep)_58%,var(--color-lw-teal-deep)_150%)]',

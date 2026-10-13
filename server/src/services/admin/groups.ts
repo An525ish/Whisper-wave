@@ -4,7 +4,7 @@ import * as messageRepo from '../../repositories/message.js';
 import type { AdminGroupsPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
 import { trimOptional } from '../../utils/normalize.js';
-import type { AdminGroupsQuery } from '../../validators/admin.js';
+import type { AdminGroupsQuery } from '../../types/adminInput.js';
 import { parseBeforeCursor } from './shared.js';
 
 export const listGroups = async (input: AdminGroupsQuery): Promise<AdminGroupsPage> => {

@@ -1,4 +1,5 @@
 export * from './useAsyncMutation';
+export * from './useAutoGrowTextarea';
 export * from './useContextMenu';
 export * from './useCopyToClipboard';
 export * from './useError';

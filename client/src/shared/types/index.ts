@@ -9,6 +9,7 @@ export type {
   RequestNotification,
 } from '@/shared/types/user';
 export type { IconProps } from '@/shared/types/icon';
+export type { MessageGroup } from '@/shared/types/ui';
 
 export type SidebarContextValue = {
   expanded: boolean;

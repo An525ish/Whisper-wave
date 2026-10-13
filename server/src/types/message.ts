@@ -316,3 +316,19 @@ export type UpdateMessagePatch = Partial<{
   isDeleted: boolean;
   editedAt: Date;
 }>;
+
+/**
+ * Toggle one user's reaction to a message.
+ *
+ * `userId` is deliberately absent from the wire schema and supplied by the caller
+ * from the socket session instead — a client must never be able to name whose
+ * reaction it is writing. Declared here rather than composed from the validator's
+ * payload type so the service depends on a domain type and not on `validators/`,
+ * which is the boundary layer.
+ */
+export type ToggleMessageReactionInput = {
+  messageId: string;
+  chatId: string;
+  emoji: string;
+  userId: string;
+};

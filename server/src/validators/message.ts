@@ -96,8 +96,3 @@ export const forwardMessagesSchema = z.object({
     .min(1)
     .max(50),
 });
-
-export type GetMessagesQuery = z.infer<typeof getMessagesQuerySchema>;
-export type SearchMessagesQuery = z.infer<typeof searchMessagesQuerySchema>;
-export type JumpToDateQuery = z.infer<typeof jumpToDateQuerySchema>;
-export type ListActiveDatesQuery = z.infer<typeof listActiveDatesQuerySchema>;

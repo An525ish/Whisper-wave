@@ -21,13 +21,22 @@ const BottomSheet = ({
   sideCardOnDesktop = false,
 }: BottomSheetProps) => {
   const [entered, setEntered] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
   const { sheetRef, handleRef, dragHandlers } = useDragToClose({ onClose });
 
+  // Clear the enter flag while the sheet is closed, adjusted during render
+  // (React's documented "adjust state when a prop changes" pattern) instead of
+  // in an effect. A reopened sheet therefore always mounts off-screen, so the
+  // transition below still has a start state to animate from.
+  if (wasOpen !== open) {
+    setWasOpen(open);
+    if (!open) setEntered(false);
+  }
+
   useEffect(() => {
-    if (!open) {
-      setEntered(false);
-      return;
-    }
+    if (!open) return;
+    // Next frame, so the browser paints the off-screen state first and the
+    // CSS transition has something to animate from.
     const id = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(id);
   }, [open]);

@@ -5,6 +5,7 @@ import { useNotificationsStore } from '@/features/notifications';
 import { usePresenceStore } from '@/features/chat';
 import { useProfileUiStore } from '@/features/profile';
 import { useAuthStore } from '@/features/auth';
+import { useWhisperConnectResume, useWhisperConnectionReady } from '@/features/whisper';
 import { Title } from '@/features/notifications';
 import { GhostBanner } from '@/features/auth';
 import { ChatListPanel } from '@/features/chat';
@@ -36,6 +37,10 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
   const socket = useSocket();
   const { chatId } = useParams();
   const isChatOpen = Boolean(chatId);
+
+  // Finish a Whisper "connect & reveal" if the guest just signed in and landed
+  // here (mounted in the authed shell, so it never touches the guest bundle).
+  useWhisperConnectResume();
   const isNarrowProfile = useMediaQuery('(max-width: 1023px)');
   const viewSelfProfile = useProfileUiStore((s) => s.viewSelfProfile);
   const closeSelfProfile = useProfileUiStore((s) => s.closeSelfProfile);
@@ -147,6 +152,9 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
     [markTyping],
   );
 
+  // A Whisper anon match became a real DM while this user was elsewhere.
+  const whisperConnectionReadyHandler = useWhisperConnectionReady();
+
   const events = useMemo(
     () => ({
       [SOCKET_EVENTS.NEW_MESSAGE_ALERT]: newMessageAlertHandler,
@@ -157,6 +165,7 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
       [SOCKET_EVENTS.START_TYPING]: startTypingHandler,
       [SOCKET_EVENTS.STOP_TYPING]: stopTypingHandler,
       [SOCKET_EVENTS.NEW_MESSAGE]: newMessageHandler,
+      [SOCKET_EVENTS.WHISPER_CONNECTION_READY]: whisperConnectionReadyHandler,
     }),
     [
       newMessageAlertHandler,
@@ -167,6 +176,7 @@ const AppWrapper = ({ children }: AppWrapperProps) => {
       startTypingHandler,
       stopTypingHandler,
       newMessageHandler,
+      whisperConnectionReadyHandler,
     ],
   );
 

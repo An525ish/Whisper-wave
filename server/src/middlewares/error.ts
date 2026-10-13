@@ -28,6 +28,12 @@ export const globalErrorHandler: ErrorRequestHandler = (err, _req, res, _next) =
     logger.error({ err }, message);
   }
 
+  // Never leak internals (driver/db messages) on unexpected 5xx in production.
+  // AppError messages are authored for clients and are kept.
+  if (isProd && statusCode >= 500 && !(err instanceof AppError)) {
+    message = 'Internal server error';
+  }
+
   res.status(statusCode).json({
     success: false,
     message,

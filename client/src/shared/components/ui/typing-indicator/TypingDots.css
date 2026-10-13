@@ -1,0 +1,23 @@
+/* ============================================================
+   TypingDots — colocated so the primitive owns its one-off
+   animation. Only the keyframes and the dot itself live here;
+   shape and colour come from Tailwind on the component.
+   ============================================================ */
+
+.typing-dots__dot {
+  display: block;
+  height: 0.4rem;
+  width: 0.4rem;
+  border-radius: 9999px;
+  background: var(--color-body-300);
+  animation: typing-dots-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes typing-dots-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-dots__dot { animation: none; }
+}

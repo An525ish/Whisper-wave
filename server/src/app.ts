@@ -7,7 +7,8 @@ import express from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 import { corsOptions } from './config/cors.js';
-import { isProd } from './config/env.js';
+import { env, isProd } from './config/env.js';
+import { redisHealth } from './config/redis.js';
 import { helmetOptions } from './config/helmet.js';
 import { globalErrorHandler } from './middlewares/index.js';
 import { registerRoutes } from './routes/index.js';
@@ -20,7 +21,7 @@ const __dirname = path.dirname(__filename);
 export const createApp = () => {
   const app = express();
 
-  app.set('trust proxy', 1);
+  app.set('trust proxy', env.TRUST_PROXY_HOPS);
 
   app.use(helmet(helmetOptions));
   app.use(compression());
@@ -34,10 +35,28 @@ export const createApp = () => {
     })
   );
 
-  app.get('/health', (_req, res) => {
+  // Liveness: ALWAYS 200 while the process can answer. A platform that restarts
+  // on a failing liveness probe would otherwise kill a healthy server — dropping
+  // every live socket and grace period — just because Redis blipped. Redis state is
+  // reported in the body; `/ready` is the probe that gates traffic on it.
+  app.get('/health', async (_req, res) => {
+    const redis = await redisHealth();
     res.status(200).json({
-      status: 'ok',
+      status: redis.ok ? 'ok' : 'degraded',
       uptime: process.uptime(),
+      redis,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Readiness: 503 while Redis is unreachable, since it gates the anonymous layer.
+  // Mongo readiness is implicit: if it were down every API route would already
+  // be failing.
+  app.get('/ready', async (_req, res) => {
+    const redis = await redisHealth();
+    res.status(redis.ok ? 200 : 503).json({
+      status: redis.ok ? 'ready' : 'not_ready',
+      redis,
       timestamp: new Date().toISOString(),
     });
   });

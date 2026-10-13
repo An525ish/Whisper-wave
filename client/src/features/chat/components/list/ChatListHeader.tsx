@@ -1,7 +1,9 @@
 import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
 import Searchbar from '@/shared/components/ui/Searchbar';
 import { AccountBar } from '@/features/profile';
+import { useNavigate } from 'react-router-dom';
 import DotsMenu from '@/shared/components/ui/DotsMenu';
+import ChatIcon from '@/shared/components/ui/icons/Chat';
 import ReadReceipt from '@/shared/components/ui/icons/ReadReceipt';
 import AddMemberIcon from '@/shared/components/ui/icons/AddMember';
 import CreateGroupIcon from '@/shared/components/ui/icons/CreateGroup';
@@ -34,6 +36,7 @@ const ChatListHeader = ({
     (s) => s.resetMessageNotification,
   );
   const [markAllRead] = useAsyncMutation(useMarkAllChatsReadMutation);
+  const navigate = useNavigate();
 
   const handleMarkAllRead = useCallback(() => {
     if (unreadCount === 0) return;
@@ -64,7 +67,13 @@ const ChatListHeader = ({
       icon: <CreateGroupIcon className="h-3.5 w-3.5 fill-current" />,
       onSelect: () => onOpenNew?.('group'),
     },
-  ], [unreadCount, handleMarkAllRead, onOpenNew]);
+    {
+      id: 'whisper',
+      label: 'Whisper — talk to someone new',
+      icon: <ChatIcon className="h-3.5 w-3.5 fill-current" />,
+      onSelect: () => navigate('/whisper'),
+    },
+  ], [unreadCount, handleMarkAllRead, onOpenNew, navigate]);
 
   return (
     <div className="relative flex w-full flex-col gap-3 border-b border-border/50 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:border-0 md:p-2 md:pt-1">

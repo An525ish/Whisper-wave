@@ -1,0 +1,134 @@
+/* ============================================================
+   WHISPER — the vibe heart (`.avh-*`)
+
+   A heart inside a progress ring. The ring is the unlock gate made
+   visible: it fills while you chat, completes when vibes open, and
+   the states after that (sent, mutual) change what the heart does.
+   ============================================================ */
+
+.avh {
+  position: relative;
+  display: grid;
+  width: 2.9rem;
+  height: 2.9rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  color: rgb(235 236 236 / 0.5);
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.avh__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.avh__track {
+  stroke: rgb(255 255 255 / 0.09);
+  stroke-width: 2.5;
+}
+
+.avh__arc {
+  stroke: var(--color-green);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 22px 22px;
+  transition: stroke-dasharray 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.avh__heart {
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+/* ── Locked: the ring is the message ─────────────────────────── */
+.avh--locked {
+  cursor: help;
+}
+
+.avh--locked .avh__arc {
+  opacity: 0.75;
+}
+
+/* ── Ready: gate open, breathing ─────────────────────────────── */
+.avh--ready {
+  color: var(--color-green);
+  background: rgb(1 195 109 / 0.1);
+  animation: avh-breathe 2.6s ease-in-out infinite;
+}
+
+.avh--ready:enabled:hover {
+  background: rgb(1 195 109 / 0.18);
+  transform: scale(1.06);
+}
+
+.avh--ready:enabled:hover .avh__heart {
+  transform: scale(1.12);
+}
+
+.avh:enabled:active {
+  transform: scale(0.94);
+}
+
+/* ── Sent: filled, waiting on them ───────────────────────────── */
+.avh--sent {
+  color: var(--color-green);
+  background: rgb(1 195 109 / 0.12);
+  cursor: default;
+}
+
+/* ── Mutual: it landed ───────────────────────────────────────── */
+.avh--mutual {
+  color: #fff;
+  background: var(--background-image-gradient-green);
+  cursor: default;
+}
+
+.avh--mutual .avh__track {
+  stroke: rgb(255 255 255 / 0.25);
+}
+
+.avh--mutual .avh__arc {
+  stroke: #fff;
+}
+
+/* ── They already vibed: an ambient pulse, not a banner ──────── */
+.avh--ping {
+  color: var(--color-green);
+  animation: avh-breathe 2.6s ease-in-out infinite;
+}
+
+.avh:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+@keyframes avh-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(1 195 109 / 0.32); }
+  50% { box-shadow: 0 0 0 7px rgb(1 195 109 / 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avh,
+  .avh__heart,
+  .avh__arc {
+    transition: none;
+  }
+
+  .avh--ready,
+  .avh--ping {
+    animation: none;
+  }
+
+  .avh--ping {
+    box-shadow: 0 0 0 3px rgb(1 195 109 / 0.25);
+  }
+
+  .avh--ready:enabled:hover,
+  .avh--ready:enabled:hover .avh__heart {
+    transform: none;
+  }
+}

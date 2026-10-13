@@ -66,7 +66,7 @@ const LandingNav = () => {
 
           {/* Solid — Find a stranger */}
           <Link
-            to="/auth"
+            to="/whisper"
             className={cn(
               'lw-sheen group inline-flex items-center gap-[7px] rounded-full border border-white-pure/[0.16] px-[18px] py-[8px]',
               'text-[0.88rem] font-semibold text-white-pure no-underline',

@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import { catchAsync } from '../utils/catchAsync.js';
 import * as uploadService from '../services/upload/index.js';
-import type { SignUploadBody } from '../validators/upload.js';
+import type { SignUploadBody } from '../types/input.js';
 
 /**
  * POST /api/upload/sign

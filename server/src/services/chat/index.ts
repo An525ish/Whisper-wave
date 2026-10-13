@@ -19,3 +19,5 @@ export {
 export { getMedia } from './media.js';
 
 export { deleteChatForMe, clearChatForMe } from './delete.js';
+
+export { toggleMessageReaction } from './reactions.js';

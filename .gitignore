@@ -1,0 +1,6 @@
+# Dev-harness output written to the repo root by the local Vite / partner scripts.
+# `dev.log` was committed by mistake once and picked up noise across four commits
+# before it was caught; these are logs, never source.
+dev.log
+*-out.txt
+*-err.txt

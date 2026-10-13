@@ -14,6 +14,18 @@ export const SOCKET_EVENTS = {
   USER_ONLINE: 'USER_ONLINE',
   USER_OFFLINE: 'USER_OFFLINE',
   MESSAGE_REACTION: 'MESSAGE_REACTION',
+  WHISPER_CONNECTION_READY: 'WHISPER_CONNECTION_READY',
 } as const
 
 export type SocketEventName = typeof SOCKET_EVENTS[keyof typeof SOCKET_EVENTS]
+
+/**
+ * Socket.IO built-in lifecycle events. Used by sockets that cannot sit behind the
+ * shared `SocketProvider` (the guest `/anon` namespace connects without an
+ * account), so their names are centralised here rather than typed inline.
+ */
+export const SOCKET_LIFECYCLE = {
+  CONNECT: 'connect',
+  DISCONNECT: 'disconnect',
+  CONNECT_ERROR: 'connect_error',
+} as const

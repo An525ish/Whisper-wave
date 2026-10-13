@@ -1,11 +1,10 @@
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
-import { Message } from '../../models/message.js';
 import type { AdminMessagesPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
 import { trimOptional } from '../../utils/normalize.js';
 import { deleteManyFromR2 } from '../../utils/storage.js';
-import type { AdminMessagesQuery } from '../../validators/admin.js';
+import type { AdminMessagesQuery } from '../../types/adminInput.js';
 import { parseBeforeCursor } from './shared.js';
 
 export const listMessages = async (input: AdminMessagesQuery): Promise<AdminMessagesPage> => {
@@ -19,7 +18,9 @@ export const listMessages = async (input: AdminMessagesQuery): Promise<AdminMess
 
   const [rows, total] = await Promise.all([
     messageRepo.listForAdminPage({ limit: fetchLimit, before, status, q, senderId }),
-    isFirstPage ? messageRepo.countForAdmin({ status, q, senderId }) : Promise.resolve(undefined),
+    isFirstPage
+      ? messageRepo.countForAdmin({ status, q, senderId })
+      : Promise.resolve(undefined),
   ]);
 
   const messages = rows.slice(0, limit);
@@ -46,7 +47,7 @@ export const deleteAttachments = async (messageIds: string[]): Promise<void> => 
     (m.attachments ?? []).map((a: { publicId?: string }) => a.publicId).filter(Boolean) as string[],
   );
   await deleteManyFromR2(keys);
-  await Message.deleteMany({ _id: { $in: messageIds } });
+  await messageRepo.deleteManyByIds(messageIds);
 };
 
 export const retryMessage = async (
@@ -74,5 +75,5 @@ export const retryMessage = async (
     },
   });
 
-  await messageRepo.updateById(id, { status: 'sent' } as Parameters<typeof messageRepo.updateById>[1]);
+  await messageRepo.updateById(id, { status: 'sent' });
 };

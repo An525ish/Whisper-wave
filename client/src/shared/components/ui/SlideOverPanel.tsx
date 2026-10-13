@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useState,
+  type ReactNode,
+} from 'react';
 import { createPortal } from 'react-dom';
 import useEscapeKey from '@/shared/hooks/useEscapeKey';
 import { DETAIL_PANEL_TRANSITION_MS } from '@/shared/constants/app';
@@ -43,21 +49,36 @@ const SlideOverPanel = ({
   children,
 }: SlideOverPanelProps) => {
   const [open, setOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  /**
+   * Bumped once per close request. The exit timer keys off this instead of a
+   * ref, so a second Escape/backdrop click restarts the countdown exactly as
+   * clearing and re-setting the old ref'd timeout did.
+   */
+  const [closeRequest, setCloseRequest] = useState(0);
+
+  // `onClose` is an inline arrow at every call site, so read it through an
+  // effect event: the exit timer must not restart just because its identity
+  // changed, or the panel would never finish closing.
+  const closePanel = useEffectEvent(() => onClose());
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setOpen(true));
-    return () => {
-      cancelAnimationFrame(frame);
-      if (closeTimer.current) clearTimeout(closeTimer.current);
-    };
+    return () => cancelAnimationFrame(frame);
   }, []);
+
+  // Panel content decides when the exit transition is over: unmount only after
+  // the full DETAIL_PANEL_TRANSITION_MS. Unmounting early cancels the timer, as
+  // the old cleanup did.
+  useEffect(() => {
+    if (closeRequest === 0) return;
+    const timer = setTimeout(() => closePanel(), DETAIL_PANEL_TRANSITION_MS);
+    return () => clearTimeout(timer);
+  }, [closeRequest]);
 
   const requestClose = useCallback(() => {
     setOpen(false);
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(onClose, DETAIL_PANEL_TRANSITION_MS);
-  }, [onClose]);
+    setCloseRequest((n) => n + 1);
+  }, []);
 
   useEscapeKey(requestClose);
 

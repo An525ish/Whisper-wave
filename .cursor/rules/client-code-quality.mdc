@@ -34,7 +34,9 @@ shared fetch client (`shared/lib/api/client`).
 
 ## Env
 
-Allowlist only: `VITE_BASE_URL`, `VITE_GOOGLE_CLIENT_ID` (public; may be unset → feature no-ops).
+Allowlist only: `VITE_BASE_URL`, `VITE_GOOGLE_CLIENT_ID`, `VITE_ANALYTICS_ENDPOINT`
+(public; may be unset → feature no-ops). `VITE_ANALYTICS_ENDPOINT` is a self-hosted /
+free collector approved in `docs/TECH.md` — not a paid vendor.
 Every `VITE_*` must be declared on `ImportMetaEnv` in `vite-env.d.ts`. No secrets in `VITE_*`.
 Cookies only (`credentials: 'include'`); no access tokens in `localStorage`.
 No `dangerouslySetInnerHTML` for user content.

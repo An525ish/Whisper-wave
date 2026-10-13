@@ -5,8 +5,8 @@ import { chatService, flushNotifications, joinUsersToChatRoom, leaveUsersFromCha
 import type { UploadableFile } from '../types/message.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { param } from '../utils/http.js';
-import type { GetChatDetailsQuery } from '../validators/chat.js';
-import type { PageQuery } from '../validators/fields.js';
+import type { GetChatDetailsQuery } from '../types/input.js';
+import type { PageQuery } from '../types/input.js';
 
 const getIo = (req: { app: { get: (key: string) => unknown } }): Server | undefined =>
   req.app.get('io') as Server | undefined;

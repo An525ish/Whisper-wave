@@ -1,5 +1,11 @@
 import rateLimit from 'express-rate-limit';
 
+/**
+ * NOTE: all limiters here use express-rate-limit's default in-memory store, so
+ * counters are per-process. That is correct for the current single-instance
+ * deploy; before scaling horizontally, back them with Redis (rate-limit-redis)
+ * or each instance will grant its own full quota.
+ */
 const jsonMessage = (message: string) => ({ success: false, message });
 
 /** General auth routes: 20 req / 15 min per IP */
@@ -65,4 +71,13 @@ export const usernameCheckLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: jsonMessage('Too many username checks, please try again later'),
+});
+
+/** Abuse reports (POST /api/report): 5 req / 10 min per IP — blocks queue flooding, allows genuine reports. */
+export const reportLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonMessage('Too many reports submitted, please try again later'),
 });

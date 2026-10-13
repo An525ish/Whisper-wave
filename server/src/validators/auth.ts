@@ -57,14 +57,3 @@ export const googleSignInSchema = z.object({
 export const usernameCheckQuerySchema = z.object({
   username: usernameField,
 });
-
-export type GoogleSignInInput = z.infer<typeof googleSignInSchema>;
-export type SignUpStartInput = z.infer<typeof signUpStartSchema>;
-export type SignUpVerifyInput = z.infer<typeof signUpVerifySchema>;
-export type SignUpResendInput = z.infer<typeof signUpResendSchema>;
-export type SignUpUpdateUsernameInput = z.infer<typeof signUpUpdateUsernameSchema>;
-export type SignUpCompleteInput = z.infer<typeof signUpCompleteSchema>;
-export type SignInInput = z.infer<typeof signInSchema>;
-export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
-export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
-export type UsernameCheckQuery = z.infer<typeof usernameCheckQuerySchema>;

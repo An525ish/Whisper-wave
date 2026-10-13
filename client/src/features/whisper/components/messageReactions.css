@@ -1,0 +1,155 @@
+/* Message reactions (`.mrb-*`) — colocated per the CSS-homes rule.
+   Sits under a bubble rather than inside it, so the bubble's padding and its
+   absolutely-positioned timestamp are untouched. */
+
+.mrb {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+/* Reactions are small neutral pills; the one you gave is tinted green (the same
+   accent as your own bubbles). */
+.mrb__chip {
+  display: inline-grid;
+  height: 1.45rem;
+  min-width: 1.45rem;
+  place-items: center;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: rgb(42 33 54 / 0.9);
+  padding-inline: 0.25rem;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+button.mrb__chip {
+  cursor: pointer;
+  transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+button.mrb__chip:hover {
+  border-color: rgb(255 255 255 / 0.22);
+  background: rgb(255 255 255 / 0.08);
+}
+
+/* My own reaction reads as "held", and is tappable to take back. */
+.mrb__chip--mine {
+  border-color: rgb(1 195 109 / 0.45);
+  background: rgb(27 60 55 / 0.55);
+}
+
+.mrb__add {
+  display: inline-grid;
+  height: 1.3rem;
+  width: 1.3rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  background: transparent;
+  color: rgb(235 236 236 / 0.35);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+/* Hover-reveal on pointer devices only — a permanently-visible affordance on
+   every bubble is noise on touch, where there is no hover to reveal it. */
+@media (hover: hover) {
+  .acr-row:hover .mrb__add,
+  .mrb__add:focus-visible,
+  .mrb__add[aria-expanded='true'] {
+    opacity: 1;
+  }
+}
+
+.mrb__add:hover,
+.mrb__add[aria-expanded='true'] {
+  border-color: rgb(255 255 255 / 0.2);
+  color: rgb(235 236 236 / 0.8);
+}
+
+.mrb__menu {
+  position: absolute;
+  bottom: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 60;
+  display: flex;
+  gap: 0.15rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(20 16 26 / 0.96);
+  padding: 0.25rem;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(12px);
+  animation: mrb-rise 160ms ease-out;
+}
+
+/* Near the right edge the popover would overflow, so anchor it right instead. */
+.acr-row--me .mrb__menu {
+  left: auto;
+  right: 0;
+}
+
+.mrb__opt {
+  display: grid;
+  height: 1.75rem;
+  width: 1.75rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 140ms ease, transform 140ms ease;
+}
+
+.mrb__opt:hover {
+  background: rgb(255 255 255 / 0.08);
+  transform: translateY(-1px);
+}
+
+.mrb__opt--on {
+  border-color: rgb(1 195 109 / 0.45);
+  background: rgb(27 60 55 / 0.55);
+}
+
+.mrb :focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+@keyframes mrb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mrb__menu {
+    animation: none;
+  }
+
+  .mrb__chip,
+  .mrb__add,
+  .mrb__opt {
+    transition: none;
+  }
+
+  .mrb__opt:hover {
+    transform: none;
+  }
+
+  /* No hover to reveal on, and motion is off — keep the affordance visible. */
+  .mrb__add {
+    opacity: 0.75;
+  }
+}

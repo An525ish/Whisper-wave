@@ -15,7 +15,7 @@ import type {
   AdminUsersQuery,
   AdminGroupsQuery,
   AdminMessagesQuery,
-} from '../validators/admin.js';
+} from '../types/adminInput.js';
 
 const ADMIN_COOKIE = 'adminToken';
 const ACCESS_COOKIE = 'accessToken';

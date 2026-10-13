@@ -1,14 +1,7 @@
 import { BASE_URL } from '@/shared/constants/app';
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  type ReactNode,
-} from 'react';
-import { io, type Socket } from 'socket.io-client';
-
-const SocketContext = createContext<Socket | null>(null);
+import { useEffect, useMemo, type ReactNode } from 'react';
+import { io } from 'socket.io-client';
+import { SocketContext } from './socketContext';
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const socket = useMemo(
@@ -28,12 +21,4 @@ export function SocketProvider({ children }: { children: ReactNode }) {
   return (
     <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
   );
-}
-
-export function useSocket(): Socket {
-  const socket = useContext(SocketContext);
-  if (!socket) {
-    throw new Error('useSocket must be used within SocketProvider');
-  }
-  return socket;
 }
