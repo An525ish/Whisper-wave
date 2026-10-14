@@ -16,10 +16,7 @@ import {
 } from '../hooks/usePendingConnections';
 import type { PendingConnectionItem } from '../types';
 
-const expiryLeft = (expiresAt: string): string => {
-  const left = Date.parse(expiresAt) - Date.now();
-  return left <= 0 ? 'Expired' : `${expiryLabel(left)} left`;
-};
+const msLeft = (expiresAt: string): number => Date.parse(expiresAt) - Date.now();
 
 /**
  * Ghost rows for whisper connections still in flight, rendered above the chat
@@ -90,7 +87,7 @@ const PendingGhostRows = () => {
                 <span className="block truncate text-xs text-body-300">
                   {item.state === 'action_needed' ? 'Your move' : 'Waiting for them'}
                   {' · '}
-                  {expiryLeft(item.expiresAt)}
+                  {msLeft(item.expiresAt) <= 0 ? 'Expired' : `${expiryLabel(msLeft(item.expiresAt))} left`}
                 </span>
               </span>
             </button>
@@ -119,7 +116,9 @@ const PendingGhostRows = () => {
               </p>
             )}
             <p className="mt-2 text-xs text-body-300">
-              Expires in {expiryLeft(selected.expiresAt)}.
+              {msLeft(selected.expiresAt) <= 0
+                ? 'This connection has expired.'
+                : `Expires in ${expiryLabel(msLeft(selected.expiresAt))}.`}
             </p>
             <div className="mt-5 flex flex-col gap-2">
               {selected.state === 'action_needed' && (

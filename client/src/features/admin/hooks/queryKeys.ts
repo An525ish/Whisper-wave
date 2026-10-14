@@ -13,7 +13,8 @@ export const adminQueryKeys = {
   rooms: ['adminRooms', 'list'] as const,
   roomBans: ['adminRooms', 'bans'] as const,
   audit: ['adminAudit', 'list'] as const,
-  reports: (page: number) => ['adminReports', 'list', page] as const,
+  reports: ['adminReports', 'list'] as const,
+  memeBlocklist: ['adminMemes', 'blocklist'] as const,
   reportsPrefix: ['adminReports'] as const,
   // prefix invalidation helpers (matches all variants under each root)
   usersPrefix: ['adminUsers'] as const,

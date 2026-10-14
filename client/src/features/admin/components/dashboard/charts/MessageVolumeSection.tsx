@@ -2,7 +2,7 @@ import BarChart from '@/shared/components/ui/charts/BarChart';
 import SectionHead from '../shared/SectionHead';
 import GrowthBadge from '../shared/GrowthBadge';
 
-type MessageVolumeSectionProps = {
+type Props = {
   seriesLabels: string[];
   messagesSeries: number[];
   weekMessages: number;
@@ -12,7 +12,7 @@ const MessageVolumeSection = ({
   seriesLabels,
   messagesSeries,
   weekMessages,
-}: MessageVolumeSectionProps) => (
+}: Props) => (
   <div className="lg:col-span-5">
     <SectionHead
       title="Message volume"

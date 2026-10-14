@@ -9,6 +9,7 @@ import {
 import { MESSAGE_EDIT_WINDOW_MS } from '../../constants/chat.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
+import * as userRepo from '../../repositories/user.js';
 import type {
   ClearChatMessagesInput,
   DeleteManyMessagesInput,
@@ -252,10 +253,18 @@ export const forwardMessages = async (
     });
   }
 
+  const sender = await userRepo.findByIdNameAvatar(userId);
   notifications.push({
     event: NEW_MESSAGE_ALERT,
     chatId: targetChatId,
+    excludeUserId: userId,
     data: { chatId: targetChatId },
+    push: {
+      kind: 'message',
+      senderName: sender?.name ?? 'Someone',
+      hasAttachment: false,
+      forwarded: true,
+    },
   });
 
   return { notifications };

@@ -37,7 +37,10 @@ export const ensureGid = (req: Request, res: Response, next: NextFunction): void
 
   const fresh = uuid();
   res.cookie(GID_COOKIE, fresh, gidCookieOptions);
+  // Re-resolve with the fresh gid so a signed-in member (token but no gid
+  // cookie yet) keeps their userId for this request instead of reading as a guest.
   const anonId = parseAnonId(cookies?.[ANON_COOKIE]);
-  req.identity = { kind: 'guest', gid: fresh, ...(anonId ? { anonId } : {}) };
+  req.identity =
+    resolveIdentity({ ...cookies, gid: fresh }) ?? { kind: 'guest', gid: fresh, ...(anonId ? { anonId } : {}) };
   next();
 };

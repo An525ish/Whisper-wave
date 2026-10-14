@@ -1,5 +1,5 @@
 import { api } from '@/shared/lib/api/client';
-import type { MemeCategory, MemeFeedResponse } from '../types';
+import type { MemeCategory, MemeFeedResponse, MemeReportReason, MemeReportResponse } from '../types';
 
 /** One shuffle batch. `page` maps to a provider id range server-side;
  * `exclude` carries already-seen provider ids so the random tail of the
@@ -10,6 +10,10 @@ export const listMemes = (category: MemeCategory, page: number, exclude: number[
     page,
     ...(exclude.length > 0 ? { exclude: exclude.join(',') } : {}),
   });
+
+/** Report a joke (guests allowed). Enough distinct reports block it for everyone. */
+export const reportMeme = (externalId: number, reason: MemeReportReason) =>
+  api.post<MemeReportResponse>('/memes/report', { externalId, source: 'jokeapi', reason });
 
 /** Saved ids for sync (members only). */
 export const listSaves = () =>

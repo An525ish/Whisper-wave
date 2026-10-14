@@ -1,24 +1,21 @@
 import { getRedis } from '../../config/redis.js';
-import type { VibeTag } from '../../types/match.js';
+import { logger } from '../../utils/logger.js';
+import type { ConnectionClaim } from '../../types/connection.js';
 import { REDIS_KEYS, TTL } from './keys.js';
 
 /**
- * A mutual-like claim: the proof of a seat that outlives the tab.
+ * Mutual-like claims: the proof of a seat that outlives the tab.
  *
  * Written at mutual like for both seats. The `connectToken` alternative dies
  * with `sessionStorage` (~10 min); the claim lives 7 days keyed by the
- * `anonId` cookie, which survives a closed tab on the same browser. Redeeming
- * it runs the same seat-binding path as a token, so the cookie is as strong a
- * proof of seat as the token was.
+ * `anonId` cookie *and* the session, so two mutual likes on one browser
+ * coexist. A small per-anonId index Set (`match:claims:{anonId}`) lists them
+ * without SCAN. Redeeming a claim runs the same seat-binding path as a token,
+ * so the cookie is as strong a proof of seat as the token was.
  */
-export type ConnectionClaim = {
-  sessionId: string;
-  /** Holder's seat: 0 = anon1, 1 = anon2. */
-  seat: 0 | 1;
-  originNames: [string, string];
-  originTags: [VibeTag[], VibeTag[]];
-  createdAt: number;
-};
+
+/** Most claims one browser can list — a day of anonId cookie never gets near it. */
+const MAX_LISTED = 20;
 
 const parse = (raw: string | null): ConnectionClaim | null => {
   if (!raw) return null;
@@ -33,25 +30,68 @@ const parse = (raw: string | null): ConnectionClaim | null => {
       return null;
     }
     return claim;
-  } catch {
+  } catch (err) {
+    logger.warn({ err }, 'Discarding unparseable connection claim');
     return null;
   }
 };
 
-/** Store (or refresh) the claim for one seat. Best-effort — callers never await failure. */
+/** Store (or refresh) the claim for one seat — one pipelined round trip. */
 export const saveClaim = async (anonId: string, claim: ConnectionClaim): Promise<void> => {
-  await getRedis().set(REDIS_KEYS.claim(anonId), JSON.stringify(claim), 'EX', TTL.claim);
+  const index = REDIS_KEYS.claimIndex(anonId);
+  await getRedis()
+    .pipeline()
+    .set(REDIS_KEYS.claim(anonId, claim.sessionId), JSON.stringify(claim), 'EX', TTL.claim)
+    .sadd(index, claim.sessionId)
+    .expire(index, TTL.claim)
+    .exec();
 };
 
-/** Read a claim without consuming it (pending list). */
-export const peekClaim = async (anonId: string): Promise<ConnectionClaim | null> =>
-  parse(await getRedis().get(REDIS_KEYS.claim(anonId)));
+/** Read one claim without consuming it. */
+export const peekClaim = async (
+  anonId: string,
+  sessionId: string
+): Promise<ConnectionClaim | null> =>
+  parse(await getRedis().get(REDIS_KEYS.claim(anonId, sessionId)));
+
+/** Every live claim on this browser (pending list). Prunes expired index members. */
+export const listClaims = async (anonId: string): Promise<ConnectionClaim[]> => {
+  const redis = getRedis();
+  const index = REDIS_KEYS.claimIndex(anonId);
+  const sessionIds = (await redis.smembers(index)).slice(0, MAX_LISTED);
+  if (sessionIds.length === 0) return [];
+  const raws = await redis.mget(sessionIds.map((id) => REDIS_KEYS.claim(anonId, id)));
+  const claims: ConnectionClaim[] = [];
+  const dead: string[] = [];
+  raws.forEach((raw, i) => {
+    const claim = parse(raw);
+    if (claim) claims.push(claim);
+    else dead.push(sessionIds[i] as string);
+  });
+  if (dead.length > 0) {
+    await redis
+      .srem(index, ...dead)
+      .catch((err: unknown) => logger.warn({ err }, 'Failed to prune expired claim index entries'));
+  }
+  return claims;
+};
 
 /** Atomically take a claim for redemption. Second redeemer gets null. */
-export const takeClaim = async (anonId: string): Promise<ConnectionClaim | null> =>
-  parse(await getRedis().getdel(REDIS_KEYS.claim(anonId)));
+export const takeClaim = async (
+  anonId: string,
+  sessionId: string
+): Promise<ConnectionClaim | null> => {
+  const redis = getRedis();
+  const claim = parse(await redis.getdel(REDIS_KEYS.claim(anonId, sessionId)));
+  await redis.srem(REDIS_KEYS.claimIndex(anonId), sessionId);
+  return claim;
+};
 
-/** Discard a claim (cancel flow). Missing is fine — expiry already did it. */
-export const deleteClaim = async (anonId: string): Promise<void> => {
-  await getRedis().del(REDIS_KEYS.claim(anonId));
+/** Discard a claim (cancel / already-bound cleanup). Missing is fine — expiry already did it. */
+export const deleteClaim = async (anonId: string, sessionId: string): Promise<void> => {
+  await getRedis()
+    .pipeline()
+    .del(REDIS_KEYS.claim(anonId, sessionId))
+    .srem(REDIS_KEYS.claimIndex(anonId), sessionId)
+    .exec();
 };

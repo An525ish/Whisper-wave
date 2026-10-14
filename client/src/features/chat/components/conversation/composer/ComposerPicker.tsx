@@ -10,12 +10,13 @@ import {
   type SetStateAction,
 } from 'react';
 import { createPortal } from 'react-dom';
-import type { GifItem } from '@/features/chat/api/gif';
+import type { GifItem } from '../../../api/gif';
+import type { ComposerPickerTab } from '../../../types/local';
 import { useMediaQuery } from '@/shared/hooks';
 import EmojiIcon from '@/shared/components/ui/icons/Emoji';
 
 const GifPicker = lazy(() => import('./gif-picker/GifPicker'));
-const StyledEmojiPicker = lazy(() => import('./StyledEmojiPicker'));
+const StyledEmojiPicker = lazy(() => import('@/shared/components/ui/emoji/StyledEmojiPicker'));
 
 const emojiPickerShellClass =
   'flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[rgba(33,26,42,1)] shadow-2xl';
@@ -23,16 +24,15 @@ const emojiPickerShellClass =
 const TAB_BAR_PX = 52;
 const PICKER_MAX_W = 312;
 const PICKER_MAX_H = 380;
-type Tab = 'emoji' | 'gif' | 'meme';
 
-type ComposerPickerProps = {
+type Props = {
   triggerRef: RefObject<HTMLElement | null>;
   setMessage: Dispatch<SetStateAction<string>>;
   onClose: () => void;
   onGifSelect: (gif: GifItem) => void;
 };
 
-const TABS: { id: Tab; label: string }[] = [
+const TABS: { id: ComposerPickerTab; label: string }[] = [
   { id: 'emoji', label: 'Emoji' },
   { id: 'gif', label: 'GIF' },
   { id: 'meme', label: 'Memes' },
@@ -52,8 +52,8 @@ const ComposerPicker = ({
   setMessage,
   onClose,
   onGifSelect,
-}: ComposerPickerProps) => {
-  const [activeTab, setActiveTab] = useState<Tab>('emoji');
+}: Props) => {
+  const [activeTab, setActiveTab] = useState<ComposerPickerTab>('emoji');
   const containerRef = useRef<HTMLDivElement>(null);
   const activeIndex = TABS.findIndex((t) => t.id === activeTab);
   const isDesktop = useMediaQuery('(min-width: 640px)');
@@ -155,7 +155,7 @@ const ComposerPicker = ({
             />
           ) : (
             <div className="h-full px-2.5 pb-2 pt-2">
-              <GifPicker kind={activeTab} onSelect={handleMediaSelected} />
+              <GifPicker key={activeTab} kind={activeTab} onSelect={handleMediaSelected} />
             </div>
           )}
         </Suspense>

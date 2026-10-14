@@ -1,14 +1,14 @@
 import RefreshIcon from '@/shared/components/ui/icons/Refresh';
 import LiveDot from '../presence/LiveDot';
-import { formatPresenceUpdated } from '@/features/admin/utils/activity';
+import { formatPresenceUpdated } from '../../../utils/activity';
 
-type ActivityHeaderProps = {
+type Props = {
   presenceUpdatedAt: number;
   isRefetching: boolean;
   onRefresh: () => void;
 };
 
-const ActivityHeader = ({ presenceUpdatedAt, isRefetching, onRefresh }: ActivityHeaderProps) => (
+const ActivityHeader = ({ presenceUpdatedAt, isRefetching, onRefresh }: Props) => (
   <header className="shrink-0 flex flex-wrap items-end justify-between gap-4">
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue">Console</p>

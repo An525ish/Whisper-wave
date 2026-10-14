@@ -1,4 +1,4 @@
-import { useModAuditQuery } from '@/features/admin/hooks';
+import { useModAuditQuery } from '../../hooks';
 
 /**
  * Moderation audit trail: who did what, to whom, where. Read-only — every

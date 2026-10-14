@@ -87,16 +87,17 @@ src/
 │   └── RouteError.tsx
 │
 ├── pages/                    # Route entries. THIN. Compose features + route params only.
-│   ├── Home.tsx  Chat.tsx  Auth.tsx  Landing.tsx  SparkPass.tsx  PageNotFound.tsx
+│   ├── Home.tsx  Whisper.tsx  Memes.tsx  Rooms.tsx  Room.tsx  NewRoom.tsx
+│   ├── Chats.tsx  Chat.tsx  Auth.tsx  Landing.tsx  SparkPass.tsx  PageNotFound.tsx
 │   ├── admin/AdminAuth.tsx
-│   └── legal/Privacy.tsx  Terms.tsx  ReportAbuse.tsx
+│   └── legal/Privacy.tsx  Terms.tsx  Guidelines.tsx  Safety.tsx  Cookies.tsx  ReportAbuse.tsx
 │
 ├── layout/                   # App-shell layout wrappers (HubShell, ChatsLayout,
 │                             #   hubNav, useAppSocketEvents, AdminWrapper)
 │                             #   app-wide presence/alert sockets OK here; message cache in features
 │
 ├── features/                 # THE BUSINESS FUNCTIONALITY — one folder per domain
-│   └── <domain>/             #   auth · chat · whisper · hub · admin · profile · notifications · landing
+│   └── <domain>/             #   auth · chat · whisper · hub · rooms · memes · admin · profile · notifications · landing
 │       ├── api/              #   HTTP helpers via shared api client — no logic, no UI
 │       ├── components/       #   this domain's React components (may nest by sub-area)
 │       ├── hooks/            #   useXxxQueries / useXxxMutations / useXxx / queryKeys.ts
@@ -364,6 +365,21 @@ const { register, handleSubmit } = useForm<FormValues>({ mode: 'onChange' });
 4. Register the route in `app/router.tsx` (lazy-load if heavy).
 5. New socket events → add name constants to `shared/constants/socket.ts`.
 6. New queries → add keys to that feature's `hooks/queryKeys.ts` (never inline).
+
+### Add a hub card
+
+Hub home cards are **feature-owned** (HUB_PLAN §7.1). The feature exports its card (and any
+preview) from its `index.ts`; `features/hub` only composes them in `HomeDoors` / `HomeSections`.
+A card takes `enabled` (the server flag) and renders nothing when off; it shows live counts only
+through `publicHeadcount` (3+ people). Cards reuse the hub home's `hw-*` classes (loaded by
+`HubHome`). Games is skipped — no card, no nav item.
+
+### Dialogs
+
+Use the shared `shared/components/ui/modal/Dialog` (portal, focus trap + restore, scroll lock,
+Escape, `aria-modal`/`aria-labelledby`) for every modal dialog; a feature's own dialog is a thin
+wrapper that supplies content and optional class overrides. Do not hand-roll `role="dialog"`.
+Sheets stay on `BottomSheet`, confirms on `ConfirmationModal`.
 
 ### Add a shared component
 1. Place it in the right `shared/components/<category>/` folder (create a kebab-case

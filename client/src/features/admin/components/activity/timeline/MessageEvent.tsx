@@ -1,6 +1,6 @@
 import Image from '@/shared/components/ui/Image';
-import type { AdminActivityMessage } from '@/features/admin/types';
-import { activityRelativeTime } from '@/features/admin/utils/activity';
+import type { AdminActivityMessage } from '../../../types';
+import { activityRelativeTime } from '../../../utils/activity';
 
 const MessageBody = ({ msg }: { msg: AdminActivityMessage }) => {
   const hasAttachment = (msg.attachments?.length ?? 0) > 0;

@@ -4,7 +4,8 @@ import * as reportRepo from '../../repositories/report.js';
 import { blockAnonId } from '../match/block.js';
 import { REDIS_KEYS, TTL } from '../match/keys.js';
 import { getPartner, getSession, isParticipant } from '../match/session.js';
-import type { ModerationReason, ReportReason } from '../../types/match.js';
+import type { ModerationReason } from '../../types/match.js';
+import type { ReportReason } from '../../types/report.js';
 
 /** Coarse moderation bucket → the report category a human reviewer will see. */
 const REASON_MAP: Record<ModerationReason, ReportReason> = {

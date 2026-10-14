@@ -2,9 +2,9 @@ import { useState, useRef, useMemo } from 'react';
 import type { EmojiClickData } from 'emoji-picker-react';
 import StyledEmojiPicker, {
   emojiPickerShellClass,
-} from '@/features/chat/components/conversation/composer/StyledEmojiPicker';
-import type { MessageReaction } from '@/features/chat/types/chat';
-import ReactionAddIcon from '@/features/chat/components/message/ReactionAddIcon';
+} from '@/shared/components/ui/emoji/StyledEmojiPicker';
+import type { MessageReaction } from '../../types/chat';
+import ReactionAddIcon from '@/shared/components/ui/icons/ReactionAdd';
 
 const DEFAULT_EMOJIS = ['❤️', '👍', '😂', '😮', '😢'];
 const RECENT_EMOJIS_KEY = 'ww_recent_emojis';
@@ -50,7 +50,7 @@ const EmojiGlyph = ({ emoji }: { emoji: string }) => (
   </span>
 );
 
-type ReactionStripProps = {
+type Props = {
   reactions?: MessageReaction[];
   myUserId: string;
   onReact: (emoji: string) => void;
@@ -59,7 +59,7 @@ type ReactionStripProps = {
   onPickerOpenChange?: (open: boolean) => void;
 };
 
-const ReactionStrip = ({ reactions, myUserId, onReact, onClose, onPickerOpenChange }: ReactionStripProps) => {
+const ReactionStrip = ({ reactions, myUserId, onReact, onClose, onPickerOpenChange }: Props) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const moreBtnRef = useRef<HTMLButtonElement>(null);
 

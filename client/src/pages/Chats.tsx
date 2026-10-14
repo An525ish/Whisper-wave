@@ -1,9 +1,14 @@
 import ChatsLayout from '@/layout/ChatsLayout';
+import { useAuthStore } from '@/features/auth';
+import { GuestChatsEmpty } from '@/features/chat';
 
 /**
  * Messages empty state — shown at `/chats` until a conversation opens.
+ * Guests get the Whisper-pointing empty state instead of the messages app.
  */
 const Chats = () => {
+  const user = useAuthStore((s) => s.user);
+  if (!user) return <GuestChatsEmpty />;
   return (
     <ChatsLayout>
       <div className="grid h-full w-full place-items-center px-6">

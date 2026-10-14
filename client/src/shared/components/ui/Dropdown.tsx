@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useId, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import DropdownIcon from '@/shared/components/ui/icons/Dropdown';
 import Image from '@/shared/components/ui/Image';
+import { useMenuKeyboard } from '@/shared/hooks/useMenuKeyboard';
 import type { DropdownOption } from '@/shared/types/ui';
 
 type DropdownProps = {
@@ -20,7 +21,11 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
   const [isOpen, setIsOpen] = useState(false);
   const compact = size === 'sm';
   const up = placement === 'up';
+  const uid = useId();
+  const buttonId = `${uid}-button`;
+  const menuId = `${uid}-menu`;
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, placed: false });
 
@@ -56,6 +61,13 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  const handleMenuKeyDown = useMenuKeyboard({
+    open: isOpen,
+    menuRef,
+    triggerRef,
+    onClose: () => setIsOpen(false),
+  });
+
   const toggleDropdown = () => {
     if (!isOpen) setMenuPos((p) => ({ ...p, placed: false }));
     setIsOpen(!isOpen);
@@ -74,7 +86,6 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
           }`}
           role="menuitem"
           tabIndex={-1}
-          id={`menu-item-${index}`}
           onClick={() => {
             handler();
             setIsOpen(false);
@@ -122,9 +133,11 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
             ? 'group relative grid place-items-center rounded-full transition focus:outline-none'
             : 'inline-flex max-w-44 items-center text-sm font-medium capitalize leading-none text-body-700 transition hover:text-body focus:outline-none'
         }
-        id="menu-button"
+        ref={triggerRef}
+        id={buttonId}
         aria-expanded={isOpen}
-        aria-haspopup="true"
+        aria-haspopup="menu"
+        aria-controls={isOpen ? menuId : undefined}
         aria-label={avatarOnly ? `Account menu for ${name}` : undefined}
         onClick={toggleDropdown}
       >
@@ -170,6 +183,8 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
           createPortal(
             <div
               ref={menuRef}
+              id={menuId}
+              onKeyDown={handleMenuKeyDown}
               className="fixed z-[60] min-w-44 overflow-hidden rounded-2xl border border-white/10 bg-primary/90 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl focus:outline-none"
               style={{
                 top: menuPos.top,
@@ -178,7 +193,7 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
               }}
               role="menu"
               aria-orientation="vertical"
-              aria-labelledby="menu-button"
+              aria-labelledby={buttonId}
               tabIndex={-1}
             >
               {menuHeader}
@@ -188,12 +203,15 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
           )
         ) : (
           <div
+            ref={menuRef}
+            id={menuId}
+            onKeyDown={handleMenuKeyDown}
             className={`absolute top-full z-60 mt-1 min-w-48 origin-top overflow-hidden rounded-2xl border border-white/10 bg-primary/90 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl focus:outline-none ${
               compact ? 'right-0 w-max min-w-full' : 'left-0 w-full'
             }`}
             role="menu"
             aria-orientation="vertical"
-            aria-labelledby="menu-button"
+            aria-labelledby={buttonId}
             tabIndex={-1}
           >
             {menuOptions}

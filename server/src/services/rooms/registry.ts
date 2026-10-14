@@ -1,48 +1,15 @@
 import { v4 as uuid } from 'uuid';
 import { AppError } from '../../utils/AppError.js';
 import { ROOM_ERROR_CODES } from '../../constants/room-events.js';
-import { ROOM_MSG_RING } from '../../constants/rooms.js';
+import { aliasKey, normalizeAlias } from './automod.js';
+import { dropInstance, instanceCounters, instances, nextInstanceNumber, notifySeatChange } from './store.js';
 import type {
   IRoomFields,
   LiveRoomMember,
-  LiveRoomMessage,
+  RoomInstance,
   RoomMemberIdentity,
   RoomRole,
 } from '../../types/room.js';
-
-type Instance = {
-  id: string;
-  slug: string;
-  title: string;
-  capSoft: number;
-  capHard: number;
-  /** Locked rooms refuse new member joins (mods/hosts always pass). */
-  locked: boolean;
-  /** Per-instance slow-mode override (ms). Falls back to role defaults. */
-  slowOverrideMs?: number;
-  members: Map<string, LiveRoomMember>;
-  ring: LiveRoomMessage[];
-  createdAt: number;
-};
-
-/**
- * Live room state — in-process, never Redis, never Mongo.
- *
- * Redis commands are the scarcest free resource and a room message is the
- * highest-frequency event in the system, so room messages cost zero Redis
- * commands. The stated trade-off: a restart drops every instance (clients
- * auto-rejoin; rings start empty). Single-node only — a second node needs the
- * Socket.IO Redis adapter plus a shared instance directory.
- */
-const instances = new Map<string, Instance>();
-
-const instanceNumber = (slug: string): number => {
-  let n = 0;
-  for (const inst of instances.values()) {
-    if (inst.slug === slug) n += 1;
-  }
-  return n + 1;
-};
 
 const keyFor = (identity: RoomMemberIdentity): string => {
   const key = identity.userId ?? identity.gid;
@@ -50,15 +17,20 @@ const keyFor = (identity: RoomMemberIdentity): string => {
   return key;
 };
 
-/** Alias collisions get a short disambiguator — two "NightOwl"s stay distinct. */
-const uniqueAlias = (members: Map<string, LiveRoomMember>, alias: string): string => {
-  const taken = new Set([...members.values()].map((m) => m.alias));
-  if (!taken.has(alias)) return alias;
-  const suffix = uuid().slice(0, 4);
-  return taken.has(`${alias}·${suffix}`) ? `${alias}·${uuid().slice(0, 8)}` : `${alias}·${suffix}`;
+/**
+ * Alias collisions get a short disambiguator — two "NightOwl"s stay distinct.
+ * Compared case-insensitively on the NFKC form, so "nightowl" and "ＮｉｇｈｔＯｗｌ"
+ * cannot impersonate each other.
+ */
+const uniqueAlias = (members: Map<string, LiveRoomMember>, rawAlias: string): string => {
+  const alias = normalizeAlias(rawAlias);
+  const taken = new Set([...members.values()].map((m) => aliasKey(m.alias)));
+  if (!taken.has(aliasKey(alias))) return alias;
+  const suffixed = `${alias}·${uuid().slice(0, 4)}`;
+  return taken.has(aliasKey(suffixed)) ? `${alias}·${uuid().slice(0, 8)}` : suffixed;
 };
 
-const instancesOf = (slug: string): Instance[] =>
+const instancesOf = (slug: string): RoomInstance[] =>
   [...instances.values()].filter((i) => i.slug === slug).sort((a, b) => a.createdAt - b.createdAt);
 
 /**
@@ -71,7 +43,7 @@ const instancesOf = (slug: string): Instance[] =>
  * defeat the lock). Mods, hosts and admins always pass.
  */
 export const joinInstance = (params: {
-  template: Pick<IRoomFields, 'slug' | 'title' | 'capSoft' | 'capHard'>;
+  template: Pick<IRoomFields, 'slug' | 'title' | 'capSoft' | 'capHard' | 'requiresModPresence'>;
   identity: RoomMemberIdentity;
   alias: string;
   color: string;
@@ -85,11 +57,14 @@ export const joinInstance = (params: {
   for (const inst of instancesOf(template.slug)) {
     const existing = inst.members.get(key);
     if (existing) {
-      if (existing.alias !== alias) {
+      existing.role = role;
+      inst.requiresModPresence = template.requiresModPresence === true;
+      if (aliasKey(existing.alias) !== aliasKey(alias)) {
         const others = new Map(inst.members);
         others.delete(key);
         existing.alias = uniqueAlias(others, alias);
       }
+      notifySeatChange(template.slug);
       return { instanceId: inst.id, member: existing, online: inst.members.size };
     }
   }
@@ -107,7 +82,7 @@ export const joinInstance = (params: {
     throw new AppError(403, ROOM_ERROR_CODES.LOCKED);
   }
   if (!target) {
-    const n = instanceNumber(template.slug);
+    const n = nextInstanceNumber(template.slug);
     target = {
       id: `${template.slug}#${n}`,
       slug: template.slug,
@@ -121,6 +96,7 @@ export const joinInstance = (params: {
     };
     instances.set(target.id, target);
   }
+  target.requiresModPresence = template.requiresModPresence === true;
 
   const member: LiveRoomMember = {
     key,
@@ -133,6 +109,7 @@ export const joinInstance = (params: {
     joinedAt: Date.now(),
   };
   target.members.set(key, member);
+  notifySeatChange(template.slug);
   return { instanceId: target.id, member, online: target.members.size };
 };
 
@@ -141,7 +118,8 @@ export const leaveInstance = (instanceId: string, identity: RoomMemberIdentity):
   const inst = instances.get(instanceId);
   if (!inst) return 0;
   inst.members.delete(keyFor(identity));
-  if (inst.members.size === 0) instances.delete(instanceId);
+  if (inst.members.size === 0) dropInstance(instanceId);
+  notifySeatChange(inst.slug);
   return inst.members.size;
 };
 
@@ -150,9 +128,18 @@ export const removeMember = (instanceId: string, key: string): number => {
   const inst = instances.get(instanceId);
   if (!inst) return 0;
   inst.members.delete(key);
-  if (inst.members.size === 0) instances.delete(instanceId);
+  if (inst.members.size === 0) dropInstance(instanceId);
+  notifySeatChange(inst.slug);
   return inst.members.size;
 };
+
+/** Whether this seat key currently holds a seat in the instance. */
+export const isSeated = (instanceId: string, key: string): boolean =>
+  instances.get(instanceId)?.members.has(key) ?? false;
+
+/** The live instance of `slug` this seat key sits in, if any. */
+export const seatInstanceOf = (slug: string, key: string): string | null =>
+  instancesOf(slug).find((i) => i.members.has(key))?.id ?? null;
 
 /** Lock, unlock, or retune one instance. Returns false when gone. */
 export const setLocked = (instanceId: string, locked: boolean): boolean => {
@@ -172,92 +159,36 @@ export const setSlowOverride = (instanceId: string, ms: number | undefined): boo
 
 export const instanceSettings = (
   instanceId: string
-): { locked: boolean; slowOverrideMs?: number } | null => {
+): { locked: boolean; slowOverrideMs?: number; requiresModPresence?: boolean } | null => {
   const inst = instances.get(instanceId);
   if (!inst) return null;
-  return { locked: inst.locked, ...(inst.slowOverrideMs !== undefined ? { slowOverrideMs: inst.slowOverrideMs } : {}) };
-};
-
-export const appendMessage = (
-  instanceId: string,
-  message: Omit<LiveRoomMessage, 'id' | 'ts'> & { id?: string; ts?: number }
-): LiveRoomMessage | null => {
-  const inst = instances.get(instanceId);
-  if (!inst) return null;
-  const full: LiveRoomMessage = {
-    ...message,
-    id: message.id ?? uuid(),
-    ts: message.ts ?? Date.now(),
+  return {
+    locked: inst.locked,
+    ...(inst.slowOverrideMs !== undefined ? { slowOverrideMs: inst.slowOverrideMs } : {}),
+    ...(inst.requiresModPresence ? { requiresModPresence: true } : {}),
   };
-  inst.ring.push(full);
-  if (inst.ring.length > ROOM_MSG_RING) {
-    inst.ring.splice(0, inst.ring.length - ROOM_MSG_RING);
-  }
-  return full;
 };
 
-export const recentMessages = (instanceId: string, limit = ROOM_MSG_RING): LiveRoomMessage[] => {
-  const inst = instances.get(instanceId);
-  if (!inst) return [];
-  // Hidden messages leave history for everyone (mods included) — the audit
-  // trail is the report evidence snapshot, not the thread.
-  return inst.ring.filter((m) => !m.hidden).slice(-limit);
-};
-
-/** Mod-remove (or auto-hide) a message. Never deletes — evidence survives. */
-export const hideMessage = (instanceId: string, messageId: string): boolean => {
-  const inst = instances.get(instanceId);
-  const target = inst?.ring.find((m) => m.id === messageId);
-  if (!inst || !target || target.hidden) return false;
-  target.hidden = true;
-  return true;
-};
-
-export const findMessage = (instanceId: string, messageId: string): LiveRoomMessage | null => {
-  const inst = instances.get(instanceId);
-  return inst?.ring.find((m) => m.id === messageId) ?? null;
-};
-
-/** Which live instance of this room holds the message (report path). */
-export const findMessageInstance = (
-  slug: string,
-  messageId: string
-): string | null => {
-  for (const inst of instancesOf(slug)) {
-    if (inst.ring.some((m) => m.id === messageId)) return inst.id;
-  }
-  return null;
-};
-
-/**
- * Toggle one curated reaction. Returns per-reaction counts, or null when the
- * message is gone. Who-holds-what stays server-side — clients get counts.
- */
-export const toggleReaction = (
-  instanceId: string,
-  key: string,
-  messageId: string,
-  reaction: string
-): Record<string, number> | null => {
-  const target = findMessage(instanceId, messageId);
-  if (!target || target.hidden) return null;
-  const holders = new Set(target.reactions?.[reaction] ?? []);
-  if (holders.has(key)) holders.delete(key);
-  else holders.add(key);
-  target.reactions = { ...target.reactions, [reaction]: [...holders] };
-  if (target.reactions[reaction]?.length === 0) delete target.reactions[reaction];
-  const counts: Record<string, number> = {};
-  for (const [name, members] of Object.entries(target.reactions)) {
-    counts[name] = members.length;
-  }
-  return counts;
-};
+export {
+  appendMessage,
+  findMessage,
+  findMessageInstance,
+  getEvidenceWindow,
+  hideMessage,
+  recentMessages,
+  toggleReaction,
+  unhideMessage,
+} from './ring.js';
+export { onInstanceClosed } from './store.js';
 
 export const membersOf = (instanceId: string): LiveRoomMember[] => {
   const inst = instances.get(instanceId);
   if (!inst) return [];
   return [...inst.members.values()];
 };
+
+/** Live instances of a template (read-only view for mod-presence). */
+export const liveInstancesOf = (slug: string): readonly RoomInstance[] => instancesOf(slug);
 
 export const liveCounts = (slug: string): Array<{ instanceId: string; online: number }> =>
   instancesOf(slug).map((i) => ({ instanceId: i.id, online: i.members.size }));
@@ -267,7 +198,8 @@ export const clearInstance = (instanceId: string): string[] => {
   const inst = instances.get(instanceId);
   if (!inst) return [];
   const keys = [...inst.members.keys()];
-  instances.delete(instanceId);
+  dropInstance(instanceId);
+  notifySeatChange(inst.slug);
   return keys;
 };
 
@@ -276,5 +208,6 @@ export const allInstanceIds = (): string[] => [...instances.keys()];
 
 /** Test + shutdown escape hatch. Production code never calls this. */
 export const clearRegistry = (): void => {
-  instances.clear();
+  for (const id of [...instances.keys()]) dropInstance(id);
+  instanceCounters.clear();
 };

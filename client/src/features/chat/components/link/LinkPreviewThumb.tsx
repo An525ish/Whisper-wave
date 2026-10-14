@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import LinkIcon from '@/shared/components/ui/icons/Link';
-import { useLinkPreviewQuery } from '@/features/chat/hooks/useLinkPreview';
-import { getLinkFaviconUrl } from '@/features/chat/utils/linkParser';
+import { useLinkPreviewQuery } from '../../hooks/useLinkPreview';
+import { getLinkFaviconUrl } from '../../utils/linkParser';
 
-type LinkPreviewThumbProps = {
+type Props = {
   url: string;
   className?: string;
   iconClassName?: string;
@@ -16,7 +16,7 @@ const LinkPreviewThumb = ({
   url,
   className = 'h-8 w-8 rounded-lg',
   iconClassName = 'h-4 w-4 stroke-green',
-}: LinkPreviewThumbProps) => {
+}: Props) => {
   const { data, isPending } = useLinkPreviewQuery(url);
   const [imageFailed, setImageFailed] = useState(false);
   const [faviconFailed, setFaviconFailed] = useState(false);

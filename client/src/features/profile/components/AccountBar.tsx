@@ -9,7 +9,7 @@ import LeaveGroupIcon from '@/shared/components/ui/icons/LeaveGroup';
 import { getFirstName } from '@/shared/utils/helpers';
 import { useAuthStore } from '@/features/auth';
 import { useNotificationsStore, selectTotalNotificationCount } from '@/features/notifications';
-import { useProfileUiStore } from '@/features/profile/store';
+import { useProfileUiStore } from '../store';
 import { useLocation } from 'react-router-dom';
 
 type AccountBarProps = {

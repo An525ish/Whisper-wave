@@ -12,7 +12,7 @@ import {
 } from '../../../services/match/__tests__/redisHarness.js';
 import type { AnonSocket } from '../../../types/anonSocket.js';
 import { isResumeHandshake } from '../auth.js';
-import { handleAnonConnect } from '../handlers.js';
+import { handleAnonConnect } from '../connect.js';
 
 /**
  * Resume-only handshake (`auth: { resume: true }`) against real Redis.

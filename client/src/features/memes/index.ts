@@ -1,10 +1,7 @@
 /**
  * Memes feature — third-party joke shuffle.
- * PUBLIC API: only what pages and Home consume.
+ * PUBLIC API: only what pages and the hub home consume.
  */
 export { default as MemeFeed } from './components/MemeFeed';
-export { default as MemeCard } from './components/MemeCard';
-export { useMemesInfinite } from './hooks/useMemesInfinite';
-export { useMemeSavesQuery, useToggleMemeSave } from './hooks/useMemeSaves';
-export { useMemeStore } from './stores/memeStore';
-export { MEME_EVENTS } from './constants';
+export { default as MemesHubCard } from './components/MemesHubCard';
+export { default as MemesHubPreview } from './components/MemesHubPreview';

@@ -9,7 +9,7 @@
  * whole crowd holds still under reduced-motion.
  */
 
-import IncognitoGlyph from '@/features/landing/components/ui/IncognitoGlyph';
+import IncognitoGlyph from './IncognitoGlyph';
 
 type Tone = 'violet' | 'teal';
 type Node = { x: number; y: number; tone: Tone; size: number; delay: number; dot?: boolean; link?: boolean; tag?: string };

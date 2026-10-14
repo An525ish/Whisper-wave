@@ -65,14 +65,21 @@ export const REDIS_KEYS = {
   /** Throttle key for the "partner left for real" broadcast. */
   presenceNotified: (sessionId: string) => `match:presence-notified:${sessionId}`,
   /**
-   * anonId → the mutual-like claim that survives a closed tab.
+   * (anonId, sessionId) → the mutual-like claim that survives a closed tab.
    *
+   * One key per session so a second mutual like never overwrites the first.
    * Written for BOTH seats at mutual like (names/tags included, never anonIds
    * beyond the key itself). After sign-in the owner redeems it via
    * `POST /api/connection/complete { claimId }` instead of a `connectToken`
-   * that died with `sessionStorage`. Deleted on redeem or expiry.
+   * that died with `sessionStorage`. Deleted on redeem, cancel, or expiry.
    */
-  claim: (anonId: string) => `match:claim:${anonId}`,
+  claim: (anonId: string, sessionId: string) => `match:claim:${anonId}:${sessionId}`,
+  /**
+   * anonId → Set of sessionIds that have a claim. Lets the pending list read
+   * its claims without a SCAN; stale members (expired claim keys) are pruned
+   * when the list is read.
+   */
+  claimIndex: (anonId: string) => `match:claims:${anonId}`,
   /**
    * Sorted set of anonIds whose disconnect grace period has not lapsed yet,
    * scored by deadline (epoch ms). `ZRANGEBYSCORE` finds what is due and `ZREM`

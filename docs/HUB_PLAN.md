@@ -1,15 +1,19 @@
 # Whisper Wave — Hub Plan
 
-> **Status: IN BUILD — Phases 0–1 (hub shell, whisper-in-hub), Phase 2 (laughs),
-> and Phase 3a (rooms) are shipped dark behind flags; Games (Phase 4) is
-> skipped by decision. Decisions D4/D6/D10/D11 are locked; the rest follow
-> recommendations until overridden. Last updated: Oct 2026**
+> **Status: IN BUILD — Phases 0–1 (hub shell, whisper-in-hub) are shipped;
+> Phase 2 (memes) and Phase 3a (rooms) are built and ship dark behind flags,
+> pending counsel sign-off and staffed hours; Games (Phase 4) is skipped by
+> decision (D7). D4 and D6 are locked **and amended** (see §14); D10/D11 are
+> locked; the rest follow recommendations until overridden. This plan is the
+> design record — where the code and this text disagree, the "Phase status"
+> table in §12 and the decision rows in §14 win. Last updated: Oct 2026**
 >
 > Companions: [`PRODUCT.md`](./PRODUCT.md) · [`TECH.md`](./TECH.md) ·
 > [`USER_JOURNEY.md`](./USER_JOURNEY.md) · [`PHASE2.md`](./PHASE2.md) · [`Todo.md`](./Todo.md)
 >
-> If approved, this document supersedes the "Non-Goals" line *"Public group rooms"* in
-> `PRODUCT.md`, and adds Journeys E–H to `USER_JOURNEY.md` (see [§15](#15-docs-to-update-on-approval)).
+> This document supersedes the "Non-Goals" line *"Public group rooms"* in
+> `PRODUCT.md` and added Journeys E–H to `USER_JOURNEY.md` (see [§15](#15-docs-to-update-on-approval));
+> both updates are done.
 
 ---
 
@@ -160,7 +164,7 @@ build can start from facts, not memory.
 | Models | `User, Chat, Message, ChatRead, Request, Connection, PendingConnection, Report, RefreshToken, PendingSignup, ImpersonationLog`. **No** `Room`, `Game`, `MemePost`, `Notification`. | New models listed in §8.4. |
 | Groups | `Chat` groups are **members-only (ObjectId)**, max **100**, no public/discoverable flag. | Cannot be reused for public rooms (no guests, wrong cap, no discovery). New `Room` concept. |
 | Media | Presigned R2 PUT, ImageKit delivery, Jimp (avatars only), **no FFmpeg**, **no image moderation**. | UGC memes need a moderation step before they can ship. |
-| Memes today | `/api/gif` proxies **KLIPY** `gif` and `meme` (static memes), **auth-only**. | The meme *source* already exists for members; making it guest-readable is a small change (subject to KLIPY terms — §7.5). |
+| Memes today *(audit-time; superseded)* | `/api/gif` proxied **KLIPY** `gif` and `meme`, **auth-only**. | KLIPY was not used for the feed — see §7.5 (JokeAPI + Memegen). `/api/gif` stays for chat GIFs. |
 | Redis cost | Anon message ≈ 3 commands; join/match up to ~hundreds in one pipeline (bounded by a 200-candidate window). Docs estimate ~150 commands per 10-message session. | Redis is the scarcest free resource (§10). |
 | Whisper ↔ account | `POST /api/connection/complete` (auth), `PendingConnection` (7-day TTL), `Connection` (unique `pairKey`), `WHISPER_CONNECTION_READY`/`CONNECTION_READY` events, `GET /api/connection/:chatId` for the origin strip. **No endpoint to list pending connections.** | Gaps closed in §7.2. |
 
@@ -209,12 +213,12 @@ From `.cursor/rules/product-and-cost.mdc` and the architecture rules, restated a
 /whisper             Whisper (anonymous 1:1)            guests + members
 /rooms               Rooms lobby                         guests + members
 /rooms/:slug         A live room                         guests (alias) + members
-/play                Games lobby                         guests + members
-/play/:gameId        A game (solo / invite / quick match)
+/play                Games lobby          — SKIPPED (D7), no route
+/play/:gameId        A game               — SKIPPED (D7), no route
 /memes               Full-screen meme feed
 /chats               Messages app                        members only
 /chats/:chatId       A conversation
-/me                  Persona, account, settings          guests (persona) + members (account)
+/me                  Persona, account, settings          — not built (persona chip on Home deferred)
 /auth, /spark-pass, /terms, /privacy, /report, /admin/*   unchanged
 ```
 
@@ -244,17 +248,18 @@ hub is one click away ("Enter") and members skip straight to `/home`.
 └────┴──────────────────────────────────────────────────────────────┘
 ```
 
-**Mobile (<1024 px) — bottom tab bar, 5 tabs:**
+**Mobile (<1024 px) — bottom tab bar (as built):**
 
 ```
- Home · Rooms · [ Whisper ] · Play · Chats
+ Home · Rooms · [ Whisper ] · Chats
                   ▲ larger, centre
 ```
 
-- **Memes** is Home's second tab (and a rail item on desktop). Rationale: five tabs is the
-  ergonomic maximum, and Memes is the "lean-back" content that belongs on the home surface.
-- The tab bar **hides inside a conversation / a room / a game** (full-screen contexts) and
-  returns on back.
+- Play is skipped (D7), so there are four tabs; Rooms appears only when its flag is on.
+  **Memes** lives inside Home on phones and is a rail item on desktop. Guests get the same
+  Chats tab (an empty state that points at Whisper).
+- The tab bar **hides inside a conversation and inside a room thread** (full-screen contexts)
+  and returns on back. It stays visible on Whisper (§7.2.1).
 - A **live-whisper pill** floats above the tab bar whenever a whisper is in progress and the user
   is elsewhere (§7.2).
 
@@ -420,7 +425,7 @@ Home answers one question: **"What do I want to do right now?"** It is a launche
 **Rules**
 
 - Each card is **owned by its feature** and exported through that feature's `index.ts`
-  (`WhisperHubCard`, `RoomsHubCard`, `PlayHubCard`, `MemesHubCard`, `RecentChatsHubCard`). Home
+  (as built: `WhisperHubCard`, `RoomsHubCard`, `MemesHubCard`, plus `MemesHubPreview`; `PlayHubCard` is dropped with Games and `RecentChatsHubCard` is not built — the Home footer links to Chats). Home
   only composes them. This keeps the one-way dependency rule and lets each surface evolve alone.
 - **Honest counts only.** A number is shown only when real and above a threshold (e.g. rooms with
   ≥ 3 people); otherwise the card says "Quiet right now" and offers a solo alternative (a game,
@@ -670,6 +675,32 @@ MessageRow, Composer, RulesSheet, ModMenu), `hooks/` (`useRoomsSocket`, `useRoom
 (exports `RoomsHubCard`, route elements). Virtualized message list reuses the
 `useThreadVirtualizer` pattern.
 
+#### 7.3.4a Private rooms (invite-only, members only)
+
+A fourth visibility, `private`, next to official / public / unlisted. It differs from `unlisted`
+(invite-proof required, guests welcome, may later ask for the lobby) in five ways:
+
+| | unlisted | **private** |
+|---|---|---|
+| Entry | valid invite, or host/mod/seat | same proof, **and signed-in** — a guest holding a valid invite gets `members_only` ("Sign in to join"; no invite use is spent, the invite already proves they know the slug) |
+| Lobby | never; may request listing | never; `request-listing` is refused (409) and the admin queue ignores it |
+| Size | 60 / 100 | **hard cap 25, soft 20**, clamped server-side whatever the input |
+| Invites | optional use limit, ≤ 30 d | **use limit required (≤ 25), ≤ 30 d**; host lists/revokes (`GET`/`DELETE /:slug/invites`) |
+| Life | until deleted | **deleted after 30 days with no join** (room + invites + reminders); no reminders ever |
+
+No-proof answers are identical to a missing slug (404 / `not_found`), and the info sheet returns no
+title without proof — private rooms cannot be enumerated. Hosts keep every host power (kick, ban,
+mute, slow mode, lock) and can transfer nothing. Private rooms stay reportable, automod-screened,
+globally-bannable, admin-closable and evidence-snapshotted exactly like any room (nothing in those
+paths branches on visibility); admins can edit/close them but never convert across the private
+boundary. Hosts find them again via `GET /api/rooms/mine` ("Your rooms", lobby top).
+
+**Creation seam.** `canCreatePrivateRoom(userId)` (`services/user/entitlements.ts`) is the only
+place that decides. Today: `privateRooms` flag on AND account trust `trusted`; max **3** active
+private rooms per host. **Phase 5c (Spark Pass) replaces the trust clause with the pass check** —
+callers don't change; the flag stays as the kill-switch (flag off: creation refused, joins refused
+with `feature_off`, live private instances closed).
+
 #### 7.3.5 What we're deliberately not doing in v1
 
 Images/files/voice in rooms · user-created rooms (Phase 3b) · DMs from a room (use Whisper's
@@ -762,11 +793,11 @@ A **shuffle** feed — lean-back, solo, zero-concurrency value. It exists to giv
 open the app when no one else is online, and to feed people into Whisper/Rooms/Games from the same
 screen ("Bored? → Find someone" card every N items).
 
-- **Shuffle, not "For You".** No personalised ranking. Controls: **Shuffle** (new random batch),
-  **Category chips** mapped to vibe tags (music, gaming, anime, relatable, …), **Trending** (the
-  provider's own trending, labelled as such).
-- Card: media, title, actions — **react** (🔥 💀 😭 …), **save**, **share** (members → a Chat;
-  everyone → copy link), **report**.
+- **Shuffle, not "For You".** No personalised ranking. As built: **shelf chips** for the shelves
+  the provider actually has (Mix, Misc, Programming, Puns; Dark only for Unfiltered members) — the
+  vibe-tag chips, "Shuffle" button and "Trending" originally sketched here were dropped.
+- Card: media, setup + punchline, actions — **react** (🔥 💀 😭 …), **save**, **share** (members →
+  a Chat, or copy the text), **report**, hide.
 - Vertical scroll, virtualized, lazy media, one video/GIF playing at a time, `prefers-reduced-motion`
   respected, data-saver-aware (smaller renditions).
 
@@ -794,30 +825,47 @@ screen ("Bored? → Find someone" card every N items).
 | **F. GIPHY** | Free beta 100 calls/h; production needs application + pricing | Attribution required | Possible fallback, not primary |
 | **G. Imgflip templates** | Free `get_memes` (~100 templates) | Terms/redistribution rights unclear | Only as *template ideas*, not hotlinked content |
 
-**Gate G-M1: CLEARED Oct 2026.** Source locked to JokeAPI v2 — no key to apply
-for, terms read (no token/registration/payment; 120 req/min; MIT-licensed
-project; no stated attribution requirement), guests servable, cacheable.
-Consequences accepted: text jokes (not image memes), finite pool (~1.4k —
-repeats expected, mitigated by ID-range rotation), `safe-mode` is best-effort
-so report/hide stays. Server proxies with `safe-mode` + full blacklist
-(`nsfw,religious,political,racist,sexist,explicit`), Misc/Programming/Pun
-only, explicit `User-Agent` (Cloudflare 403s headerless clients).
+**Gate G-M1: CLEARED Oct 2026 — the source is JokeAPI v2 + Memegen.link, not KLIPY.**
+The table above is the option analysis as written; its Option A (KLIPY) was not taken. No key
+to apply for; terms read (no token/registration/payment; 120 req/min; MIT-licensed project; no
+stated attribution requirement); guests servable; cacheable. Consequences accepted: text jokes
+rendered as images, a finite pool (~1.4k — repeats expected, mitigated by ID-range rotation and
+random fill that excludes seen ids), `safe-mode` is best-effort so report/hide stays. The server
+calls JokeAPI with an explicit `User-Agent` (Cloudflare 403s headerless clients). KLIPY remains
+the GIF provider for chat only.
 
-#### 7.5.3 Technical design (v1 = no storage)
+**D6 as amended (owner decision, Oct 2026): the Dark shelf and a member opt-in "Unfiltered 18+"
+mode are kept.**
 
-- **Server:** `GET /api/memes?cat=&cursor=` → thin proxy over the existing KLIPY code, now
-  `optionalAuth` + IP rate limit + a short in-memory cache (30–60 s per `cat`/`cursor`) so many
-  guests don't each burn KLIPY quota. Returns `{ items: [{ id, title, url, previewUrl, w, h }],
-  nextCursor }`. Refactor `controllers/gif.ts` → `services/memes/klipy.ts` so GIFs-in-chat and the
-  feed share one adapter. **Provider key stays server-side.**
-- **State:** v1 stores nothing server-side. Reactions/saves: guests in `localStorage`; members
-  `MemeSave { user, source: 'klipy', externalId, savedAt }` (tiny) so saves sync.
-- **Client — `features/memes/`:** `MemeFeed` (virtualized), `MemeCard`, `useMemesInfinite`
-  (TanStack `useInfiniteQuery`, pattern copied from `useGifHooks`), `memeStore` (local
-  reactions/saves), `MemesHubCard`. Media renders through `RetryableMedia`.
-- **Safety even for third-party content:** hide a meme locally on report; server keeps a
-  `memeBlocklist` (external ids) that the proxy filters out; Admin can add ids.
-- **Bandwidth:** third-party media doesn't touch our 20 GB ImageKit allowance.
+| Stream | Who sees it | What it is |
+|---|---|---|
+| Default | Everyone (guests, new members, opt-outs) | `safe-mode` + full blacklist (`nsfw,religious,political,racist,sexist,explicit`) over Misc/Programming/Pun, safe-mode semantics |
+| Unfiltered 18+ | Members who turned it on (stored `User.unfiltered`, set only with an explicit 18+ declaration in the same call) | Same shelves without the blacklist, plus the **Dark** shelf; Dark is a 403 for anyone else |
+
+Never in the guest or default feed; the server reads the stored flag, never a query param.
+**Sign-off from counsel is still pending** — it is an open question in
+[`LEGAL_BRIEF.md`](./LEGAL_BRIEF.md). Turning the flag off is the instant fallback.
+
+#### 7.5.3 Technical design (as built)
+
+- **Server:** `GET /api/memes?cat=programming|misc|pun|dark|mix&page=0..14&exclude=` →
+  `optionalAuth` + per-IP limit + short in-memory cache. Returns `{ items: [{ id, category, setup,
+  delivery?, imageUrl }], page, stale? }`; `page` ≥ 15 is a 400 (the client treats 14 as the last
+  page), a provider outage serves stale cache else 503. `mix` rotates the three safe shelves.
+  Flag off → 404. Implementation map: [`TECH.md`](./TECH.md) "Hub backend".
+- **State:** reactions and hides live in `localStorage` (hides capped at 500). Members' saves are
+  `MemeSave { user, source: 'jokeapi', externalId }` so they sync; guests save on-device with a
+  sign-in nudge.
+- **Client — `features/memes/`:** `MemeFeed` (TanStack Virtual, shelf chips — Mix + three safe
+  shelves, Dark only while Unfiltered is on), `MemeCard` (react, save, share, report, hide),
+  `useMemesInfinite`, `memeStore`, and the feature-owned hub pieces `MemesHubCard` /
+  `MemesHubPreview` (§7.1). Images render through `RetryableMedia`.
+- **Safety even for third-party content:** report → hides locally and counts server-side (one per
+  `gid` per joke; enough distinct reports auto-block it for everyone); admins manage the
+  `MemeBlock` blocklist in Admin → Memes.
+- **Third-party contact:** the server calls JokeAPI; the **browser loads images from
+  `api.memegen.link` directly**, exposing IP and user agent to that host (disclosed in Privacy).
+  No bandwidth against our ImageKit allowance.
 
 #### 7.5.4 UGC pipeline (Phase 5b — design now so v1 doesn't paint us into a corner)
 
@@ -994,8 +1042,8 @@ single-node assumption breaks (§10 triggers).
 ### 8.6 Environment and flags
 
 New server env (validated in `config/env.ts`): `FEATURE_ROOMS`, `FEATURE_GAMES`, `FEATURE_MEMES`
-(booleans), `KLIPY_API_KEY` (exists), `GID_COOKIE_TTL_DAYS=30`, room tuning (`ROOM_CAP_SOFT/HARD`,
-`ROOM_MSG_RING`, `ROOM_SLOW_MODE_GUEST_MS`). The flags are returned by `GET /api/hub/summary`
+(booleans), `GID_COOKIE_TTL_DAYS=30` (`KLIPY_API_KEY` exists for chat GIFs only; the meme feed needs no key). The room tuning knobs originally listed (`ROOM_CAP_SOFT/HARD`,
+`ROOM_MSG_RING`, `ROOM_SLOW_MODE_GUEST_MS`) ended up as code constants, not env. The flags are returned by `GET /api/hub/summary`
 (`features` object) so the client hides nav items for disabled surfaces. No `VITE_*` additions.
 
 ### 8.7 Testing strategy
@@ -1047,7 +1095,7 @@ limits · Redis sliding-window message limiter · anon sessions not stored in Mo
 | **Kill-switch** | all | Admin one-click: close room, disable feature flag, hide meme, ban `gid` — **target < 60 s from alert to action** |
 | Self-harm response | Rooms/Whisper | Detect high-risk phrases → show a **resources card** (helplines by region) to the sender; never auto-ban for it |
 | Turnstile-style bot check | Rooms (guest first post) | A free Cloudflare/hCaptcha-class challenge on first post only. *Needs verification at build time* (not researched here). |
-| Safe default for Venting room | Rooms | Stricter automod, mod presence required to be "open" |
+| Safe default for Venting room | Rooms | **Built.** Template flag `requiresModPresence` (set on the Venting seed). Lobby `status: open \| closed \| waiting_mod`; with no mod seated (3 min grace after the last leaves) the room stays readable but posting is refused `mod_absent`, composers disable live (`ROOM_PAUSED`/`ROOM_RESUMED`). First member into a waiting room pushes the mods (`room-mod-{slug}`, ≥ 10 min per mod). Strict profile: slow ≥ 8 s, no links, 280 chars, no @mentions, wider duplicate window (staff exempt from slow/links). Persistent "Not a crisis service" strip + region-aware helplines card |
 
 ### 9.4 Evidence and retention (the honest trade-off)
 
@@ -1114,7 +1162,7 @@ mods are a Phase 3b item with a trust threshold, not a launch dependency.
 | Whisper | **Heavy** (~150 cmds / 10-msg session) | light | none | light | Today's main Redis consumer |
 | Rooms | **~0** (in-process) | tiny | none | fan-out O(members) | 60-user room @ 1 msg/s ≈ 60 emits/s: trivial |
 | Games | queue only | tiny (members) | none | trivial | State in memory |
-| Memes v1 | 0 | tiny | **0** (provider-hosted) | cache | KLIPY quota is the limit |
+| Memes v1 | 0 | tiny | **0** (provider-hosted) | cache | JokeAPI's 120 req/min is the limit |
 | Memes UGC | 0 | small | **R2 free egress** via custom domain | classifier CPU/RAM | The expensive one |
 | Chats | 0 | **messages (512 MB cap)** | ImageKit 20 GB | light | Existing cliffs |
 
@@ -1141,7 +1189,8 @@ mods are a Phase 3b item with a trust threshold, not a launch dependency.
 | Second node | — | > ~600 CCU or HA need | Redis Socket.IO adapter + move room instance directory/bans to Redis |
 | Atlas ops/sec | < 100 | sustained throttling | M10 ($57/mo) |
 | ImageKit bandwidth | < 20 GB/mo | ~80 % | Cap sizes, serve UGC memes from R2 custom domain |
-| KLIPY | < test-key limits | any 429 | Production key + longer cache |
+| JokeAPI | < 120 req/min | any 429 | Longer cache (stale fallback already serves) |
+| KLIPY (chat GIFs) | < test-key limits | any 429 | Production key + longer cache |
 | Redis (Upstash) | < 500K/mo | > 70 % | Self-host Redis or PAYG (~$0.2/100K) |
 
 ### 10.5 Things that will cost real money (so we decide early)
@@ -1197,12 +1246,23 @@ promise, and every surface should feed it.
 Sizing is **relative** (S ≈ days, M ≈ 1–2 wk, L ≈ 3–5 wk, XL ≈ 6+ wk of focused work) and should
 be recalibrated after Phase 0.
 
+**Phase status (reality, Oct 2026)**
+
+| Phase | State |
+|---|---|
+| 0 Foundations, 1 Whisper in the hub | Shipped |
+| 2 Memes v1 | Built, dark (`FEATURE_MEMES`); JokeAPI + Memegen; Unfiltered 18+ / Dark shelf pending counsel |
+| 3a Rooms | Built, dark (`FEATURE_ROOMS`); "Remind me when it opens" for closed rooms with hours (Phase 6 FCM push: `RoomReminder`, 8-day TTL, 20/user, 60 s dispatcher, one-shot, 409 when push is off); Venting listening-room rule built (mod presence + strict profile, §9.3); gates still open: staffed hours (mod-presence pauses the room when nobody is on, it does not replace staffing), counsel review, stronger first-post challenge, 300-socket load test script |
+| 3b | Partly early: trust ladder + trusted instant listing (D4). Volunteer mods, game night, unreviewed public listing: not built |
+| 4 Games | Skipped (D7) |
+| 5 Memes v2 / Premium hooks, 6 Scale | Not started |
+
 ```
 Phase 0 ─ Foundations ───────────────────────────────  M
 Phase 1 ─ Whisper in the hub ────────────────────────  L
-Phase 2 ─ Memes v1 (KLIPY shuffle) ──────────────────  S–M   (gate G-M1)
+Phase 2 ─ Memes v1 (JokeAPI + Memegen shuffle) ──────  S–M   (gate G-M1)
 Phase 3 ─ Rooms (official, time-boxed, small) ───────  XL    (safety gate)
-Phase 4 ─ Games (In-Whisper → Solo → Quick match) ──  L
+Phase 4 ─ Games (SKIPPED, D7) ───────────────────────  —
 Phase 5 ─ Memes v2 (originals, UGC) + Premium hooks ─  L–XL  (legal gate)
 Phase 6 ─ Scale + reach (adapter, push, PWA) ───────  trigger-driven
 ```
@@ -1231,12 +1291,14 @@ Phase 6 ─ Scale + reach (adapter, push, PWA) ───────  trigger-dr
 - **Exit:** a guest who closes the tab after a mutual vibe can still complete after signing in;
   a member sees pending rows; a live whisper survives navigating to Chats and back.
 
-### Phase 2 — Memes v1 (S–M, gated by G-M1)
+### Phase 2 — Memes v1 (S–M, gated by G-M1) — built; JokeAPI + Memegen instead of KLIPY
 
-- KLIPY production key + terms check; `services/memes/klipy.ts`; `GET /api/memes` with cache.
-- `features/memes` shuffle feed (virtualized), categories, local reactions/saves, member saves,
-  Home Memes tab + hub card, "Find someone" interstitial cards.
-- **Exit:** guest can scroll memes with no account; KLIPY quota safe under cache; report/hide works.
+- `GET /api/memes` (JokeAPI v2 proxy, cache, stale fallback, `MemeBlock` blocklist), `POST
+  /api/memes/report`, member saves, opt-in Unfiltered 18+ mode (D6 amended).
+- `features/memes`: virtualized shuffle feed, shelf chips, local reactions/hides, member-synced
+  saves, report, share, Home preview + hub card, "Find someone" interstitials; admin blocklist panel.
+- **Exit:** guest can scroll memes with no account; provider load safe under cache; report/hide
+  works. Met in code; ships dark.
 - **Why now:** solo value → creates daily visits that give Whisper/Rooms their liquidity.
 
 ### Phase 3 — Rooms (XL, **safety gate**)
@@ -1251,7 +1313,7 @@ invites.
 - **Exit:** 3 rooms live, report-to-action median < 30 min in staffed hours, no P1 incidents in
   2 weeks.
 
-### Phase 4 — Games (L)
+### Phase 4 — Games (L) — SKIPPED (D7); kept as design record
 
 4a: engine + Tic-Tac-Toe + Would You Rather **inside Whisper** (invite/accept, panel,
 result card). 4b: Daily Puzzle + `/play` lobby + results/leaderboard (members). 4c: quick-match
@@ -1263,13 +1325,14 @@ queue + post-game "chat?" funnel. 4d: Trivia Blitz for room game nights (needs P
 
 5a: "Wave originals" (admin-curated, rights-cleared). 5b: UGC for trusted members with the full
 pipeline (§7.5.4) — **only** after the CSAM report path, human review queue, takedown SLA tooling
-and R2 custom domain exist. 5c: Spark Pass hooks (create private rooms, host badge, extra saves,
+and R2 custom domain exist. 5c: Spark Pass hooks (create private rooms — the seam is built:
+`canCreatePrivateRoom` in `services/user/entitlements.ts`, today trust + `privateRooms` flag, §7.3.4a; host badge, extra saves,
 cosmetic game skins, no whisper cap) — Stripe stays Phase-3-of-old-numbering and is out of scope
 here.
 
 ### Phase 6 — Scale and reach (trigger-driven)
 
-Redis Socket.IO adapter + shared room directory (second node) · Atlas upgrade · FCM push +
+Redis Socket.IO adapter + shared room directory (second node) · Atlas upgrade · FCM push (server side done: devices API, FCM sender, offline-only triggers; remaining: Notification collection/inbox + PWA install) +
 `Notification` collection · PWA manifest + service worker (installable hub) · read receipts etc.
 only on demand.
 
@@ -1299,14 +1362,14 @@ P0 ─┬─► P1 ─┬─► P3a ─► P3b
 | R4 | **Redis budget** blown by growth | H | M | Measure now; rooms/games in-process; self-host Redis on the VM |
 | R5 | **Single-node SPOF / restart wipes rooms** | M | M | Announce restarts; graceful shutdown notice; scale trigger to adapter |
 | R6 | **Oracle free reclaim / host instability** | M | High | Keepalive/real traffic; backups of Mongo; documented fallback host |
-| R7 | **KLIPY terms forbid a feed** or rate-limit us | M | M | Gate G-M1; cache; Wave originals fallback; GIPHY as alternate |
+| R7 | **Meme provider (JokeAPI) rate-limits us, changes terms or disappears** | M | M | Gate G-M1 cleared; cache + stale fallback; Wave originals as the fallback source |
 | R8 | **Scope dilution** — five surfaces, tiny team | H | H | Phased exits + kill criteria; ship dark; cut Games/Memes first if Rooms/Whisper need focus |
 | R9 | **Guests as abuse vector** (ban evasion) | H | M | `gid` bans; first-post challenge; link block; slow mode; shadow-mute |
 | R10 | **Brand confusion** ("Omegle clone" vs everything-app) | M | M | Thesis in §2; Whisper stays the hero card; copy audit on landing |
 | R11 | **Privacy backlash** from `gid`/evidence snapshots | L | M | Plain-language disclosure; narrow retention; no IP; used only for safety |
 | R12 | **Refactor regressions** (route move, AppWrapper split) | M | M | Phase 0 exit requires all current flows green; redirects; flags; staged rollout |
 | R13 | **UGC memes** — CSAM/NCII/copyright | M | **Critical** | Don't ship until pipeline + legal path exist; trusted-only; pre-moderation |
-| R14 | **Self-harm content** in Venting-style rooms | M | High | Resources card; mod presence; strict automod; clear "not a crisis service" |
+| R14 | **Self-harm content** in Venting-style rooms | M | High | Resources card (region-aware helplines); mod presence enforced (room pauses without a mod); strict automod profile; persistent "not a crisis service" strip. **Mitigated in code; residual until staffed hours exist** |
 
 ---
 
@@ -1317,11 +1380,11 @@ Each has a recommendation; the plan assumes them unless overridden.
 | ID | Decision | Options | Recommendation |
 |---|---|---|---|
 | **D1** | Do guests enter the hub without an account? | Yes / gate behind sign-up | **Yes** — alias persona; account for persistence only |
-| **D2** | Mobile bottom tabs | Home·Rooms·Whisper·Play·Chats (Memes in Home) / add Memes as 6th | **5 tabs, Memes in Home** |
+| **D2** | Mobile bottom tabs | Home·Rooms·Whisper·Play·Chats (Memes in Home) / add Memes as 6th | **Memes in Home. As built (Play skipped): Home · Rooms · Whisper · Chats** — four tabs; Memes is a desktop rail item. |
 | **D3** | One persona across surfaces | One / per-surface | **One** |
-| **D4** | Rooms launch scope | Official-only small set / also user rooms | **LOCKED Oct 2026: 4 official rooms + instant user creation (unlisted/private default, host-moderated, rules-accept screen logged at creation) + one-tap approval for lobby listing.** Unreviewed public listing stays in 3b (trust-gated + volunteer mods). A disclaimer transfers no liability — safe harbour rests on response capability (kill-switch, report-with-context, on-call SLA), which ships day one. |
+| **D4** | Rooms launch scope | Official-only small set / also user rooms | **LOCKED Oct 2026, AMENDED: 4 official rooms + instant user creation (unlisted default, host-moderated, rules-accept screen logged at creation). Accounts with trust `trusted` (7+ days, no strikes) get instant public lobby listing; everyone else starts unlisted + one-tap admin approval. The trust ladder (3b) shipped early.** Unreviewed public listing for brand-new accounts stays out (3b: volunteer mods). Counsel question: instant listing — see `LEGAL_BRIEF.md`. A disclaimer transfers no liability — safe harbour rests on response capability (kill-switch, report-with-context, on-call SLA), which ships day one. |
 | **D5** | Redis | Upstash free (500K/mo) / Upstash PAYG / **self-host on VM** / Redis Cloud free | **Self-host on the VM** when off the laptop; Upstash for dev |
-| **D6** | Meme source v1 | KLIPY / curated / UGC | **LOCKED Oct 2026: JokeAPI v2 + Memegen.link render (Option 2).** Text stays ours (`safe-mode` + full blacklist, Misc/Programming/Pun); two-part jokes map to top/bottom meme text, server picks template by rotation, truncates lines, caches the mapping, falls back to text cards. Zero bandwidth, no key. |
+| **D6** | Meme source v1 | KLIPY / curated / UGC | **LOCKED Oct 2026: JokeAPI v2 + Memegen.link render (Option 2), AMENDED: the Dark shelf and a member-opt-in "Unfiltered 18+" mode are KEPT** — never in the guest/default feed (default = Misc/Programming/Pun, safe-mode semantics + full blacklist; Dark only for members with unfiltered on). Two-part jokes map to top/bottom meme text, server picks template by rotation, truncates lines, caches the mapping, falls back to text cards. Zero bandwidth, no key. **Counsel sign-off pending** (`LEGAL_BRIEF.md`). |
 | **D7** | Games v1 set | see §7.4.1 | **Would You Rather + Tic-Tac-Toe in Whisper first** |
 | **D8** | Guest stable id | `gid` 30 d cookie / none | **`gid`** (disclosed, safety-only) |
 | **D9** | Guest posting in rooms | Allowed with challenge / read-only | **Allowed after alias + first-post challenge, text-only, no links** |
@@ -1332,6 +1395,7 @@ Each has a recommendation; the plan assumes them unless overridden.
 | **D14** | Whisper session persists across navigation | Persist (provider) / confirm-and-end | **Persist** (Phase 1); until then, confirm on leave |
 | **D15** | Both-members mutual like | One-tap Connect / auto-connect | **One-tap with a reveal note** |
 | **D16** | Hosting target | Oracle free (2 OCPU/12 GB) / small paid VPS | **Oracle free to start; budget ~$5/mo VPS as the fallback** |
+| **D17** | Private rooms | Not offered / unlisted-only / new `private` visibility | **Oct 2026: new `private` visibility — invite-only AND members-only, cap 25, invites need use limit ≤ 25 and ≤ 30 d, never listable, 30-day idle deletion, 3 per host. Creation behind one entitlement seam (today: trusted account + `privateRooms` flag; Spark Pass later, 5c). Still reportable, bannable, closable. Counsel question in `LEGAL_BRIEF.md`.** |
 
 ---
 
@@ -1344,7 +1408,7 @@ Each has a recommendation; the plan assumes them unless overridden.
 | `USER_JOURNEY.md` | New Journeys **E** (guest uses hub), **F** (rooms), **G** (games), **H** (memes); update C (logged-in whisper) with pending list/claim |
 | `PHASE2.md` | Note the Redis-claim addition and the stale cost model |
 | `Todo.md` | Move hub phases into the backlog; keep the *Rejected* list; add the audit gaps (§3.3) |
-| `.cursor/rules/product-and-cost.mdc` | Add: Redis self-hosting approved at $0; KLIPY as the approved meme source; domain purchase as an approved one-off |
+| `.cursor/rules/product-and-cost.mdc` | Add: Redis self-hosting approved at $0; JokeAPI v2 + Memegen.link (not KLIPY) as the approved meme source; domain purchase as an approved one-off |
 | `.cursor/rules/client-architecture.mdc` | Add `layout/HubShell` + new feature slices (`hub`, `rooms`, `games`, `memes`) and the "feature-owned hub card" convention |
 | Legal pages | Terms/Privacy/Guidelines/Safety/Cookies: Rooms, Memes, `gid`, evidence snapshots; Grievance Officer on `/report` |
 

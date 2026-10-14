@@ -1,7 +1,8 @@
 import mongoose, { Schema, model, type Document } from 'mongoose';
 import type { IRoomFields } from '../types/room.js';
+import type { RoomAcceptanceFields } from '../types/roomAdmin.js';
 
-export type IRoom = IRoomFields & Document;
+export type IRoom = IRoomFields & RoomAcceptanceFields & Document;
 
 const roomHoursSchema = new Schema(
   {
@@ -39,16 +40,27 @@ const roomSchema = new Schema<IRoom>(
      * approval queue reads this — without it, requests would be invisible.
      */
     listingRequestedAt: { type: Date, default: null },
+    /** D4: who accepted the rules, when, and which version of the copy. */
+    rulesAcceptedAt: { type: Date, default: null },
+    rulesAcceptedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    rulesVersion: { type: Number, default: null },
+    /** Listening room (Venting): strict automod; posting pauses with no mod seated. */
+    requiresModPresence: { type: Boolean, default: false },
     visibility: {
       type: String,
-      enum: ['official', 'public', 'unlisted'],
+      enum: ['official', 'public', 'unlisted', 'private'],
       required: true,
     },
+    /** Private rooms: idle-expiry deadline, refreshed on activity. Purged by `purgeIdlePrivateRooms` (not a TTL index — invites must go with the room). */
+    expireAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
 roomSchema.index({ visibility: 1 });
+roomSchema.index({ createdBy: 1, visibility: 1 });
+// Sparse-by-partial: only private rooms carry an expiry, so the purge scan stays tiny.
+roomSchema.index({ expireAt: 1 }, { partialFilterExpression: { visibility: 'private' } });
 
 export const Room =
   (mongoose.models.Room as mongoose.Model<IRoom> | undefined) ||

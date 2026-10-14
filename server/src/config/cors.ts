@@ -51,9 +51,31 @@ export const gidCookieOptions: CookieOptions = {
   secure: isProd,
 };
 
+/** Browser origins allowed to talk to the API and the sockets. */
+export const allowedOrigins: string[] = env.CLIENT_URL ? [env.CLIENT_URL] : [];
+
 export const corsOptions: CorsOptions = {
-  origin: [
-    ...(env.CLIENT_URL ? [env.CLIENT_URL] : []),
-  ],
+  origin: allowedOrigins,
   credentials: true,
+};
+
+/**
+ * Socket.IO `allowRequest` gate — CORS headers do not stop a cross-site
+ * WebSocket upgrade (browsers send cookies regardless), so check `Origin`.
+ * No `Origin` = a non-browser client: allowed (it has no ambient cookies to
+ * abuse). Otherwise the origin must be on the CORS allowlist, or be this
+ * server's own host (same-origin deploys serving the built client).
+ */
+export const isOriginAllowed = (
+  origin: string | undefined,
+  host: string | undefined,
+  allowlist: readonly string[] = allowedOrigins
+): boolean => {
+  if (!origin) return true;
+  if (allowlist.includes(origin)) return true;
+  try {
+    return host !== undefined && new URL(origin).host === host;
+  } catch {
+    return false;
+  }
 };

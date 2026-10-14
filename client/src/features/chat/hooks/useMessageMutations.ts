@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as chatApi from '@/features/chat/api/chat';
-import { queryKeys } from '@/features/chat/hooks';
+import * as chatApi from '../api/chat';
+import { queryKeys } from '.';
 
 export function useSendAttachmentsMutation() {
   const queryClient = useQueryClient();
@@ -110,7 +110,7 @@ export function useClearChatForMeMutation() {
     onSuccess: (_data, chatId) => {
       // Patch chats cache so the list preview shows a placeholder instead of the
       // real last message (which the user can no longer see). Other members are unaffected.
-      queryClient.setQueryData<import('@/features/chat/types/chat').ChatsResponse>(queryKeys.chats, (old) => {
+      queryClient.setQueryData<import('../types/chat').ChatsResponse>(queryKeys.chats, (old) => {
         if (!old?.data) return old;
         return {
           ...old,

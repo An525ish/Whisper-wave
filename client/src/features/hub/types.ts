@@ -5,6 +5,8 @@ export type HubFeatures = {
   rooms: boolean;
   games: boolean;
   memes: boolean;
+  /** Sub-flag of rooms: invite-only, members-only rooms. */
+  privateRooms: boolean;
 };
 
 export type HubSummary = {

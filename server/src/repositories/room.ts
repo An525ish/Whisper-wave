@@ -2,8 +2,9 @@ import type { Types } from 'mongoose';
 import { Room } from '../models/room.js';
 import { ROOM_CAP_HARD, ROOM_CAP_SOFT } from '../constants/rooms.js';
 import type { IRoomFields } from '../types/room.js';
+import type { RoomAcceptanceFields } from '../types/roomAdmin.js';
 
-type RoomLean = IRoomFields & { _id: Types.ObjectId };
+type RoomLean = IRoomFields & RoomAcceptanceFields & { _id: Types.ObjectId };
 
 /** Templates visible in the lobby: official rooms plus approved public ones. */
 export const listLobby = async (): Promise<RoomLean[]> =>
@@ -30,7 +31,12 @@ export const create = async (params: {
   capHard?: number;
   createdBy?: Types.ObjectId | string | null;
   mods?: Array<Types.ObjectId | string>;
+  requiresModPresence?: boolean;
   visibility: IRoomFields['visibility'];
+  expireAt?: Date | null;
+  rulesAcceptedAt?: Date | null;
+  rulesAcceptedBy?: Types.ObjectId | string | null;
+  rulesVersion?: number | null;
 }): Promise<RoomLean> => {
   const doc = await Room.create({
     slug: params.slug.toLowerCase(),
@@ -44,7 +50,12 @@ export const create = async (params: {
     capHard: params.capHard ?? ROOM_CAP_HARD,
     createdBy: params.createdBy ?? null,
     mods: params.mods ?? [],
+    requiresModPresence: params.requiresModPresence ?? false,
     visibility: params.visibility,
+    expireAt: params.expireAt ?? null,
+    rulesAcceptedAt: params.rulesAcceptedAt ?? null,
+    rulesAcceptedBy: params.rulesAcceptedBy ?? null,
+    rulesVersion: params.rulesVersion ?? null,
   });
   return doc.toObject() as unknown as RoomLean;
 };
@@ -68,6 +79,8 @@ export const upsertBySlug = async (
         visibility: params.visibility,
         // Mods only move when explicitly passed — reseeds must never wipe them.
         ...(params.mods !== undefined ? { mods: params.mods } : {}),
+        // Same for the safety flag: an omitted value never silently drops it.
+        ...(params.requiresModPresence !== undefined ? { requiresModPresence: params.requiresModPresence } : {}),
       },
       $setOnInsert: { slug: params.slug.toLowerCase(), createdBy: params.createdBy ?? null },
     },
@@ -115,3 +128,33 @@ export const deleteBySlug = async (slug: string): Promise<boolean> => {
 export const clearListingRequest = async (slug: string): Promise<void> => {
   await Room.updateOne({ slug: slug.toLowerCase() }, { $unset: { listingRequestedAt: '' } });
 };
+
+/** Rooms a user hosts — backs the per-user active-room cap. */
+export const countByCreator = async (
+  userId: string,
+  visibility?: IRoomFields['visibility']
+): Promise<number> =>
+  Room.countDocuments({ createdBy: userId, official: false, ...(visibility ? { visibility } : {}) });
+
+/** Every room the user hosts, any visibility (`GET /api/rooms/mine`). */
+export const listByCreator = async (userId: string): Promise<RoomLean[]> =>
+  Room.find({ createdBy: userId, official: false }).sort({ createdAt: -1 }).limit(20).lean<RoomLean[]>();
+
+/** Push a private room's idle deadline out (activity seen). */
+export const setExpireAt = async (slug: string, expireAt: Date): Promise<void> => {
+  await Room.updateOne({ slug: slug.toLowerCase(), visibility: 'private' }, { $set: { expireAt } });
+};
+
+/** Private rooms past their idle deadline. Bounded: the purge runs hourly. */
+export const listExpiredPrivate = async (
+  now: Date,
+  limit = 200
+): Promise<Array<Pick<IRoomFields, 'slug' | 'visibility' | 'expireAt'>>> =>
+  Room.find({ visibility: 'private', expireAt: { $lte: now } })
+    .select('slug visibility expireAt')
+    .limit(limit)
+    .lean<Array<Pick<IRoomFields, 'slug' | 'visibility' | 'expireAt'>>>();
+
+/** Slugs of every private room (kill-switch sweep of live instances). */
+export const listPrivateSlugs = async (): Promise<string[]> =>
+  (await Room.find({ visibility: 'private' }).select('slug').lean<Array<{ slug: string }>>()).map((r) => r.slug);

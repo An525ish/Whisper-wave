@@ -5,10 +5,11 @@ import {
   useParams,
   type RouteObject,
 } from 'react-router-dom';
-import { lazy, Suspense, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import HubShell from '@/layout/HubShell';
 import { useAuthStore } from '@/features/auth';
 import { ROUTES, ROUTE_PATTERNS } from '@/shared/constants/routes';
+import { clearPostAuthReturn, peekPostAuthReturn } from '@/shared/utils/postAuthReturn';
 import AdminWrapper from '@/layout/AdminWrapper';
 import AppLoader from '@/shared/components/ui/loader/AppLoader';
 import { useAdminMeQuery, adminRouteLoaders } from '@/features/admin';
@@ -45,7 +46,12 @@ function GuestOnly() {
 /** Landing for guests; members skip straight to the hub home. */
 function RootIndex() {
   const user = useAuthStore((s) => s.user);
-  if (user) return <Navigate to={ROUTES.home} replace />;
+  // A gated feature (e.g. a private-room invite) may have stashed where to go after sign-in;
+  // peek in render (pure), spend it once the redirect is issued.
+  useEffect(() => {
+    if (user) clearPostAuthReturn();
+  }, [user]);
+  if (user) return <Navigate to={peekPostAuthReturn() ?? ROUTES.home} replace />;
   return (
     <Suspense fallback={<AppLoader />}>
       <Landing />
@@ -128,10 +134,10 @@ const appRoutes = [
         },
       },
       {
-        // The messages app. Guests never land here — AuthedLayout sends them to
-        // /auth, and the empty state points at Whisper instead of a hard wall.
+        // The messages app. The index renders for everyone (guests see an
+        // empty state that points at Whisper, never a wall); a specific
+        // conversation is members-only and AuthedLayout sends guests to /auth.
         path: ROUTES.chats,
-        element: <AuthedLayout />,
         children: [
           {
             index: true,
@@ -141,11 +147,16 @@ const appRoutes = [
             },
           },
           {
-            path: ':chatId',
-            lazy: async () => {
-              const module = await import('@/pages/Chat');
-              return { Component: module.default };
-            },
+            element: <AuthedLayout />,
+            children: [
+              {
+                path: ':chatId',
+                lazy: async () => {
+                  const module = await import('@/pages/Chat');
+                  return { Component: module.default };
+                },
+              },
+            ],
           },
         ],
       },
@@ -211,6 +222,27 @@ const appRoutes = [
     },
   },
   {
+    path: '/guidelines',
+    lazy: async () => {
+      const module = await import('@/pages/legal/Guidelines');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/safety',
+    lazy: async () => {
+      const module = await import('@/pages/legal/Safety');
+      return { Component: module.default };
+    },
+  },
+  {
+    path: '/cookies',
+    lazy: async () => {
+      const module = await import('@/pages/legal/Cookies');
+      return { Component: module.default };
+    },
+  },
+  {
     path: '/report',
     lazy: async () => {
       const module = await import('@/pages/legal/ReportAbuse');
@@ -240,6 +272,7 @@ const appRoutes = [
           { path: 'users', lazy: adminRouteLoaders.users },
           { path: 'messages', lazy: adminRouteLoaders.messages },
           { path: 'rooms', lazy: adminRouteLoaders.rooms },
+          { path: 'memes', lazy: adminRouteLoaders.memes },
           { path: 'reports', lazy: adminRouteLoaders.reports },
           { path: 'audit', lazy: adminRouteLoaders.audit },
           { path: 'groups', lazy: adminRouteLoaders.groups },

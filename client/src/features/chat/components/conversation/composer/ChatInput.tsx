@@ -1,18 +1,18 @@
-import AttachmentMenu from "@/features/chat/components/conversation/composer/attachment-menu/AttachmentMenu";
-import ComposerFilePreviews from "@/features/chat/components/conversation/composer/ComposerFilePreviews";
-import ComposerLinkPreview from "@/features/chat/components/conversation/composer/ComposerLinkPreview";
-import ComposerPicker from "@/features/chat/components/conversation/composer/ComposerPicker";
-import TextHighlightMirror from "@/features/chat/components/conversation/composer/TextHighlightMirror";
+import AttachmentMenu from "./attachment-menu/AttachmentMenu";
+import ComposerFilePreviews from "./ComposerFilePreviews";
+import ComposerLinkPreview from "./ComposerLinkPreview";
+import ComposerPicker from "./ComposerPicker";
+import TextHighlightMirror from "./TextHighlightMirror";
 import ClipIcon from "@/shared/components/ui/icons/Clip";
 import EmojiIcon from "@/shared/components/ui/icons/Emoji";
 import SendIcon from "@/shared/components/ui/icons/Send";
-import type { GifItem } from "@/features/chat/api/gif";
+import type { GifItem } from "../../../api/gif";
 import { MAX_FILES } from "@/shared/constants/app";
 import { useAutoGrowTextarea } from "@/shared/hooks";
 import { COMPOSER_ROW_MIN_CLASS, COMPOSER_ROW_MIN_CLASS_COMPACT, COMPOSER_SEND_SIZE_CLASS, COMPOSER_SEND_SIZE_CLASS_COMPACT } from "@/shared/constants/app";
-import { readFilesFromClipboardEvent } from "@/features/chat/utils/chat";
-import { extractLinksFromText, splitTextByUrls, type ParsedLink } from "@/features/chat/utils/linkParser";
-import { useChatClipboardStore } from "@/features/chat/stores/clipboard";
+import { readFilesFromClipboardEvent } from "../../../utils/chat";
+import { extractLinksFromText, splitTextByUrls, type ParsedLink } from "../../../utils/linkParser";
+import { useChatClipboardStore } from "../../../stores/clipboard";
 import {
     useCallback,
     useEffect,
@@ -26,10 +26,9 @@ import {
     type TextareaHTMLAttributes,
 } from "react";
 import toast from "react-hot-toast";
+import type { ImageQuality } from "../../../types/local";
 
-type ImageQuality = 'standard' | 'hd';
-
-type ChatInputProps = {
+type Props = {
     className?: string;
     message: string;
     setMessage: Dispatch<SetStateAction<string>>;
@@ -65,7 +64,7 @@ const ChatInput = ({
     imageQuality = 'standard',
     setImageQuality,
     onChange: onChangeProp,
-    ...props }: ChatInputProps) => {
+    ...props }: Props) => {
 
     const [isAttachmentOpen, setIsAttachmentOpen] = useState(false);
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);

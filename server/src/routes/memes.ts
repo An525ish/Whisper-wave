@@ -1,28 +1,63 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import {
   getMemeModeController,
   listMemesController,
   listSavesController,
+  reportMemeController,
   saveMemeController,
   setMemeModeController,
   unsaveMemeController,
 } from '../controllers/memes.js';
-import { auth, optionalAuth, searchLimiter, validate } from '../middlewares/index.js';
-import { memeModeSchema, memeSaveParamsSchema, memeSaveSchema, memesQuerySchema } from '../validators/memes.js';
+import { auth, optionalAuth, validate } from '../middlewares/index.js';
+import {
+  memeModeSchema,
+  memeReportSchema,
+  memeSaveParamsSchema,
+  memeSaveSchema,
+  memesQuerySchema,
+} from '../validators/memes.js';
 
 export const memesRouter = Router();
 
+/** Feed reads: 30 req / 60 s per IP — its own bucket, so GIF search and memes don't starve each other. */
+const feedLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many meme requests, please try again later' },
+});
+
+/** Joke reports: 10 req / 10 min per IP — own bucket, apart from the abuse-report form's. */
+const memeReportLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many reports submitted, please try again later' },
+});
+
 /**
  * Public shuffle feed. `optionalAuth` (not `auth`) so guests read freely and
- * the route stays forward-compatible with member-only features. The shared
- * search limiter caps provider burn per IP.
+ * the route stays forward-compatible with member-only features. The feed
+ * limiter caps provider burn per IP.
  */
 memesRouter.get(
   '/',
-  searchLimiter,
+  feedLimiter,
   optionalAuth,
   validate(memesQuerySchema, 'query'),
   listMemesController
+);
+
+/** Report a joke — guests allowed (the reporter is the gid cookie). Auto-blocks at the threshold. */
+memesRouter.post(
+  '/report',
+  memeReportLimiter,
+  optionalAuth,
+  validate(memeReportSchema),
+  reportMemeController
 );
 
 /** Member save sync — guests keep saves on-device. */

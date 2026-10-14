@@ -1,0 +1,182 @@
+/** Pre-join persona: preview, name field, color swatches, knock button. */
+
+/* Persona: live preview, alias, colors, step inside. */
+.rm-persona {
+  border-radius: 1.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.rm-persona__preview {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.7rem 0.9rem;
+}
+
+.rm-persona__avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  border: 1.5px solid;
+  font-size: 1.05rem;
+  font-weight: 700;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.rm-persona__who {
+  min-width: 0;
+}
+
+.rm-persona__who p:first-child {
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-body-300);
+}
+
+.rm-persona__who p:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.rm-field {
+  margin-top: 0.9rem;
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-body);
+}
+
+.rm-input {
+  margin-top: 0.45rem;
+  width: 100%;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  color: var(--color-body);
+  outline: 0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rm-input::placeholder {
+  color: rgba(235, 236, 236, 0.35);
+}
+
+.rm-input:focus {
+  border-color: rgba(1, 195, 109, 0.55);
+  box-shadow: 0 0 0 3px rgba(1, 195, 109, 0.14);
+}
+
+.rm-error {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--color-red);
+}
+
+.rm-swatches {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.rm-swatch {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  color: rgba(0, 0, 0, 0.75);
+  opacity: 0.55;
+  transition: opacity 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.rm-swatch:hover {
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+.rm-swatch--on {
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px var(--color-background),
+    0 0 0 4px currentColor;
+}
+
+.rm-swatch svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rm-joinbtn {
+  position: relative;
+  margin-top: 1.1rem;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 0.95rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #06130d;
+  background: linear-gradient(180deg, #2bd889 0%, #159a5c 100%);
+  box-shadow:
+    0 16px 40px -12px rgba(1, 195, 109, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.rm-joinbtn:hover {
+  box-shadow:
+    0 20px 48px -12px rgba(1, 195, 109, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.rm-joinbtn:active {
+  transform: scale(0.98);
+}
+
+.rm-joinbtn:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.rm-joinbtn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.25) 48%, transparent 62%);
+  transform: translateX(-120%);
+  transition: transform 0.55s ease;
+  pointer-events: none;
+}
+
+.rm-joinbtn:hover::after {
+  transform: translateX(120%);
+}
+
+.rm-joinhint {
+  margin-top: 0.7rem;
+  text-align: center;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--color-body-300);
+}
+

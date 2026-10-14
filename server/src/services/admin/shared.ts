@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import * as messageRepo from '../../repositories/message.js';
+import * as messageAdminRepo from '../../repositories/messageAdmin.js';
 import type {
   AdminActivityEvent,
   AdminActivityMessage,
@@ -29,7 +29,7 @@ export const parseBeforeCursor = (before?: string): Date | undefined => {
 };
 
 export const toMessageEvent = (
-  row: Awaited<ReturnType<typeof messageRepo.listRecentForActivity>>[number]
+  row: Awaited<ReturnType<typeof messageAdminRepo.listRecentForActivity>>[number]
 ): AdminActivityEvent => {
   const createdAt = row.createdAt ? new Date(row.createdAt) : new Date(0);
   return {

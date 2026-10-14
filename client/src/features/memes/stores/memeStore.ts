@@ -1,13 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { MEME_STORE_KEY } from '../constants';
+import { MEME_HIDDEN_CAP, MEME_STORE_KEY } from '../constants';
 
 type MemeState = {
   /** jokeId → reaction glyph. Tap again to untoggle. */
   reactions: Record<number, string>;
-  /** Saved joke ids (local for everyone in v1; member sync is next). */
+  /** Saved joke ids — on-device for everyone; members also sync to the server. */
   saves: number[];
-  /** Hidden joke ids — never rendered again on this browser. */
+  /** Hidden joke ids, newest last — never rendered again on this browser. Capped. */
   hidden: number[];
   toggleReaction: (id: number, reaction: string) => void;
   toggleSave: (id: number) => void;
@@ -16,9 +16,9 @@ type MemeState = {
 };
 
 /**
- * Local meme state. Reactions, saves and hides live on the device in v1 —
- * the feed reads the same for guests and members, and nothing here needs an
- * account. Member-synced saves come with the MemeSave model next.
+ * Local meme state. Reactions and hides live on the device; saves live here
+ * for everyone and sync to the account for members (additive union on load).
+ * Hidden ids are capped so the persisted blob can't grow without bound.
  */
 export const useMemeStore = create<MemeState>()(
   persist(
@@ -47,7 +47,9 @@ export const useMemeStore = create<MemeState>()(
         })),
 
       hide: (id) =>
-        set((s) => (s.hidden.includes(id) ? s : { hidden: [...s.hidden, id] })),
+        set((s) =>
+          s.hidden.includes(id) ? s : { hidden: [...s.hidden, id].slice(-MEME_HIDDEN_CAP) }
+        ),
     }),
     {
       name: MEME_STORE_KEY,

@@ -1,10 +1,6 @@
 import { logger } from '../../utils/logger.js';
 import type { Namespace } from 'socket.io';
-import type {
-  AcceptMessageResult,
-  BufferedAnonMessage,
-  StoredAnonMessage,
-} from '../../types/match.js';
+import type { AcceptMessageResult, BufferedAnonMessage, StoredAnonMessage } from '../../types/matchMessage.js';
 import { MATCH_DISCONNECTED, MATCH_MESSAGE } from '../../constants/anon-events.js';
 import { requireActiveParticipant } from './pairing.js';
 import { getPartner, recordMessage } from './session.js';

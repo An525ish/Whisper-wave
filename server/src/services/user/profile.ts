@@ -1,3 +1,4 @@
+import * as pushDeviceRepo from '../../repositories/pushDevice.js';
 import * as userRepo from '../../repositories/user.js';
 import type { UpdateProfileInput } from '../../types/input.js';
 import type { PublicUser, UpdateUserPatch } from '../../types/index.js';
@@ -56,4 +57,5 @@ export const deleteProfile = async (userId: string): Promise<void> => {
   if (!isUserDeleted) {
     throw new AppError(404, 'User not found');
   }
+  await pushDeviceRepo.deleteAllForUser(userId);
 };

@@ -32,6 +32,12 @@ export const createApp = () => {
     pinoHttp({
       logger,
       autoLogging: isProd,
+      // Anonymity: no cookies (gid/anonId/tokens), credentials or client IP in logs.
+      redact: ['req.headers.cookie', 'req.headers.authorization', 'res.headers["set-cookie"]'],
+      serializers: {
+        // Receives the already-standard-serialised request; drop its network address.
+        req: ({ remoteAddress: _ip, remotePort: _port, ...safe }: Record<string, unknown>) => safe,
+      },
     })
   );
 

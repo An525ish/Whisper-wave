@@ -1,14 +1,14 @@
 import Image from '@/shared/components/ui/Image';
-import type { AdminAttachmentRow } from '@/features/admin/types';
-import { attachmentRelativeTime, formatMediaDate } from '@/features/admin/utils/attachments';
+import type { AdminAttachmentRow } from '../../../types';
+import { attachmentRelativeTime, formatMediaDate } from '../../../utils/attachments';
 
-type AttachmentSenderMetaProps = {
+type Props = {
   sender?: AdminAttachmentRow['sender'];
   chatName?: string;
   createdAt?: string;
 };
 
-const AttachmentSenderMeta = ({ sender, chatName, createdAt }: AttachmentSenderMetaProps) => (
+const AttachmentSenderMeta = ({ sender, chatName, createdAt }: Props) => (
   <div className="mt-2.5 flex items-center gap-2 border-t border-border/30 pt-2.5">
     <Image
       src={sender?.avatar?.url}

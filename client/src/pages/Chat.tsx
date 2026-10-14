@@ -42,18 +42,22 @@ const Chat = () => {
     };
   }, []);
 
-  useEffect(() => {
+  const [prevCanOpenProfileSheet, setPrevCanOpenProfileSheet] = useState(canOpenProfileSheet);
+  if (prevCanOpenProfileSheet !== canOpenProfileSheet) {
+    setPrevCanOpenProfileSheet(canOpenProfileSheet);
     if (!canOpenProfileSheet) setProfileOpen(false);
-  }, [canOpenProfileSheet]);
+  }
 
-  useEffect(() => {
+  const [prevChatId, setPrevChatId] = useState(chatId);
+  if (prevChatId !== chatId) {
+    setPrevChatId(chatId);
     setSelectMode(false);
     setSelectedCount(0);
     setDeletableSelectedCount(0);
     setIsEditingMessage(false);
     setIsFetchingOlder(false);
     setProfileOpen(false);
-  }, [chatId]);
+  }
 
   const handleJumpToMessage = useCallback(
     (

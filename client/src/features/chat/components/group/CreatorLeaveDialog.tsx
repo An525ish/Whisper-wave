@@ -1,17 +1,11 @@
 import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from '@/shared/components/ui/Image';
+import type { CreatorLeaveMember, CreatorLeaveRow } from '../../types/local';
 
-type Member = {
-  _id: string;
-  name: string;
-  avatar?: string | null;
-  isAdmin?: boolean;
-};
-
-type CreatorLeaveDialogProps = {
+type Props = {
   isOpen: boolean;
-  members: Member[];
+  members: CreatorLeaveMember[];
   onConfirm: (newCreatorId?: string) => void;
   onCancel: () => void;
   isLoading?: boolean;
@@ -41,10 +35,8 @@ const ChevronIcon = ({ open }: { open: boolean }) => (
 
 const RANDOM_ID = '__random__';
 
-type Row = { id: string; label: string; avatar?: string | null; isRandom?: boolean; isAdmin?: boolean };
-
 /** Renders the leading icon for a row — dice for random, avatar for member */
-const RowAvatar = ({ row, highlighted }: { row: Row; highlighted: boolean }) => {
+const RowAvatar = ({ row, highlighted }: { row: CreatorLeaveRow; highlighted: boolean }) => {
   if (row.isRandom) {
     return (
       <span
@@ -81,7 +73,7 @@ const CreatorLeaveDialog = ({
   onConfirm,
   onCancel,
   isLoading = false,
-}: CreatorLeaveDialogProps) => {
+}: Props) => {
   const titleId = useId();
   const [entered, setEntered] = useState(false);
   const [selectedId, setSelectedId] = useState<string>(RANDOM_ID);
@@ -114,7 +106,7 @@ const CreatorLeaveDialog = ({
 
   if (!isOpen) return null;
 
-  const rows: Row[] = [
+  const rows: CreatorLeaveRow[] = [
     { id: RANDOM_ID, label: 'Pick randomly', isRandom: true },
     ...members.map((m) => ({ id: m._id, label: m.name, avatar: m.avatar, isAdmin: m.isAdmin })),
   ];

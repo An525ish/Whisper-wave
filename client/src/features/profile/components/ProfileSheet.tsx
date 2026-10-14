@@ -1,5 +1,5 @@
 import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft';
-import ProfilePanel from '@/features/profile/components/ProfilePanel';
+import ProfilePanel from './ProfilePanel';
 import BottomSheet from '@/shared/components/ui/BottomSheet';
 
 type ProfileSheetProps = {

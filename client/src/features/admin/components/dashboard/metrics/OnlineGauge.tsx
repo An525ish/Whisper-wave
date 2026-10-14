@@ -1,9 +1,9 @@
-type OnlineGaugeProps = {
+type Props = {
   online: number;
   total: number;
 };
 
-const OnlineGauge = ({ online, total }: OnlineGaugeProps) => {
+const OnlineGauge = ({ online, total }: Props) => {
   const pct = total > 0 ? Math.min(100, Math.round((online / total) * 100)) : 0;
 
   return (

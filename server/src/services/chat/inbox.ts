@@ -3,21 +3,8 @@ import * as chatRepo from '../../repositories/chat.js';
 import * as chatReadRepo from '../../repositories/chatRead.js';
 import * as connectionRepo from '../../repositories/connection.js';
 import * as messageRepo from '../../repositories/message.js';
-import type {
-  ChatDetailsPopulated,
-  ChatLastMessage,
-  ChatLean,
-  FindChatItem,
-  FindChatsInput,
-  GetChatDetailsInput,
-  GetMyChatsInput,
-  MarkAllChatsReadInput,
-  MarkAllChatsReadResult,
-  MarkChatReadInput,
-  MarkChatReadResult,
-  PaginatedChatsResult,
-  RealtimeNotify,
-} from '../../types/chat.js';
+import type { ChatDetailsPopulated, ChatLastMessage, ChatLean, FindChatItem, RealtimeNotify } from '../../types/chat.js';
+import type { FindChatsInput, GetChatDetailsInput, GetMyChatsInput, MarkAllChatsReadInput, MarkAllChatsReadResult, MarkChatReadInput, MarkChatReadResult, PaginatedChatsResult } from '../../types/chatService.js';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { getGroupRole } from '../../utils/groupRole.js';

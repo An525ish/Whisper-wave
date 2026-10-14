@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { collapseTextClass } from '@/features/admin/components/sidebar/constants';
-import { useSidebar } from '@/features/admin/components/sidebar/context';
+import { collapseTextClass } from './constants';
+import { useSidebar } from './context';
 
-type SidebarCollapseSlotProps = {
+type Props = {
   children: ReactNode;
   className?: string;
 };
@@ -11,7 +11,7 @@ type SidebarCollapseSlotProps = {
 const SidebarCollapseSlot = ({
   children,
   className = '',
-}: SidebarCollapseSlotProps) => {
+}: Props) => {
   const { expanded } = useSidebar();
 
   return (

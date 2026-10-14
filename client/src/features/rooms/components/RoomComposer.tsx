@@ -1,72 +1,80 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
-import { createPortal } from 'react-dom';
-import EmojiMenu from '@/features/chat/components/conversation/composer/emoji-menu/EmojiMenu';
-import ReplyBar from '@/features/chat/components/conversation/composer/ReplyBar';
+import ReplyBar from '@/shared/components/ui/reply/ReplyBar';
 import EmojiIcon from '@/shared/components/ui/icons/Emoji';
 import SendIcon from '@/shared/components/ui/icons/Send';
-import { useAutoGrowTextarea, useMediaQuery } from '@/shared/hooks';
+import { useAutoGrowTextarea } from '@/shared/hooks';
+import { formatCountdown } from '@/shared/utils/duration';
 import {
   COMPOSER_ROW_MIN_CLASS,
   COMPOSER_SEND_SIZE_CLASS,
   COMPOSER_SHELL_CLASS,
 } from '@/shared/constants/app';
-import { useRoomStore } from '../stores/roomStore';
-import './rooms.css';
+import { ROOM_LIMITS, ROOM_LISTENING_COPY } from '../constants';
+import { useRoomComposer } from '../hooks/useRoomComposer';
+import type { RoomMessageAck, RoomMessageInput, RoomReplyPreview } from '../types';
+import RoomChallengePrompt from './RoomChallengePrompt';
+import RoomEmojiPopover from './RoomEmojiPopover';
+import './roomComposer.css';
 
 type Props = {
-  replyTo: { id: string; alias: string; preview: string } | null;
+  replyTo: RoomReplyPreview | null;
   onClearReply: () => void;
-  onSend: (text: string, opts?: { replyTo?: string }) => void;
+  onSend: (input: RoomMessageInput) => Promise<RoomMessageAck>;
 };
 
 /**
  * Room composer built from the same shared geometry as the main chat
- * (`COMPOSER_*` classes) — same shell, same row floor, same send size.
- * Enter sends, Shift+Enter breaks the line. Slow-mode and rate verdicts
- * toast from the socket hook. Rooms are text-only, so GIF/attachments stay
- * out — emoji ride as text.
+ * (`COMPOSER_*` classes). Enter sends, Shift+Enter breaks the line. The draft
+ * stays until the server acks it; slow mode and mute show as live countdowns;
+ * a guest's first post may ask for a quick check inline. Rooms are text-only,
+ * so GIF/attachments stay out — emoji ride as text.
  */
 const RoomComposer = ({ replyTo, onClearReply, onSend }: Props) => {
-  const [draft, setDraft] = useState('');
+  const composer = useRoomComposer({ replyTo, onClearReply, onSend });
   const [emojiOpen, setEmojiOpen] = useState(false);
   const emojiBtnRef = useRef<HTMLButtonElement>(null);
-  const textareaRef = useAutoGrowTextarea({ value: draft });
-  const socketConnected = useRoomStore((s) => s.socketConnected);
-  const isDesktop = useMediaQuery('(min-width: 640px)');
-  const pickerWidth =
-    typeof window === 'undefined'
-      ? 280
-      : Math.min(280, Math.max(260, window.innerWidth - 16));
-
-  const canSend = draft.trim().length > 0 && socketConnected;
-
-  const submit = () => {
-    const text = draft.trim();
-    if (!text || !socketConnected) return;
-    onSend(text, replyTo ? { replyTo: replyTo.id } : undefined);
-    setDraft('');
-    if (replyTo) onClearReply();
-  };
+  const textareaRef = useAutoGrowTextarea({ value: composer.draft });
+  const { ready, locked, mutedMs, cooldownMs, paused } = composer;
 
   const handleKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter confirms an IME candidate (CJK etc.) — it must not also send.
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      submit();
+      composer.submit();
     }
   };
+
+  const placeholder = !ready
+    ? 'Reconnecting…'
+    : paused
+      ? ROOM_LISTENING_COPY.composerPaused
+      : mutedMs > 0
+        ? `You’re muted — ${formatCountdown(mutedMs)} left`
+        : 'Message…';
 
   return (
     <div className="rm-composer">
       <div className="relative">
         {replyTo && (
           <div className="mb-1.5">
-            <ReplyBar
-              senderName={replyTo.alias}
-              previewText={replyTo.preview}
-              onCancel={onClearReply}
-            />
+            <ReplyBar senderName={replyTo.alias} previewText={replyTo.preview} onCancel={onClearReply} />
           </div>
+        )}
+        {composer.challenge && (
+          <RoomChallengePrompt
+            key={composer.challenge.challenge.token}
+            challenge={composer.challenge.challenge}
+            failed={composer.challenge.failed}
+            error={composer.answerError}
+            busy={composer.sending}
+            onAnswer={composer.answer}
+            onCancel={composer.cancelChallenge}
+          />
+        )}
+        {cooldownMs > 0 && (
+          <p className="rm-composernote" role="status">
+            Slow mode — you can post again in {Math.ceil(cooldownMs / 1000)}s
+          </p>
         )}
         <div className="flex min-w-0 items-end gap-2">
           <div className={`relative min-w-0 flex-1 ${COMPOSER_SHELL_CLASS}`}>
@@ -75,24 +83,25 @@ const RoomComposer = ({ replyTo, onClearReply, onSend }: Props) => {
                 <button
                   type="button"
                   ref={emojiBtnRef}
-                  className={`grid h-10 w-10 place-items-center rounded-full transition active:bg-background/40${emojiOpen ? ' text-green' : ''}`}
+                  className={`rm-composerbtn grid h-10 w-10 place-items-center rounded-full transition active:bg-background/40${emojiOpen ? ' text-green' : ''}`}
                   onClick={() => setEmojiOpen((v) => !v)}
                   aria-label="Emoji"
                   aria-expanded={emojiOpen}
-                  disabled={!socketConnected}
+                  disabled={locked}
                 >
-                  <EmojiIcon className="h-5 w-5 hover:fill-body" />
+                  <EmojiIcon aria-hidden className="h-5 w-5 hover:fill-body" />
                 </button>
               </span>
               <textarea
                 ref={textareaRef}
                 rows={1}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                value={composer.draft}
+                onChange={(e) => composer.setDraft(e.target.value)}
                 onKeyDown={handleKey}
-                placeholder={socketConnected ? 'Message…' : 'Connecting…'}
-                disabled={!socketConnected}
-                maxLength={1000}
+                placeholder={placeholder}
+                disabled={!ready || paused || mutedMs > 0}
+                readOnly={composer.challenge !== null}
+                maxLength={ROOM_LIMITS.MESSAGE_MAX}
                 enterKeyHint="send"
                 autoComplete="off"
                 aria-label="Message"
@@ -102,46 +111,17 @@ const RoomComposer = ({ replyTo, onClearReply, onSend }: Props) => {
           </div>
           <button
             type="button"
-            onClick={submit}
-            disabled={!canSend}
-            className={`grid shrink-0 place-items-center rounded-full bg-gradient-green text-white shadow-md transition enabled:active:scale-95 disabled:opacity-40 ${COMPOSER_SEND_SIZE_CLASS}`}
+            onClick={composer.submit}
+            disabled={!composer.canSend}
+            className={`rm-composerbtn grid shrink-0 place-items-center rounded-full bg-gradient-green text-white shadow-md transition enabled:active:scale-95 disabled:opacity-40 ${COMPOSER_SEND_SIZE_CLASS}`}
             aria-label="Send message"
           >
-            <SendIcon className="mt-0.5 mr-0.5 h-5 w-5 fill-white" />
+            <SendIcon aria-hidden className="mt-0.5 mr-0.5 h-5 w-5 fill-white" />
           </button>
         </div>
-        {emojiOpen &&
-          (isDesktop ? (
-            <div className="rm-emoji">
-              <EmojiMenu
-                emojiIconRef={emojiBtnRef}
-                setMessage={setDraft}
-                onClose={() => setEmojiOpen(false)}
-                width={280}
-                height={320}
-              />
-            </div>
-          ) : (
-            createPortal(
-              <>
-                <div
-                  className="fixed inset-0 z-40 bg-black/25"
-                  aria-hidden
-                  onClick={() => setEmojiOpen(false)}
-                />
-                <div className="fixed inset-x-2 bottom-[max(4.25rem,calc(env(safe-area-inset-bottom)+3rem))] z-40 flex justify-start">
-                  <EmojiMenu
-                    emojiIconRef={emojiBtnRef}
-                    setMessage={setDraft}
-                    onClose={() => setEmojiOpen(false)}
-                    width={pickerWidth}
-                    height={320}
-                  />
-                </div>
-              </>,
-              document.body
-            )
-          ))}
+        {emojiOpen && (
+          <RoomEmojiPopover anchorRef={emojiBtnRef} setDraft={composer.setDraft} onClose={() => setEmojiOpen(false)} />
+        )}
       </div>
     </div>
   );

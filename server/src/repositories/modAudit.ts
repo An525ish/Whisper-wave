@@ -1,5 +1,5 @@
 import { ModAudit } from '../models/modAudit.js';
-import type { ModAuditFields } from '../models/modAudit.js';
+import type { ModAuditFields } from '../types/roomAdmin.js';
 
 export type LogModActionInput = Omit<ModAuditFields, 'createdAt'>;
 

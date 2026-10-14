@@ -1,0 +1,259 @@
+@keyframes spark-pass-orb-a {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.35; }
+  50%       { transform: translate(6%, 5%) scale(1.12); opacity: 0.55; }
+}
+
+@keyframes spark-pass-orb-b {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.22; }
+  50%       { transform: translate(-7%, -4%) scale(1.15); opacity: 0.4; }
+}
+
+@keyframes spark-pass-card-in {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes spark-pass-glyph {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50%       { transform: scale(1.18); opacity: 1; }
+}
+
+.spark-pass {
+  position: relative;
+  padding: 6rem 1.5rem;
+  background: var(--color-background);
+  overflow: hidden;
+}
+
+.spark-pass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(53, 47, 61, 0.7) 28%,
+    rgba(212, 170, 90, 0.28) 50%,
+    rgba(53, 47, 61, 0.7) 72%,
+    transparent
+  );
+}
+
+.spark-pass__ambience {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.spark-pass__orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform, opacity;
+}
+
+.spark-pass__orb--a {
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(70vw, 560px);
+  height: min(50vw, 360px);
+  background: radial-gradient(circle, rgba(212, 170, 90, 0.18) 0%, transparent 68%);
+  animation: spark-pass-orb-a 16s ease-in-out infinite;
+}
+
+.spark-pass__orb--b {
+  bottom: -10%;
+  right: 8%;
+  width: min(42vw, 380px);
+  height: min(42vw, 380px);
+  background: radial-gradient(circle, rgba(255, 153, 51, 0.08) 0%, transparent 70%);
+  animation: spark-pass-orb-b 20s ease-in-out infinite;
+}
+
+.spark-pass__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.spark-pass__card {
+  position: relative;
+  overflow: hidden;
+  padding: 2.25rem 1.5rem 2rem;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(212, 170, 90, 0.28);
+  background:
+    linear-gradient(165deg, rgba(212, 170, 90, 0.08) 0%, rgba(42, 33, 54, 0.92) 42%, rgba(26, 21, 32, 0.96) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  opacity: 0;
+  transform: translateY(28px) scale(0.97);
+}
+
+.spark-pass--visible .spark-pass__card {
+  animation: spark-pass-card-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.spark-pass__sheen {
+  position: absolute;
+  top: -20%;
+  left: 0;
+  width: 45%;
+  height: 140%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(235, 236, 236, 0.08),
+    transparent
+  );
+  pointer-events: none;
+  animation: var(--animate-auth-sheen);
+}
+
+.spark-pass__art {
+  width: min(100%, 220px);
+  filter: drop-shadow(0 8px 24px rgba(212, 170, 90, 0.12));
+}
+
+.spark-pass__eyebrow {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+
+.spark-pass__glyph {
+  display: inline-block;
+  font-size: 1rem;
+  animation: spark-pass-glyph 2.6s ease-in-out infinite;
+}
+
+.spark-pass__title {
+  margin: 0;
+  font-size: clamp(1.85rem, 4.2vw, 2.85rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  color: var(--color-body);
+}
+
+.spark-pass__sub {
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(0.9rem, 1.5vw, 1.02rem);
+  line-height: 1.65;
+  color: var(--color-body-300);
+}
+
+.spark-pass__pills {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.spark-pass__pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(212, 170, 90, 0.22);
+  background: rgba(26, 21, 32, 0.55);
+  text-align: left;
+}
+
+.spark-pass__pill-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-body);
+}
+
+.spark-pass__pill-hint {
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: rgba(212, 170, 90, 0.55);
+}
+
+.spark-pass__price {
+  margin: 0.5rem 0 0;
+  font-size: 0.92rem;
+  color: var(--color-body-300);
+}
+
+.spark-pass__price-main {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  letter-spacing: -0.02em;
+}
+
+.spark-pass__price-unit,
+.spark-pass__price-sep {
+  color: rgba(235, 236, 236, 0.4);
+}
+
+.spark-pass__price-sep {
+  margin: 0 0.45rem;
+}
+
+.spark-pass__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+  padding: 0.7rem 1.45rem;
+  border-radius: 2rem;
+  border: 1.5px solid rgba(212, 170, 90, 0.45);
+  color: var(--color-gold);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 200ms, border-color 200ms, box-shadow 200ms;
+}
+
+.spark-pass__cta:hover {
+  background: rgba(212, 170, 90, 0.1);
+  border-color: var(--color-gold);
+  box-shadow: 0 0 20px rgba(212, 170, 90, 0.18);
+}
+
+@media (min-width: 640px) {
+  .spark-pass__card {
+    padding: 2.75rem 2.5rem 2.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spark-pass__orb--a,
+  .spark-pass__orb--b,
+  .spark-pass__sheen,
+  .spark-pass__glyph {
+    animation: none;
+  }
+  .spark-pass__card {
+    opacity: 1;
+    transform: none;
+  }
+  .spark-pass--visible .spark-pass__card {
+    animation: none;
+  }
+}

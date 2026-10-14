@@ -1,10 +1,10 @@
-import { MESSAGES_EMPTY_IMAGE } from '@/features/admin/constants/messages';
+import { MESSAGES_EMPTY_IMAGE } from '../../../constants/messages';
 
-type MessagesEmptyStateProps = {
+type Props = {
   description: string;
 };
 
-const MessagesEmptyState = ({ description }: MessagesEmptyStateProps) => (
+const MessagesEmptyState = ({ description }: Props) => (
   <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
     <img src={MESSAGES_EMPTY_IMAGE} alt="" className="h-24 w-24 opacity-40" aria-hidden />
     <div>

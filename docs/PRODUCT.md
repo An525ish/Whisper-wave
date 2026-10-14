@@ -12,7 +12,7 @@
 
 Whisper Wave is an anonymous chat app for Gen Z built around serendipity — you connect with a random stranger, no profile, no algorithm. If you vibe, you connect for real. If you don't, they're gone forever. That tension is the product.
 
-The app is becoming a **hub**: a home page with several ways to meet people (one stranger, a room, a game, a meme), where the persistent chat app is one destination inside it. Guests get a persona and every meeting surface; accounts get persistence. See [`HUB_PLAN.md`](./HUB_PLAN.md) — Phases 0–1 (shell, nav, whisper-in-hub, pending connections) are shipped; Rooms/Games/Memes are planned, each behind a server flag.
+The app is a **hub**: a home page with several ways to meet people (one stranger, a room, a joke), where the persistent chat app is one destination inside it. Guests get a persona and every meeting surface; accounts get persistence. Whisper, Rooms and Memes are built (Rooms and Memes ship dark behind server flags); Games is skipped by decision. Phase status lives in the table below; the design, decisions and rollout live in [`HUB_PLAN.md`](./HUB_PLAN.md).
 
 The name works on two levels: "Whisper" = anonymous, ephemeral, secret. "Wave" = reaching out, connection, social energy.
 
@@ -292,18 +292,23 @@ See: [`TECH.md`](./TECH.md) for decision log.
 - Stable guest identity (`gid` cookie + shared resolver); DM reports block rematching; pairing skips kept accounts
 - Measured Redis cost: ~154 cmds/session (see `HUB_PLAN.md` §10.3)
 
-### Hub Phase 2 — Laughs — ✅ SHIPPED — $0
-- JokeAPI v2 (no key, safe-mode + full blacklist, 3 safe categories) rendered through Memegen URLs, proxied + cached server-side with provider blocklist and stale fallback
-- Shuffle feed (chips, infinite scroll, local reactions/saves/hides, find-someone interstitials), Home Memes tab + `/memes`, member save sync, share-to-Chat via the GIF pipeline (`kind: 'meme'`, per-kind host allow-list)
+### Hub Phase 2 — Laughs — ✅ SHIPPED (dark behind `FEATURE_MEMES`) — $0
+- JokeAPI v2 (no key; the default stream is safe-mode + full blacklist over Misc/Programming/Pun) rendered through Memegen URLs, proxied + cached server-side with provider blocklist and stale fallback. Source decision: [`HUB_PLAN.md`](./HUB_PLAN.md) §7.5 (D6)
+- Shuffle feed: shelf chips (Mix, Misc, Programming, Puns), virtualized infinite scroll to the server's last page, local reactions and hides, member-synced saves (guests save on-device with a sign-in nudge), report-a-joke (guests allowed; enough distinct reports auto-block it), find-someone interstitials. Home Memes preview + `/memes`; share-to-Chat for members via the GIF pipeline (`kind: 'meme'`, per-kind host allow-list)
+- **Unfiltered 18+ mode and the Dark shelf are kept** (D6 amended): a member opt-in with a stored 18+ declaration; never in the guest or default feed. Counsel sign-off is pending — see [`LEGAL_BRIEF.md`](./LEGAL_BRIEF.md)
+- Admin: memes blocklist panel (reports count, block, unblock)
 
 ### Hub Phase 3a — Rooms — ✅ SHIPPED (dark until staffed hours + safety review) — $0
 - `/rooms` namespace (join/message/leave/react, acked, zero Redis per message), in-memory registry with soft/hard placement, alias disambiguation
 - Automod (slow mode, word list, link block, duplicate/flood suppression), per-gid rate limits, room/user/global bans (dual-key, TTL)
 - Mod tools: delete, mute, kick (+15-min ban), shadow-mute, lock/unlock, slow override; Wave bot prompts; mid-session hours enforcement
 - Reports with evidence snapshots + auto-hide at 3 reporters; self-harm resources card (never bans); moderation audit trail
-- 4 official rooms (seeded) + user creation (unlisted default, host rules-accept, trusted auto-listing); trust ladder (`new → standard → trusted`) with link privileges
-- Admin: rooms/bans/panic-card/reports/audit surfaces; on-call runbook; kill-switch flags
-- Still gated: first-post challenge (needs Turnstile), lawyer pass, public user rooms (3b)
+- 4 official rooms (seeded) + user creation: accounts with trust `trusted` (7+ days, no strikes) are listed in the lobby instantly, everyone else starts unlisted until an admin approves in one tap (D4 amended); the trust ladder (`new → standard → trusted`, link privileges) shipped early; unreviewed public listing for brand-new accounts stays out
+- Admin: rooms edit (mods, hours, rules), bans, panic card (Rooms/Memes, enforced + persisted), report queue with Hide / Ban / Mark reviewed (note required), audit; on-call runbook: [`RUNBOOK.md`](./RUNBOOK.md)
+- Still gated: stronger first-post challenge than the arithmetic one (Turnstile upgrade), lawyer pass, public user rooms for new accounts (3b)
+
+### Hub Phase 4 — Games — ⏭ SKIPPED by decision
+Not built, no route, no nav item. The `FEATURE_GAMES` flag and type still exist but nothing is surfaced. Rationale and the original design are kept in [`HUB_PLAN.md`](./HUB_PLAN.md) §7.4 in case it is revived.
 
 ### Phase 3 — Premium + Safety — first time we may spend
 - Stripe (free to integrate; we only pay % of real Spark Pass payments)

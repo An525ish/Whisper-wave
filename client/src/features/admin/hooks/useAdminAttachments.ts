@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
-import * as adminApi from '@/features/admin/api/admin';
-import { adminQueryKeys as queryKeys } from '@/features/admin/hooks/queryKeys';
-import type { AttachmentKindFilter } from '@/features/admin/types';
+import * as adminApi from '../api/admin';
+import { adminQueryKeys as queryKeys } from './queryKeys';
+import type { AttachmentKindFilter } from '../types';
 
 export function useAdminAttachmentsQuery(
   search = '',

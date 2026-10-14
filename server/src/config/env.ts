@@ -62,6 +62,12 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((v) => v === 'true'),
+  // Private rooms sit under Rooms (they need FEATURE_ROOMS too) and ship dark like
+  // the others; the flag also kills them independently of public rooms.
+  FEATURE_PRIVATE_ROOMS: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
   // Stable guest id lifetime (days). Long enough that a ban outlives the 24 h
   // anonId rotation it is meant to survive (see docs/HUB_PLAN.md §6.3).
   GID_COOKIE_TTL_DAYS: z.coerce.number().int().positive().default(30),
@@ -73,6 +79,15 @@ const envSchema = z.object({
   GMAIL_CLIENT_SECRET: z.string().optional().default(''),
   GMAIL_REFRESH_TOKEN: z.string().optional().default(''),
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
+  // FCM web push (optional, free). Every value must be set to enable it; a
+  // partial set leaves push OFF. FCM_SERVICE_ACCOUNT_JSON is raw JSON or its
+  // base64. The FCM_WEB_* values are public web-app identifiers.
+  FCM_PROJECT_ID: z.string().optional().default(''),
+  FCM_SERVICE_ACCOUNT_JSON: z.string().optional().default(''),
+  FCM_WEB_API_KEY: z.string().optional().default(''),
+  FCM_WEB_APP_ID: z.string().optional().default(''),
+  FCM_WEB_SENDER_ID: z.string().optional().default(''),
+  FCM_WEB_VAPID_KEY: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -130,6 +145,7 @@ const testFallback = {
   FEATURE_ROOMS: false,
   FEATURE_GAMES: false,
   FEATURE_MEMES: false,
+  FEATURE_PRIVATE_ROOMS: false,
   GID_COOKIE_TTL_DAYS: 30,
   SMTP_HOST: '',
   SMTP_PORT: 587,
@@ -139,6 +155,12 @@ const testFallback = {
   GMAIL_CLIENT_SECRET: '',
   GMAIL_REFRESH_TOKEN: '',
   GOOGLE_CLIENT_ID: '',
+  FCM_PROJECT_ID: '',
+  FCM_SERVICE_ACCOUNT_JSON: '',
+  FCM_WEB_API_KEY: '',
+  FCM_WEB_APP_ID: '',
+  FCM_WEB_SENDER_ID: '',
+  FCM_WEB_VAPID_KEY: '',
 };
 
 export const env = parsed.success ? parsed.data : testFallback;

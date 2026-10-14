@@ -1,6 +1,6 @@
-import { DASHBOARD_COMPOSITION_GRADIENTS } from '@/features/admin/constants/dashboard';
-import type { AdminStats } from '@/features/admin/types';
-import type { DashboardCompositionSegment } from '@/features/admin/types';
+import { DASHBOARD_COMPOSITION_GRADIENTS } from '../constants/dashboard';
+import type { AdminStats } from '../types';
+import type { DashboardCompositionSegment } from '../types';
 
 export const sumSeries = (values: number[]): number =>
   values.reduce((total, value) => total + value, 0);

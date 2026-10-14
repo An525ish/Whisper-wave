@@ -1,5 +1,6 @@
+import '../styles/spark-pass.css';
 import { Link } from 'react-router-dom';
-import { useScrollReveal } from '@/features/landing/hooks/useScrollReveal';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import { ROUTES } from '@/shared/constants/routes';
 
 const FEATURES = [

@@ -1,19 +1,5 @@
 import mongoose, { Schema, model, type Document } from 'mongoose';
-
-export type ModAuditFields = {
-  actorKind: 'mod' | 'admin';
-  /** Alias in-room, or 'admin'. Never an anonId beyond what reporters hold. */
-  actorLabel: string;
-  actorUserId?: string | null;
-  actorGid?: string | null;
-  /** delete | mute | kick | shadowmute | lock | unlock | slow | ban | unban | close | feature */
-  action: string;
-  target?: string | null;
-  roomSlug?: string | null;
-  instanceId?: string | null;
-  detail?: string | null;
-  createdAt: Date;
-};
+import type { ModAuditFields } from '../types/roomAdmin.js';
 
 export type IModAudit = ModAuditFields & Document;
 

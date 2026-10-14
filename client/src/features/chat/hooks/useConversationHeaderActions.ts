@@ -1,24 +1,23 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
-import { useLeaveGroupMutation } from '@/features/chat/hooks/useGroupMutations';
+import { useLeaveGroupMutation } from './useGroupMutations';
 import {
   useDeleteChatForMeMutation,
   useUnfriendMutation,
   useDeleteGroupMutation,
-} from '@/features/chat/hooks/useMessageMutations';
+} from './useMessageMutations';
 import { ROUTES } from '@/shared/constants/routes';
+import type { OtherMember } from '../types/local';
 
-type OtherMember = { _id: string; name: string; avatar?: string; isAdmin?: boolean };
-
-type Params = {
+interface Params {
   chatId?: string;
   groupChat?: boolean;
   myRole?: string | null;
   otherMembers: OtherMember[];
   /** Closes the header's dots menu when an action is triggered from it. */
   closeMenu: () => void;
-};
+}
 
 /**
  * Owns the conversation header's destructive account/group flows: leave group,

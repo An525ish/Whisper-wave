@@ -5,10 +5,12 @@ import { parseAnonId, parseGid } from '../socket/identity.js';
 import type { ValidatedRequest } from '../middlewares/validate.js';
 import { closeRoomInstance } from '../socket/rooms/index.js';
 import { findMessageInstance, liveCounts } from '../services/rooms/registry.js';
-import { fileRoomReport, recordRoomReport } from '../services/rooms/reports.js';
+import { recordRoomReport } from '../services/rooms/autohide.js';
+import { fileRoomReport } from '../services/rooms/reports.js';
 import { createUserRoom, deleteRoom, editRoomContent, getRoomInfo, listLobbyRooms, requestRoomListing } from '../services/rooms/lobby.js';
 import { createInvite, listInvites, revokeInvite } from '../services/rooms/invites.js';
-import type { ReportReason } from '../types/match.js';
+import { listMyRooms, privateRoomCapability } from '../services/rooms/myRooms.js';
+import type { ReportReason } from '../types/report.js';
 
 /**
  * GET /api/rooms
@@ -22,6 +24,19 @@ export const listRoomsController: RequestHandler = catchAsync(async (_req, res) 
 });
 
 /**
+ * GET /api/rooms/mine — the caller's own rooms (any visibility) plus what the
+ * create sheet needs: private-room eligibility and the active/limit count.
+ * Titles are the caller's own, so nothing leaks.
+ */
+export const myRoomsController: RequestHandler = catchAsync(async (req, res) => {
+  const [rooms, privateRooms] = await Promise.all([
+    listMyRooms(req.userId!),
+    privateRoomCapability(req.userId!),
+  ]);
+  res.status(200).json({ success: true, data: { rooms, privateRooms } });
+});
+
+/**
  * GET /api/rooms/:slug
  *
  * Room info + rules for the pre-join sheet. Unlisted rooms 404 like missing
@@ -30,7 +45,7 @@ export const listRoomsController: RequestHandler = catchAsync(async (_req, res) 
 export const roomInfoController: RequestHandler = catchAsync(async (req, res) => {
   const { slug } = req.params as { slug: string };
   const { invite } = (req as ValidatedRequest<{ invite?: string }>).validatedQuery ?? {};
-  const room = await getRoomInfo(slug, new Date(), invite);
+  const room = await getRoomInfo(slug, new Date(), invite, req.userId);
   if (!room) {
     res.status(404).json({ success: false, message: 'Room not found' });
     return;
@@ -81,8 +96,8 @@ export const revokeInviteController: RequestHandler = catchAsync(async (req, res
  * POST /api/rooms
  *
  * Members only — creating a public voice requires an account (guests join).
- * Rooms start unlisted: creation never publishes to the lobby. The rules
- * array is the copy the creator accepted (client also tracks the accept).
+ * Rooms start unlisted unless the creator is trusted. The rules array is the
+ * copy the creator accepted; the service stamps accepted-at/by/version.
  */
 export const createRoomController: RequestHandler = catchAsync(async (req, res) => {
   const body = req.body as {
@@ -91,6 +106,7 @@ export const createRoomController: RequestHandler = catchAsync(async (req, res) 
     description: string;
     rules: string[];
     lang?: string;
+    visibility?: 'public' | 'private';
   };
   const room = await createUserRoom({
     slug: body.slug,
@@ -98,13 +114,14 @@ export const createRoomController: RequestHandler = catchAsync(async (req, res) 
     description: body.description,
     rules: body.rules,
     lang: body.lang ?? 'en',
+    visibility: body.visibility ?? 'public',
     userId: req.userId!,
   });
   res.status(201).json({ success: true, data: { room } });
 });
 
 /**
- * PATCH /api/rooms/:slug — hosts and mods edit title, description, rules.
+ * PATCH /api/rooms/:slug — the host edits title, description, rules.
  * Slug, caps, type and visibility never move via this path (visibility
  * changes are the approval flow, owned by admin).
  */
@@ -122,7 +139,7 @@ export const editRoomController: RequestHandler = catchAsync(async (req, res) =>
 });
 
 /**
- * DELETE /api/rooms/:slug — hosts and mods only (official rooms retire via
+ * DELETE /api/rooms/:slug — the host only (official rooms retire via
  * admin). Ends live instances with a reason, then removes the template.
  * Reports, bans and audit history stay — deletion hides the room, never the
  * record of what happened in it.

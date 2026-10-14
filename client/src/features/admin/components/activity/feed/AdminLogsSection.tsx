@@ -1,8 +1,8 @@
 import type { RefObject } from 'react';
-import type { AdminImpersonationLogEntry } from '@/features/admin/types';
-import InfiniteScrollSentinel from '@/features/admin/components/shared/InfiniteScrollSentinel';
+import type { AdminImpersonationLogEntry } from '../../../types';
+import InfiniteScrollSentinel from '../../shared/InfiniteScrollSentinel';
 
-type AdminLogsSectionProps = {
+type Props = {
   scrollRef: RefObject<HTMLDivElement | null>;
   logs: AdminImpersonationLogEntry[];
   isLoading: boolean;
@@ -33,7 +33,7 @@ const AdminLogsSection = ({
   isFetchingNextPage,
   sentinelEnabled,
   onLoadMore,
-}: AdminLogsSectionProps) => {
+}: Props) => {
   if (isLoading) {
     return (
       <div className="space-y-2 animate-pulse">

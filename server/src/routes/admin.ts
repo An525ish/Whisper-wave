@@ -23,6 +23,7 @@ import {
 import { authLimiter, requireAdmin, validate } from '../middlewares/index.js';
 import {
   listReportsController,
+  reportActionController,
   reviewReportController,
 } from '../controllers/admin/report.js';
 import {
@@ -46,7 +47,7 @@ import {
   adminRoomCloseSchema,
   adminRoomUpsertSchema,
 } from '../validators/rooms.js';
-import { memeBlockSchema } from '../validators/memes.js';
+import { memeBlockParamsSchema, memeBlockSchema } from '../validators/memes.js';
 import {
   adminActivityEventsQuerySchema,
   adminAttachmentsQuerySchema,
@@ -55,6 +56,7 @@ import {
   adminImpersonationLogsQuerySchema,
   adminLoginSchema,
   adminRemoveMemberParamSchema,
+  adminReportActionSchema,
   adminReportIdParamSchema,
   adminReportsQuerySchema,
   adminReportReviewSchema,
@@ -123,6 +125,13 @@ adminRouter.patch(
   validate(adminReportReviewSchema, 'body'),
   reviewReportController
 );
+adminRouter.post(
+  '/reports/:id/action',
+  requireAdmin,
+  validate(adminReportIdParamSchema, 'params'),
+  validate(adminReportActionSchema, 'body'),
+  reportActionController
+);
 
 // Rooms — templates (the approval queue reads the unlisted ones), live
 // instance close, bans, and the feature kill-switch. Admin only.
@@ -164,7 +173,12 @@ adminRouter.post(
   validate(memeBlockSchema),
   blockJokeController
 );
-adminRouter.delete('/memes/blocklist/:id', requireAdmin, unblockJokeController);
+adminRouter.delete(
+  '/memes/blocklist/:id',
+  requireAdmin,
+  validate(memeBlockParamsSchema, 'params'),
+  unblockJokeController
+);
 
 adminRouter.delete('/users/:id', requireAdmin, validate(adminIdParamSchema, 'params'), deleteUser);
 adminRouter.delete('/groups/:id', requireAdmin, validate(adminIdParamSchema, 'params'), deleteGroup);

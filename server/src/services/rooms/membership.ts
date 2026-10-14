@@ -1,6 +1,7 @@
 import { AppError } from '../../utils/AppError.js';
 import { ROOM_ERROR_CODES } from '../../constants/room-events.js';
 import { isRoomOpen } from './hours.js';
+import { screenAlias } from './automod.js';
 import type {
   IRoomBanFields,
   IRoomFields,
@@ -26,6 +27,11 @@ export const assertJoinAllowed = (params: {
     (ban) => ban.roomSlug === null || ban.roomSlug === params.template?.slug
   );
   if (applies) throw new AppError(403, ROOM_ERROR_CODES.BANNED);
+};
+
+/** Alias gate for join: reserved words, word list, link-shaped names. Throws the stable `alias_invalid`. */
+export const assertAliasAllowed = (alias: string): void => {
+  if (!screenAlias(alias).ok) throw new AppError(400, ROOM_ERROR_CODES.ALIAS_INVALID);
 };
 
 /** Persona color: client-chosen hex wins, otherwise stable per alias. */

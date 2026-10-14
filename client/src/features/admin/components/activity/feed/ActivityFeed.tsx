@@ -1,13 +1,13 @@
-import InfiniteScrollSentinel from '@/features/admin/components/shared/InfiniteScrollSentinel';
+import InfiniteScrollSentinel from '../../shared/InfiniteScrollSentinel';
 import ActivityEmptyState from './ActivityEmptyState';
 import ActivityFeedSkeleton from './ActivityFeedSkeleton';
 import ActivityFilterTabs from './ActivityFilterTabs';
 import TimelineRow from '../timeline/TimelineRow';
-import type { AdminActivityEventGroup } from '@/features/admin/types';
-import type { AdminActivityEvent, AdminActivityFilter } from '@/features/admin/types';
+import type { AdminActivityEventGroup } from '../../../types';
+import type { AdminActivityEvent, AdminActivityFilter } from '../../../types';
 import type { RefObject } from 'react';
 
-type ActivityFeedProps = {
+type Props = {
   scrollRef: RefObject<HTMLDivElement | null>;
   filter: AdminActivityFilter;
   onFilterChange: (filter: AdminActivityFilter) => void;
@@ -35,7 +35,7 @@ const ActivityFeed = ({
   sentinelEnabled,
   onLoadMore,
   onRetry,
-}: ActivityFeedProps) => (
+}: Props) => (
   <section className="flex min-h-0 flex-1 flex-col lg:col-span-8">
     <div className="shrink-0 flex flex-wrap items-center justify-between gap-4">
       <div>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ChatMessage, ChatScriptEntry } from '@/features/landing/types';
+import type { ChatMessage, ChatScriptEntry } from '../types';
 
 const SCRIPT: ChatScriptEntry[] = [
   { sender: 'a', text: 'hey', delayMs: 0 },
@@ -37,8 +37,16 @@ export const useAnimatedChat = ({ active, onSpark, onCycleComplete }: Params) =>
   const onSparkRef = useRef(onSpark);
   const onCycleCompleteRef = useRef(onCycleComplete);
 
-  onSparkRef.current = onSpark;
-  onCycleCompleteRef.current = onCycleComplete;
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (!active) setMessages([]);
+  }
+
+  useEffect(() => {
+    onSparkRef.current = onSpark;
+    onCycleCompleteRef.current = onCycleComplete;
+  });
 
   useEffect(() => {
     const clearTimer = () => {
@@ -50,7 +58,6 @@ export const useAnimatedChat = ({ active, onSpark, onCycleComplete }: Params) =>
 
     if (!active) {
       clearTimer();
-      setMessages([]);
       stepRef.current = 0;
       sparkedRef.current = false;
       return;

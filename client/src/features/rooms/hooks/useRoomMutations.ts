@@ -4,16 +4,15 @@ import toast from 'react-hot-toast';
 import { track } from '@/shared/lib/analytics';
 import { ROUTES } from '@/shared/constants/routes';
 import useErrors from '@/shared/hooks/useError';
-import { createRoom, deleteRoom, reportRoomMessage, requestListing, updateRoom } from '../api/rooms';
+import { addReminder, createRoom, deleteRoom, removeReminder, reportRoomMessage, requestListing, updateRoom } from '../api/rooms';
 import { roomsKeys } from './queryKeys';
 import { ROOM_EVENTS } from '../constants';
-import type { CreateRoomPayload } from '../types';
+import type { CreateRoomPayload, RoomContentPayload, RoomReportPayload } from '../types';
 
 /** Report one room message. Failures surface, never crash the thread. */
 export function useReportRoomMutation(slug: string) {
   const mutation = useMutation({
-    mutationFn: (input: { messageId: string; reason: string; details?: string }) =>
-      reportRoomMessage(slug, input),
+    mutationFn: (input: RoomReportPayload) => reportRoomMessage(slug, input),
     onSuccess: (res) => {
       track(ROOM_EVENTS.REPORT, {});
       toast.success(
@@ -37,6 +36,7 @@ export function useCreateRoomMutation() {
     onSuccess: (res) => {
       track(ROOM_EVENTS.CREATED, {});
       void queryClient.invalidateQueries({ queryKey: roomsKeys.list });
+      void queryClient.invalidateQueries({ queryKey: roomsKeys.mine });
       navigate(ROUTES.room(res.data.room.slug));
     },
   });
@@ -49,8 +49,7 @@ export function useCreateRoomMutation() {
 export function useUpdateRoomMutation(slug: string) {
   const queryClient = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (input: { title: string; description: string; rules: string[] }) =>
-      updateRoom(slug, input),
+    mutationFn: (input: RoomContentPayload) => updateRoom(slug, input),
     onSuccess: () => {
       toast.success('Room updated.');
       void queryClient.invalidateQueries({ queryKey: roomsKeys.info(slug) });
@@ -71,6 +70,7 @@ export function useDeleteRoomMutation() {
     onSuccess: () => {
       toast.success('Room deleted.');
       void queryClient.invalidateQueries({ queryKey: roomsKeys.list });
+      void queryClient.invalidateQueries({ queryKey: roomsKeys.mine });
       navigate(ROUTES.rooms);
     },
   });
@@ -85,6 +85,32 @@ export function useRequestListingMutation() {
     mutationFn: (slug: string) => requestListing(slug),
     onSuccess: (res) => {
       toast.success(res.message || 'Listing requested.');
+    },
+  });
+
+  useErrors([{ isError: mutation.isError, error: mutation.error }]);
+  return mutation;
+}
+
+/** Toggle a "remind me when it opens" subscription, optimistically. */
+export function useRoomReminderMutation() {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: ({ slug, on }: { slug: string; on: boolean }) =>
+      on ? addReminder(slug) : removeReminder(slug),
+    onMutate: async ({ slug, on }) => {
+      await queryClient.cancelQueries({ queryKey: roomsKeys.reminders });
+      const previous = queryClient.getQueryData<string[]>(roomsKeys.reminders);
+      queryClient.setQueryData<string[]>(roomsKeys.reminders, (old = []) =>
+        on ? [...new Set([...old, slug])] : old.filter((s) => s !== slug)
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      queryClient.setQueryData(roomsKeys.reminders, ctx?.previous);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: roomsKeys.reminders });
     },
   });
 

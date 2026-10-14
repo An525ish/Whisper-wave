@@ -1,12 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react';
 import Searchbar from '@/shared/components/ui/Searchbar';
 
-type UsersHeaderProps = {
+type Props = {
   searchText: string;
   setSearchText: Dispatch<SetStateAction<string>>;
 };
 
-const UsersHeader = ({ searchText, setSearchText }: UsersHeaderProps) => (
+const UsersHeader = ({ searchText, setSearchText }: Props) => (
   <header className="flex shrink-0 flex-wrap items-end justify-between gap-4">
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue">Console</p>

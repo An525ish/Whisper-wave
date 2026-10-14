@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import { catchAsync } from '../../utils/catchAsync.js';
-import { closeRoomInstance } from '../../socket/rooms/index.js';
+import { closeRoomInstance, evictIdentity } from '../../socket/rooms/index.js';
 import { setFeatureFlag } from '../../services/hub.js';
 import { auditModAction, listAuditTrail } from '../../services/audit.js';
 import {
@@ -69,6 +69,14 @@ export const listRoomBansController: RequestHandler = catchAsync(async (_req, re
 export const banIdentityController: RequestHandler = catchAsync(async (req, res) => {
   const body = req.body as AdminRoomBanBody;
   const ban = await banIdentity(body);
+  const io = req.app.get('io') as Server | undefined;
+  const evicted = io
+    ? evictIdentity(
+        io,
+        { gid: body.gid ?? undefined, userId: body.userId ?? undefined },
+        { slug: body.roomSlug ?? undefined, reason: 'banned' }
+      )
+    : 0;
   auditModAction({
     actorKind: 'admin',
     actorLabel: 'admin',
@@ -77,7 +85,7 @@ export const banIdentityController: RequestHandler = catchAsync(async (req, res)
     roomSlug: body.roomSlug,
     detail: `${body.minutes} min — ${body.reason}`,
   });
-  res.status(201).json({ success: true, data: { ban } });
+  res.status(201).json({ success: true, data: { ban, evicted } });
 });
 
 /** DELETE /api/admin/room-bans/:id — lift a ban. Admin only. */

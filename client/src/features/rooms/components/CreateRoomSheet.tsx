@@ -1,28 +1,31 @@
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { useAuthStore } from '@/features/auth';
-import { ROOM_RULE_SUGGESTIONS } from '../constants';
+import { ROOM_DEFAULT_LANG, ROOM_LIMITS, ROOM_RULE_SUGGESTIONS } from '../constants';
 import { useCreateRoomMutation } from '../hooks/useRoomMutations';
+import { useMyRoomsQuery } from '../hooks/useRoomsQueries';
 import { suggestSlug } from '../utils/persona';
-import { createRoomSchema, type CreateRoomForm } from '../utils/roomValidators';
+import { createRoomSchema } from '../utils/roomValidators';
+import type { CreateRoomForm } from '../types';
+import RoomVisibilityChoice from './RoomVisibilityChoice';
 
 /**
- * Create a user room. Unlisted until approved — creation never publishes,
- * and the sheet says so. The rules checkbox is the logged accept: the rules
+ * Create a user room: public (unlisted until approved — creation never
+ * publishes) or private (invite-only, members only; entitlement-gated). The rules checkbox is the logged accept: the rules
  * array is stored on the template plus a creation analytics event.
  */
 const CreateRoomSheet = () => {
   const user = useAuthStore((s) => s.user);
   const create = useCreateRoomMutation();
+  const mine = useMyRoomsQuery(Boolean(user));
 
   const {
     register,
     handleSubmit,
     control,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<CreateRoomForm>({
     resolver: zodResolver(createRoomSchema),
@@ -30,11 +33,13 @@ const CreateRoomSheet = () => {
       title: '',
       slug: '',
       description: '',
+      visibility: 'public',
       rules: ROOM_RULE_SUGGESTIONS.map((value) => ({ value })),
     },
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'rules' });
-  const title = watch('title');
+  const title = useWatch({ control, name: 'title' });
+  const visibility = useWatch({ control, name: 'visibility' });
 
   if (!user) {
     return (
@@ -59,7 +64,9 @@ const CreateRoomSheet = () => {
       title: values.title.trim(),
       description: values.description.trim(),
       rules: values.rules.map((r) => r.value.trim()).filter(Boolean),
-      lang: 'en',
+      lang: ROOM_DEFAULT_LANG,
+      rulesAccepted: true,
+      visibility: values.visibility,
     });
   };
 
@@ -72,20 +79,24 @@ const CreateRoomSheet = () => {
     <main className="mx-auto w-full max-w-xl px-5 py-8">
       <h1 className="font-display text-3xl text-white">New room</h1>
       <p className="mt-1 text-sm text-body-300">
-        Live instantly, unlisted by default. Lobby listing needs approval — nothing you make goes public unseen.
+        {visibility === 'private'
+          ? 'Live instantly, visible only to people you invite. It never appears in the lobby.'
+          : 'Live instantly, unlisted by default. Lobby listing needs approval — nothing you make goes public unseen.'}
       </p>
 
       <form onSubmit={handleSubmit(submit)} className="mt-5 flex flex-col gap-4">
+        <RoomVisibilityChoice register={register} capability={mine.data?.privateRooms} />
+
         <div>
           <label htmlFor="room-title" className={labelClass}>Title</label>
-          <input id="room-title" {...register('title')} maxLength={60} placeholder="e.g. Midnight Coding" className={inputClass} />
+          <input id="room-title" {...register('title')} maxLength={ROOM_LIMITS.TITLE_MAX} placeholder="e.g. Midnight Coding" className={inputClass} />
           {errors.title && <p role="alert" className={errorClass}>{errors.title.message}</p>}
         </div>
 
         <div>
           <label htmlFor="room-slug" className={labelClass}>URL name</label>
           <div className="flex gap-2">
-            <input id="room-slug" {...register('slug')} maxLength={40} placeholder="midnight-coding-x7k2" className={`${inputClass} min-w-0 flex-1`} />
+            <input id="room-slug" {...register('slug')} maxLength={ROOM_LIMITS.SLUG_MAX} placeholder="midnight-coding-x7k2" className={`${inputClass} min-w-0 flex-1`} />
             <button
               type="button"
               onClick={() => setValue('slug', suggestSlug(title), { shouldValidate: true })}
@@ -99,7 +110,7 @@ const CreateRoomSheet = () => {
 
         <div>
           <label htmlFor="room-desc" className={labelClass}>What is it about?</label>
-          <textarea id="room-desc" {...register('description')} maxLength={280} rows={2} placeholder="Who is it for, what happens here" className={inputClass} />
+          <textarea id="room-desc" {...register('description')} maxLength={ROOM_LIMITS.DESCRIPTION_MAX} rows={2} placeholder="Who is it for, what happens here" className={inputClass} />
           {errors.description && <p role="alert" className={errorClass}>{errors.description.message}</p>}
         </div>
 
@@ -107,28 +118,34 @@ const CreateRoomSheet = () => {
           <span className={labelClass}>House rules</span>
           <div className="mt-1.5 flex flex-col gap-2">
             {fields.map((field, i) => (
-              <div key={field.id} className="flex gap-2">
-                <input
-                  {...register(`rules.${i}.value`)}
-                  maxLength={140}
-                  aria-label={`Rule ${i + 1}`}
-                  className={`${inputClass} mt-0 min-w-0 flex-1`}
-                />
-                {fields.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => remove(i)}
-                    aria-label={`Remove rule ${i + 1}`}
-                    className="shrink-0 px-2 text-body-300 hover:text-body"
-                  >
-                    ✕
-                  </button>
+              <div key={field.id}>
+                <div className="flex gap-2">
+                  <input
+                    {...register(`rules.${i}.value`)}
+                    maxLength={ROOM_LIMITS.RULE_MAX}
+                    aria-label={`Rule ${i + 1}`}
+                    className={`${inputClass} mt-0 min-w-0 flex-1`}
+                  />
+                  {fields.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => remove(i)}
+                      aria-label={`Remove rule ${i + 1}`}
+                      className="shrink-0 px-2 text-body-300 hover:text-body"
+                    >
+                      <span aria-hidden>✕</span>
+                    </button>
+                  )}
+                </div>
+                {errors.rules?.[i]?.value && (
+                  <p role="alert" className={errorClass}>{errors.rules[i].value.message}</p>
                 )}
               </div>
             ))}
           </div>
-          {errors.rules && <p role="alert" className={errorClass}>{errors.rules.message as string}</p>}
-          {fields.length < 6 && (
+          {errors.rules?.message && <p role="alert" className={errorClass}>{errors.rules.message}</p>}
+          {errors.rules?.root?.message && <p role="alert" className={errorClass}>{errors.rules.root.message}</p>}
+          {fields.length < ROOM_LIMITS.CREATE_RULES_MAX && (
             <button
               type="button"
               onClick={() => append({ value: '' })}

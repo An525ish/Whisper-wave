@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { RoomInvite } from '../models/roomInvite.js';
-import type { IRoomInviteFields } from '../models/roomInvite.js';
+import type { IRoomInviteFields } from '../types/roomAdmin.js';
 
 type RoomInviteLean = IRoomInviteFields & { _id: unknown };
 
@@ -49,4 +49,9 @@ export const listForRoom = async (roomSlug: string): Promise<RoomInviteLean[]> =
 export const revoke = async (id: string, roomSlug: string): Promise<boolean> => {
   const res = await RoomInvite.updateOne({ _id: id, roomSlug }, { $set: { revoked: true } });
   return res.modifiedCount > 0;
+};
+
+/** Room gone (host delete, idle purge): its links must die too, or a re-created slug would honour them. */
+export const deleteForRoom = async (roomSlug: string): Promise<void> => {
+  await RoomInvite.deleteMany({ roomSlug });
 };

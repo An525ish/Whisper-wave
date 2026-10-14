@@ -4,6 +4,7 @@ import type { Request, Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import { ensureGid } from '../gid.js';
 import { GID_COOKIE } from '../../socket/identity.js';
+import { generateAccessToken } from '../../utils/token.js';
 
 type CookieJar = Record<string, string>;
 
@@ -51,6 +52,12 @@ describe('ensureGid', () => {
     const minted = setCookies[0]?.value;
     assert.notEqual(minted, 'not-a-uuid');
     assert.deepStrictEqual(req.identity, { kind: 'guest', gid: minted });
+  });
+
+  it('keeps the userId of a signed-in member who has no gid cookie yet', () => {
+    const { req, setCookies } = run({ accessToken: generateAccessToken('user-1') });
+    const minted = setCookies[0]?.value;
+    assert.deepStrictEqual(req.identity, { kind: 'member', userId: 'user-1', gid: minted });
   });
 
   it('carries a valid anonId onto the fresh guest identity', () => {

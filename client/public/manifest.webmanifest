@@ -1,0 +1,13 @@
+{
+  "name": "Whisper Wave",
+  "short_name": "Whisper Wave",
+  "description": "Anonymous when you want. Connected when it clicks.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#211a2a",
+  "theme_color": "#211a2a",
+  "icons": [
+    { "src": "/logo-3.jpeg", "sizes": "192x192 512x512 1024x1024", "type": "image/jpeg", "purpose": "any" }
+  ]
+}

@@ -1,22 +1,25 @@
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import { AppError } from '../utils/AppError.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { logger } from '../utils/logger.js';
-import { parseAnonId } from '../socket/identity.js';
 import {
   cancelPending,
   completeConnection,
   completeConnectionWithClaim,
   getConnectionOrigin,
   listPendingForUser,
-} from '../services/connection.js';
-import { emitToMembers } from '../services/presence/index.js';
+} from '../services/connection/index.js';
+import { emitToMembers, isUserOnline } from '../services/presence/index.js';
+import { sendPushIntents } from '../services/push/index.js';
 import { joinUsersToChatRoom } from '../socket/rooms.js';
 import { CONNECTION_READY } from '../constants/anon-events.js';
 import { WHISPER_CONNECTION_READY, REFETCH_CHATS } from '../constants/socket-events.js';
 import type { ConnectionAnnouncement } from '../types/connection.js';
 import type { CompleteConnectionBody } from '../types/input.js';
+
+/** The caller's anonymous-session id, from the identity `ensureGid` already parsed. */
+const anonIdOf = (req: Request): string | undefined => req.identity?.anonId;
 
 /**
  * Wire up the freshly created DM and tell BOTH parties it exists.
@@ -71,15 +74,14 @@ export const completeConnectionController: RequestHandler = catchAsync(
     const userId = req.userId!;
     const { result, announce } =
       'claimId' in body
-        ? await completeConnectionWithClaim(
-            body.claimId,
-            userId,
-            parseAnonId((req.cookies as Record<string, string> | undefined)?.['anonId'])
-          )
-        : await completeConnection(body.connectToken, userId);
+        ? await completeConnectionWithClaim(body.claimId, userId, anonIdOf(req))
+        : await completeConnection(body.connectToken, userId, anonIdOf(req));
 
     // Persisted first; notify both parties (esp. the one still waiting) after.
-    if (announce) await announceConnectionReady(io, announce);
+    if (announce) {
+      await announceConnectionReady(io, announce);
+      sendPushIntents(announce.pushNotifications, isUserOnline);
+    }
 
     res.status(200).json({ success: true, data: result });
   }
@@ -93,10 +95,7 @@ export const completeConnectionController: RequestHandler = catchAsync(
  * partner is not.
  */
 export const listPendingController: RequestHandler = catchAsync(async (req, res) => {
-  const items = await listPendingForUser(
-    req.userId!,
-    parseAnonId((req.cookies as Record<string, string> | undefined)?.['anonId'])
-  );
+  const items = await listPendingForUser(req.userId!, anonIdOf(req));
   res.status(200).json({ success: true, data: { items } });
 });
 
@@ -108,11 +107,7 @@ export const listPendingController: RequestHandler = catchAsync(async (req, res)
  */
 export const cancelPendingController: RequestHandler = catchAsync(async (req, res) => {
   const { id } = req.params as { id: string };
-  await cancelPending(
-    id,
-    req.userId!,
-    parseAnonId((req.cookies as Record<string, string> | undefined)?.['anonId'])
-  );
+  await cancelPending(id, req.userId!, anonIdOf(req));
   res.status(200).json({ success: true, message: 'Pending connection cancelled' });
 });
 

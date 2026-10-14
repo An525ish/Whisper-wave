@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as authApi from '@/features/auth/api/auth';
-import { queryKeys } from '@/features/chat';
-import { useAuthStore } from '@/features/auth/store';
+import { runBeforeSignOut } from '@/shared/lib/api/authBridge';
+import * as authApi from '../api/auth';
+import { useAuthStore } from '../store';
 import { authKeys } from './queryKeys';
 
 export function useSignInMutation() {
@@ -59,7 +59,10 @@ export function useSignOutMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: authApi.signOut,
+    mutationFn: async () => {
+      await runBeforeSignOut();
+      return authApi.signOut();
+    },
     onSettled: () => {
       clear();
       queryClient.clear();
@@ -92,7 +95,11 @@ export function useResetPasswordMutation() {
   });
 }
 
-export function useUpdateProfileMutation() {
+/**
+ * Own-profile update. `onUpdated` lets the caller refresh anything of its own
+ * that shows this user's name/avatar (auth must not know about chats).
+ */
+export function useUpdateProfileMutation(onUpdated?: () => void) {
   const setUser = useAuthStore((s) => s.setUser);
   const queryClient = useQueryClient();
 
@@ -103,7 +110,7 @@ export function useUpdateProfileMutation() {
         setUser(res.user);
         queryClient.setQueryData(authKeys.profile, res.user);
       }
-      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+      onUpdated?.();
     },
   });
 }

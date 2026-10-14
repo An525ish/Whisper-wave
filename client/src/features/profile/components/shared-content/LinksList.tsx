@@ -1,6 +1,6 @@
 import EmptyState from '@/shared/components/ui/EmptyState'
 import { LinkPreviewThumb } from '@/features/chat'
-import type { SharedLink } from '@/features/profile/components/shared-content/types'
+import type { SharedLink } from './types'
 
 const ExternalLinkIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 20 20" fill="none" aria-hidden>

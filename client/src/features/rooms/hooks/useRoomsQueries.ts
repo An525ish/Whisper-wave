@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { listRooms, roomInfo } from '../api/rooms';
+import { listReminders, listRooms, myRooms, roomInfo } from '../api/rooms';
+import { ROOM_INFO_STALE_MS, ROOM_LIST_POLL_MS, ROOM_LIST_STALE_MS } from '../constants';
 import { roomsKeys } from './queryKeys';
 
 /** Lobby list. Fresh on every visit — occupancy goes stale in seconds.
@@ -9,8 +10,8 @@ export function useRoomsList(enabled = true) {
     queryKey: roomsKeys.list,
     queryFn: () => listRooms().then((res) => res.data.rooms),
     enabled,
-    staleTime: 10_000,
-    refetchInterval: 20_000,
+    staleTime: ROOM_LIST_STALE_MS,
+    refetchInterval: ROOM_LIST_POLL_MS,
   });
 }
 
@@ -20,6 +21,26 @@ export function useRoomInfo(slug: string | undefined, invite?: string, enabled =
     queryKey: roomsKeys.info(slug, invite),
     queryFn: () => roomInfo(slug ?? '', invite).then((res) => res.data.room),
     enabled: enabled && Boolean(slug),
-    staleTime: 30_000,
+    staleTime: ROOM_INFO_STALE_MS,
+  });
+}
+
+/** Rooms the member is waiting on. Members only — guests never fetch it. */
+export function useRoomRemindersQuery(enabled: boolean) {
+  return useQuery({
+    queryKey: roomsKeys.reminders,
+    queryFn: () => listReminders().then((res) => res.data.slugs),
+    enabled,
+    staleTime: ROOM_LIST_STALE_MS,
+  });
+}
+
+/** Rooms I host + private-room eligibility. Members only — guests never fetch it. */
+export function useMyRoomsQuery(enabled: boolean) {
+  return useQuery({
+    queryKey: roomsKeys.mine,
+    queryFn: () => myRooms().then((res) => res.data),
+    enabled,
+    staleTime: ROOM_LIST_STALE_MS,
   });
 }

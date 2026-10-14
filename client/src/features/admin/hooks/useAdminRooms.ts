@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
+import { hubKeys } from '@/features/hub';
 import {
   banRoomIdentity,
   closeRoomInstance,
@@ -8,15 +8,18 @@ import {
   listRoomBans,
   setFeatureFlag,
   upsertAdminRoom,
-} from '@/features/admin/api/admin';
-import { adminQueryKeys } from '@/features/admin/hooks/queryKeys';
-import type { AdminRoomBanInput, AdminRoomUpsert } from '@/features/admin/types';
+} from '../api/admin';
+import { adminQueryKeys } from './queryKeys';
+import type { AdminFeatureFlag, AdminRoomBanInput, AdminRoomUpsert } from '../types';
+
+// Mutations carry no toasts: components run them through `useAsyncMutation`,
+// which owns the loading/success/error toast so nothing double-fires.
 
 /** Every template with live occupancy — the approval queue reads this. */
 export function useAdminRoomsQuery() {
   return useQuery({
     queryKey: adminQueryKeys.rooms,
-    queryFn: () => listAdminRooms().then((res) => res.rooms),
+    queryFn: () => listAdminRooms().then((res) => res.data.rooms),
     staleTime: 10_000,
   });
 }
@@ -26,7 +29,6 @@ export function useUpsertRoomMutation() {
   return useMutation({
     mutationFn: (room: AdminRoomUpsert) => upsertAdminRoom(room),
     onSuccess: () => {
-      toast.success('Room saved.');
       void queryClient.invalidateQueries({ queryKey: adminQueryKeys.rooms });
     },
   });
@@ -38,7 +40,6 @@ export function useCloseInstanceMutation() {
     mutationFn: ({ instanceId, reason }: { instanceId: string; reason?: string }) =>
       closeRoomInstance(instanceId, reason),
     onSuccess: () => {
-      toast.success('Instance closed.');
       void queryClient.invalidateQueries({ queryKey: adminQueryKeys.rooms });
     },
   });
@@ -47,7 +48,7 @@ export function useCloseInstanceMutation() {
 export function useRoomBansQuery() {
   return useQuery({
     queryKey: adminQueryKeys.roomBans,
-    queryFn: () => listRoomBans().then((res) => res.bans),
+    queryFn: () => listRoomBans().then((res) => res.data.bans),
     staleTime: 30_000,
   });
 }
@@ -57,7 +58,6 @@ export function useBanIdentityMutation() {
   return useMutation({
     mutationFn: (ban: AdminRoomBanInput) => banRoomIdentity(ban),
     onSuccess: () => {
-      toast.success('Banned.');
       void queryClient.invalidateQueries({ queryKey: adminQueryKeys.roomBans });
     },
   });
@@ -68,7 +68,6 @@ export function useLiftBanMutation() {
   return useMutation({
     mutationFn: (id: string) => liftRoomBan(id),
     onSuccess: () => {
-      toast.success('Ban lifted.');
       void queryClient.invalidateQueries({ queryKey: adminQueryKeys.roomBans });
     },
   });
@@ -78,12 +77,11 @@ export function useLiftBanMutation() {
 export function useFeatureFlagMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ feature, enabled }: { feature: 'rooms' | 'games' | 'memes'; enabled: boolean }) =>
+    mutationFn: ({ feature, enabled }: { feature: AdminFeatureFlag; enabled: boolean }) =>
       setFeatureFlag(feature, enabled),
-    onSuccess: (_res, { feature, enabled }) => {
-      toast.success(`${feature} ${enabled ? 'enabled' : 'disabled'}.`);
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminQueryKeys.rooms });
-      void queryClient.invalidateQueries({ queryKey: ['hub'] });
+      void queryClient.invalidateQueries({ queryKey: hubKeys.summary });
     },
   });
 }

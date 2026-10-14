@@ -1,4 +1,4 @@
-type ChatDayLabelProps = {
+type Props = {
   label: string;
   className?: string;
 };
@@ -16,7 +16,7 @@ const lineFadeToChip =
 const lineFadeFromChip =
   'h-px flex-1 bg-linear-to-l from-transparent from-0% via-border/15 via-55% to-green/12 to-100%';
 
-const ChatDayLabel = ({ label, className = '' }: ChatDayLabelProps) => {
+const ChatDayLabel = ({ label, className = '' }: Props) => {
   if (label === 'Today') {
     return (
       <div className={`flex w-full max-w-sm items-center gap-2 sm:max-w-md ${className}`}>

@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
-import { ADMIN_MIN_SEARCH_LEN } from '@/features/admin/constants/groups';
+import { ADMIN_MIN_SEARCH_LEN } from '../constants/groups';
 import { SEARCH_DEBOUNCE_MS } from '@/shared/constants/app';
 import { useDebounce } from '@/shared/hooks/useDebounce';
-import { useAdminGroupsQuery, useAdminStatsQuery } from '@/features/admin/hooks';
-import type { AdminGroupRow, UserFilterOption } from '@/features/admin/types';
-import { sumSeries } from '@/features/admin/utils/dashboard';
+import { useAdminGroupsQuery, useAdminStatsQuery } from '.';
+import type { AdminGroupRow, UserFilterOption } from '../types';
+import { sumSeries } from '../utils/dashboard';
 
 export function useGroupsPage() {
   const scrollRef = useRef<HTMLDivElement>(null);

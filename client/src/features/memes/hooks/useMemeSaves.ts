@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/features/auth';
@@ -30,21 +30,29 @@ export function useMemeSavesQuery() {
 }
 
 /**
- * Save toggle with member sync. Local flips instantly; members also persist
- * server-side, reverting locally only if the server refuses.
+ * Save toggle. Local flips instantly. Members also persist server-side and
+ * revert only if the server refuses; guests keep it on the device and get a
+ * gentle nudge that an account would keep it everywhere.
  */
 export function useToggleMemeSave() {
   const toggleSave = useMemeStore((s) => s.toggleSave);
 
-  return (id: number, currentlySaved: boolean) => {
-    toggleSave(id);
-    if (!currentlySaved) track(MEME_EVENTS.SAVE, {});
-    const user = useAuthStore.getState().user;
-    if (!user) return;
-    const sync = currentlySaved ? unsaveMeme(id) : saveMeme(id);
-    sync.catch(() => {
-      toggleSave(id); // revert — the server refused
-      toast.error('Couldn’t sync your save — kept locally.');
-    });
-  };
+  return useCallback(
+    (id: number) => {
+      const wasSaved = useMemeStore.getState().saves.includes(id);
+      toggleSave(id);
+      if (!wasSaved) track(MEME_EVENTS.SAVE, {});
+
+      if (!useAuthStore.getState().user) {
+        if (!wasSaved) toast('Saved on this device — sign in to keep it everywhere.');
+        return;
+      }
+      const sync = wasSaved ? unsaveMeme(id) : saveMeme(id);
+      sync.catch(() => {
+        toggleSave(id);
+        toast.error('Couldn’t sync your save — try again.');
+      });
+    },
+    [toggleSave]
+  );
 }

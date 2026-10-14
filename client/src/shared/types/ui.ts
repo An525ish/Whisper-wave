@@ -31,6 +31,8 @@ export type NavItem = {
   badge?: number;
   /** The one action the nav wants you to take: drawn as a filled button on the tab bar. */
   emphasis?: boolean;
+  /** Rail only: the phone tab bar leaves it out (it lives inside Home there). */
+  railOnly?: boolean;
 };
 
 export type TabVariant = 'underline' | 'pills';
@@ -73,4 +75,11 @@ export type MessageGroup<TKey> = {
   joinedBelow: boolean;
   /** Last message of its run — the only one that draws the tail. */
   isTail: boolean;
+};
+
+/** Image/file thumbnail carried by a quoted reply preview. */
+export type ReplyPreviewAttachment = {
+  url: string;
+  name: string;
+  fileType: string;
 };

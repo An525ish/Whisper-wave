@@ -1,22 +1,19 @@
 import { useCallback, useMemo, type Dispatch, type SetStateAction } from 'react';
 import Searchbar from '@/shared/components/ui/Searchbar';
 import { AccountBar } from '@/features/profile';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/shared/constants/routes';
 import DotsMenu from '@/shared/components/ui/DotsMenu';
-import ChatIcon from '@/shared/components/ui/icons/Chat';
 import ReadReceipt from '@/shared/components/ui/icons/ReadReceipt';
 import AddMemberIcon from '@/shared/components/ui/icons/AddMember';
 import CreateGroupIcon from '@/shared/components/ui/icons/CreateGroup';
 import {
   useMarkAllChatsReadMutation,
   useMyChatsQuery,
-} from '@/features/chat/hooks';
+} from '../../hooks';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import { useNotificationsStore } from '@/features/notifications';
-import type { NewConnectTab, ChatsResponse } from '@/features/chat/types/chat';
+import type { NewConnectTab } from '../../types/chat';
 
-type ChatListHeaderProps = {
+type Props = {
   searchText: string;
   setSearchText: Dispatch<SetStateAction<string>>;
   onOpenNew?: (tab: NewConnectTab) => void;
@@ -26,9 +23,9 @@ const ChatListHeader = ({
   searchText,
   setSearchText,
   onOpenNew,
-}: ChatListHeaderProps) => {
+}: Props) => {
   const { data: chats } = useMyChatsQuery();
-  const chatsData = (chats as ChatsResponse | undefined)?.data;
+  const chatsData = chats?.data;
   const unreadCount = useMemo(
     () => chatsData?.reduce((sum, chat) => sum + (chat.unreadCount ?? 0), 0) ?? 0,
     [chatsData],
@@ -37,7 +34,6 @@ const ChatListHeader = ({
     (s) => s.resetMessageNotification,
   );
   const [markAllRead] = useAsyncMutation(useMarkAllChatsReadMutation);
-  const navigate = useNavigate();
 
   const handleMarkAllRead = useCallback(() => {
     if (unreadCount === 0) return;
@@ -68,13 +64,7 @@ const ChatListHeader = ({
       icon: <CreateGroupIcon className="h-3.5 w-3.5 fill-current" />,
       onSelect: () => onOpenNew?.('group'),
     },
-    {
-      id: 'whisper',
-      label: 'Whisper — talk to someone new',
-      icon: <ChatIcon className="h-3.5 w-3.5 fill-current" />,
-      onSelect: () => navigate(ROUTES.whisper),
-    },
-  ], [unreadCount, handleMarkAllRead, onOpenNew, navigate]);
+  ], [unreadCount, handleMarkAllRead, onOpenNew]);
 
   return (
     <div className="relative flex w-full flex-col gap-3 border-b border-border/50 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:border-0 md:p-2 md:pt-1">

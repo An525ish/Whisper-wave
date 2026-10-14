@@ -1,4 +1,4 @@
-import { allInstanceIds, appendMessage, membersOf, recentMessages } from './registry.js';
+import { allInstanceIds, appendMessage, membersOf, onInstanceClosed, recentMessages } from './registry.js';
 
 /**
  * Wave bot prompts — authored content, a list in the repo (never a model).
@@ -26,6 +26,10 @@ export const WAVE_COLOR = '#ffd47d';
 
 const lastPromptIndex = new Map<string, number>();
 
+onInstanceClosed((instanceId) => {
+  lastPromptIndex.delete(instanceId);
+});
+
 /**
  * Post one prompt into each quiet instance. Pure decision + append; the
  * caller owns emission (namespace) so this stays socket-free and testable.
@@ -49,6 +53,7 @@ export const sweepQuietRooms = (
       role: 'member',
       text: PROMPTS[next % PROMPTS.length] ?? PROMPTS[0] ?? '…',
       system: true,
+      senderGid: 'wave-bot',
       ts: now,
     });
     if (message) posted.push({ instanceId, message: { id: message.id, text: message.text, ts: message.ts } });

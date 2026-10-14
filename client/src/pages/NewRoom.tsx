@@ -1,8 +1,10 @@
-import { CreateRoomSheet } from '@/features/rooms';
+import { CreateRoomSheet, RoomsGate } from '@/features/rooms';
 
 /** User room creation (members only). Thin entry. */
-const NewRoom = () => {
-  return <CreateRoomSheet />;
-};
+const NewRoom = () => (
+  <RoomsGate>
+    <CreateRoomSheet />
+  </RoomsGate>
+);
 
 export default NewRoom;

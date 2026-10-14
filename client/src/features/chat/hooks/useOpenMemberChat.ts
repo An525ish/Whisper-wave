@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useMyFriendsQuery } from '@/features/chat/hooks';
+import { useMyFriendsQuery } from '.';
 import { useAuthStore } from '@/features/auth';
-import type { FriendsResponse } from '@/features/chat/types/chat';
+import type { FriendsResponse } from '../types/chat';
 import { ROUTES } from '@/shared/constants/routes';
 
 /** Navigate to the 1:1 chat with a group member (must already be friends). */

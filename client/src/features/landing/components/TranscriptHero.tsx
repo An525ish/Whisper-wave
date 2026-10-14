@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import HeroStage from '@/features/landing/components/ui/HeroStage';
-import HoloMesh from '@/features/landing/components/ui/HoloMesh';
-import FloatingStrangers from '@/features/landing/components/ui/FloatingStrangers';
-import SignalWave from '@/features/landing/components/ui/SignalWave';
+import HeroStage from './ui/HeroStage';
+import HoloMesh from './ui/HoloMesh';
+import FloatingStrangers from './ui/FloatingStrangers';
+import SignalWave from './ui/SignalWave';
 import { cn } from '@/shared/utils/cn';
 import { ROUTES } from '@/shared/constants/routes';
 

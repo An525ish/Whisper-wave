@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { defaultColor, readRoomsPersona, saveRoomsPersona, suggestSlug } from '../persona';
+import { defaultColor, mergePersona, readRoomsPersona, saveRoomsPersona, suggestSlug } from '../persona';
 import { ROOM_PERSONA_KEY } from '../../constants';
 
 describe('rooms persona', () => {
@@ -28,5 +28,20 @@ describe('rooms persona', () => {
   it('suggests URL-safe slugs with a uniqueness tail', () => {
     expect(suggestSlug('Midnight Coding!!')).toMatch(/^midnight-coding-[a-z0-9]{4}$/);
     expect(suggestSlug('')).toMatch(/^room-[a-z0-9]{4}$/);
+  });
+});
+
+describe('mergePersona', () => {
+  it('lets the Whisper alias win and keeps the rooms color', () => {
+    expect(mergePersona({ alias: 'Old', color: '#7db8ff' }, 'NightOwl')).toEqual({
+      alias: 'NightOwl',
+      color: '#7db8ff',
+    });
+  });
+
+  it('falls back to the rooms persona, or a derived color, or null', () => {
+    expect(mergePersona({ alias: 'Old', color: '#7db8ff' }, null)).toEqual({ alias: 'Old', color: '#7db8ff' });
+    expect(mergePersona(null, 'NightOwl')).toEqual({ alias: 'NightOwl', color: defaultColor('NightOwl') });
+    expect(mergePersona(null, '  ')).toBeNull();
   });
 });

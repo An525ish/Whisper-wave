@@ -1,5 +1,6 @@
+import '../styles/final-cta.css';
 import { Link } from 'react-router-dom';
-import { useScrollReveal } from '@/features/landing/hooks/useScrollReveal';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 import { ROUTES } from '@/shared/constants/routes';
 
 const FinalCTASection = () => {
@@ -37,6 +38,11 @@ const FinalCTASection = () => {
             />
           </svg>
         </Link>
+        <p className="final-cta__sub">
+          <Link to={ROUTES.home} className="underline underline-offset-4">
+            Or just look around first
+          </Link>
+        </p>
       </div>
 
       <div className="final-cta__waves" aria-hidden>

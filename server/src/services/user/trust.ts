@@ -1,4 +1,5 @@
 import * as userRepo from '../../repositories/user.js';
+import type { TrustLevel } from '../../types/room.js';
 
 /**
  * Trust ladder (HUB_PLAN §6.2): `new` → `standard` → `trusted`.
@@ -10,8 +11,6 @@ import * as userRepo from '../../repositories/user.js';
  * exists to forget. Callers that need it per message resolve it once (at
  * join) and carry it — rooms stay Mongo-free on the hot path.
  */
-export type TrustLevel = 'new' | 'standard' | 'trusted';
-
 const DAY_MS = 24 * 3_600_000;
 
 export const computeTrust = (params: {

@@ -42,6 +42,8 @@ const OFFICIAL_ROOMS = [
     lang: 'en',
     official: true as const,
     hours: null,
+    // Listening room: strict automod, and posting waits for a moderator (HUB_PLAN §9.3, R14).
+    requiresModPresence: true,
     visibility: 'official' as const,
   },
   {

@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
 import {
+  deleteReminderController,
+  listRemindersController,
+  putReminderController,
+} from '../controllers/roomReminders.js';
+import {
   createInviteController,
   createRoomController,
   deleteRoomController,
   editRoomController,
   listInvitesController,
   listRoomsController,
+  myRoomsController,
   reportRoomController,
   requestListingController,
   revokeInviteController,
@@ -38,13 +44,23 @@ const roomCreateLimiter = rateLimit({
 roomsRouter.get('/', listRoomsController);
 
 /**
+ * Members only — "remind me when it opens". Static path: registered before
+ * every `/:slug` route so `reminders` is never read as a slug.
+ */
+roomsRouter.get('/reminders', auth, listRemindersController);
+/** Members only — the caller's own rooms (private rooms are in no lobby). Static: before every `/:slug`. */
+roomsRouter.get('/mine', auth, myRoomsController);
+roomsRouter.put('/:slug/reminder', auth, validate(roomSlugParamSchema, 'params'), putReminderController);
+roomsRouter.delete('/:slug/reminder', auth, validate(roomSlugParamSchema, 'params'), deleteReminderController);
+
+/**
  * Members only — creating a public voice requires an account.
  * Unlisted until approved; creation never publishes.
  */
 roomsRouter.post('/', auth, roomCreateLimiter, validate(roomCreateSchema), createRoomController);
 
 /**
- * Hosts and mods only — title, description, rules. Official rooms are
+ * Host only — title, description, rules. Official rooms are
  * admin-edited; slug/caps/type/visibility never move here.
  */
 roomsRouter.patch(
@@ -55,7 +71,7 @@ roomsRouter.patch(
   editRoomController
 );
 
-/** Hosts and mods only — ends live instances, removes the template. */
+/** Host only — ends live instances, removes the template. */
 roomsRouter.delete('/:slug', auth, validate(roomSlugParamSchema, 'params'), deleteRoomController);
 
 /** Hosts and mods only — ask for lobby listing (unlisted rooms). */
@@ -66,9 +82,10 @@ roomsRouter.post(
   requestListingController
 );
 
-/** Public — room info + rules for the pre-join sheet. */
+/** Public — room info + rules for the pre-join sheet (hosts/mods pass without an invite via optional auth). */
 roomsRouter.get(
   '/:slug',
+  optionalAuth,
   validate(roomSlugParamSchema, 'params'),
   validate(roomInfoQuerySchema, 'query'),
   roomInfoController

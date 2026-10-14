@@ -12,3 +12,4 @@ export { default as MomentsSection } from './components/MomentsSection';
 export { default as SafetySection } from './components/SafetySection';
 export { default as SparkPassSection } from './components/SparkPassSection';
 export { default as TranscriptHero } from './components/TranscriptHero';
+export { LEGAL_CONTACT, LEGAL_RESPONSE, LEGAL_UPDATED } from './legalConstants';

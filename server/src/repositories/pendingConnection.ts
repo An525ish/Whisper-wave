@@ -58,13 +58,32 @@ export const findWaitingForUser = async (userId: string): Promise<PendingLean[]>
     .lean<PendingLean[]>();
 
 /**
- * Release this account's seat (cancel flow). The partner's side is left alone
+ * Of these sessions, the ones where this account already holds a seat (any
+ * status) — used to hide Redis claims that are already spent.
+ */
+export const findSessionIdsBoundToUser = async (
+  userId: string,
+  sessionIds: string[]
+): Promise<string[]> => {
+  if (sessionIds.length === 0) return [];
+  const id = new Types.ObjectId(userId);
+  const rows = await PendingConnection.find(
+    { sessionId: { $in: sessionIds }, $or: [{ 'sides.0.userId': id }, { 'sides.1.userId': id }] },
+    { sessionId: 1 }
+  ).lean<Array<{ sessionId: string }>>();
+  return rows.map((r) => r.sessionId);
+};
+
+/**
+ * Release this account's seat (cancel flow, `pending` rows only). The partner's side is left alone
  * to expire — they get no signal, per the neutral-copy rule.
  */
 export const unbindUser = async (sessionId: string, userId: string): Promise<boolean> => {
   const id = new Types.ObjectId(userId);
   const res = await PendingConnection.updateOne(
-    { sessionId, $or: [{ 'sides.0.userId': id }, { 'sides.1.userId': id }] },
+    // Only while still `pending`: a seat must never be nulled under a
+    // `processing` or `completed` row — that would orphan a live connection.
+    { sessionId, status: 'pending', $or: [{ 'sides.0.userId': id }, { 'sides.1.userId': id }] },
     [
       {
         $set: {

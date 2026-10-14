@@ -1,0 +1,262 @@
+/** The door scene: stage, light, crowd faces, and the compact centered state card. */
+
+/* ── Doorway: knock and enter ─────────────────────────────────────── */
+
+.rmq-page {
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #100c1a 0%, #1a1520 55%, #211a2a 100%);
+  padding: 1.25rem;
+}
+
+.rmq-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.7;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 8%, rgba(255, 255, 255, 0.8), transparent 100%),
+    radial-gradient(1px 1px at 28% 18%, rgba(255, 255, 255, 0.5), transparent 100%),
+    radial-gradient(1.5px 1.5px at 44% 6%, rgba(182, 164, 255, 0.8), transparent 100%),
+    radial-gradient(1px 1px at 61% 14%, rgba(255, 255, 255, 0.5), transparent 100%),
+    radial-gradient(2px 2px at 76% 7%, rgba(255, 255, 255, 0.7), transparent 100%),
+    radial-gradient(1px 1px at 88% 20%, rgba(53, 224, 200, 0.7), transparent 100%),
+    radial-gradient(1px 1px at 8% 26%, rgba(255, 255, 255, 0.4), transparent 100%),
+    radial-gradient(1.5px 1.5px at 94% 30%, rgba(255, 255, 255, 0.5), transparent 100%);
+}
+
+.rmq-moon {
+  position: absolute;
+  top: -3rem;
+  right: -3rem;
+  width: 11rem;
+  height: 11rem;
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(182, 164, 255, 0.35), transparent 65%);
+  filter: blur(6px);
+}
+
+.rmq-wrap {
+  position: relative;
+  display: grid;
+  width: 100%;
+  max-width: 56rem;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(20, 14, 32, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 40px 90px -28px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@media (min-width: 768px) {
+  .rmq-wrap {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+}
+
+.rmq-back {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 3;
+}
+
+/* The door scene: full-bleed art with the room laid over it. */
+.rmq-scene {
+  position: relative;
+  min-height: 12rem;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .rmq-scene {
+    min-height: 100%;
+  }
+}
+
+.rmq-scene > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.rmq-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 30%, rgba(10, 6, 16, 0.55) 62%, rgba(10, 6, 16, 0.92) 100%);
+}
+
+.rmq-stageinfo {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  padding: 0.85rem 1.1rem 1rem;
+}
+
+.rmq-stageinfo .rm-jointitle {
+  margin-top: 0.5rem;
+  font-size: clamp(1.5rem, 3.6vw, 2rem);
+}
+
+.rmq-stageinfo .rm-joindesc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.85rem;
+}
+
+.rmq-stageinfo .rm-joinpills {
+  margin-top: 0.6rem;
+}
+
+.rmq-crowd {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+}
+
+.rmq-quiet {
+  margin: 0 0 0.55rem;
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px dashed rgba(235, 236, 236, 0.22);
+  padding: 0.3rem 0.85rem;
+  font-size: 0.74rem;
+  color: var(--color-body-300);
+}
+
+/* Compact centered card for loading / missing / closed states. */
+.rmq-state {
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015) 45%),
+    linear-gradient(165deg, rgba(42, 33, 56, 0.96), rgba(26, 20, 36, 0.98));
+  box-shadow:
+    0 32px 70px -24px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 1.75rem 1.5rem;
+}
+
+/* The action side: rules, persona, knock. */
+.rmq-side {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.85rem;
+  background: rgba(13, 9, 18, 0.55);
+  padding: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .rmq-side {
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1.5rem 1.5rem 1.5rem 1.35rem;
+  }
+}
+
+.rmq-door {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+
+.rmq-open .rmq-door {
+  transform: skewY(-4deg) translateX(-3px);
+}
+
+.rmq-light {
+  opacity: 0.8;
+  transition: opacity 0.6s ease;
+}
+
+.rmq-open .rmq-light {
+  opacity: 1;
+}
+
+.rmq-bubble {
+  animation: rmq-bob 5s ease-in-out infinite;
+}
+
+@keyframes rmq-bob {
+  0%, 100% { transform: translateY(0); opacity: 0.85; }
+  50% { transform: translateY(-9px); opacity: 1; }
+}
+
+.rmq-flicker {
+  animation: rmq-flicker 4s ease-in-out infinite;
+}
+
+@keyframes rmq-flicker {
+  0%, 100% { opacity: 0.75; }
+  40% { opacity: 0.95; }
+  60% { opacity: 0.8; }
+  80% { opacity: 1; }
+}
+
+/* Who's already inside: faceless dots + the count. */
+
+.rmq-faces {
+  display: flex;
+  align-items: center;
+}
+
+.rmq-face {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin-left: -0.5rem;
+  border-radius: 999px;
+  border: 2px solid #241c33;
+  background-clip: padding-box;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.rmq-face:first-child {
+  margin-left: 0;
+}
+
+.rmq-face:nth-child(4n+1) { background: linear-gradient(150deg, #4b3680, #221639); }
+.rmq-face:nth-child(4n+2) { background: linear-gradient(150deg, #175048, #0d211d); }
+.rmq-face:nth-child(4n+3) { background: linear-gradient(150deg, #1a5c3a, #0e241b); }
+.rmq-face:nth-child(4n) { background: linear-gradient(150deg, #31487a, #141c30); }
+
+.rmq-crowd p {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-green);
+}
+
+.rmq-state--center {
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rmq-bubble,
+  .rmq-flicker {
+    animation: none !important;
+  }
+
+  .rmq-door,
+  .rmq-light {
+    transition: none;
+  }
+}

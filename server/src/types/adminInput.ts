@@ -9,6 +9,7 @@ import type {
   adminLoginSchema,
   adminMessagesQuerySchema,
   adminRemoveMemberParamSchema,
+  adminReportActionSchema,
   adminReportReviewSchema,
   adminReportsQuerySchema,
   adminUsersQuerySchema,
@@ -33,6 +34,7 @@ export type AdminImpersonationLogsQuery = z.infer<typeof adminImpersonationLogsQ
 export type AdminDeleteAttachmentsBody = z.infer<typeof adminDeleteAttachmentsSchema>;
 export type AdminReportsQuery = z.infer<typeof adminReportsQuerySchema>;
 export type AdminReportReviewBody = z.infer<typeof adminReportReviewSchema>;
+export type AdminReportActionBody = z.infer<typeof adminReportActionSchema>;
 export type AdminRoomUpsertBody = z.infer<typeof adminRoomUpsertSchema>;
 export type AdminRoomBanBody = z.infer<typeof adminRoomBanSchema>;
 export type AdminFeatureFlagBody = z.infer<typeof adminFeatureFlagSchema>;

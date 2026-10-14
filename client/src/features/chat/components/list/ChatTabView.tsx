@@ -5,16 +5,16 @@ import { SOCKET_EVENTS } from '@/shared/constants/socket';
 import {
   useMyChatsQuery,
   useGetMyNotificationsQuery,
-} from '@/features/chat/hooks';
-import ChatList from '@/features/chat/components/list/ChatList';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+} from '../../hooks';
+import ChatList from './ChatList';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNotificationsStore } from '@/features/notifications';
 import GridAllIcon from '@/shared/components/ui/icons/GridAll';
 import ChatIcon from '@/shared/components/ui/icons/Chat';
 import MembersIcon from '@/shared/components/ui/icons/Members';
-import type { ChatsResponse, NewMessagePayload, ChatReadPayload } from '@/features/chat/types/chat';
+import type { ChatRow, ChatsResponse, NewMessagePayload, ChatReadPayload } from '../../types/chat';
 import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/features/chat/hooks';
+import { queryKeys } from '../../hooks';
 import { useAuthStore } from '@/features/auth';
 
 const tabsData = [
@@ -23,12 +23,12 @@ const tabsData = [
   { id: 'group',    name: 'Groups',     icon: <MembersIcon className="h-5 w-5" /> },
 ];
 
-type ChatTabViewProps = {
+type Props = {
   searchText: string;
 };
 
-const ChatTabView = ({ searchText }: ChatTabViewProps) => {
-  const { data: chats, isLoading } = useMyChatsQuery();
+const ChatTabView = ({ searchText }: Props) => {
+  const { data: chats, isLoading, dataUpdatedAt } = useMyChatsQuery();
   const { data: notificationsData } = useGetMyNotificationsQuery();
   const syncMessageNotificationsFromServer = useNotificationsStore(
     (s) => s.syncMessageNotificationsFromServer,
@@ -37,41 +37,42 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
     (s) => s.syncRequestNotificationsFromServer,
   );
 
-  // Stable insert-time map: records when each chatId was first seen this session.
-  // New empty chats (from accepted requests) get Date.now() so they sort to top.
-  // Once a real lastMessage arrives its createdAt takes over naturally.
-  const seenChatIdsRef = useRef<Set<string>>(new Set());
-  const initialLoadDoneRef = useRef(false);
-  const [chatInsertTimes, setChatInsertTimes] = useState<Record<string, number>>({});
   const socket = useSocket();
   const queryClient = useQueryClient();
   const userId = useAuthStore((s) => s.user?._id);
 
-  const chatsData = (chats as ChatsResponse | undefined)?.data;
+  const chatsData = chats?.data;
 
-  // Track insert time for every chatId we see. Empty chats (no lastMessage) that
-  // appear for the first time get Date.now() so they sort to top exactly once —
-  // subsequent message activity naturally overtakes the insert time.
-  useEffect(() => {
-    if (!chatsData) return;
-    const isInitialLoad = !initialLoadDoneRef.current;
-    initialLoadDoneRef.current = true;
-
-    const newEntries: Record<string, number> = {};
-    for (const chat of chatsData) {
-      if (!seenChatIdsRef.current.has(chat._id)) {
-        seenChatIdsRef.current.add(chat._id);
-        newEntries[chat._id] = chat.lastMessage?.createdAt
-          ? Date.parse(chat.lastMessage.createdAt)
-          : isInitialLoad
-            ? (chat.createdAt ? Date.parse(chat.createdAt) : 0)
-            : Date.now();
-      }
-    }
-    if (Object.keys(newEntries).length > 0) {
-      setChatInsertTimes((prev) => ({ ...prev, ...newEntries }));
-    }
-  }, [chatsData]);
+  // Stable insert-time map: records when each chatId was first seen this session.
+  // New empty chats (from accepted requests) get the fetch time so they sort to top
+  // exactly once; once a real lastMessage arrives its createdAt takes over naturally.
+  // Derived during render from the previous snapshot (no effect, no refs).
+  const [tracked, setTracked] = useState<{
+    source: ChatRow[] | undefined;
+    times: Record<string, number>;
+  }>({ source: undefined, times: {} });
+  if (chatsData && chatsData !== tracked.source) {
+    const isInitialLoad = tracked.source === undefined;
+    const fresh = chatsData.filter((chat) => !(chat._id in tracked.times));
+    const times =
+      fresh.length === 0
+        ? tracked.times
+        : {
+            ...tracked.times,
+            ...Object.fromEntries(
+              fresh.map((chat) => [
+                chat._id,
+                chat.lastMessage?.createdAt
+                  ? Date.parse(chat.lastMessage.createdAt)
+                  : isInitialLoad
+                    ? (chat.createdAt ? Date.parse(chat.createdAt) : 0)
+                    : dataUpdatedAt,
+              ]),
+            ),
+          };
+    setTracked({ source: chatsData, times });
+  }
+  const chatInsertTimes = tracked.times;
 
   useEffect(() => {
     if (!chatsData) return;
@@ -84,7 +85,7 @@ const ChatTabView = ({ searchText }: ChatTabViewProps) => {
   }, [chatsData, syncMessageNotificationsFromServer]);
 
   useEffect(() => {
-    const count = (notificationsData as { data?: unknown[] } | undefined)?.data?.length ?? 0;
+    const count = notificationsData?.data?.length ?? 0;
     syncRequestNotificationsFromServer(count);
   }, [notificationsData, syncRequestNotificationsFromServer]);
 

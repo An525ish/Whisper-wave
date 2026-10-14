@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { useAuthStore } from '@/features/auth';
 import { useRoomsList } from '@/features/rooms';
+import { publicHeadcount } from '@/shared/utils/format';
 import { formatHour, nowMinutesIn, tzShort } from '../utils/tide';
 
 const ART_VARIANTS = 4;
@@ -55,7 +56,9 @@ const HomeTide = () => {
   }
 
   const openCount = rooms.filter((room) => room.open).length;
-  const onlineCount = rooms.reduce((sum, room) => sum + (room.open ? room.totalOnline : 0), 0);
+  const onlineCount = publicHeadcount(
+    rooms.reduce((sum, room) => sum + (room.open ? room.totalOnline : 0), 0)
+  );
   const timeLabel = formatHour(
     `${String(Math.floor(nowMin / 60)).padStart(2, '0')}:${String(nowMin % 60).padStart(2, '0')}`
   );
@@ -67,7 +70,7 @@ const HomeTide = () => {
           <p className="hw-hud flex items-center gap-2 text-body-300">
             <span
               aria-hidden
-              className={`h-1.5 w-1.5 rounded-full ${onlineCount > 0 ? 'bg-green hw-live-dot' : 'bg-white/30'}`}
+              className={`h-1.5 w-1.5 rounded-full ${onlineCount !== null ? 'bg-green hw-live-dot' : 'bg-white/30'}`}
             />
             tonight · {timeLabel} IST
           </p>
@@ -80,7 +83,7 @@ const HomeTide = () => {
                   {openCount} {openCount === 1 ? 'room open' : 'rooms open'}
                 </span>
                 {' · '}
-                {onlineCount > 0 ? (
+                {onlineCount !== null ? (
                   <span className="font-semibold text-green">
                     {onlineCount} {onlineCount === 1 ? 'person inside' : 'people inside'}
                   </span>
@@ -101,11 +104,12 @@ const HomeTide = () => {
 
       <ul className="flex flex-col gap-2.5" aria-label="Rooms open tonight">
         {rooms.map((room, index) => {
-          const live = room.open && room.totalOnline > 0;
+          const roomCount = publicHeadcount(room.totalOnline);
+          const live = room.open && roomCount !== null;
           const status = !room.open
             ? `Opens ${room.hours ? formatHour(room.hours.start) : 'later'}`
             : live
-              ? `${room.totalOnline} inside`
+              ? `${roomCount} inside`
               : 'Quiet now';
           const label = `${room.title}, ${status}, ${room.description}${
             room.hours
@@ -139,7 +143,7 @@ const HomeTide = () => {
                     {live ? (
                       <span className="hw-roomstatus hw-roomstatus--live">
                         <span aria-hidden className="hw-roomstatus__dot" />
-                        {room.totalOnline} inside
+                        {roomCount} inside
                       </span>
                     ) : room.open ? (
                       <span className="hw-roomstatus">

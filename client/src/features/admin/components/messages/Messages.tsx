@@ -1,10 +1,10 @@
 import ConfirmationModal from '@/shared/components/ui/modal/confirmation-modal/ConfirmationModal';
-import { useMessagesPage } from '@/features/admin/hooks';
+import { useMessagesPage } from '../../hooks';
 import {
   messagesEmptyDescription,
   messagesMatchesLabel,
   messagesMatchesValue,
-} from '@/features/admin/utils/messages';
+} from '../../utils/messages';
 import MessagesFeed from './feed/MessagesFeed';
 import MessagesFeedHeader from './feed/MessagesFeedHeader';
 import StatusFilterTabs from './feed/StatusFilterTabs';

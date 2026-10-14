@@ -5,10 +5,10 @@ import WaveIcon from '@/shared/components/ui/icons/Wave';
 import { Link } from 'react-router-dom';
 import { getFirstName, formatChatTime } from '@/shared/utils/helpers';
 import CountBadge from '@/shared/components/ui/CountBadge';
-import type { ChatLastMessage } from '@/features/chat/types/chat';
+import type { ChatLastMessage } from '../../types/chat';
 import { ROUTES } from '@/shared/constants/routes';
 
-type ChatListItemProps = {
+type Props = {
   avatar?: string[];
   name: string;
   id: string;
@@ -35,7 +35,7 @@ const ChatListItem = ({
   unreadCount = 0,
   currentUserId,
   origin,
-}: ChatListItemProps) => {
+}: Props) => {
   const hasUnread = unreadCount > 0;
   const senderId = lastMessage?.sender?._id
     ? String(lastMessage.sender._id)

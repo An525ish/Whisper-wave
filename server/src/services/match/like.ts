@@ -5,7 +5,7 @@ import { saveClaim } from './claim.js';
 import { issueConnectToken } from './connectToken.js';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
-import type { ConnectTokenPayload, LikeResult } from '../../types/match.js';
+import type { ConnectTokenPayload, LikeResult, VibeTag } from '../../types/match.js';
 
 /**
  * Mutual-like token pairs a single session may mint. A re-like after the mutual
@@ -66,24 +66,23 @@ export const recordLike = async (
 
   // The tab-closing fix: a claim per seat, so a mutual vibe survives even if
   // the tab (and its sessionStorage token) is gone. Best-effort — the mutual
-  // itself already happened; a failed write only loses the shortcut.
+  // itself already happened; a failed write only loses the shortcut (logged).
   const createdAt = Date.now();
-  void Promise.all([
-    saveClaim(session.anon1, {
-      sessionId,
-      seat: 0,
-      originNames: [names[0], names[1]],
-      originTags: [tags[0], tags[1]],
-      createdAt,
-    }),
-    saveClaim(session.anon2, {
-      sessionId,
-      seat: 1,
-      originNames: [names[0], names[1]],
-      originTags: [tags[0], tags[1]],
-      createdAt,
-    }),
-  ]).catch((err: unknown) => logger.warn({ err, sessionId }, 'Failed to save mutual-like claims'));
+  const claimFor = (seat: 0 | 1) => ({
+    sessionId,
+    seat,
+    originNames: [names[0], names[1]] as [string, string],
+    originTags: [tags[0], tags[1]] as [VibeTag[], VibeTag[]],
+    createdAt,
+  });
+  try {
+    await Promise.all([
+      saveClaim(session.anon1, claimFor(0)),
+      saveClaim(session.anon2, claimFor(1)),
+    ]);
+  } catch (err) {
+    logger.warn({ err, sessionId }, 'Failed to save mutual-like claims');
+  }
 
   // No anonIds in a token: it is handed to the client and a JWT payload is
   // readable. `side` is the holder's seat; the server resolves ids from the session.

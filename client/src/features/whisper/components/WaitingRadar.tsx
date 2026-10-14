@@ -4,11 +4,9 @@ import { RADAR_BLIP_SLOTS } from '../constants';
 import {
   arrangeFloatSpots,
   buildRadarFloatItems,
-  type RadarFloatItem,
-  type RadarFloatSpot,
 } from '../utils/radarFloat';
 import AnonFigure from './AnonFigure';
-import type { VibeTag } from '../types';
+import type { FloatLayout, VibeTag } from '../types';
 import type { CSSProperties } from 'react';
 import './waitingRadar.css';
 
@@ -19,8 +17,6 @@ type Props = {
   /** Nobody else is here: the radar keeps scanning but stays honest and calm. */
   quiet: boolean;
 };
-
-type FloatLayout = { items: RadarFloatItem[]; spots: RadarFloatSpot[] };
 
 function buildLayout(vibeTags: VibeTag[]): FloatLayout {
   const items = buildRadarFloatItems(vibeTags);

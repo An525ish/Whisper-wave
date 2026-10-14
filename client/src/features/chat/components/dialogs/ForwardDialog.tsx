@@ -7,13 +7,12 @@ import CheckboxIcon from '@/shared/components/ui/icons/Checkbox';
 import ChatIcon from '@/shared/components/ui/icons/Chat';
 import MembersIcon from '@/shared/components/ui/icons/Members';
 import ForwardIcon from '@/shared/components/ui/icons/Forward';
-import { useMyChatsQuery } from '@/features/chat/hooks';
+import { useMyChatsQuery } from '../../hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { ChatsResponse } from '@/features/chat/types/chat';
 import { useDragToClose } from '@/shared/hooks';
 
-type ForwardDialogProps = {
+type Props = {
   open: boolean;
   sourceChatId: string;
   messageIds: string[];
@@ -36,13 +35,13 @@ const ForwardDialog = ({
   onClose,
   onForward,
   isForwarding = false,
-}: ForwardDialogProps) => {
+}: Props) => {
   const [searchText, setSearchText] = useState('');
   const [selectedChatIds, setSelectedChatIds] = useState<string[]>([]);
   const [entered, setEntered] = useState(false);
   const { sheetRef, handleRef, dragHandlers } = useDragToClose({ onClose });
   const { data, isLoading } = useMyChatsQuery();
-  const chats = ((data as ChatsResponse | undefined)?.data ?? []).filter(
+  const chats = (data?.data ?? []).filter(
     (chat) => chat._id !== sourceChatId,
   );
 
@@ -53,14 +52,14 @@ const ForwardDialog = ({
   }, [chats, searchText]);
 
   useEffect(() => {
-    if (!open) {
+    if (!open) return;
+    const id = requestAnimationFrame(() => setEntered(true));
+    return () => {
+      cancelAnimationFrame(id);
       setSearchText('');
       setSelectedChatIds([]);
       setEntered(false);
-      return;
-    }
-    const id = requestAnimationFrame(() => setEntered(true));
-    return () => cancelAnimationFrame(id);
+    };
   }, [open]);
 
   useEffect(() => {

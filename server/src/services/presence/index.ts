@@ -2,6 +2,7 @@ import type { Server } from 'socket.io';
 import { chatRoom } from '../../utils/helper.js';
 import type { JoinedChat, RealtimeNotify } from '../../types/chat.js';
 import * as chatRepo from '../../repositories/chat.js';
+import { sendPushIntents } from '../push/index.js';
 
 /**
  * Presence for the signed-in app — an in-process registry of the sockets THIS
@@ -125,6 +126,7 @@ export const flushNotifications = (
   io: Server | undefined,
   notifications: RealtimeNotify[]
 ): void => {
+  sendPushIntents(notifications, isUserOnline);
   if (!io) return;
 
   for (const { event, chatId, members, excludeUserId, data } of notifications) {

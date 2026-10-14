@@ -3,23 +3,16 @@ import toast from 'react-hot-toast';
 import type { Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { SOCKET_EVENTS } from '@/shared/constants/socket';
-import { useSendGifMutation } from '@/features/chat/hooks/useGifHooks';
-import { queryKeys } from '@/features/chat/hooks/queryKeys';
-import { useAttachmentUpload } from '@/features/chat/hooks/useAttachmentUpload';
-import { buildReplySnapshot } from '@/features/chat/utils/chat';
+import { useSendGifMutation } from './useGifHooks';
+import { queryKeys } from './queryKeys';
+import { useAttachmentUpload } from './useAttachmentUpload';
+import { buildReplySnapshot } from '../utils/chat';
 import { isValidMessageId } from '@/shared/utils/helpers';
 import type { Avatar, User } from '@/shared/types';
-import type { ChatMessage } from '@/features/chat/types/chat';
+import type { ChatMessage } from '../types/chat';
+import type { GifSelection, ImageQuality } from '../types/local';
 
-export type GifSelection = {
-  url: string;
-  id: string;
-  title: string;
-  mimeType?: string;
-  kind?: 'gif' | 'meme';
-};
-
-type UseConversationSendParams = {
+interface Params {
   chatId?: string;
   user: User | null;
   socket: Socket;
@@ -29,8 +22,8 @@ type UseConversationSendParams = {
   setMessage: Dispatch<SetStateAction<string>>;
   attachments: File[];
   setAttachments: Dispatch<SetStateAction<File[]>>;
-  imageQuality: 'standard' | 'hd';
-  setImageQuality: Dispatch<SetStateAction<'standard' | 'hd'>>;
+  imageQuality: ImageQuality;
+  setImageQuality: Dispatch<SetStateAction<ImageQuality>>;
   editingMessageId: string | null;
   saveEdit: () => Promise<unknown>;
   replyingTo: ChatMessage | null;
@@ -45,7 +38,7 @@ type UseConversationSendParams = {
   emitStopTyping: () => void;
   setLiveMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   scrollToBottom: (instant?: boolean) => void;
-};
+}
 
 /**
  * Owns the conversation composer's outbound flows — typing signalling, text +
@@ -60,7 +53,7 @@ export const useConversationSend = ({
   isEditing, isTyping, clearTypingState,
   isTypingRef, timeoutRef, setIsTyping, emitStartTyping, emitStopTyping,
   setLiveMessages, scrollToBottom,
-}: UseConversationSendParams) => {
+}: Params) => {
   const queryClient = useQueryClient();
   const attachmentUpload = useAttachmentUpload();
   const { mutate: sendGifMutation } = useSendGifMutation();

@@ -1,6 +1,6 @@
 import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft';
 
-type CollapseButtonProps = {
+type Props = {
   expanded: boolean;
   onClick: () => void;
   className?: string;
@@ -13,7 +13,7 @@ const CollapseButton = ({
   expanded,
   onClick,
   className = '',
-}: CollapseButtonProps) => (
+}: Props) => (
   <button
     type="button"
     onClick={onClick}

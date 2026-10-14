@@ -1,6 +1,7 @@
 import { api } from '@/shared/lib/api/client';
+import type { ChatsResponse, NotificationsResponse } from '../types/chat';
 
-export const getMyChats = () => api.get('/chat/get-my-chats');
+export const getMyChats = () => api.get<ChatsResponse>('/chat/get-my-chats');
 
 export const getChatDetails = (params: { id: string; populate?: boolean }) =>
   api.get('/chat/get-chat-details', {
@@ -61,7 +62,7 @@ export const searchUser = (name: string) =>
   api.get('/user/search-user', { name });
 
 export const getMyNotifications = () =>
-  api.get('/friend-request/get-notifications');
+  api.get<NotificationsResponse>('/friend-request/get-notifications');
 
 export const getMedia = (chatId: string) =>
   api.get(`/chat/get-media/${chatId}`);

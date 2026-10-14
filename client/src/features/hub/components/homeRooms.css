@@ -1,0 +1,197 @@
+/**
+ * Hub home (`hw-*`) — room cards and live dot.
+ * Motion contract: everything decorative freezes under `prefers-reduced-motion`,
+ * and entrance states end visible.
+ */
+
+/* ── Room cards: art tile, words, status, hours, doorway ──────────── */
+
+.hw-roomcard {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.85rem 0.9rem 0.85rem 0.85rem;
+  transition: transform 0.22s ease, border-color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+}
+
+.hw-roomcard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(1, 195, 109, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 18px 44px -20px rgba(0, 0, 0, 0.8);
+}
+
+.hw-roomcard--live {
+  border-color: rgba(1, 195, 109, 0.3);
+  background:
+    linear-gradient(180deg, rgba(1, 195, 109, 0.07), rgba(1, 195, 109, 0.015)),
+    rgba(255, 255, 255, 0.025);
+}
+
+.hw-roomcard--live:hover {
+  border-color: rgba(1, 195, 109, 0.55);
+  box-shadow:
+    0 18px 44px -20px rgba(0, 0, 0, 0.8),
+    0 12px 36px -18px rgba(1, 195, 109, 0.5);
+}
+
+.hw-roomcard--closed {
+  opacity: 0.62;
+}
+
+.hw-roomcard--closed:hover {
+  transform: none;
+}
+
+/** Art tile: deterministic gradient + initial letter per room. */
+.hw-roomart {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  background-clip: padding-box;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.09),
+    0 10px 24px -10px rgba(0, 0, 0, 0.8);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.hw-roomart--0 {
+  background:
+    linear-gradient(150deg, #4b3680, #221639);
+}
+
+.hw-roomart--1 {
+  background:
+    linear-gradient(150deg, #175048, #0d211d);
+}
+
+.hw-roomart--2 {
+  background:
+    linear-gradient(150deg, #1a5c3a, #0e241b);
+}
+
+.hw-roomart--3 {
+  background:
+    linear-gradient(150deg, #31487a, #141c30);
+}
+
+.hw-roomart__pulse {
+  position: absolute;
+  right: 0.4rem;
+  top: 0.4rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-green);
+  box-shadow: 0 0 8px rgba(1, 195, 109, 0.9);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+/** Status pill inside a room card. */
+.hw-roomstatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.18rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-body-300);
+}
+
+.hw-roomstatus__dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.hw-roomstatus--live {
+  border-color: rgba(1, 195, 109, 0.45);
+  background: rgba(1, 195, 109, 0.12);
+  color: var(--color-green);
+}
+
+.hw-roomstatus--live .hw-roomstatus__dot {
+  background: var(--color-green);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+.hw-roomstatus--closed {
+  border-style: dashed;
+  background: transparent;
+}
+
+/** Hours chip: only scheduled rooms carry one. */
+.hw-roomhours {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-family: var(--font-hw-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--color-body-300);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/** Doorway arrow: always visible for touch, lifts on hover. */
+.hw-roomcard__arrow {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-body-300);
+  font-size: 0.95rem;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.group:hover .hw-roomcard__arrow {
+  background: var(--color-green);
+  border-color: var(--color-green);
+  color: #06130d;
+  transform: translateX(2px);
+}
+
+/** Live dot with halo. */
+.hw-live-dot {
+  box-shadow: 0 0 6px #01c36d;
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+@keyframes hw-blink-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-live-dot,
+  .hw-roomart__pulse,
+  .hw-roomstatus__dot {
+    animation: none !important;
+  }
+}

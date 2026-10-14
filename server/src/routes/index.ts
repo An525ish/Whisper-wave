@@ -1,5 +1,5 @@
 import type { Express } from 'express';
-import { apiLimiter, ensureGid } from '../middlewares/index.js';
+import { apiLimiter, ensureGid, requireFeature } from '../middlewares/index.js';
 import { adminRouter } from './admin.js';
 import { authRouter } from './auth.js';
 import { chatRouter } from './chat.js';
@@ -12,6 +12,7 @@ import { memesRouter } from './memes.js';
 import { messageRouter } from './message.js';
 import { roomsRouter } from './rooms.js';
 import { friendRequestRouter } from './request.js';
+import { pushRouter } from './push.js';
 import { reportRouter } from './report.js';
 import { uploadRouter } from './upload.js';
 import { userRouter } from './user.js';
@@ -30,6 +31,7 @@ export const registerRoutes = (app: Express): void => {
   app.use('/api/upload', uploadRouter);
   app.use('/api/gif', gifRouter);
   app.use('/api/hub', hubRouter);
+  app.use('/api/push', pushRouter);
   app.use('/api/link-preview', linkPreviewRouter);
   app.use('/api/friend-request', friendRequestRouter);
   // Phase 2 — anonymous matchmaking
@@ -37,7 +39,7 @@ export const registerRoutes = (app: Express): void => {
   app.use('/api/connection', connectionRouter);
   app.use('/api/report', reportRouter);
   // Hub Phase 2 — laughs feed (provider jokes + generated images)
-  app.use('/api/memes', memesRouter);
+  app.use('/api/memes', requireFeature('memes'), memesRouter);
   // Hub Phase 3 — topic rooms (behind FEATURE_ROOMS on the client)
-  app.use('/api/rooms', roomsRouter);
+  app.use('/api/rooms', requireFeature('rooms'), roomsRouter);
 };

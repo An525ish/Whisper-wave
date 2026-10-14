@@ -1,29 +1,8 @@
 /**
- * Rooms domain constants.
- *
- * Socket names mirror `server/src/constants/room-events.ts` exactly (existing
- * convention — the server file is the source of truth for the wire contract).
+ * Rooms domain constants. Socket event names live in `shared/constants/socket.ts`
+ * (`ROOM_SOCKET`); numeric limits mirror the server's room validators.
  */
-
-/** Client → server. */
-export const ROOM_OUT = {
-  JOIN: 'ROOM_JOIN',
-  LEAVE: 'ROOM_LEAVE',
-  MESSAGE: 'ROOM_MESSAGE',
-  REACT: 'ROOM_REACT',
-  MOD: 'ROOM_MOD',
-} as const;
-
-/** Server → client. */
-export const ROOM_IN = {
-  STATE: 'ROOM_STATE',
-  MESSAGE: 'ROOM_MESSAGE',
-  PRESENCE: 'ROOM_PRESENCE',
-  REACTION: 'ROOM_REACTION',
-  MOD_ACTION: 'ROOM_MOD_ACTION',
-  CLOSED: 'ROOM_CLOSED',
-  ERROR: 'ROOM_ERROR',
-} as const;
+import type { RoomAckCode, RoomEndKind, RoomsFilter } from './types';
 
 /** Analytics event names (emitted via `shared/lib/analytics` `track`). */
 export const ROOM_EVENTS = {
@@ -36,7 +15,10 @@ export const ROOM_EVENTS = {
   MOD_ACTION: 'room_mod_action',
 } as const;
 
-/** Curated reactions — mirrors `server/src/constants/room-reactions.ts`. */
+/**
+ * Curated reactions: KEY → glyph. The server accepts only these keys
+ * (`server/src/constants/room-reactions.ts`), so the wire always carries the key.
+ */
 export const ROOM_REACTION_GLYPHS = {
   heart: '❤️',
   laugh: '😂',
@@ -46,13 +28,21 @@ export const ROOM_REACTION_GLYPHS = {
   clap: '👏',
 } as const;
 
-export type RoomReactionGlyph = keyof typeof ROOM_REACTION_GLYPHS;
-
 /** Persona color choices for the pre-join sheet (server accepts any hex). */
-export const ROOM_ALIAS_COLORS = [
-  '#7dffb8', '#7db8ff', '#ff7db8', '#ffd47d',
-  '#b87dff', '#7dffe3', '#ff9d7d', '#d4ff7d',
+export const ROOM_ALIAS_SWATCHES = [
+  { hex: '#7dffb8', name: 'Mint' },
+  { hex: '#7db8ff', name: 'Sky' },
+  { hex: '#ff7db8', name: 'Rose' },
+  { hex: '#ffd47d', name: 'Amber' },
+  { hex: '#b87dff', name: 'Violet' },
+  { hex: '#7dffe3', name: 'Aqua' },
+  { hex: '#ff9d7d', name: 'Coral' },
+  { hex: '#d4ff7d', name: 'Lime' },
 ] as const;
+
+export const ROOM_ALIAS_COLORS: readonly string[] = ROOM_ALIAS_SWATCHES.map((s) => s.hex);
+
+export const ROOM_DEFAULT_COLOR = ROOM_ALIAS_SWATCHES[0].hex;
 
 /** localStorage key for the rooms persona (alias + color). */
 export const ROOM_PERSONA_KEY = 'rooms:persona';
@@ -64,22 +54,182 @@ export const ROOM_RULE_SUGGESTIONS = [
   '18+ only.',
 ] as const;
 
-/** Failure copy per ack/error code — vague by design, never accusatory. */
-export const ROOM_FAIL_COPY: Record<string, string> = {
-  not_found: 'Room not found.',
-  closed: 'This room is closed right now — check back later.',
-  banned: 'You are banned from this room.',
-  not_joined: 'Join the room first.',
-  rate_limited: 'Too many messages — slow down a little.',
-  slow_mode: 'Slow down a little.',
-  muted: 'You are muted in this room for now.',
+/** Field and payload limits — mirror `server/src/validators/rooms.ts`. */
+export const ROOM_LIMITS = {
+  MESSAGE_MAX: 1000,
+  ALIAS_MAX: 24,
+  TITLE_MAX: 60,
+  SLUG_MAX: 40,
+  DESCRIPTION_MAX: 280,
+  RULE_MAX: 140,
+  CREATE_RULES_MAX: 6,
+  EDIT_RULES_MAX: 10,
+  REPORT_DETAILS_MAX: 500,
+  CHALLENGE_ANSWER_MAX: 12,
+} as const;
+
+/** Messages the store keeps — mirrors the server ring (`ROOM_MSG_RING`). */
+export const ROOM_THREAD_CAP = 100;
+
+export const ROOM_DEFAULT_LANG = 'en';
+
+/** Same author within this window shares one avatar/name head. */
+export const ROOM_GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+/** Quoted-reply and composer reply previews are cut here. */
+export const ROOM_PREVIEW_MAX = 60;
+
+/** Within this many px of the bottom the thread keeps following new messages. */
+export const ROOM_STICK_THRESHOLD_PX = 120;
+
+/** A mod-menu "Mute" lasts this long (server default 10). */
+export const ROOM_MUTE_MINUTES = 10;
+
+/** Mod-menu "Slow mode" window. */
+export const ROOM_SLOW_MODE_MS = 5000;
+
+/** Invite links stay valid this long (server-side). */
+export const ROOM_INVITE_DAYS = 7;
+
+/** Private-room limits — mirror `server/src/constants/rooms.ts` (server enforces; this is copy and form bounds). */
+export const ROOM_PRIVATE = {
+  MAX_PEOPLE: 25,
+  MAX_PER_USER: 3,
+  INVITE_MAX_USES: 25,
+  INVITE_DEFAULT_USES: 10,
+  INVITE_MAX_DAYS: 30,
+  INVITE_DEFAULT_DAYS: 7,
+} as const;
+
+/** Create-sheet copy for the two-way choice and its unavailable states. */
+export const ROOM_VISIBILITY_COPY = {
+  public: {
+    title: 'Public (request listing)',
+    sub: 'Anyone with the link can join, guests included. Ask the Wave team to list it in the lobby.',
+  },
+  private: {
+    title: `Private — invite-only, up to ${ROOM_PRIVATE.MAX_PEOPLE} people, members only`,
+    sub: 'Only signed-in people holding your invite link get in. Never in the lobby, never searchable. Deleted after 30 quiet days.',
+  },
+  flag_off: 'Private rooms are switched off right now.',
+  not_entitled: 'Private rooms open up once your account has been around for a week with a clean record.',
+  limit: `You already host ${ROOM_PRIVATE.MAX_PER_USER} private rooms — delete one to make another.`,
+} as const;
+
+/** Lobby poll + freshness windows. */
+export const ROOM_LIST_STALE_MS = 10_000;
+export const ROOM_LIST_POLL_MS = 20_000;
+export const ROOM_INFO_STALE_MS = 30_000;
+export const ROOM_INVITES_STALE_MS = 30_000;
+
+/** How often the composer's slow-mode / mute countdown re-reads the clock. */
+export const ROOM_COUNTDOWN_TICK_MS = 500;
+
+/** Longest wait before an unanswered emit is treated as failed. */
+export const ROOM_ACK_TIMEOUT_MS = 10_000;
+
+
+/** Local-only notice author (kick notices). Never sent by the server. */
+export const ROOM_NOTICE_FROM = { alias: 'Wave', color: '#8b6bff', role: 'member' } as const;
+
+export const ROOM_FILTERS: Array<{ id: RoomsFilter; label: string }> = [
+  { id: 'all', label: 'All rooms' },
+  { id: 'open', label: 'Open now' },
+  { id: 'live', label: 'With people' },
+  { id: 'later', label: 'Opening later' },
+];
+
+/** Bokeh crowd behind the lobby — violet/teal/green fireflies, slow rise. */
+export const ROOM_CROWD: Array<{ left: string; size: string; dur: string; delay: string; tone: string }> = [
+  { left: '4%', size: '22px', dur: '24s', delay: '0s', tone: 'rm-mote--v' },
+  { left: '12%', size: '12px', dur: '18s', delay: '-6s', tone: 'rm-mote--t' },
+  { left: '21%', size: '16px', dur: '21s', delay: '-12s', tone: 'rm-mote--g' },
+  { left: '30%', size: '10px', dur: '17s', delay: '-3s', tone: 'rm-mote--v' },
+  { left: '39%', size: '26px', dur: '27s', delay: '-9s', tone: 'rm-mote--t' },
+  { left: '47%', size: '13px', dur: '19s', delay: '-15s', tone: 'rm-mote--g' },
+  { left: '55%', size: '18px', dur: '23s', delay: '-7s', tone: 'rm-mote--v' },
+  { left: '63%', size: '11px', dur: '16s', delay: '-11s', tone: 'rm-mote--t' },
+  { left: '71%', size: '24px', dur: '25s', delay: '-4s', tone: 'rm-mote--g' },
+  { left: '79%', size: '14px', dur: '20s', delay: '-14s', tone: 'rm-mote--v' },
+  { left: '87%', size: '19px', dur: '22s', delay: '-8s', tone: 'rm-mote--t' },
+  { left: '94%', size: '12px', dur: '18s', delay: '-2s', tone: 'rm-mote--g' },
+];
+
+/** Reasons offered on the report sheet. */
+export const ROOM_REPORT_REASONS = [
+  { id: 'inappropriate_content', label: 'Inappropriate content' },
+  { id: 'harassment', label: 'Harassment or hate' },
+  { id: 'spam', label: 'Spam or scam' },
+  { id: 'underage', label: 'Possibly underage' },
+  { id: 'other', label: 'Something else' },
+] as const;
+
+export const ROOM_DEFAULT_REPORT_REASON = 'harassment';
+
+/** Failure copy per `RoomAckCode` — vague by design, never accusatory. */
+export const ROOM_FAIL_COPY: Record<RoomAckCode, string> = {
   blocked_content: 'That message can’t be posted here.',
   blocked_link: 'Links aren’t allowed here.',
+  slow_mode: 'Slow down a little.',
   duplicate: 'You already posted that.',
   spam: 'That looks like spam — try again.',
-  forbidden: 'You can’t do that here.',
+  muted: 'You are muted in this room for now.',
+  mod_absent: 'A moderator isn’t here right now. Posting resumes when one arrives.',
+  feature_off: 'Rooms are switched off right now.',
+  identity_required: 'Open Whisper Wave once, then come back to join rooms.',
+  members_only: 'This private room is for signed-in members — sign in to join.',
+  not_found: 'Room not found — or that invite is invalid, expired or used up.',
+  closed: 'This room is closed right now — check back later.',
+  banned: 'You can’t join this room right now.',
+  not_joined: 'Join the room first.',
+  rate_limited: 'Too many tries — slow down a little.',
   locked: 'This room is locked right now.',
-  invite_required: 'This room is invite-only — open your invite link.',
-  invite_invalid: 'This invite is invalid, expired or used up.',
+  forbidden: 'You can’t do that here.',
+  invalid_payload: 'That didn’t go through — try again.',
+  alias_invalid: 'That display name can’t be used — pick another.',
+  join_in_progress: 'Already joining — one moment.',
+  challenge_required: 'Quick check first — answer to post.',
+  challenge_failed: 'That answer wasn’t right — try again.',
   unknown: 'Something went wrong.',
 };
+
+/** Full-page state cards: copy per end-state kind. */
+export const ROOM_END_COPY: Record<RoomEndKind, { title: string; sub: string }> = {
+  kicked: {
+    title: 'You were removed',
+    sub: 'A short cooldown came with it. Take a breath — try again a little later.',
+  },
+  banned: { title: 'You can’t join this room', sub: 'You are banned from here for now.' },
+  closed: { title: 'This room closed', sub: 'This room is closed right now — check back later.' },
+  not_found: { title: 'Room not found', sub: 'It may have been removed — or the link is wrong.' },
+  switched_off: { title: 'Rooms are switched off right now', sub: 'They’ll be back — check again soon.' },
+  restarted: { title: 'We restarted', sub: 'History reset — rejoin to pick up where you were.' },
+  identity_required: {
+    title: 'One more step',
+    sub: 'Open Whisper Wave once, then come back to join rooms.',
+  },
+};
+
+export const ROOM_SUPPORT_COPY = {
+  title: 'You don’t have to carry this alone.',
+  body: 'If you might act on these thoughts, please reach out right now — a local crisis helpline or emergency number. Your message was still posted; this is only ever shown to you, never a punishment.',
+} as const;
+
+/** Listening rooms (Venting): the always-on safety strip and the paused-thread lines. */
+export const ROOM_LISTENING_COPY = {
+  strip: 'Not a crisis service. If you might act on your thoughts, contact a local helpline now.',
+  stripAction: 'Helplines',
+  paused: 'A moderator isn’t here right now. Posting resumes when one arrives.',
+  resumed: 'A moderator is here. You can post again.',
+  composerPaused: 'Waiting for a moderator…',
+  lobbyLabel: 'Waiting for a moderator',
+} as const;
+
+/** Emoji popover geometry (desktop fixed width; mobile fits the viewport). */
+export const ROOM_EMOJI_WIDTH_PX = 280;
+export const ROOM_EMOJI_MIN_WIDTH_PX = 260;
+export const ROOM_EMOJI_HEIGHT_PX = 320;
+export const ROOM_EMOJI_VIEWPORT_PAD_PX = 16;
+
+/** The lobby re-reads the clock this often so "Opens …" labels stay right. */
+export const ROOM_LOBBY_CLOCK_MS = 60_000;

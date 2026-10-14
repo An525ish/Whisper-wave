@@ -22,7 +22,7 @@ const BottomTabBar = ({ items, ariaLabel, onNavigate, className = '' }: Props) =
     className={`shrink-0 border-t border-border/50 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md ${className}`.trim()}
   >
     <ul className="flex items-stretch justify-around">
-      {items.map((item) => (
+      {items.filter((item) => !item.railOnly).map((item) => (
         <li key={item.id} className="flex-1">
           <NavLink
             to={item.to}

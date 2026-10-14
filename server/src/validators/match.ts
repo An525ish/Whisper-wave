@@ -37,6 +37,7 @@ export const reportReason = z.enum([
   'harassment',
   'spam',
   'underage',
+  'impersonation',
   'other',
 ]);
 

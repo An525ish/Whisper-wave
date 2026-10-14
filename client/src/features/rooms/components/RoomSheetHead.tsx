@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import './rooms.css';
+import './roomSheets.css';
 
 type Props = {
   icon: ReactNode;

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { track } from '@/shared/lib/analytics';
+import { newClientId } from '@/shared/utils/id';
 import {
   ACK_TIMEOUT_MS,
   ANON_LIKE,
@@ -25,12 +26,6 @@ import type {
   AnonSocketRef,
   NextSource,
 } from '../types';
-
-const newMessageId = (): string => {
-  const c = globalThis.crypto;
-  if (c && 'randomUUID' in c) return c.randomUUID();
-  return `m_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-};
 
 const TIMEOUT_REASON = 'No reply from the server — tap to resend.';
 
@@ -86,7 +81,7 @@ export function useAnonSocket(socketRef: AnonSocketRef, onError: (msg: string) =
       const store = useAnonStore.getState();
       if (!socketRef.current?.connected || !store.sessionId || !text) return;
 
-      const id = newMessageId();
+      const id = newClientId();
       store.appendMessage({
         id,
         from: 'me',

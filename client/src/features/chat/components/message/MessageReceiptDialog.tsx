@@ -1,15 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getMessageReceipts } from '@/features/chat/api/chat';
+import { getMessageReceipts } from '../../api/chat';
 import Image from '@/shared/components/ui/Image';
 import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft';
 import ReadReceipt from '@/shared/components/ui/icons/ReadReceipt';
-import MessageRow from '@/features/chat/components/message/MessageRow';
-import type { ChatMessage } from '@/features/chat/types/chat';
+import MessageRow from './MessageRow';
+import type { ChatMessage } from '../../types/chat';
+import type { ReceiptUser } from '../../types/local';
 import { useDragToClose } from '@/shared/hooks';
-
-type ReceiptUser = { _id: string; name: string; avatar?: { url?: string } };
 
 type Props = {
   message: ChatMessage;

@@ -1,8 +1,8 @@
-type DashboardHeaderProps = {
+type Props = {
   lastUpdated: string | null;
 };
 
-const DashboardHeader = ({ lastUpdated }: DashboardHeaderProps) => (
+const DashboardHeader = ({ lastUpdated }: Props) => (
   <header className="flex flex-wrap items-end justify-between gap-4">
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue">

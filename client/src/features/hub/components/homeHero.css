@@ -1,0 +1,148 @@
+/**
+ * Hub home (`hw-*`) — hero, atmosphere, entrance.
+ * Motion contract: everything decorative freezes under `prefers-reduced-motion`,
+ * and entrance states end visible.
+ */
+
+.hw-hero {
+  background:
+    radial-gradient(120% 90% at 50% -10%, rgba(90, 63, 214, 0.28) 0%, transparent 55%),
+    radial-gradient(90% 70% at 50% 115%, rgba(1, 195, 109, 0.1) 0%, transparent 60%),
+    rgb(33 26 42);
+}
+
+.hw-atmo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hw-moon {
+  position: absolute;
+  top: -3.5rem;
+  left: 50%;
+  width: 11rem;
+  height: 11rem;
+  margin-left: -5.5rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(139, 107, 255, 0.35) 0%, rgba(139, 107, 255, 0.08) 45%, transparent 70%);
+  filter: blur(4px);
+  animation: hw-drift 14s ease-in-out infinite alternate;
+}
+
+.hw-tide {
+  position: absolute;
+  left: -20%;
+  right: -20%;
+  bottom: -45%;
+  height: 75%;
+  background: radial-gradient(50% 100% at 50% 100%, rgba(1, 195, 109, 0.12) 0%, transparent 70%);
+  animation: hw-drift 11s ease-in-out infinite alternate-reverse;
+}
+
+.hw-star {
+  position: absolute;
+  border-radius: 9999px;
+  background: #ebecec;
+  animation: hw-twinkle 5s ease-in-out infinite;
+}
+
+.hw-star-dim {
+  opacity: 0.45;
+}
+
+@keyframes hw-drift {
+  from {
+    transform: translate3d(-1.5rem, 0, 0);
+  }
+  to {
+    transform: translate3d(1.5rem, 0.75rem, 0);
+  }
+}
+
+@keyframes hw-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* Illustration motion — slow, ambient, never the focus. */
+.hw-ping-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hw-ping 3.2s ease-out infinite;
+}
+
+@keyframes hw-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hw-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+.hw-rise {
+  opacity: 0;
+  animation: hw-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--hw-d, 0ms);
+}
+
+@keyframes hw-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-moon,
+  .hw-tide,
+  .hw-star,
+  .hw-ping-ring,
+  .hw-rise,
+  .hw-orbit {
+    animation: none;
+  }
+
+  .hw-roomcard,
+  .hw-roomcard__arrow {
+    transition: none;
+  }
+
+  .hw-roomcard:hover,
+  .hw-roomcard--closed:hover {
+    transform: none;
+  }
+
+  .hw-moon,
+  .hw-tide,
+  .hw-star {
+    opacity: 0.5;
+  }
+
+  .hw-rise {
+    opacity: 1;
+    transform: none;
+  }
+}

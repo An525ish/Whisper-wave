@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
 import toast from 'react-hot-toast';
-import { useUpdateProfileMutation } from '@/features/auth';
 import { useUpdateGroupDetailsMutation } from '@/features/chat';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import type { User } from '@/shared/types';
+import { useUpdateOwnProfile } from './useUpdateOwnProfile';
 
 const ALLOWED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
@@ -34,7 +34,7 @@ export const useProfileEditing = ({
   const [bioDraft, setBioDraft] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  const [updateProfile, { isLoading: isUpdatingProfile }] = useAsyncMutation(useUpdateProfileMutation);
+  const [updateProfile, { isLoading: isUpdatingProfile }] = useAsyncMutation(useUpdateOwnProfile);
   const [updateGroup, { isLoading: isUpdatingGroup }] = useAsyncMutation(useUpdateGroupDetailsMutation);
   const isSaving = isUpdatingProfile || isUpdatingGroup;
 
@@ -44,13 +44,17 @@ export const useProfileEditing = ({
   }, [avatarPreview]);
 
   // On the self profile, keep drafts in sync with the live user and reset edit modes.
-  useEffect(() => {
-    if (!showSelfProfile) return;
-    setNameDraft(user?.name ?? '');
-    setBioDraft(user?.bio ?? '');
-    setEditingName(false);
-    setEditingBio(false);
-  }, [showSelfProfile, user?.name, user?.bio]);
+  const selfSyncKey = showSelfProfile ? JSON.stringify([user?.name ?? '', user?.bio ?? '']) : null;
+  const [syncedKey, setSyncedKey] = useState<string | null>(null);
+  if (syncedKey !== selfSyncKey) {
+    setSyncedKey(selfSyncKey);
+    if (selfSyncKey !== null) {
+      setNameDraft(user?.name ?? '');
+      setBioDraft(user?.bio ?? '');
+      setEditingName(false);
+      setEditingBio(false);
+    }
+  }
 
   const startNameEdit = useCallback(() => { setNameDraft(name ?? ''); setEditingName(true); setEditingBio(false); }, [name]);
   const cancelNameEdit = useCallback(() => { setEditingName(false); setNameDraft(name ?? ''); }, [name]);

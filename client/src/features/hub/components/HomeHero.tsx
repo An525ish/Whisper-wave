@@ -4,7 +4,7 @@
  * Split layout (copy left, HomeStage right) at the auth/landing illustration
  * level: a live status pill, a greeting that knows the time, the Whisper
  * current as the hero action plus a quiet rooms doorway, and a trust row so
- * the promise (no names, no history) is said once, plainly.
+ * the promise (no real names, chats not stored) is said once, plainly.
  *
  * Presentational only: all numbers and flags arrive as props, so this file
  * never fetches and never decides. The atmosphere layer is decorative
@@ -12,8 +12,9 @@
  */
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
+import '@/shared/components/ui/backdrop/ambientBackdrop.css';
+import { hourGreeting } from '../utils/greeting';
 import HomeStage from './HomeStage';
-import './home.css';
 
 type Props = {
   userName: string | null;
@@ -21,7 +22,7 @@ type Props = {
   quotaText?: string;
   /** Members at zero are beached honestly instead of linked to a refusal. */
   quotaExhausted: boolean;
-  /** People in open rooms right now. */
+  /** People in open rooms right now; zero below the public threshold. */
   liveCount: number;
   /** Rooms surface enabled — shows the quiet secondary doorway. */
   roomsLive?: boolean;
@@ -29,12 +30,7 @@ type Props = {
   onRoomsClick?: () => void;
 };
 
-const hourGreeting = (hour: number): string => {
-  if (hour >= 5 && hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  if (hour < 22) return 'Good evening';
-  return 'Up late?';
-};
+const HERO_PROMISES = ['No real names', 'Chats aren’t stored', 'Safety reports kept briefly'];
 
 /** Deterministic starfield — fixed seed, so every visit shares one sky. */
 const STARS: Array<{ left: string; top: string; size: number; delay: string; dim: boolean }> = (() => {
@@ -85,7 +81,7 @@ const HomeHero = ({
             }}
           />
         ))}
-        <div className="hw-grain" />
+        <div className="ab-grain" />
       </div>
 
       <div className="relative grid items-center gap-8 px-6 py-10 md:grid-cols-[1.02fr_0.98fr] md:gap-6 md:px-10 md:py-14 lg:px-12">
@@ -96,7 +92,7 @@ const HomeHero = ({
             {liveCount > 0 ? (
               <span>
                 <span className="font-semibold text-white">{liveCount}</span>{' '}
-                {liveCount === 1 ? 'person drifting now' : 'people drifting now'}
+                people drifting now
               </span>
             ) : (
               <span>quiet water tonight</span>
@@ -111,8 +107,8 @@ const HomeHero = ({
             <span className="hw-iri block italic">the night is open.</span>
           </h1>
           <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-body-300 md:mx-0 md:text-base">
-            One stranger, one room, one shuffled laugh — no names, no history,
-            nothing kept. Pick the water that fits your mood.
+            One stranger, one room, one shuffled laugh — no real names, and
+            your conversations aren&apos;t stored. Pick the water that fits your mood.
           </p>
 
           <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start">
@@ -144,12 +140,12 @@ const HomeHero = ({
           )}
           {!quotaText && !quotaExhausted && (
             <p className="mt-2.5 text-xs text-body-300">
-              One stranger. No names, no history — just the moment.
+              One stranger. No real names — just the moment.
             </p>
           )}
 
           <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 md:justify-start">
-            {['No names', 'No history', 'Leaves no trace'].map((t) => (
+            {HERO_PROMISES.map((t) => (
               <li key={t} className="hw-hud flex items-center gap-2 text-body-300">
                 <span aria-hidden className="h-1 w-1 rounded-full bg-green" />
                 {t}

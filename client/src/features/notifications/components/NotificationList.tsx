@@ -4,18 +4,21 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   FriendRequestNotifyItem,
   NotificationItem,
-} from '@/features/notifications/components/NotificationItem';
-import { useNotificationsStore } from '@/features/notifications/store';
+} from './NotificationItem';
+import { useNotificationsStore } from '../store';
 import type {
   FoundChatNotification,
   NotificationsResponse,
-} from '@/features/notifications/types';
+} from '../types';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import AvatarSkeleton from '@/shared/components/ui/skeletons/AvatarSkeleton';
 import EmptyState from '@/shared/components/ui/EmptyState';
 import CountBadge from '@/shared/components/ui/CountBadge';
+import { useNowWhile } from '@/shared/hooks/useNowWhile';
 
 export const NotificationList = () => {
+  // Frozen at mount: fallback for chats the server sent without a timestamp.
+  const mountedAt = useNowWhile(false, 0);
   const messageNotifications = useNotificationsStore(
     (s) => s.messageNotifications,
   );
@@ -112,7 +115,7 @@ export const NotificationList = () => {
               name: chat.name,
               avatar: chat.avatar?.[0] || null,
               count: chat.notificationCount,
-              timestamp: chat.timestamp || Date.now(),
+              timestamp: chat.timestamp || mountedAt,
             }}
           />
         ))

@@ -3,7 +3,7 @@ import * as chatReadRepo from '../../repositories/chatRead.js';
 import * as messageRepo from '../../repositories/message.js';
 import { REFETCH_CHATS } from '../../constants/socket-events.js';
 import { AppError } from '../../utils/AppError.js';
-import type { ChatMutationMessageResult } from '../../types/chat.js';
+import type { ChatMutationMessageResult } from '../../types/chatService.js';
 
 export const unfriend = async (
   userId: string,

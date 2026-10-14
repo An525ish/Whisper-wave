@@ -1,37 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { track } from '@/shared/lib/analytics';
 import { ROUTES } from '@/shared/constants/routes';
 import { useAuthStore } from '@/features/auth';
-import { ROOM_EVENTS } from '../constants';
+import AmbientBackdrop from '@/shared/components/ui/backdrop/AmbientBackdrop';
+import { useNowWhile } from '@/shared/hooks/useNowWhile';
+import { ROOM_CROWD, ROOM_EVENTS, ROOM_FILTERS, ROOM_LOBBY_CLOCK_MS } from '../constants';
+import { useRoomReminderControls } from '../hooks/useRoomReminderControls';
 import { useRoomsList } from '../hooks/useRoomsQueries';
+import type { RoomsFilter } from '../types';
+import MyRoomsSection from './MyRoomsSection';
 import RoomLobbyCard from './RoomLobbyCard';
-import './rooms.css';
-
-type Filter = 'all' | 'open' | 'live' | 'later';
-
-const FILTERS: Array<{ id: Filter; label: string }> = [
-  { id: 'all', label: 'All rooms' },
-  { id: 'open', label: 'Open now' },
-  { id: 'live', label: 'With people' },
-  { id: 'later', label: 'Opening later' },
-];
-
-/** Bokeh crowd behind the lobby — violet/teal/green fireflies, slow rise. */
-const CROWD: Array<{ left: string; size: string; dur: string; delay: string; tone: string }> = [
-  { left: '4%', size: '22px', dur: '24s', delay: '0s', tone: 'rm-mote--v' },
-  { left: '12%', size: '12px', dur: '18s', delay: '-6s', tone: 'rm-mote--t' },
-  { left: '21%', size: '16px', dur: '21s', delay: '-12s', tone: 'rm-mote--g' },
-  { left: '30%', size: '10px', dur: '17s', delay: '-3s', tone: 'rm-mote--v' },
-  { left: '39%', size: '26px', dur: '27s', delay: '-9s', tone: 'rm-mote--t' },
-  { left: '47%', size: '13px', dur: '19s', delay: '-15s', tone: 'rm-mote--g' },
-  { left: '55%', size: '18px', dur: '23s', delay: '-7s', tone: 'rm-mote--v' },
-  { left: '63%', size: '11px', dur: '16s', delay: '-11s', tone: 'rm-mote--t' },
-  { left: '71%', size: '24px', dur: '25s', delay: '-4s', tone: 'rm-mote--g' },
-  { left: '79%', size: '14px', dur: '20s', delay: '-14s', tone: 'rm-mote--v' },
-  { left: '87%', size: '19px', dur: '22s', delay: '-8s', tone: 'rm-mote--t' },
-  { left: '94%', size: '12px', dur: '18s', delay: '-2s', tone: 'rm-mote--g' },
-];
+import RoomReminderButton from './RoomReminderButton';
+import { isJoinable } from '../utils/roomStatus';
+import './roomsBackdrop.css';
+import './roomsLobby.css';
+import './roomsStates.css';
+import './roomsFocus.css';
 
 /**
  * Live rooms lobby: official rooms plus approved public ones, with honest
@@ -43,9 +28,11 @@ const CROWD: Array<{ left: string; size: string; dur: string; delay: string; ton
 const RoomsLobby = () => {
   const user = useAuthStore((s) => s.user);
   const { data: rooms, isLoading, isError, isFetching, refetch } = useRoomsList();
+  const reminderFor = useRoomReminderControls();
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<RoomsFilter>('all');
   const trackedRef = useRef(false);
+  const now = useNowWhile(true, ROOM_LOBBY_CLOCK_MS);
 
   useEffect(() => {
     if (trackedRef.current || !rooms) return;
@@ -57,27 +44,27 @@ const RoomsLobby = () => {
     const list = rooms ?? [];
     return {
       all: list.length,
-      open: list.filter((r) => r.open).length,
-      live: list.filter((r) => r.open && r.totalOnline > 0).length,
-      later: list.filter((r) => !r.open).length,
-      people: list.reduce((sum, r) => sum + (r.open ? r.totalOnline : 0), 0),
+      open: list.filter((r) => isJoinable(r)).length,
+      live: list.filter((r) => isJoinable(r) && r.totalOnline > 0).length,
+      later: list.filter((r) => !isJoinable(r)).length,
+      people: list.reduce((sum, r) => sum + (isJoinable(r) ? r.totalOnline : 0), 0),
     };
   }, [rooms]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = (rooms ?? []).filter((room) => {
-      if (filter === 'open' && !room.open) return false;
-      if (filter === 'live' && !(room.open && room.totalOnline > 0)) return false;
-      if (filter === 'later' && room.open) return false;
+      if (filter === 'open' && !isJoinable(room)) return false;
+      if (filter === 'live' && !(isJoinable(room) && room.totalOnline > 0)) return false;
+      if (filter === 'later' && isJoinable(room)) return false;
       if (q && !`${room.title} ${room.description}`.toLowerCase().includes(q)) return false;
       return true;
     });
     return [...list].sort((a, b) => {
-      const aLive = a.open && a.totalOnline > 0;
-      const bLive = b.open && b.totalOnline > 0;
+      const aLive = isJoinable(a) && a.totalOnline > 0;
+      const bLive = isJoinable(b) && b.totalOnline > 0;
       if (aLive !== bLive) return aLive ? -1 : 1;
-      if (a.open !== b.open) return a.open ? -1 : 1;
+      if (isJoinable(a) !== isJoinable(b)) return isJoinable(a) ? -1 : 1;
       if (aLive && bLive) return b.totalOnline - a.totalOnline;
       return a.title.localeCompare(b.title);
     });
@@ -85,12 +72,9 @@ const RoomsLobby = () => {
 
   return (
     <div className="rm-page">
-      <div aria-hidden className="rm-bg">
-        <div className="rm-mesh" />
-        <div className="rm-glow rm-glow--violet" />
-        <div className="rm-glow rm-glow--teal" />
+      <AmbientBackdrop className="rm-bg" green={false}>
         <div className="rm-crowd">
-          {CROWD.map((mote, i) => (
+          {ROOM_CROWD.map((mote, i) => (
             <span
               key={i}
               className={`rm-mote ${mote.tone}`}
@@ -100,14 +84,12 @@ const RoomsLobby = () => {
                   '--rm-size': mote.size,
                   '--rm-dur': mote.dur,
                   '--rm-delay': mote.delay,
-                } as React.CSSProperties
+                } as CSSProperties
               }
             />
           ))}
         </div>
-        <div className="rm-grain" />
-        <div className="rm-vignette" />
-      </div>
+      </AmbientBackdrop>
 
       <main className="rm-wrap">
         <header>
@@ -140,6 +122,8 @@ const RoomsLobby = () => {
             )}
           </p>
         </header>
+
+        {user && <MyRoomsSection />}
 
         <div className="rm-toolbar">
           <label className="rm-search">
@@ -191,7 +175,7 @@ const RoomsLobby = () => {
         </div>
 
         <div role="group" aria-label="Filter rooms" className="rm-chips">
-          {FILTERS.map((chip) => (
+          {ROOM_FILTERS.map((chip) => (
             <button
               key={chip.id}
               type="button"
@@ -243,11 +227,15 @@ const RoomsLobby = () => {
 
         {visible.length > 0 && (
           <ul className="flex flex-col gap-3" aria-label="Rooms">
-            {visible.map((room, index) => (
-              <li key={room.slug}>
-                <RoomLobbyCard room={room} index={index} />
-              </li>
-            ))}
+            {visible.map((room, index) => {
+              const reminder = reminderFor(room);
+              return (
+                <li key={room.slug}>
+                  <RoomLobbyCard room={room} index={index} now={now} />
+                  {reminder && <RoomReminderButton title={room.title} control={reminder} />}
+                </li>
+              );
+            })}
           </ul>
         )}
 

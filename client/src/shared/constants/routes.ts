@@ -5,10 +5,9 @@
  * without a hunt through the codebase. Builders take the dynamic segment.
  * Admin paths live with the admin feature and are not listed here.
  *
- * Rooms / Play / Memes / Me have constants but no routes yet — their surfaces
- * land in later hub phases and ship dark behind server flags (see
- * docs/HUB_PLAN.md §5). The constants exist so code written now already points
- * at the final URLs.
+ * Games (`/play`) and a persona page (`/me`) are intentionally absent: Games
+ * is skipped by decision (see docs/HUB_PLAN.md D7) and the persona editor has
+ * no route yet.
  */
 export const ROUTES = {
   landing: '/',
@@ -17,12 +16,9 @@ export const ROUTES = {
   rooms: '/rooms',
   newRoom: '/rooms/new',
   room: (slug: string) => `/rooms/${slug}`,
-  play: '/play',
-  game: (id: string) => `/play/${id}`,
   memes: '/memes',
   chats: '/chats',
   chat: (chatId: string) => `/chats/${chatId}`,
-  me: '/me',
   auth: '/auth',
   /** Login entry with the mode preselected — the only sanctioned query-variant. */
   authLogin: '/auth?mode=login',
@@ -35,5 +31,4 @@ export const ROUTE_PATTERNS = {
   /** The pre-hub URL, kept alive as a redirect so bookmarks and old links work. */
   legacyChat: '/chat/:chatId',
   room: '/rooms/:slug',
-  game: '/play/:gameId',
 } as const;

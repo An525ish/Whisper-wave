@@ -2,10 +2,12 @@ import type { RequestHandler } from 'express';
 import { AppError } from '../utils/AppError.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { getMemeFeed } from '../services/memes/feed.js';
-import * as memeSaveRepo from '../repositories/memeSave.js';
-import * as userRepo from '../repositories/user.js';
+import { reportJoke } from '../services/memes/report.js';
+import { getMemeUnfiltered, setMemeUnfiltered } from '../services/memes/mode.js';
+import { listSavedIds, saveMeme, unsaveMeme } from '../services/memes/saves.js';
 import type { ValidatedRequest } from '../middlewares/validate.js';
 import type { MemesQuery } from '../types/input.js';
+import type { MemeBlockSource, MemeReportBody } from '../types/memeBlock.js';
 
 /**
  * GET /api/memes?cat=&page=
@@ -21,18 +23,21 @@ import type { MemesQuery } from '../types/input.js';
  */
 export const listMemesController: RequestHandler = catchAsync(async (req, res) => {
   const { cat, page, exclude } = (req as ValidatedRequest<MemesQuery>).validatedQuery;
-  const unfiltered = req.userId ? await userRepo.getMemeUnfiltered(req.userId) : false;
+  const unfiltered = req.userId ? await getMemeUnfiltered(req.userId) : false;
   try {
     const feed = await getMemeFeed({ category: cat, page, exclude, unfiltered });
     res.status(200).json({ success: true, data: feed });
-  } catch {
+  } catch (err) {
+    // The service already logged provider failures; deliberate refusals
+    // (e.g. Dark without the opt-in) keep their own status.
+    if (err instanceof AppError) throw err;
     throw new AppError(503, 'The joke tap is dry right now — pull to retry in a bit');
   }
 });
 
 /** GET /api/memes/mode — this member's unfiltered opt-in. Members only. */
 export const getMemeModeController: RequestHandler = catchAsync(async (req, res) => {
-  const unfiltered = await userRepo.getMemeUnfiltered(req.userId!);
+  const unfiltered = await getMemeUnfiltered(req.userId!);
   res.status(200).json({ success: true, data: { unfiltered } });
 });
 
@@ -43,7 +48,7 @@ export const getMemeModeController: RequestHandler = catchAsync(async (req, res)
  */
 export const setMemeModeController: RequestHandler = catchAsync(async (req, res) => {
   const { unfiltered } = req.body as { unfiltered: boolean };
-  await userRepo.setMemeUnfiltered(req.userId!, unfiltered);
+  await setMemeUnfiltered(req.userId!, unfiltered);
   res.status(200).json({ success: true, data: { unfiltered } });
 });
 
@@ -52,20 +57,33 @@ export const setMemeModeController: RequestHandler = catchAsync(async (req, res)
  * state — additive, so no conflict is possible and no opt-in dance needed.
  */
 export const listSavesController: RequestHandler = catchAsync(async (req, res) => {
-  const ids = await memeSaveRepo.listSavedIds(req.userId!, 'jokeapi');
+  const ids = await listSavedIds(req.userId!, 'jokeapi');
   res.status(200).json({ success: true, data: { ids } });
 });
 
 /** Save one joke (members only). Idempotent — re-saving is a no-op. */
 export const saveMemeController: RequestHandler = catchAsync(async (req, res) => {
-  const { source, externalId } = req.body as { source: string; externalId: number };
-  await memeSaveRepo.save({ userId: req.userId!, source, externalId });
+  const { source, externalId } = req.body as { source: MemeBlockSource; externalId: number };
+  await saveMeme(req.userId!, source, externalId);
   res.status(200).json({ success: true, data: { saved: true } });
 });
 
 /** Unsave one joke (members only). Missing is fine — the intent holds. */
 export const unsaveMemeController: RequestHandler = catchAsync(async (req, res) => {
-  const { source, externalId } = req.params as { source: string; externalId: string };
-  await memeSaveRepo.unsave({ userId: req.userId!, source, externalId: Number(externalId) });
+  // `memeSaveParamsSchema` already coerced the id to a number.
+  const { source, externalId } = req.params as unknown as { source: MemeBlockSource; externalId: number };
+  await unsaveMeme(req.userId!, source, externalId);
   res.status(200).json({ success: true, data: { saved: false } });
+});
+
+/**
+ * POST /api/memes/report — guests allowed. The reporter is the request's
+ * `gid` (stable guest id), so one reporter counts once per joke per window;
+ * enough distinct reports auto-block the joke for everyone.
+ */
+export const reportMemeController: RequestHandler = catchAsync(async (req, res) => {
+  const gid = req.identity?.gid;
+  if (!gid) throw new AppError(400, 'Missing guest id');
+  const result = await reportJoke(gid, req.body as MemeReportBody);
+  res.status(200).json({ success: true, data: result });
 });

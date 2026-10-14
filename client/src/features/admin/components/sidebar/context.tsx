@@ -9,7 +9,7 @@ import {
 
 const SidebarContext = createContext<SidebarContextValue | null>(null);
 
-type SidebarProviderProps = {
+type Props = {
   children: ReactNode;
   defaultExpanded?: boolean;
 };
@@ -17,7 +17,7 @@ type SidebarProviderProps = {
 export const SidebarProvider = ({
   children,
   defaultExpanded = true,
-}: SidebarProviderProps) => {
+}: Props) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const value = useMemo<SidebarContextValue>(

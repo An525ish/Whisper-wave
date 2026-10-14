@@ -36,6 +36,8 @@ const ensureIndexes = async (): Promise<void> => {
     // enforces ban expiry, and the lookups back every room join.
     Room.collection.createIndex({ slug: 1 }, { unique: true }),
     Room.collection.createIndex({ visibility: 1 }),
+    Room.collection.createIndex({ createdBy: 1, visibility: 1 }),
+    Room.collection.createIndex({ expireAt: 1 }, { partialFilterExpression: { visibility: 'private' } }),
     RoomBan.collection.createIndex({ until: 1 }, { expireAfterSeconds: 0 }),
     RoomBan.collection.createIndex({ roomSlug: 1, gid: 1 }),
     RoomBan.collection.createIndex({ roomSlug: 1, userId: 1 }),

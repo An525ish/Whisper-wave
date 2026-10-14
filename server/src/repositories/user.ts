@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { User } from '../models/user.js';
-import { normalizeEmail } from '../utils/normalize.js';
+import { escapeRegex, normalizeEmail } from '../utils/normalize.js';
 import type { AdminUserListItem } from '../types/admin.js';
 import type {
   CreateUserInput,
@@ -37,9 +37,12 @@ export const setMemeUnfiltered = async (id: string, on: boolean): Promise<void> 
   }
 };
 
+/** Newest strikes kept per user — trust only counts the last 30 days anyway. */
+const MAX_STRIKES = 50;
+
 /** Append an abuse strike (trust decays by age — no removal needed). */
 export const pushStrike = async (id: string, reason: string): Promise<void> => {
-  await User.updateOne({ _id: id }, { $push: { strikes: { reason, at: new Date() } } });
+  await User.updateOne({ _id: id }, { $push: { strikes: { $each: [{ reason, at: new Date() }], $slice: -MAX_STRIKES } } });
 };
 
 export const findByUsername = async (
@@ -150,9 +153,6 @@ export const findExcludingIdsByName = async (
   }).lean<UserSearchRecord[]>();
 
 export const countAll = async (): Promise<number> => User.countDocuments();
-
-const escapeRegex = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const adminUserFilter = (q?: string): Record<string, unknown> => {
   const raw = q?.trim();

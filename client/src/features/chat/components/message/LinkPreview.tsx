@@ -1,7 +1,7 @@
-import LinkPreviewCard from '@/features/chat/components/link/LinkPreviewCard';
-import type { ParsedLink } from '@/features/chat/utils/linkParser';
+import LinkPreviewCard from '../link/LinkPreviewCard';
+import type { ParsedLink } from '../../utils/linkParser';
 
-type LinkPreviewProps = {
+type Props = {
   link: ParsedLink;
   variant?: 'incoming' | 'outgoing';
   /** First preview in a link-only bubble — no top margin. */
@@ -12,7 +12,7 @@ const LinkPreview = ({
   link,
   variant = 'incoming',
   lead = false,
-}: LinkPreviewProps) => (
+}: Props) => (
   <LinkPreviewCard link={link} surface={variant} href={link.url} lead={lead} />
 );
 

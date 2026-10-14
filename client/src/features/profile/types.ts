@@ -1,7 +1,7 @@
 import type {
   MediaFile,
   SharedLink,
-} from '@/features/profile/components/shared-content/types';
+} from './components/shared-content/types';
 
 /**
  * Profile-detail shapes. These are a deliberately narrower view than chat's

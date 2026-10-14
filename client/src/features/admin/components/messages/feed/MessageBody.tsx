@@ -1,13 +1,13 @@
-import type { AdminMessageRow } from '@/features/admin/types';
-import { isImageAttachment, isVideoAttachment } from '@/features/admin/utils/messages';
+import type { AdminMessageRow } from '../../../types';
+import { isImageAttachment, isVideoAttachment } from '../../../utils/messages';
 import AttachmentChip from './AttachmentChip';
 
-type MessageBodyProps = {
+type Props = {
   msg: AdminMessageRow;
   onImageOpen: (index: number) => void;
 };
 
-const MessageBody = ({ msg, onImageOpen }: MessageBodyProps) => {
+const MessageBody = ({ msg, onImageOpen }: Props) => {
   const content = msg.content?.trim();
   const attachments = msg.attachments ?? [];
   const hasAttachments = attachments.length > 0;

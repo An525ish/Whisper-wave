@@ -21,7 +21,7 @@ Hub audit gaps (HUB_PLAN §3.3) — resolved in Phase 0–1, Oct 2026:
 - Pairing skips candidates the account already keeps (one indexed
   `Connection` lookup per join) — the DM is reused on Connect instead.
 - A guest who closes the tab after a mutual vibe redeems via Redis claims
-  (`match:claim:{anonId}`, 7 d) + `GET /api/connection/pending`, visible as
+  (`match:claim:{anonId}:{sessionId}`, 7 d) + `GET /api/connection/pending`, visible as
   chat-list ghost rows — the `sessionStorage` token is no longer the only proof.
 - Quota is client-visible (`GET /api/match/quota` → hub card "N left today").
 - Resolved by design: the `connectToken` `jti` stays unconsumed — seat-binding
@@ -39,9 +39,42 @@ SLA ages.
 
 Trust ladder (3b core) — shipped Oct 2026: computed `new → standard →
 trusted` (7 d + clean 30 d), resolved once at room join (hot path stays
-Mongo-free), trusted members may post links, trusted creators list instantly,
-admin bans record strikes, template `mods` assign volunteers. Remaining 3b:
+Mongo-free), trusted members may post links, trusted creators list instantly
+(owner decision D4 amended: everyone else starts unlisted + one-tap admin
+approval; unreviewed public listing for brand-new accounts stays out), admin
+bans record strikes, template `mods` assign volunteers. Remaining 3b:
 game-night hosting, unlisted invites.
+
+Games (HUB_PLAN Phase 4) is **skipped** by decision D7 — no route, no nav item.
+
+## Hub backlog (open)
+
+Product / safety:
+
+- **Counsel sign-off** on the Dark shelf + member-opt-in Unfiltered 18+ mode
+  (D6 amended), instant listing for trusted accounts (D4 amended) and the
+  strength of the first-post challenge — questions in `LEGAL_BRIEF.md`.
+- **Turnstile upgrade**: replace the arithmetic first-post challenge with a
+  real bot check (free Cloudflare Turnstile; verify terms/privacy impact first).
+- **Venting-room mod-presence rule** (open only while a mod is present) —
+  deferred; today Venting relies on strict automod + the resources card.
+- **`Private` room visibility** is not implemented — only `public` and
+  `unlisted` (invite link) exist.
+- **Remind me** for closed rooms (HUB_PLAN §7.3.2) — deferred.
+- **Persona chip on Home** (HUB_PLAN §7.1) — deferred; the alias is still edited
+  from the Whisper rail.
+
+Engineering:
+
+- **Load test script for rooms** (300 sockets in one room, 5 msg/s — the
+  HUB_PLAN §8.7 / §12 Phase 3 gate) is missing. Only `measure:whisper` exists.
+- **`rate-limit-redis`** for the HTTP limiters before running more than one
+  instance (also gates the Redis Socket.IO adapter work).
+- Whisper's room CSS sizes itself with `100dvh`; now that the hub tab bar stays
+  visible on `/whisper` it should size to its container instead.
+- Rename the older `FooProps` component types to `type Props` and move
+  component-local helper types into `types.ts` (CLAUDE.md §5) — mechanical
+  sweep, not done in the hub pass.
 
 ---
 
@@ -802,8 +835,8 @@ These were identified in a full mobile UI/UX audit against iPhone SE (375×667px
 
 ## Post-review follow-ups (deferred from the PR #3 review)
 
-- Client test runner (vitest) is not set up — client logic is untested.
+- Client unit tests (vitest) cover pure utils and stores only — no DOM
+  rendering; component behaviour is checked manually.
 - `rate-limit-redis` for the HTTP limiters before running more than one instance.
-- Report admin UI — `GET /api/admin/reports` / `PATCH /api/admin/reports/:id` exist, no panel yet.
 - Refresh-restore limits of the whisper room — see the `features/whisper` notes.
 - `socket.io-redis` adapter before horizontal scaling.

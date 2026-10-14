@@ -54,3 +54,6 @@ export const AVATAR_LOADING = '/icons/avatar-loading.svg' as const;
 /** Parent must be square; centers dot on the circular edge (~45° bottom-right). */
 export const AVATAR_ONLINE_DOT_POSITION_CLASS =
   'left-[calc(50%+25%*sqrt(2))] top-[calc(50%+25%*sqrt(2))] -translate-x-1/2 -translate-y-1/2' as const;
+
+/** Smallest live headcount worth displaying (see `publicHeadcount`). */
+export const MIN_PUBLIC_HEADCOUNT = 3 as const;

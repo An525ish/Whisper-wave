@@ -69,6 +69,24 @@ export const deleteManyMessagesSchema = z.object({
     .max(50),
 });
 
+/** Parsed URL only if https with no embedded credentials or custom port. */
+const parseHttps = (raw: string): URL | null => {
+  if (!URL.canParse(raw)) return null;
+  const url = new URL(raw);
+  return url.protocol === 'https:' && !url.username && !url.password && !url.port ? url : null;
+};
+
+const isKlipyUrl = (raw: string): boolean => {
+  const host = parseHttps(raw)?.hostname;
+  return host !== undefined && (host === 'klipy.com' || host.endsWith('.klipy.com'));
+};
+
+/** The only host the memes feed emits (`services/memes/jokeapi.ts`), `/images/...` paths only. */
+const isMemegenImageUrl = (raw: string): boolean => {
+  const url = parseHttps(raw);
+  return url?.hostname === 'api.memegen.link' && url.pathname.startsWith('/images/');
+};
+
 export const sendGifSchema = z
   .object({
     chatId: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid chat id'),
@@ -87,16 +105,14 @@ export const sendGifSchema = z
   .superRefine((val, ctx) => {
     // Provider allow-list per kind: chat attachments must come from a known
     // source, never an arbitrary URL (spoofed "attachments" otherwise).
-    const host = new URL(val.gifUrl).hostname;
-    const ok =
-      val.kind === 'meme' ? host.endsWith('memegen.link') : host.endsWith('klipy.com');
+    const ok = val.kind === 'meme' ? isMemegenImageUrl(val.gifUrl) : isKlipyUrl(val.gifUrl);
     if (!ok) {
       ctx.addIssue({
         code: 'custom',
         path: ['gifUrl'],
         message:
           val.kind === 'meme'
-            ? 'Meme URL must be from memegen.link'
+            ? 'Meme URL must be an api.memegen.link image'
             : 'Media URL must be from klipy.com',
       });
     }

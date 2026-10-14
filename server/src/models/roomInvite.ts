@@ -1,17 +1,5 @@
-import mongoose, { Schema, model, type Document, type Types } from 'mongoose';
-
-export type IRoomInviteFields = {
-  roomSlug: string;
-  /** SHA-256 of the token — the plaintext is shown once at creation. */
-  tokenHash: string;
-  createdBy: Types.ObjectId;
-  /** Null means unlimited. */
-  maxUses: number | null;
-  uses: number;
-  expiresAt: Date;
-  revoked: boolean;
-  createdAt: Date;
-};
+import mongoose, { Schema, model, type Document } from 'mongoose';
+import type { IRoomInviteFields } from '../types/roomAdmin.js';
 
 export type IRoomInvite = IRoomInviteFields & Document;
 

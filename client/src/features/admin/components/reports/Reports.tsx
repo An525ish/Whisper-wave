@@ -1,114 +1,88 @@
-import { useState } from 'react';
-import {
-  useAdminReportsQuery,
-  useReviewReportMutation,
-} from '@/features/admin/hooks';
-import { slaStatus } from '@/features/admin/utils/reports';
-import type { AdminReportRow } from '@/features/admin/types';
-
-const targetLabel = (report: AdminReportRow): string => {
-  switch (report.targetType) {
-    case 'roomMessage':
-      return report.roomSlug ? `room message · ${report.roomSlug}` : 'room message';
-    case 'anonSession':
-      return 'anonymous session';
-    case 'user':
-      return 'user';
-  }
-};
+import { useReportsPage } from '../../hooks/useReportsPage';
+import InfiniteScrollSentinel from '../shared/InfiniteScrollSentinel';
+import ReportCard from './card/ReportCard';
 
 /**
- * Moderation queue: unreviewed reports with evidence and SLA ages. Reviewing
- * marks done; acting (ban/close/delete) happens from the Rooms page and the
- * thread — this queue is triage, not the whole toolkit.
+ * Moderation queue: unreviewed reports with evidence and SLA clocks. Hide the
+ * message, ban the offender, then resolve with a note on what was done.
  */
 const Reports = () => {
-  const [page, setPage] = useState(1);
-  const { data, isLoading } = useAdminReportsQuery(page);
-  const review = useReviewReportMutation();
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
-
-  const markReviewed = (id: string) => {
-    setReviewingId(id);
-    review.mutate({ id, reviewed: true }, { onSettled: () => setReviewingId(null) });
-  };
+  const {
+    scrollRef,
+    reports,
+    total,
+    isLoading,
+    isError,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+    sentinelEnabled,
+    busyId,
+    hideMessage,
+    banOffender,
+    markReviewed,
+  } = useReportsPage();
 
   return (
-    <div className="flex flex-col gap-4 p-5">
-      <div className="flex items-end justify-between gap-3">
-        <h1 className="font-display text-2xl text-white">Reports</h1>
-        {data && (
+    <div className="mx-auto flex h-[calc(100dvh-3rem)] max-h-[calc(100dvh-3rem)] min-h-0 w-full max-w-6xl flex-col gap-6 lg:h-[calc(100dvh-3.5rem)] lg:max-h-[calc(100dvh-3.5rem)]">
+      <header className="flex shrink-0 items-end justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue">Console</p>
+          <h1 className="mt-1 font-semibold text-3xl leading-none tracking-tight text-body sm:text-4xl">Reports</h1>
+        </div>
+        {!isLoading && !isError && (
           <p className="text-sm text-body-300" aria-live="polite">
-            {data.total} unreviewed
+            {total} unreviewed
           </p>
         )}
+      </header>
+
+      <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-1 scrollbar-hide">
+        {isLoading && (
+          <div aria-label="Loading reports" className="h-40 animate-pulse rounded-2xl bg-white/5 motion-reduce:animate-none" />
+        )}
+
+        {isError && (
+          <div className="flex flex-col items-center gap-3 py-20 text-center">
+            <p className="text-sm font-medium text-body">Couldn&apos;t load reports</p>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="rounded-full border border-border/50 bg-primary/35 px-4 py-2 text-xs font-semibold text-body-300 hover:text-body"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {!isLoading && !isError && reports.length === 0 && (
+          <p className="py-20 text-center text-sm text-body-700">Queue is clear.</p>
+        )}
+
+        {reports.length > 0 && (
+          <ul className="flex flex-col gap-3" aria-label="Unreviewed reports">
+            {reports.map((report) => (
+              <ReportCard
+                key={report._id}
+                report={report}
+                busy={busyId === report._id}
+                onHide={(id) => void hideMessage(id)}
+                onBan={(id, scope, minutes) => void banOffender(id, scope, minutes)}
+                onReview={markReviewed}
+              />
+            ))}
+          </ul>
+        )}
+
+        <InfiniteScrollSentinel
+          scrollRef={scrollRef}
+          hasNextPage={Boolean(hasNextPage)}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={() => void fetchNextPage()}
+          enabled={sentinelEnabled}
+        />
       </div>
-
-      {isLoading && (
-        <div aria-label="Loading reports" className="h-40 animate-pulse rounded-2xl bg-white/5 motion-reduce:animate-none" />
-      )}
-
-      <ul className="flex flex-col gap-3" aria-label="Unreviewed reports">
-        {data?.reports.map((report) => {
-          const sla = slaStatus(report.createdAt, report.reason);
-          return (
-            <li key={report._id} className="rounded-2xl border border-border/60 bg-white/[0.03] p-4">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-white">
-                  {report.reason.replace(/_/g, ' ')} · {targetLabel(report)}
-                </p>
-                <span
-                  role="status"
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                    sla.breached ? 'bg-red/20 text-red' : 'bg-white/10 text-body-300'
-                  }`}
-                >
-                  {sla.label}
-                </span>
-              </div>
-
-              {report.details && (
-                <p className="mt-1 text-sm text-body-300">Note: {report.details}</p>
-              )}
-
-              {report.evidence && report.evidence.length > 0 && (
-                <div className="mt-2 rounded-xl bg-black/20 p-3" aria-label="Evidence snapshot">
-                  {report.evidence.map((item, i) => (
-                    <p key={`${item.ts}-${i}`} className="truncate text-[13px] leading-relaxed text-body-300">
-                      <span className="font-medium text-body">{item.alias}:</span> {item.text}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <p className="text-xs text-body-700">
-                  {new Date(report.createdAt).toLocaleString()}
-                  {report.roomSlug ? ` · /rooms/${report.roomSlug}` : ''}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => markReviewed(report._id)}
-                  disabled={reviewingId === report._id}
-                  className="rounded-full bg-green/15 px-3 py-1.5 text-xs font-medium text-green hover:bg-green/25 disabled:opacity-50"
-                >
-                  Mark reviewed
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-
-      {data && data.hasMore && (
-        <button
-          type="button"
-          onClick={() => setPage((p) => p + 1)}
-          className="self-center rounded-full border border-border px-5 py-2 text-sm text-body-300 hover:text-body"
-        >
-          Load more
-        </button>
-      )}
     </div>
   );
 };

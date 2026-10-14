@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { listModAudit } from '@/features/admin/api/admin';
-import { adminQueryKeys } from '@/features/admin/hooks/queryKeys';
+import { listModAudit } from '../api/admin';
+import { adminQueryKeys } from './queryKeys';
 
 /** Moderation audit trail, newest first. Read-only — acts log themselves. */
 export function useModAuditQuery() {

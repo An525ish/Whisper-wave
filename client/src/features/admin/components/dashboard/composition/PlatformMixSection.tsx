@@ -1,13 +1,13 @@
-import { DASHBOARD_MIX_PANEL_CLASS } from '@/features/admin/constants/dashboard';
-import type { DashboardCompositionSegment } from '@/features/admin/types';
+import { DASHBOARD_MIX_PANEL_CLASS } from '../../../constants/dashboard';
+import type { DashboardCompositionSegment } from '../../../types';
 import CompositionBar from './CompositionBar';
 import SectionHead from '../shared/SectionHead';
 
-type PlatformMixSectionProps = {
+type Props = {
   composition: DashboardCompositionSegment[];
 };
 
-const PlatformMixSection = ({ composition }: PlatformMixSectionProps) => (
+const PlatformMixSection = ({ composition }: Props) => (
   <div className="flex flex-col lg:col-span-5">
     <SectionHead
       title="Platform mix"

@@ -1,15 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { adminQueryKeys } from '@/features/admin/hooks/queryKeys';
+import { adminQueryKeys } from './queryKeys';
 import {
   useAdminActivityEventsQuery,
   useAdminActivityPresenceQuery,
   useAdminImpersonationLogsQuery,
   useAdminStatsQuery,
-} from '@/features/admin/hooks';
-import type { ServerActivityFilter } from '@/features/admin/api/admin';
-import type { AdminActivityFilter } from '@/features/admin/types';
-import { groupActivityEvents } from '@/features/admin/utils/activity';
+} from '.';
+import type { ServerActivityFilter } from '../api/admin';
+import type { AdminActivityFilter } from '../types';
+import { groupActivityEvents } from '../utils/activity';
 
 export function useActivityPage() {
   const scrollRef = useRef<HTMLDivElement>(null);

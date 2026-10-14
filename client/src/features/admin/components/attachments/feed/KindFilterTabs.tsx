@@ -1,10 +1,10 @@
-import UserFilterChip from '@/features/admin/components/shared/UserFilterChip';
-import type { UserFilterOption } from '@/features/admin/types';
-import { ADMIN_MIN_SEARCH_LEN, ATTACHMENT_KIND_TABS } from '@/features/admin/constants/attachments';
-import { attachmentSectionTitle } from '@/features/admin/utils/attachments';
-import type { AttachmentKindFilter } from '@/features/admin/types';
+import UserFilterChip from '../../shared/UserFilterChip';
+import type { UserFilterOption } from '../../../types';
+import { ADMIN_MIN_SEARCH_LEN, ATTACHMENT_KIND_TABS } from '../../../constants/attachments';
+import { attachmentSectionTitle } from '../../../utils/attachments';
+import type { AttachmentKindFilter } from '../../../types';
 
-type KindFilterTabsProps = {
+type Props = {
   kindFilter: AttachmentKindFilter;
   onKindChange: (kind: AttachmentKindFilter) => void;
   flatCount: number;
@@ -32,7 +32,7 @@ const KindFilterTabs = ({
   onClearSearch,
   isSelectMode,
   onSelectToggle,
-}: KindFilterTabsProps) => (
+}: Props) => (
   <>
     <div className="mb-4 flex shrink-0 flex-wrap items-end justify-between gap-3">
       <div>

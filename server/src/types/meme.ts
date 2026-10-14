@@ -6,11 +6,12 @@
  */
 export type MemeCategory = 'programming' | 'misc' | 'pun' | 'dark';
 
-/** Feed-level pseudo-category: rotates the three safe shelves per page. */
+/**
+ * Feed-level pseudo-category. `mix` rotates programming/misc/pun per page;
+ * `dark` joins the rotation (and is selectable) only for members with the
+ * stored unfiltered opt-in.
+ */
 export type MemeFeedSelector = MemeCategory | 'mix';
-
-/** Provider-level categories only — never the `mix` selector. */
-export type MemeProviderCategory = Exclude<MemeFeedSelector, 'mix'>;
 
 export type JokeItem = {
   /** Provider joke id — the blocklist and dedupe key. */

@@ -1,8 +1,8 @@
-import AuthField from '@/features/auth/components/AuthField';
-import AuthSubmit from '@/features/auth/components/AuthSubmit';
+import AuthField from './AuthField';
+import AuthSubmit from './AuthSubmit';
 import { useAdminLoginMutation } from '@/features/admin';
-import type { AdminLoginForm } from '@/features/auth/types';
-import { validateAdminSecret } from '@/features/auth/utils/authValidators';
+import type { AdminLoginForm } from '../types';
+import { validateAdminSecret } from '../utils/authValidators';
 import { toErrorMessage } from '@/shared/utils/helpers';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';

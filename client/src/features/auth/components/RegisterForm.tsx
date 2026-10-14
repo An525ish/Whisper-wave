@@ -1,26 +1,26 @@
-import RegisterEditUsername from '@/features/auth/components/RegisterEditUsername';
-import RegisterStep1 from '@/features/auth/components/RegisterStep1';
-import RegisterStep2 from '@/features/auth/components/RegisterStep2';
-import RegisterStep3 from '@/features/auth/components/RegisterStep3';
+import RegisterEditUsername from './RegisterEditUsername';
+import RegisterStep1 from './RegisterStep1';
+import RegisterStep2 from './RegisterStep2';
+import RegisterStep3 from './RegisterStep3';
 import {
   useCompleteSignUpMutation,
   useResendSignUpOtpMutation,
   useStartSignUpMutation,
   useUpdateSignupUsernameMutation,
   useVerifySignUpOtpMutation,
-} from '@/features/auth/hooks';
+} from '../hooks';
 import type {
   RegisterEditUsernameForm,
   RegisterStep1Form,
   RegisterStep2Form,
   RegisterStep3Form,
-} from '@/features/auth/types';
+} from '../types';
 import { toErrorMessage } from '@/shared/utils/helpers';
 import {
   clearSignupSession,
   loadSignupSession,
   saveSignupSession,
-} from '@/features/auth/utils/signupSession';
+} from '../utils/signupSession';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 

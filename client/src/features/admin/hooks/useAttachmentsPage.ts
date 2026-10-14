@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { MediaFile } from '@/shared/components/ui/image-viewer/ImageViewer';
-import type { UserFilterOption } from '@/features/admin/types';
-import { ADMIN_MIN_SEARCH_LEN } from '@/features/admin/constants/attachments';
+import type { UserFilterOption } from '../types';
+import { ADMIN_MIN_SEARCH_LEN } from '../constants/attachments';
 import { SEARCH_DEBOUNCE_MS } from '@/shared/constants/app';
 import { useDebounce } from '@/shared/hooks/useDebounce';
-import { useAdminAttachmentsQuery, useDeleteAdminAttachmentsMutation } from '@/features/admin/hooks';
-import type { FlatItem, AttachmentKindFilter } from '@/features/admin/types';
+import { useAdminAttachmentsQuery, useDeleteAdminAttachmentsMutation } from '.';
+import type { FlatItem, AttachmentKindFilter } from '../types';
 import {
   buildLinkItems,
   filterDocItems,
@@ -14,7 +14,7 @@ import {
   showsDocsSection,
   showsLinksSection,
   showsMediaSection,
-} from '@/features/admin/utils/attachments';
+} from '../utils/attachments';
 
 export function useAttachmentsPage() {
   const scrollRef = useRef<HTMLDivElement>(null);

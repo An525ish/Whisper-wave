@@ -1,15 +1,13 @@
-import { describe, it, afterEach } from 'node:test';
+import { describe, it, afterEach, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
+import { MemeBlock } from '../../../models/memeBlock.js';
+import { blockJokeId } from '../blocklist.js';
 import { getMemeFeed } from '../feed.js';
 
 const realFetch = globalThis.fetch;
 
 const jsonRes = (payload: unknown, status = 200) =>
-  ({
-    status,
-    ok: status >= 200 && status < 300,
-    json: async () => payload,
-  }) as Response;
+  new Response(JSON.stringify(payload), { status });
 
 /** Ten distinct single jokes — a full random page in one attempt. */
 const tenJokes = (fromId: number, prefix: string) => ({
@@ -23,8 +21,31 @@ const tenJokes = (fromId: number, prefix: string) => ({
   })),
 });
 
+/**
+ * Feed cache/pool/blocklist state is module-level, so each test runs at a
+ * fresh mocked "now", ten minutes past the last — every TTL has lapsed and
+ * entries from earlier tests are only ever stale fallbacks. The blocklist's
+ * Mongo reads/writes are stubbed onto an in-memory list.
+ */
+let clock = 1_700_000_000_000;
+const dbBlocked: number[] = [];
+
+beforeEach(() => {
+  clock += 10 * 60 * 1000;
+  mock.timers.enable({ apis: ['Date'], now: clock });
+  mock.method(MemeBlock, 'find', () => ({
+    limit: () => ({ lean: async () => dbBlocked.map((externalId) => ({ externalId })) }),
+  }));
+  mock.method(MemeBlock, 'updateOne', async (filter: { externalId: number }) => {
+    dbBlocked.push(filter.externalId);
+    return {};
+  });
+});
+
 afterEach(() => {
   globalThis.fetch = realFetch;
+  mock.timers.reset();
+  mock.restoreAll();
 });
 
 describe('meme feed empty-range fallback', () => {
@@ -42,7 +63,11 @@ describe('meme feed empty-range fallback', () => {
     const page = await getMemeFeed({ category: 'misc', page: 3 });
     assert.equal(page.page, 3);
     assert.equal(page.items.length, 10);
-    assert.equal(page.items[0]?.setup, 'Fallback laugh 1');
+    // The random page is shuffled on purpose (no fixed order) — assert the set, not the order.
+    assert.deepEqual(
+      page.items.map((i) => i.setup).sort(),
+      Array.from({ length: 10 }, (_, n) => `Fallback laugh ${n + 1}`).sort()
+    );
     assert.equal(calls, 2);
   });
 
@@ -70,7 +95,10 @@ describe('meme feed empty-range fallback', () => {
     const page = await getMemeFeed({ category: 'misc', page: 7 });
     assert.equal(page.page, 7);
     assert.equal(page.items.length, 10);
-    assert.equal(page.items[0]?.setup, 'Random rescue 1');
+    assert.deepEqual(
+      page.items.map((i) => i.setup).sort(),
+      Array.from({ length: 10 }, (_, n) => `Random rescue ${n + 1}`).sort()
+    );
     assert.equal(calls, 2);
   });
 
@@ -115,7 +143,7 @@ describe('meme feed empty-range fallback', () => {
     const page = await getMemeFeed({ category: 'misc', page: 11, exclude: '424250,424251' });
     assert.equal(page.items.length, 1);
     assert.equal(page.items[0]?.setup, 'Fresh');
-    assert.equal(calls, 5); // 1 ranged miss + 4 random top-up attempts around the seen set
+    assert.equal(calls, 3); // ranged miss + a refill that adds 3 + a refill that adds nothing new → dry
   });
 
   it('keeps ranged pages positional — exclude never narrows them', async () => {
@@ -157,10 +185,11 @@ describe('meme feed empty-range fallback', () => {
 
     const page = await getMemeFeed({ category: 'misc', page: 12, exclude: '424270,424271' });
     assert.equal(page.items.length, 0);
-    assert.equal(calls, 5); // 1 ranged miss + 4 random top-up attempts
+    assert.equal(calls, 3); // ranged miss + refill (2 new, both seen) + refill (nothing new) → dry
   });
 
-  it('rotates shelves per page for the mix selector', async () => {    const requested: string[] = [];
+  it('rotates the safe shelves per page for the mix selector — never Dark', async () => {
+    const requested: string[] = [];
     globalThis.fetch = (async (url: string | URL | Request) => {
       const href = String(url);
       requested.push(href);
@@ -173,15 +202,34 @@ describe('meme feed empty-range fallback', () => {
       });
     }) as typeof fetch;
 
-    // Rotation order is misc, programming, pun, dark.
-    await getMemeFeed({ category: 'mix', page: 0 });
-    await getMemeFeed({ category: 'mix', page: 1 });
-    await getMemeFeed({ category: 'mix', page: 2 });
-    await getMemeFeed({ category: 'mix', page: 3 });
-    assert.ok(requested[0]?.includes('/Misc?'), requested[0]);
-    assert.ok(requested[1]?.includes('/Programming?'), requested[1]);
-    assert.ok(requested[2]?.includes('/Pun?'), requested[2]);
-    assert.ok(requested[3]?.includes('/Dark?'), requested[3]);
+    for (let page = 0; page < 6; page++) await getMemeFeed({ category: 'mix', page });
+    const shelves = requested.map((href) => href.split('/joke/')[1]?.split('?')[0]);
+    assert.deepEqual(shelves, ['Misc', 'Programming', 'Pun', 'Misc', 'Programming', 'Pun']);
+  });
+
+  it('adds Dark to the mix rotation only for the unfiltered opt-in', async () => {
+    const requested: string[] = [];
+    globalThis.fetch = (async (url: string | URL | Request) => {
+      requested.push(String(url));
+      return jsonRes({
+        error: false,
+        amount: 1,
+        jokes: [{ id: 5000 + requested.length, category: 'Dark', type: 'single', joke: 'Raw' }],
+      });
+    }) as typeof fetch;
+    await getMemeFeed({ category: 'mix', page: 3, unfiltered: true });
+    assert.ok(requested[0]?.includes('/Dark?'), requested[0]);
+    assert.ok(!requested[0]?.includes('blacklistFlags'), requested[0]);
+  });
+
+  it('refuses the Dark shelf without the unfiltered opt-in (403, no provider call)', async () => {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return jsonRes(tenJokes(1, 'x'));
+    }) as typeof fetch;
+    await assert.rejects(getMemeFeed({ category: 'dark', page: 0 }), { statusCode: 403 });
+    assert.equal(calls, 0);
   });
 
   it('keeps the blacklist on filtered pages and drops it when opted in', async () => {
@@ -191,11 +239,83 @@ describe('meme feed empty-range fallback', () => {
       return jsonRes(tenJokes(424290, 'Mode check'));
     }) as typeof fetch;
 
-    // Page 21 is past every ranged depth: straight to the random path.
-    await getMemeFeed({ category: 'pun', page: 21 });
-    await getMemeFeed({ category: 'pun', page: 21, unfiltered: true });
+    // Page 14 is past every ranged depth: straight to the random path.
+    await getMemeFeed({ category: 'pun', page: 14 });
+    await getMemeFeed({ category: 'pun', page: 14, unfiltered: true });
     assert.ok(requested[0]?.includes('blacklistFlags='), requested[0]);
     assert.ok(!requested[1]?.includes('blacklistFlags'), requested[1]);
     assert.ok(!requested[1]?.includes('safe-mode'), requested[1]);
+  });
+});
+
+describe('meme feed hardening', () => {
+  it('serves stale cache on provider failure but still applies the blocklist', async () => {
+    const batch = {
+      error: false,
+      amount: 2,
+      jokes: [
+        { id: 7001, category: 'Pun', type: 'single', joke: 'Keep' },
+        { id: 7002, category: 'Pun', type: 'single', joke: 'Hide later' },
+      ],
+    };
+    globalThis.fetch = (async () => jsonRes(batch)) as typeof fetch;
+    const first = await getMemeFeed({ category: 'pun', page: 2 });
+    assert.equal(first.items.length, 2);
+
+    await blockJokeId(7002);
+    mock.timers.tick(50_000); // past the 45 s cache TTL
+    globalThis.fetch = (async () => jsonRes({}, 429)) as typeof fetch;
+    const stale = await getMemeFeed({ category: 'pun', page: 2 });
+    assert.equal(stale.stale, true);
+    assert.deepEqual(stale.items.map((j) => j.id), [7001]);
+  });
+
+  it('does not pour random on a non-106 provider error', async () => {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return jsonRes({ error: true, code: 100, message: 'Bad request' }, 400);
+    }) as typeof fetch;
+    await assert.rejects(getMemeFeed({ category: 'misc', page: 9 }), { name: 'ProviderError' });
+    assert.equal(calls, 1);
+  });
+
+  it('single-flights concurrent identical misses into one upstream call', async () => {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return jsonRes({
+        error: false,
+        amount: 1,
+        jokes: [{ id: 7100, category: 'Misc', type: 'single', joke: 'Once' }],
+      });
+    }) as typeof fetch;
+    const pages = await Promise.all(
+      Array.from({ length: 5 }, () => getMemeFeed({ category: 'misc', page: 4 }))
+    );
+    assert.equal(calls, 1);
+    assert.ok(pages.every((p) => p.items.length === 1));
+  });
+
+  it('shares one random pool between callers instead of one upstream call each', async () => {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls += 1;
+      return jsonRes(tenJokes(7200, 'Pool'));
+    }) as typeof fetch;
+    const [a, b] = [
+      await getMemeFeed({ category: 'misc', page: 14 }),
+      await getMemeFeed({ category: 'misc', page: 14 }),
+    ];
+    assert.equal(a.items.length, 10);
+    assert.equal(b.items.length, 10);
+    assert.equal(calls, 1);
+  });
+
+  it('clamps an oversized page to the first random-only page', async () => {
+    globalThis.fetch = (async () => jsonRes(tenJokes(7300, 'Clamp'))) as typeof fetch;
+    const page = await getMemeFeed({ category: 'pun', page: 500 });
+    assert.equal(page.page, 14);
   });
 });

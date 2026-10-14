@@ -1,14 +1,14 @@
 import { lazy, Suspense } from 'react'
 import Image from '@/shared/components/ui/Image'
 const ImageViewer = lazy(() => import('@/shared/components/ui/image-viewer/ImageViewer'))
-import { useProfilePanel } from '@/features/profile/hooks/useProfilePanel'
-import { ProfileNameBlock, ProfileBioSection } from '@/features/profile/components/ProfileForm'
-import GroupMembersList from '@/features/profile/components/GroupMembersList'
-import ProfileActions from '@/features/profile/components/ProfileActions'
-import SharedContentSheet from '@/features/profile/components/SharedContentSheet'
-import ProfilePanelSkeleton from '@/features/profile/components/ProfilePanelSkeleton'
+import { useProfilePanel } from '../hooks/useProfilePanel'
+import { ProfileNameBlock, ProfileBioSection } from './ProfileForm'
+import GroupMembersList from './GroupMembersList'
+import ProfileActions from './ProfileActions'
+import SharedContentSheet from './SharedContentSheet'
+import ProfilePanelSkeleton from './ProfilePanelSkeleton'
 import { useOpenMemberChat, ImageViewerReplyBar } from '@/features/chat'
-const ForwardDialog = lazy(() => import('@/features/chat/components/dialogs/ForwardDialog'))
+const ForwardDialog = lazy(() => import('@/features/chat').then((m) => ({ default: m.ForwardDialog })))
 import ConfirmationModal from '@/shared/components/ui/modal/confirmation-modal/ConfirmationModal'
 
 type ProfilePanelProps = {

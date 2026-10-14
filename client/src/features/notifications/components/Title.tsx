@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import { useNotificationsStore } from '@/features/notifications/store';
+import { useNotificationsStore } from '../store';
 import { formatUnreadCount } from '@/shared/utils/format';
 
 type TitleProps = {

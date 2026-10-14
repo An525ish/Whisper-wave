@@ -8,9 +8,11 @@ export { useWhisperFlow } from './hooks/useWhisperFlow';
 export { useWhisperConnectResume } from './hooks/useWhisperConnectResume';
 export { useWhisperConnectionReady } from './hooks/useOpenWhisperDm';
 export { useWhisperAuthIntent } from './hooks/useWhisperAuthIntent';
-export { useWhisperSession } from './hooks/useWhisperSession';
-export { usePendingConnectionsQuery, useRedeemClaimMutation, useCancelPendingMutation } from './hooks/usePendingConnections';
+export { usePendingConnectionsQuery } from './hooks/usePendingConnections';
 export { useWhisperQuota } from './hooks/useWhisperQuota';
+
+// ── Persona (one alias per person across surfaces — HUB_PLAN §6.4) ──
+export { readStoredIdentity as readWhisperIdentity, renameStoredIdentity as renameWhisperIdentity } from './utils/anonIdentityStorage';
 
 // ── Components ──
 export { default as VibePicker } from './components/VibePicker';
@@ -21,3 +23,4 @@ export { default as WhisperSessionProvider } from './components/WhisperSessionPr
 export { default as LiveWhisperPill } from './components/LiveWhisperPill';
 export { default as WhisperConnectNotice } from './components/WhisperConnectNotice';
 export { default as ConnectionOriginStrip } from './components/ConnectionOriginStrip';
+export { default as WhisperHubCard } from './components/WhisperHubCard';

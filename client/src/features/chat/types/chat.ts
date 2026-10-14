@@ -216,6 +216,10 @@ export type ChatsResponse = {
   data?: ChatRow[];
 };
 
+export type NotificationsResponse = {
+  data?: unknown[];
+};
+
 export type FriendsResponse = {
   data?: Array<User & { chatId?: string }>;
 };

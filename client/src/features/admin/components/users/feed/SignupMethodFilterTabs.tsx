@@ -1,19 +1,17 @@
-import type { SignupMethodFilter } from '@/features/admin/types';
+import type { SignupMethodFilter } from '../../../types';
 
-type Tab = { id: SignupMethodFilter; label: string };
-
-const TABS: Tab[] = [
+const TABS: { id: SignupMethodFilter; label: string }[] = [
   { id: 'all', label: 'All users' },
   { id: 'google', label: 'Google' },
   { id: 'email', label: 'Email' },
 ];
 
-type SignupMethodFilterTabsProps = {
+type Props = {
   value: SignupMethodFilter;
   onChange: (v: SignupMethodFilter) => void;
 };
 
-const SignupMethodFilterTabs = ({ value, onChange }: SignupMethodFilterTabsProps) => (
+const SignupMethodFilterTabs = ({ value, onChange }: Props) => (
   <div className="mb-4 flex shrink-0 flex-wrap items-center gap-2">
     {TABS.map((tab) => (
       <button

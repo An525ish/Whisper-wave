@@ -1,18 +1,16 @@
+import AmbientBackdrop from '@/shared/components/ui/backdrop/AmbientBackdrop';
+
 /**
  * Full-page atmosphere for the hub home — the landing/auth treatment,
  * retuned to the home's midnight-shore palette.
  *
  * Layers (all decorative, `aria-hidden` by the caller):
- * mesh scan-grid + aurora blobs (violet / teal / faint green) + expanding
- * ripple rings + a drifting sine thread + signal bars + grain + vignette.
+ * shared ambient backdrop + expanding ripple rings + a drifting sine thread +
+ * signal bars.
  * Still under `prefers-reduced-motion` via home.css.
  */
 const HomeBackdrop = () => (
-  <div aria-hidden className="hw-bg">
-    <div className="hw-mesh" />
-    <div className="hw-glow hw-glow--violet" />
-    <div className="hw-glow hw-glow--teal" />
-    <div className="hw-glow hw-glow--green" />
+  <AmbientBackdrop className="hw-bg">
     <svg
       className="hw-ripples"
       viewBox="0 0 800 800"
@@ -34,9 +32,7 @@ const HomeBackdrop = () => (
       <span />
       <span />
     </div>
-    <div className="hw-grain" />
-    <div className="hw-vignette" />
-  </div>
+  </AmbientBackdrop>
 );
 
 export default HomeBackdrop;

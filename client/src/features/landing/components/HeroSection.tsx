@@ -1,7 +1,7 @@
-import HoloMesh from '@/features/landing/components/ui/HoloMesh';
-import HeroCopy from '@/features/landing/components/ui/HeroCopy';
-import GlassPane from '@/features/landing/components/ui/GlassPane';
-import { useMatchArc } from '@/features/landing/hooks/useMatchArc';
+import HoloMesh from './ui/HoloMesh';
+import HeroCopy from './ui/HeroCopy';
+import GlassPane from './ui/GlassPane';
+import { useMatchArc } from '../hooks/useMatchArc';
 
 /**
  * Section 2 — Live product demo arc.

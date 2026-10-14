@@ -12,6 +12,7 @@ import type {
   TypingPayload,
   UserPresencePayload,
 } from '@/shared/types/socket';
+import type { NewMessagePayload } from './types';
 
 interface Params {
   /**
@@ -21,12 +22,6 @@ interface Params {
    */
   suppressedChatId?: string;
 }
-
-// A NEW_MESSAGE socket frame carries more, but here we only read chatId to
-// clear the typing indicator. The full payload is a chat-domain type.
-type NewMessagePayload = {
-  chatId: string;
-};
 
 /**
  * App-wide realtime subscriptions: notifications, presence and typing.

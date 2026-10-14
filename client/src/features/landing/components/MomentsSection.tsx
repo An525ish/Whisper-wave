@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import { useScrollReveal } from '@/features/landing/hooks/useScrollReveal';
-import HoloMesh from '@/features/landing/components/ui/HoloMesh';
-import IncognitoGlyph from '@/features/landing/components/ui/IncognitoGlyph';
+import { useScrollReveal } from '../hooks/useScrollReveal';
+import HoloMesh from './ui/HoloMesh';
+import IncognitoGlyph from './ui/IncognitoGlyph';
 import { cn } from '@/shared/utils/cn';
 import { ROUTES } from '@/shared/constants/routes';
 

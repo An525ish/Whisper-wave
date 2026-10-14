@@ -2,37 +2,54 @@ import { useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { useRoomStore } from '../stores/roomStore';
-import { saveRoomsPersona } from '../utils/persona';
+import { useRoomsPersona } from '../hooks/useRoomsPersona';
 import { useRoomsSocket } from '../hooks/useRoomsSocket';
+import { useRoomInfo } from '../hooks/useRoomsQueries';
+import type { RoomJoinParams } from '../types';
 import RoomRulesSheet from './RoomRulesSheet';
+import RoomStateCard from './RoomStateCard';
 import RoomView from './RoomView';
+import './roomsFocus.css';
 
 type Props = {
   slug: string;
 };
 
 /**
- * One room route: the rules sheet until joined, the live thread after.
- * Owns the single `/rooms` socket — children receive emitters as props, so
- * the connection is never doubled. Join state lives in the room store (set
- * by the socket's ROOM_STATE), so a refresh replays the sheet, never a stale
- * thread.
+ * One room route: an ending card if the visit ended, the live thread while
+ * seated (or reseating after a drop), the rules sheet otherwise. Owns the single
+ * `/rooms` socket — children receive emitters as props, so the connection is
+ * never doubled. Join state lives in the room store (ROOM_STATE seats it), so a
+ * refresh replays the sheet, never a stale thread.
  */
 const RoomScreen = ({ slug }: Props) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  // Invite links carry `?invite=` — the only way into unlisted rooms.
-  const invite = searchParams.get('invite') ?? undefined;
+  // Invite links carry `?invite=` — the only way into unlisted rooms. It leaves
+  // the address bar after a join, so the store's copy keeps room info readable.
+  const storedInvite = useRoomStore((s) => s.joinParams?.invite);
+  const urlInvite = searchParams.get('invite') ?? undefined;
+  const invite = urlInvite ?? storedInvite;
+  const joinStatus = useRoomStore((s) => s.joinStatus);
   const joinedSlug = useRoomStore((s) => s.slug);
-  const instanceId = useRoomStore((s) => s.instanceId);
-  const { join, leave, sendMessage, sendReaction, sendMod } = useRoomsSocket(slug);
+  const endState = useRoomStore((s) => s.endState);
+  const { data: room } = useRoomInfo(slug, invite);
+  const { savePersona } = useRoomsPersona();
+  const { join, rejoin, leave, sendMessage, sendReaction, sendMod } = useRoomsSocket(slug);
+  const official = room?.official ?? false;
 
   const handleJoin = useCallback(
     (params: { alias: string; color: string }) => {
-      saveRoomsPersona(params);
-      join({ ...params, ...(invite ? { invite } : {}) });
+      savePersona(params);
+      const joinParams: RoomJoinParams = { ...params, ...(invite ? { invite } : {}) };
+      void join(joinParams, official).then(() => {
+        // The token did its job once seated; don't leave a live invite in the address bar or history.
+        if (urlInvite && useRoomStore.getState().joinStatus === 'joined') {
+          navigate(ROUTES.room(slug), { replace: true });
+        }
+      });
     },
-    [join, invite]
+    [invite, join, navigate, official, savePersona, slug, urlInvite]
   );
 
   const handleLeave = useCallback(() => {
@@ -40,15 +57,14 @@ const RoomScreen = ({ slug }: Props) => {
     navigate(ROUTES.rooms);
   }, [leave, navigate]);
 
-  if (joinedSlug === slug && instanceId) {
+  if (endState) {
+    return <RoomStateCard state={endState} onRejoin={() => rejoin(official)} />;
+  }
+
+  const seated = joinStatus === 'joined' || joinStatus === 'rejoining';
+  if (seated && joinedSlug === slug) {
     return (
-      <RoomView
-        slug={slug}
-        onLeave={handleLeave}
-        onSend={sendMessage}
-        onReact={sendReaction}
-        onMod={sendMod}
-      />
+      <RoomView slug={slug} onLeave={handleLeave} onSend={sendMessage} onReact={sendReaction} onMod={sendMod} />
     );
   }
   return <RoomRulesSheet slug={slug} invite={invite} onJoin={handleJoin} />;

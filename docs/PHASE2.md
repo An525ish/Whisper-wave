@@ -39,7 +39,7 @@ during implementation. This section is the accurate one.
 | Transcripts expire by TTL only | Transcripts (message buffer + reactions) are **deleted when a session ends** | The product promise: gone means gone. |
 | Single shared message counter for the gate | Vibe gate uses **per-side counters** | The "≥ 2 from each side" rule needs per-side counts; recomputing from the buffer was lossy past 50 messages. |
 | Sweeper armed per disconnect | Sweeper armed **on demand and at boot**; the queue is **purged at boot** | A process restart used to orphan grace periods and leave stale queue entries. |
-| `connectToken` in `sessionStorage` is the only post-mutual proof | **Mutual-like claims** (`match:claim:{anonId}`, 7 d) for both seats, redeemable via `POST /api/connection/complete { claimId }` | The token died with the tab (~10 min). A guest who closed the tab after a mutual vibe lost the connection. The `anonId` cookie survives the tab, so it is as strong a proof of seat. |
+| `connectToken` in `sessionStorage` is the only post-mutual proof | **Mutual-like claims** (`match:claim:{anonId}:{sessionId}`, 7 d, indexed by `match:claims:{anonId}`) for both seats, redeemable via `POST /api/connection/complete { claimId }` | The token died with the tab (~10 min). A guest who closed the tab after a mutual vibe lost the connection. The `anonId` cookie survives the tab, so it is as strong a proof of seat. |
 | Pending connections visible only inside the whisper room | `GET /api/connection/pending` + `DELETE /api/connection/pending/:id`, ghost rows in the chat list | A member whose partner had not connected yet had no surface outside the room. Claims show as "your move", rows as "waiting for them". |
 | Connected-DM reports do not affect matching | User-target reports also write userId-keyed Redis blocks | A reported account met the reporter again anonymously the next day. |
 | Already-connected pairs can rematch anonymously | Pairing skips candidates the account already keeps (one indexed lookup per join) | Rematching people who already have a DM is a dead session; the DM is reused on Connect instead. |
@@ -100,7 +100,7 @@ The goal is to ship this at **$0** ongoing cost, using only free tiers.
 - Queues need atomic pop operations (`LPUSH`/`RPOP`). MongoDB has no native queue primitive — polling + findOneAndUpdate has race conditions under concurrency.
 - Anon sessions **must die** when users disconnect. Redis TTL is built for this. MongoDB documents with a TTL index are slower and add extra collections to a paid Atlas cluster.
 - Anon sessions should not be recoverable after disconnect (that is the product). Redis keys are gone on eviction/restart. If a match:session disappears, that's correct.
-- Cost: Upstash free tier = 10,000 Redis commands/day, 256MB. The original plan assumed ~15 ops per session; the shipped design (acks, buffer, counters, presence, cleanup) is closer to ~150 commands for a 10-message chat — an **estimate**, i.e. ≈ 60–70 sessions/day free. Plenty for launch; measure before scaling.
+- Cost: Upstash free tier = **500K commands/month**, 256MB (the original "10,000/day" figure was stale). The original plan assumed ~15 ops per session; the shipped design is ~154 commands for a 10-message chat (measured, see above) ≈ 108 sessions/day free. Self-hosting Redis on the VM (D5) removes the cap.
 
 **Why `/anon` namespace is separate from `/`:**
 - The main `/` namespace uses `applySocketAuth` middleware (requires valid JWT). Anon users have no JWT.
@@ -423,7 +423,7 @@ const socket = io('/anon', {
 
 | Option | Cost | Limit |
 |--------|------|-------|
-| Upstash Redis (free) | $0 | 10,000 commands/day, 256MB, 1 database |
+| Upstash Redis (free) | $0 | 500K commands/month, 256MB, 1 database |
 | Upstash Redis (Pay-as-you-go) | $0.2 per 100K commands | Unlimited |
 | Redis Cloud free | $0 | 30MB storage, no daily command limit |
 
@@ -488,8 +488,8 @@ Realistically, 100 connections = ~200–500 concurrent users (most don't hold co
 
 ### Upstash Redis free → pay-as-you-go
 
-**Limit:** 10,000 commands/day  
-**At ~60–70 sessions/day (estimate, ~150 commands each):** you've hit the limit.
+**Limit:** 500K commands/month  
+**At ~108 sessions/day (measured ~154 commands each):** you've hit the limit.
 
 **That is actually a good problem to have** — ~130 unique users/day (2 per session). At this point, Upstash pay-as-you-go kicks in automatically at $0.2/100K commands.
 

@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import {
   useBanIdentityMutation,
   useLiftBanMutation,
   useRoomBansQuery,
-} from '@/features/admin/hooks';
+} from '../../hooks';
+import { OBJECT_ID, UUID } from '../../utils/rooms';
 
 const timeLeft = (until: string): string => {
   const ms = Date.parse(until) - Date.now();
@@ -21,33 +23,44 @@ const timeLeft = (until: string): string => {
  */
 const Bans = () => {
   const { data: bans } = useRoomBansQuery();
-  const create = useBanIdentityMutation();
-  const lift = useLiftBanMutation();
+  const [create, { isLoading: creating }] = useAsyncMutation(useBanIdentityMutation);
+  const [lift] = useAsyncMutation(useLiftBanMutation);
 
   const [roomSlug, setRoomSlug] = useState('');
   const [identity, setIdentity] = useState('');
   const [minutes, setMinutes] = useState('60');
   const [reason, setReason] = useState('');
   const [liftingId, setLiftingId] = useState<string | null>(null);
+  const [identityError, setIdentityError] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     const id = identity.trim();
     if (!id || !reason.trim()) return;
-    const isUuid = /^[0-9a-f-]{36}$/i.test(id);
-    create.mutate(
-      {
-        roomSlug: roomSlug.trim() || null,
-        ...(isUuid ? { gid: id } : { userId: id }),
-        minutes: Math.max(1, Number(minutes) || 60),
-        reason: reason.trim(),
-      },
-      {
-        onSuccess: () => {
-          setIdentity('');
-          setReason('');
-        },
-      }
-    );
+    const isUuid = UUID.test(id);
+    if (!isUuid && !OBJECT_ID.test(id)) {
+      setIdentityError(true);
+      return;
+    }
+    setIdentityError(false);
+    const banned = await create('Banning…', {
+      roomSlug: roomSlug.trim() || null,
+      ...(isUuid ? { gid: id } : { userId: id }),
+      minutes: Math.min(525_600, Math.max(1, Number(minutes) || 60)),
+      reason: reason.trim(),
+    });
+    if (banned !== null) {
+      setIdentity('');
+      setReason('');
+    }
+  };
+
+  const liftBan = async (id: string) => {
+    setLiftingId(id);
+    try {
+      await lift('Lifting ban…', id);
+    } finally {
+      setLiftingId(null);
+    }
   };
 
   return (
@@ -87,14 +100,14 @@ const Bans = () => {
       </div>
       <button
         type="button"
-        onClick={submit}
-        disabled={create.isPending}
+        onClick={() => void submit()}
+        disabled={creating}
         className="mt-3 rounded-full bg-red/20 px-4 py-2 text-sm font-medium text-red hover:bg-red/30 disabled:opacity-50"
       >
         Ban identity
       </button>
-      {create.isError && (
-        <p role="alert" className="mt-2 text-xs text-red">Couldn’t create the ban — check the identity format.</p>
+      {identityError && (
+        <p role="alert" className="mt-2 text-xs text-red">Identity must be a guest uuid or a 24-character user id.</p>
       )}
 
       <ul className="mt-4 flex flex-col gap-2">
@@ -109,10 +122,7 @@ const Bans = () => {
             </span>
             <button
               type="button"
-              onClick={() => {
-                setLiftingId(ban._id);
-                lift.mutate(ban._id, { onSettled: () => setLiftingId(null) });
-              }}
+              onClick={() => void liftBan(ban._id)}
               disabled={liftingId === ban._id}
               className="shrink-0 text-xs font-medium text-green hover:underline disabled:opacity-50"
             >

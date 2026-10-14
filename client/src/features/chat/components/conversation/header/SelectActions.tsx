@@ -3,7 +3,7 @@ import CloseIcon from '@/shared/components/ui/icons/Close';
 import ForwardIcon from '@/shared/components/ui/icons/Forward';
 import TrashIcon from '@/shared/components/ui/icons/Trash';
 
-type SelectModeActionsProps = {
+type Props = {
   selectedCount: number;
   deletableSelectedCount: number;
   isDeletingSelected?: boolean;
@@ -24,7 +24,7 @@ const SelectActions = ({
   onCopySelected,
   onDeleteSelected,
   onForwardSelected,
-}: SelectModeActionsProps) => {
+}: Props) => {
   const canDelete =
     selectedCount > 0 &&
     deletableSelectedCount > 0 &&

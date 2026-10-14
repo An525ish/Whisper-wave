@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '@/features/auth';
 import { useRoomsList } from '@/features/rooms';
+import { publicHeadcount } from '@/shared/utils/format';
 import { useWhisperQuota, usePendingConnectionsQuery } from '@/features/whisper';
 import { track } from '@/shared/lib/analytics';
 import { HUB_EVENTS } from '../constants';
@@ -10,7 +11,13 @@ import HomeDoors from './HomeDoors';
 import HomeFooter from './HomeFooter';
 import HomeHero from './HomeHero';
 import HomeSections from './HomeSections';
-import './home.css';
+import './homeHero.css';
+import './homeSurface.css';
+import './homeRooms.css';
+import './homeBackdrop.css';
+import './homeStage.css';
+import './homeDoors.css';
+import './homeDrift.css';
 
 /**
  * The hub home: a midnight-shore page with landing-grade atmosphere —
@@ -42,10 +49,11 @@ const HubHome = () => {
     track(HUB_EVENTS.VIEW, {});
   }, []);
 
-  const liveCount = (rooms ?? []).reduce(
-    (sum, room) => sum + (room.open ? room.totalOnline : 0),
-    0
-  );
+  // Honest counts only: below the public threshold the hero says "quiet".
+  const liveCount =
+    publicHeadcount(
+      (rooms ?? []).reduce((sum, room) => sum + (room.open ? room.totalOnline : 0), 0)
+    ) ?? 0;
 
   const handleCardClick = (id: string) => {
     track(HUB_EVENTS.CARD_CLICK, { card: id });
@@ -73,7 +81,6 @@ const HubHome = () => {
           <HomeDoors
             roomsLive={Boolean(features?.rooms)}
             memesLive={Boolean(features?.memes)}
-            liveCount={liveCount}
             quotaExhausted={Boolean(user && quota && quota.remaining <= 0)}
             onDoorClick={handleCardClick}
           />

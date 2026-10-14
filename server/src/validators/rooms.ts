@@ -1,6 +1,18 @@
 import { z } from 'zod';
 import { ROOM_REACTIONS } from '../constants/room-reactions.js';
 import { reportReason } from './match.js';
+import { objectIdField } from './fields.js';
+import { ROOM_RESERVED_SLUGS } from '../constants/rooms.js';
+
+/** IANA zone check — `Intl` throws RangeError on an unknown zone. */
+const isValidTimeZone = (tz: string): boolean => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch (err) {
+    return !(err instanceof RangeError);
+  }
+};
 
 /** Aliases the room may never display — the bot and the team only. */
 const RESERVED_ALIASES = ['wave', 'whisper', 'system', 'admin', 'moderator', 'host'];
@@ -55,6 +67,8 @@ export const roomMessageSchema = z.object({
   id: messageIdSchema.optional(),
   text: z.string().trim().min(1).max(1000),
   replyTo: messageIdSchema.optional(),
+  /** First-post challenge answer (guests): the token from the `challenge_required` ack + the typed answer. */
+  challenge: z.object({ token: z.string().max(300), answer: z.string().max(12) }).optional(),
 });
 
 /** `ROOM_LEAVE` — payload-less. */
@@ -68,7 +82,7 @@ export const roomReactSchema = z.object({
 
 /** `ROOM_MOD` — mods and hosts only; every denial acks `forbidden`. */
 export const roomModSchema = z.object({
-  action: z.enum(['delete', 'mute', 'kick', 'lock', 'unlock', 'slow', 'shadowmute']),
+  action: z.enum(['delete', 'unhide', 'mute', 'kick', 'lock', 'unlock', 'slow', 'shadowmute']),
   /** Required for `delete`. */
   messageId: messageIdSchema.optional(),
   /** Target alias for `mute` / `kick` / `shadowmute` (aliases are unique per instance). */
@@ -112,7 +126,7 @@ export const roomInviteCreateSchema = z.object({
 /** Combined params for `DELETE /:slug/invites/:id` (one parse, no clobber). */
 export const roomSlugInviteParamSchema = z.object({
   slug: roomSlugSchema,
-  id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid invite id'),
+  id: objectIdField,
 });
 
 /** Admin: create or edit a room template (official rooms included). */
@@ -128,13 +142,15 @@ export const adminRoomUpsertSchema = z.object({
       days: z.array(z.number().int().min(0).max(6)).min(1).max(7),
       start: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
       end: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-      tz: z.string().min(1).max(60),
+      tz: z.string().min(1).max(60).refine(isValidTimeZone, 'Unknown timezone'),
     })
     .nullable()
     .default(null),
-  visibility: z.enum(['official', 'public', 'unlisted']),
+  visibility: z.enum(['official', 'public', 'unlisted', 'private']),
   /** Wave Team / volunteer mod account ids. Omitted leaves mods untouched. */
-  mods: z.array(z.string().min(1)).max(20).optional(),
+  mods: z.array(objectIdField).max(20).optional(),
+  /** Listening room: strict automod + posting only while a mod is seated. Omitted leaves it untouched. */
+  requiresModPresence: z.boolean().optional(),
 });
 
 /** Admin: close one live instance right now. */
@@ -146,28 +162,30 @@ export const adminRoomCloseSchema = z.object({
 export const adminRoomBanSchema = z.object({
   roomSlug: roomSlugSchema.nullable(),
   gid: z.string().uuid().nullable().default(null),
-  userId: z.string().min(1).nullable().default(null),
+  userId: objectIdField.nullable().default(null),
   minutes: z.number().int().min(1).max(60 * 24 * 365),
   reason: z.string().trim().min(1).max(280),
 }).refine((b) => b.gid ?? b.userId, 'Ban someone: gid or userId is required');
 
 /** Admin: feature kill-switch — one surface off or back on, immediately. */
 export const adminFeatureFlagSchema = z.object({
-  feature: z.enum(['rooms', 'games', 'memes']),
+  feature: z.enum(['rooms', 'games', 'memes', 'privateRooms']),
   enabled: z.boolean(),
 });
 
 /**
  * `POST /api/rooms` — user-created rooms. Unlisted until approved for the
- * lobby; the creator accepts the room rules at creation (logged by storing
- * the accepted copy on the template + a client analytics event).
+ * lobby (trusted creators list instantly); the creator accepts the room rules
+ * at creation — recorded on the template as accepted-at/by/version.
  */
 export const roomCreateSchema = z.object({
-  slug: roomSlugSchema
-    .refine((s) => s !== 'new', 'That name is reserved')
-    .refine((s) => !['admin', 'official', 'public'].includes(s), 'That name is reserved'),
+  slug: roomSlugSchema.refine((s) => !ROOM_RESERVED_SLUGS.includes(s), 'That name is reserved'),
   title: z.string().trim().min(1).max(60),
   description: z.string().trim().min(1).max(280),
   rules: z.array(z.string().trim().min(1).max(140)).min(1).max(6),
   lang: z.string().trim().min(1).max(20).default('en'),
+  /** `private` = invite-only, members-only, ≤ 25 people (entitlement + flag checked server-side). */
+  visibility: z.enum(['public', 'private']).default('public'),
+  /** D4: the creator must accept the room rules; the server stamps who/when/version. */
+  rulesAccepted: z.literal(true, { error: 'Accept the room rules to create a room' }),
 });

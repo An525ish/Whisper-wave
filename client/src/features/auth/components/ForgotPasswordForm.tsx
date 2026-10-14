@@ -1,8 +1,8 @@
-import AuthField from '@/features/auth/components/AuthField';
-import AuthSubmit from '@/features/auth/components/AuthSubmit';
-import { useForgotPasswordMutation } from '@/features/auth/hooks';
-import type { ForgotPasswordForm } from '@/features/auth/types';
-import { validateEmail } from '@/features/auth/utils/authValidators';
+import AuthField from './AuthField';
+import AuthSubmit from './AuthSubmit';
+import { useForgotPasswordMutation } from '../hooks';
+import type { ForgotPasswordForm } from '../types';
+import { validateEmail } from '../utils/authValidators';
 import { toErrorMessage } from '@/shared/utils/helpers';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';

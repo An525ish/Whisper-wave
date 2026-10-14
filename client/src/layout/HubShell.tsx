@@ -8,9 +8,9 @@ import BottomTabBar from '@/shared/components/nav/BottomTabBar';
 import { track } from '@/shared/lib/analytics';
 import { HUB_EVENTS, useHubSummary, type HubFeatures } from '@/features/hub';
 import { GhostBanner, useAuthStore } from '@/features/auth';
-import { Title } from '@/features/notifications';
+import { Title, usePushSession } from '@/features/notifications';
 import { AccountBar } from '@/features/profile';
-import { useMyChatsQuery, type ChatsResponse } from '@/features/chat';
+import { useMyChatsQuery } from '@/features/chat';
 import { LiveWhisperPill, WhisperSessionProvider, useWhisperConnectResume } from '@/features/whisper';
 import { useAppSocketEvents } from './useAppSocketEvents';
 import { buildHubNavItems } from './hubNav';
@@ -95,11 +95,17 @@ function useNavItems(isMember: boolean): NavItem[] {
   const { data: chats } = useMyChatsQuery({ skip: !isMember });
 
   return useMemo(() => {
-    const rows = (chats as ChatsResponse | undefined)?.data;
+    const rows = chats?.data;
     const unread =
       rows?.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0) ?? 0;
-    return buildHubNavItems({ features, unread, isMember });
-  }, [chats, features, isMember]);
+    return buildHubNavItems({ features, unread });
+  }, [chats, features]);
+}
+
+/** A live room thread (`/rooms/:slug`), not the create form at `/rooms/new`. */
+function useRoomThreadMatch(): boolean {
+  const match = useMatch(ROUTE_PATTERNS.room);
+  return Boolean(match) && match?.params.slug !== 'new';
 }
 
 const AuthedHubShell = () => {
@@ -107,10 +113,13 @@ const AuthedHubShell = () => {
   // Finish a Whisper "connect & reveal" if the guest just signed in.
   useWhisperConnectResume();
   useAppSocketEvents({ suppressedChatId: chatId });
+  usePushSession();
   const items = useNavItems(true);
   const inConversation = useMatch(ROUTE_PATTERNS.chat);
+  const inRoom = useRoomThreadMatch();
   const inWhisper = useMatch(ROUTES.whisper);
-  const hideTabBar = Boolean(inConversation) || Boolean(inWhisper);
+  // Full-screen threads own the whole viewport; Whisper keeps the bar (plan §7.2.1).
+  const hideTabBar = Boolean(inConversation) || inRoom;
 
   return (
     <ShellChrome
@@ -129,7 +138,7 @@ const AuthedHubShell = () => {
 const GuestHubShell = () => {
   const items = useNavItems(false);
   const inWhisper = useMatch(ROUTES.whisper);
-  const hideTabBar = Boolean(inWhisper);
+  const hideTabBar = useRoomThreadMatch();
 
   return (
     <ShellChrome
@@ -137,9 +146,12 @@ const GuestHubShell = () => {
       hideTabBar={hideTabBar}
       hidePill={Boolean(inWhisper)}
       footer={
-        <p className="px-1 text-center text-[11px] leading-tight text-body-700">
-          Browsing as guest
-        </p>
+        <Link
+          to={ROUTES.authLogin}
+          className="px-1 text-center text-[11px] font-medium leading-tight text-body-300 transition hover:text-green focus-visible:outline-2 focus-visible:outline-green"
+        >
+          Sign in
+        </Link>
       }
     />
   );

@@ -1,12 +1,19 @@
 import { api } from '@/shared/lib/api/client';
 import type { ApiSuccess } from '@/shared/types';
-import type { AdminStats } from '@/features/admin/types';
+import type { AdminStats } from '../types';
 import type {
   AdminActivityEventsPage,
   ModAuditEntry,
+  AdminApiEnvelope,
+  AdminFeatureFlag,
+  AdminMemeBlocklist,
+  AdminReportActionInput,
+  AdminReportActionResult,
+  AdminReportRow,
   AdminReportsPage,
   AdminRoomBan,
   AdminRoomBanInput,
+  AdminRoomBanResult,
   AdminRoomRow,
   AdminRoomUpsert,
   AdminActivityFilter,
@@ -19,8 +26,8 @@ import type {
   AdminUsersPage,
   AdminGroupsPage,
   AdminMessagesPage,
-} from '@/features/admin/types';
-export type { AdminMeResponse, AdminUser, AdminMessage, AdminGroup } from '@/features/admin/types';
+} from '../types';
+export type { AdminMeResponse, AdminUser, AdminMessage, AdminGroup } from '../types';
 
 export const adminLogin = (secretKey: string) =>
   api.post<AdminMeResponse>('/admin/login', { secretKey });
@@ -147,33 +154,50 @@ export const getImpersonationLogs = (params: { limit?: number; before?: string }
   });
 
 export const listAdminRooms = () =>
-  api.get<ApiSuccess & { rooms: AdminRoomRow[] }>('/admin/rooms');
+  api.get<AdminApiEnvelope<{ rooms: AdminRoomRow[] }>>('/admin/rooms');
 
 export const upsertAdminRoom = (room: AdminRoomUpsert) =>
-  api.put<ApiSuccess & { room: AdminRoomRow }>('/admin/rooms', room);
+  api.put<AdminApiEnvelope<{ room: AdminRoomRow }>>('/admin/rooms', room);
 
 export const closeRoomInstance = (instanceId: string, reason?: string) =>
   api.post<ApiSuccess>(`/admin/rooms/instances/${instanceId}/close`, reason ? { reason } : {});
 
 export const listRoomBans = () =>
-  api.get<ApiSuccess & { bans: AdminRoomBan[] }>('/admin/room-bans');
+  api.get<AdminApiEnvelope<{ bans: AdminRoomBan[] }>>('/admin/room-bans');
 
 export const banRoomIdentity = (ban: AdminRoomBanInput) =>
-  api.post<ApiSuccess & { ban: AdminRoomBan }>('/admin/room-bans', ban);
+  api.post<AdminApiEnvelope<AdminRoomBanResult>>('/admin/room-bans', ban);
 
 export const liftRoomBan = (id: string) => api.delete<ApiSuccess>(`/admin/room-bans/${id}`);
 
-export const setFeatureFlag = (feature: 'rooms' | 'games' | 'memes', enabled: boolean) =>
-  api.post<ApiSuccess & { features: Record<'rooms' | 'games' | 'memes', boolean> }>('/admin/features', {
+export const setFeatureFlag = (feature: AdminFeatureFlag, enabled: boolean) =>
+  api.post<AdminApiEnvelope<{ features: Record<AdminFeatureFlag, boolean> }>>('/admin/features', {
     feature,
     enabled,
   });
 
-export const listAdminReports = (page = 1) =>
-  api.get<{ success: boolean; data: AdminReportsPage }>('/admin/reports', { page });
+export const REPORTS_PAGE_SIZE = 20;
 
-export const reviewAdminReport = (id: string, reviewed: boolean) =>
-  api.patch<ApiSuccess>(`/admin/reports/${id}`, { reviewed });
+export const listAdminReports = (page: number) =>
+  api.get<AdminApiEnvelope<AdminReportsPage>>('/admin/reports', { page, limit: REPORTS_PAGE_SIZE });
+
+export const reviewAdminReport = (id: string, actionNote: string) =>
+  api.patch<AdminApiEnvelope<AdminReportRow>>(`/admin/reports/${id}`, { reviewed: true, actionNote });
+
+export const actOnAdminReport = ({ id, action, scope, durationMin }: AdminReportActionInput) =>
+  api.post<AdminApiEnvelope<AdminReportActionResult>>(`/admin/reports/${id}/action`, {
+    action,
+    ...(action === 'ban' ? { scope, durationMin } : {}),
+  });
 
 export const listModAudit = () =>
-  api.get<{ success: boolean; data: { entries: ModAuditEntry[] } }>('/admin/mod-audit');
+  api.get<AdminApiEnvelope<{ entries: ModAuditEntry[] }>>('/admin/mod-audit');
+
+export const listMemeBlocklist = () =>
+  api.get<AdminApiEnvelope<AdminMemeBlocklist>>('/admin/memes/blocklist');
+
+export const blockMeme = (id: number) =>
+  api.post<AdminApiEnvelope<AdminMemeBlocklist>>('/admin/memes/blocklist', { id });
+
+export const unblockMeme = (id: number) =>
+  api.delete<AdminApiEnvelope<AdminMemeBlocklist>>(`/admin/memes/blocklist/${id}`);

@@ -108,6 +108,9 @@ export const WHISPER_RESUME_KEY = 'whisper:resume';
 export const RESUME_DEADLINE_MS = 8_000;
 export const RESUME_ENDED_NOTICE = 'That chat has ended.';
 
+/** The guest `/anon` socket namespace on the API origin. */
+export const ANON_NAMESPACE = '/anon';
+
 /** Shown once per outage when the socket can't reach the server (transport-level failure). */
 export const CONNECTION_LOST_NOTICE = "Can't reach the server. Retrying…";
 /** Shown when the server refuses the handshake (cookie missing/invalid) — retrying won't help. */
@@ -289,3 +292,8 @@ export const ANON_COMPOSER_ID = 'acr-composer-input';
 
 /** Under this many messages a thread is "young": openers say "break the ice". */
 export const FRESH_THREAD_MESSAGES = 4;
+
+/** Toast id for the "your whisper became a DM" offer shown while a room thread is open. */
+export const DM_READY_TOAST_ID = 'whisper-dm-ready';
+/** How long that offer waits for a tap before it fades (the DM stays in Chats). */
+export const DM_READY_TOAST_MS = 20_000;

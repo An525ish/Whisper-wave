@@ -1,14 +1,14 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 import EmptyState from '@/shared/components/ui/EmptyState';
-import SuggestionListItem from '@/features/chat/components/list/SuggestionListItem';
+import SuggestionListItem from '../list/SuggestionListItem';
 import AvatarCard from '@/shared/components/ui/AvatarCard';
 import ContextMenu from '@/shared/components/ui/context-menu/ContextMenu';
 import AvatarSkeleton from '@/shared/components/ui/skeletons/AvatarSkeleton';
 import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft';
 import CountBadge from '@/shared/components/ui/CountBadge';
-import useAddMember from '@/features/chat/hooks/useAddMember';
+import useAddMember from '../../hooks/useAddMember';
 import { useDragToClose, useLongPress } from '@/shared/hooks';
-import type { GroupMember } from '@/features/chat/hooks/useAddMember';
+import type { GroupMember } from '../../types/local';
 
 const SearchGlyph = () => (
   <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -26,7 +26,7 @@ const AddPersonGlyph = () => (
   </svg>
 );
 
-type AddMemberDialogProps = {
+type Props = {
   isMemberDialog: boolean;
   setIsMemberDialog: Dispatch<SetStateAction<boolean>>;
 };
@@ -34,7 +34,7 @@ type AddMemberDialogProps = {
 const AddMemberDialog = ({
   isMemberDialog,
   setIsMemberDialog,
-}: AddMemberDialogProps) => {
+}: Props) => {
   const [entered, setEntered] = useState(false);
   const close = () => setIsMemberDialog(false);
   const { sheetRef, handleRef, dragHandlers } = useDragToClose({ onClose: close });
@@ -62,15 +62,15 @@ const AddMemberDialog = ({
 
   // Slide-in animation trigger
   useEffect(() => {
-    if (!isMemberDialog) { setEntered(false); return; }
+    if (!isMemberDialog) return;
     const id = requestAnimationFrame(() => setEntered(true));
-    return () => cancelAnimationFrame(id);
+    return () => { cancelAnimationFrame(id); setEntered(false); };
   }, [isMemberDialog]);
 
   // Esc to close
   useEffect(() => {
     if (!isMemberDialog) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsMemberDialog(false); };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [isMemberDialog, setIsMemberDialog]);

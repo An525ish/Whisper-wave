@@ -1,0 +1,121 @@
+/**
+ * Hub home (`hw-*`) — page canvas + backdrop extras (ripples, sine, signal)
+ * and the tuning of the shared `ab-*` backdrop.
+ * Motion contract: everything decorative freezes under `prefers-reduced-motion`,
+ * and entrance states end visible.
+ */
+
+/* ── Page canvas + landing-grade backdrop ─────────────────────────── */
+
+.hw-page {
+  background:
+    radial-gradient(ellipse 90% 55% at 12% 0%, rgba(139, 107, 255, 0.09), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 88% 30%, rgba(53, 224, 200, 0.05), transparent 55%),
+    var(--color-background);
+}
+
+/* Tuning of the shared ambient backdrop (see shared ambientBackdrop.css). */
+.hw-bg {
+  --ab-mesh-opacity: 0.22;
+  --ab-mesh-mask: 75% 60% at 50% 18%;
+  --ab-violet-top: -12%;
+  --ab-violet-size: min(60vw, 540px);
+  --ab-teal-top: 22%;
+  --ab-teal-size: min(56vw, 500px);
+  --ab-green-top: 55%;
+  --ab-green-left: 30%;
+  --ab-green-size: min(40vw, 360px);
+  --ab-green-alpha: 0.09;
+  --ab-vignette-pos: 80% 70% at 50% 30%;
+}
+
+.hw-ripples {
+  position: absolute;
+  top: -6%;
+  left: 50%;
+  width: min(110vw, 820px);
+  height: min(110vw, 820px);
+  translate: -50% 0;
+  opacity: 0.9;
+}
+
+.hw-ripple {
+  stroke: rgba(139, 107, 255, 0.28);
+  fill: none;
+  transform-origin: 400px 400px;
+  animation: hw-ripple 7s ease-out infinite;
+}
+
+.hw-ripple--2 { animation-delay: 1.6s; stroke: rgba(1, 195, 109, 0.22); }
+.hw-ripple--3 { animation-delay: 3.2s; stroke: rgba(235, 236, 236, 0.09); }
+.hw-ripple--4 { animation-delay: 4.8s; stroke: rgba(53, 224, 200, 0.14); }
+
+@keyframes hw-ripple {
+  0% { opacity: 0.55; stroke-width: 1.25; }
+  70% { opacity: 0; stroke-width: 0.4; }
+  100% { opacity: 0; }
+}
+
+.hw-sine {
+  stroke: rgba(1, 195, 109, 0.4);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 12 10;
+  animation: hw-sine-draw 8s ease-in-out infinite;
+}
+
+@keyframes hw-sine-draw {
+  0%, 100% { stroke-dashoffset: 0; opacity: 0.35; }
+  50% { stroke-dashoffset: 40; opacity: 0.7; }
+}
+
+.hw-signal {
+  position: absolute;
+  right: 6%;
+  top: 5.5rem;
+  display: none;
+  gap: 5px;
+  align-items: flex-end;
+  height: 42px;
+  opacity: 0.6;
+}
+
+@media (min-width: 768px) {
+  .hw-signal { display: flex; }
+}
+
+.hw-signal span {
+  width: 3px;
+  border-radius: 999px;
+  background: var(--color-green);
+  animation: hw-signal-bars 2.8s ease-in-out infinite;
+}
+
+.hw-signal span:nth-child(1) { height: 28%; }
+.hw-signal span:nth-child(2) { height: 55%; animation-delay: 0.25s; }
+.hw-signal span:nth-child(3) { height: 82%; animation-delay: 0.5s; }
+.hw-signal span:nth-child(4) { height: 42%; animation-delay: 0.75s; }
+
+@keyframes hw-signal-bars {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-ripple,
+  .hw-sine,
+  .hw-signal span {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .hw-ripples {
+    display: none;
+  }
+
+  .hw-ripple,
+  .hw-sine {
+    animation: none;
+  }
+}

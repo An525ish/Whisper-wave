@@ -18,9 +18,9 @@ export const LINK_PREVIEW_WIDTH_CLASS = 'w-[15rem] max-w-full';
 
 
 // ── from features/chat/constants/tabs.ts ──────────────────────────────
-import type { NewConnectTab } from '@/features/chat/types/chat';
+import type { NewConnectTab } from '../types/chat';
 
-export type NewConnectTabConfig = {
+type NewConnectTabConfig = {
   id: NewConnectTab;
   label: string;
   title: string;
@@ -44,7 +44,7 @@ export const NEW_CONNECT_TABS: NewConnectTabConfig[] = [
 
 
 // ── from features/chat/constants/searchConfig.ts ──────────────────────────────
-import type { SearchMode } from '@/features/chat/types/chat';
+import type { SearchMode } from '../types/chat';
 
 export type SearchModeConfig = {
   id: SearchMode;
@@ -73,3 +73,9 @@ export const DATE_PRESETS: readonly DatePreset[] = [
 ] as const;
 
 export const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const;
+
+export const CONVERSATION_HEADER_SHELL_CLASS =
+  'absolute inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] z-30 w-auto md:left-2 md:right-2 md:top-0';
+
+export const CONVERSATION_HEADER_INNER_CLASS =
+  'rounded-xl border border-white/10 bg-[rgba(33,26,42,0.48)] px-2 py-1.5 pl-1.5 pr-3 shadow-[0_10px_28px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:pl-2.5 lg:pr-5';

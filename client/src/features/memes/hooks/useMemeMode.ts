@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '@/features/auth';
 import { track } from '@/shared/lib/analytics';
 import { MEME_EVENTS } from '../constants';
@@ -20,7 +21,7 @@ export function useMemeMode() {
   });
 }
 
-/** Flip the opt-in with an optimistic flag. Rolls back if the server refuses. */
+/** Flip the opt-in. The cache updates from the server's answer, never optimistically. */
 export function useSetMemeMode() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -30,5 +31,7 @@ export function useSetMemeMode() {
       queryClient.setQueryData(memeKeys.mode, unfiltered);
       track(MEME_EVENTS.MODE_CHANGE, { unfiltered });
     },
+    onError: (_error, { unfiltered }) =>
+      toast.error(unfiltered ? 'Couldn’t turn it on — try again.' : 'Couldn’t turn it off — try again.'),
   });
 }

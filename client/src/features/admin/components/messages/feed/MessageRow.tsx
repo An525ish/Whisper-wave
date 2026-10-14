@@ -4,18 +4,18 @@ import ImageViewer from '@/shared/components/ui/image-viewer/ImageViewer';
 import ChatIcon from '@/shared/components/ui/icons/Chat';
 import TrashIcon from '@/shared/components/ui/icons/Trash';
 import RetryIcon from '@/shared/components/ui/icons/Retry';
-import type { AdminMessageRow } from '@/features/admin/types';
+import type { AdminMessageRow } from '../../../types';
 import {
   formatMessageSent,
   isImageAttachment,
   isVideoAttachment,
   messageRelativeTime,
-} from '@/features/admin/utils/messages';
+} from '../../../utils/messages';
 import MessageBody from './MessageBody';
 import MessageStatusDot from './MessageStatusDot';
-import DeletedTag from '@/features/admin/components/attachments/cards/DeletedTag';
+import DeletedTag from '../../attachments/cards/DeletedTag';
 
-type MessageRowProps = {
+type Props = {
   msg: AdminMessageRow;
   onDelete: () => void;
   onRetry: () => void;
@@ -23,7 +23,7 @@ type MessageRowProps = {
   isRetrying: boolean;
 };
 
-const MessageRow = ({ msg, onDelete, onRetry, isDeleting, isRetrying }: MessageRowProps) => {
+const MessageRow = ({ msg, onDelete, onRetry, isDeleting, isRetrying }: Props) => {
   const isFailed = msg.status === 'failed';
   const isDeleted = Boolean(msg.isDeleted);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
