@@ -1,0 +1,251 @@
+/** Sheet chrome shared by report, invites and settings: head, options, rows, danger zone. */
+
+/* ── Sheet chrome: header, options, rows, danger, states ──────────── */
+
+.rm-sheetbody {
+  padding: 0.5rem 1.25rem 1.5rem;
+}
+
+.rm-sheethead {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.rm-sheethead__orb {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  background-clip: padding-box;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background:
+    radial-gradient(90% 90% at 30% 15%, rgba(139, 107, 255, 0.55), transparent 65%),
+    linear-gradient(150deg, #3d2b6e, #1a1520);
+  color: #b6a4ff;
+}
+
+.rm-sheethead__orb svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.rm-sheethead__orb--red {
+  background:
+    radial-gradient(90% 90% at 30% 15%, rgba(255, 88, 99, 0.5), transparent 65%),
+    linear-gradient(150deg, #4d2635, #1a1214);
+  color: #ff8f98;
+}
+
+.rm-sheethead__orb--green {
+  background:
+    radial-gradient(90% 90% at 30% 15%, rgba(1, 195, 109, 0.5), transparent 65%),
+    linear-gradient(150deg, #134434, #101a15);
+  color: #7dffb8;
+}
+
+.rm-sheethead__eyebrow {
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-body-300);
+}
+
+.rm-sheethead__title {
+  margin-top: 0.1rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.rm-sheetsub {
+  margin-top: 0.7rem;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--color-body-300);
+}
+
+/* Selectable reason cards. */
+.rm-options {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.rm-option {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.65rem 0.8rem;
+  font-size: 0.88rem;
+  color: var(--color-body);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.rm-option:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.rm-option--on {
+  border-color: rgba(1, 195, 109, 0.5);
+  background: rgba(1, 195, 109, 0.08);
+}
+
+.rm-option__radio {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.rm-option--on .rm-option__radio {
+  border-color: var(--color-green);
+  background: var(--color-green);
+  color: #06130d;
+}
+
+.rm-option__radio svg {
+  width: 0.65rem;
+  height: 0.65rem;
+}
+
+.rm-textarea {
+  margin-top: 0.8rem;
+  width: 100%;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.87rem;
+  color: var(--color-body);
+  outline: 0;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rm-textarea::placeholder {
+  color: rgba(235, 236, 236, 0.35);
+}
+
+.rm-textarea:focus {
+  border-color: rgba(1, 195, 109, 0.55);
+  box-shadow: 0 0 0 3px rgba(1, 195, 109, 0.14);
+}
+
+/* Invite rows. */
+.rm-invites {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rm-invite {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.6rem 0.7rem 0.6rem 0.85rem;
+}
+
+.rm-invite__meta {
+  min-width: 0;
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--color-body-300);
+}
+
+.rm-invite__meta b {
+  color: var(--color-body);
+}
+
+.rm-invite__btn {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(1, 195, 109, 0.4);
+  padding: 0.35rem 0.8rem;
+  font-size: 0.74rem;
+  font-weight: 650;
+  color: var(--color-green);
+  transition: background 0.18s ease;
+}
+
+.rm-invite__btn:hover {
+  background: rgba(1, 195, 109, 0.12);
+}
+
+.rm-invite__btn--danger {
+  border-color: rgba(255, 88, 99, 0.35);
+  color: var(--color-red);
+}
+
+.rm-invite__btn--danger:hover {
+  background: rgba(255, 88, 99, 0.1);
+}
+
+.rm-emptyline {
+  margin-top: 0.8rem;
+  font-size: 0.82rem;
+  color: var(--color-body-700);
+}
+
+/* Settings sections + danger zone. */
+.rm-sect {
+  margin-top: 1.1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1rem;
+}
+
+.rm-sect__note {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-body-700);
+}
+
+.rm-danger {
+  border-radius: 1rem;
+  border: 1px dashed rgba(255, 88, 99, 0.35);
+  background: rgba(255, 88, 99, 0.04);
+  padding: 0.85rem 1rem;
+}
+
+.rm-danger__btn {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-red);
+}
+
+.rm-danger__btn:hover {
+  text-decoration: underline;
+}
+
+.rm-settingsskel {
+  height: 10rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  animation: rm-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-settingsskel {
+    animation: none;
+  }
+}

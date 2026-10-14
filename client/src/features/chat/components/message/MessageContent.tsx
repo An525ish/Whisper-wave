@@ -1,7 +1,7 @@
-import { splitTextByUrls } from '@/features/chat/utils/linkParser';
+import { splitTextByUrls } from '../../utils/linkParser';
 import type { ReactNode } from 'react';
 
-type MessageContentProps = {
+type Props = {
   content: string;
   highlightQuery?: string;
 };
@@ -26,7 +26,7 @@ const renderHighlightedText = (text: string, query?: string): ReactNode => {
   );
 };
 
-const MessageContent = ({ content, highlightQuery }: MessageContentProps) => {
+const MessageContent = ({ content, highlightQuery }: Props) => {
   const parts = splitTextByUrls(content);
 
   return (

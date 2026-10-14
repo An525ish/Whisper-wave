@@ -1,12 +1,12 @@
 import LeaveGroupIcon from '@/shared/components/ui/icons/LeaveGroup';
-import SidebarCollapseSlot from '@/features/admin/components/sidebar/SidebarCollapseSlot';
+import SidebarCollapseSlot from './SidebarCollapseSlot';
 import {
   ICON_SLOT,
   SIDEBAR_PAD,
-} from '@/features/admin/components/sidebar/constants';
-import { useSidebar } from '@/features/admin/components/sidebar/context';
+} from './constants';
+import { useSidebar } from './context';
 import { AVATAR_ONLINE_DOT_POSITION_CLASS } from '@/shared/constants/app';
-import { useAdminLogoutMutation } from '@/features/admin/hooks';
+import { useAdminLogoutMutation } from '../../hooks';
 
 const footerShellClass = (expanded: boolean) =>
   [

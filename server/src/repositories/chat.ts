@@ -1,3 +1,4 @@
+import { escapeRegex } from '../utils/normalize.js';
 import type { Types } from 'mongoose';
 import { Chat } from '../models/chat.js';
 import type {
@@ -218,9 +219,6 @@ export const countGroupsCreatedByDay = async (
     },
     { $sort: { _id: 1 } },
   ]);
-
-const escapeRegex = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const adminGroupFilter = (q?: string, memberId?: string): Record<string, unknown> => {
   const filter: Record<string, unknown> = { groupChat: true };

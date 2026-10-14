@@ -67,6 +67,15 @@ export const writeStoredIdentity = (identity: StoredIdentity, accountId?: string
   }
 };
 
+/**
+ * Rename the saved identity in place (another surface edited the one persona).
+ * Does nothing when none is saved — a rename must never turn on "remember me".
+ */
+export const renameStoredIdentity = (displayName: string, accountId?: string): void => {
+  const stored = readStoredIdentity(accountId);
+  if (stored) writeStoredIdentity({ ...stored, displayName }, accountId);
+};
+
 /** Forget the saved identity (the panel's "not now" path). */
 export const clearStoredIdentity = (accountId?: string): void => {
   if (typeof window === 'undefined') return;

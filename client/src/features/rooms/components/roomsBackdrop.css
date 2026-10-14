@@ -1,0 +1,105 @@
+/**
+ * Rooms page canvas, bokeh crowd and wrap, plus the tuning of the shared
+ * `ab-*` backdrop used by the lobby, the live thread and the state cards.
+ *
+ * Motion contract: everything decorative freezes under
+ * `prefers-reduced-motion`, and entrance states end visible.
+ */
+
+/* ── Page canvas + backdrop ───────────────────────────────────────── */
+
+.rm-page {
+  position: relative;
+  min-height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 45% at 12% 0%, rgba(139, 107, 255, 0.1), transparent 55%),
+    radial-gradient(ellipse 65% 40% at 88% 18%, rgba(53, 224, 200, 0.06), transparent 55%),
+    var(--color-background);
+}
+
+/* Tuning of the shared ambient backdrop (see shared ambientBackdrop.css). */
+.rm-bg {
+  --ab-mesh-mask: 75% 50% at 50% 8%;
+  --ab-violet-alpha: 0.28;
+  --ab-teal-top: 14%;
+  --ab-teal-alpha: 0.11;
+  --ab-vignette-pos: 85% 60% at 50% 12%;
+  --ab-vignette-alpha: 0.65;
+  --ab-violet-mobile-anim: ab-glow-a 10s ease-in-out infinite;
+}
+
+/* Bokeh crowd — blurred glowing dots drifting up like fireflies. */
+.rm-crowd {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rm-mote {
+  position: absolute;
+  bottom: -3rem;
+  left: var(--rm-x, 50%);
+  width: var(--rm-size, 14px);
+  height: var(--rm-size, 14px);
+  border-radius: 999px;
+  filter: blur(3px);
+  opacity: 0;
+  animation: rm-crowd-drift var(--rm-dur, 22s) linear infinite;
+  animation-delay: var(--rm-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.rm-mote--v {
+  background: radial-gradient(circle, rgba(139, 107, 255, 0.8), rgba(139, 107, 255, 0) 70%);
+}
+
+.rm-mote--t {
+  background: radial-gradient(circle, rgba(53, 224, 200, 0.7), rgba(53, 224, 200, 0) 70%);
+}
+
+.rm-mote--g {
+  background: radial-gradient(circle, rgba(1, 195, 109, 0.7), rgba(1, 195, 109, 0) 70%);
+}
+
+@keyframes rm-crowd-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.55;
+  }
+  85% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate3d(2.5rem, -115vh, 0);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .rm-mote:nth-child(even) {
+    display: none;
+  }
+}
+
+.rm-wrap {
+  position: relative;
+  margin-inline: auto;
+  display: flex;
+  width: 100%;
+  max-width: 48rem;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem 1.25rem 3rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-mote {
+    animation: none !important;
+    display: none;
+  }
+}

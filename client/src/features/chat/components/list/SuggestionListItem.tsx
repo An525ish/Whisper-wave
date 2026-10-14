@@ -2,7 +2,7 @@ import AvatarCard from '@/shared/components/ui/AvatarCard';
 import CheckboxIcon from '@/shared/components/ui/icons/Checkbox';
 import type { SuggestionMember } from '@/shared/types';
 
-type SuggestionListItemProps = {
+type Props = {
   data: SuggestionMember;
   isSelected: boolean;
   handleSelectMember: (id: string) => void;
@@ -13,7 +13,7 @@ const SuggestionListItem = ({
   data,
   isSelected,
   handleSelectMember,
-}: SuggestionListItemProps) => {
+}: Props) => {
   const { avatar, name, _id } = data;
   return (
     <button

@@ -5,19 +5,19 @@ import {
   RetryableMediaImage,
   RetryableMediaVideo,
 } from '@/shared/components/ui/media/RetryableMedia';
-import type { FlatItem } from '@/features/admin/types';
+import type { FlatItem } from '../../../types';
 import {
   formatMediaDate,
   kindBadgeClass,
   kindLabel,
-} from '@/features/admin/utils/attachments';
+} from '../../../utils/attachments';
 import {
   ADMIN_MEDIA_GRID_FAILED_ILLUSTRATION,
   ADMIN_MEDIA_GRID_LOADING_ICON,
-} from '@/features/admin/constants/attachments';
-import DeletedTag from '@/features/admin/components/attachments/cards/DeletedTag';
+} from '../../../constants/attachments';
+import DeletedTag from './DeletedTag';
 
-type MediaCardProps = {
+type Props = {
   item: FlatItem;
   onClick: () => void;
   isSelectMode?: boolean;
@@ -25,7 +25,7 @@ type MediaCardProps = {
   onToggleSelect?: (msgId: string) => void;
 };
 
-const MediaCard = ({ item, onClick, isSelectMode, isSelected, onToggleSelect }: MediaCardProps) => {
+const MediaCard = ({ item, onClick, isSelectMode, isSelected, onToggleSelect }: Props) => {
   const { att, msg, rk } = item;
   const sender = msg.sender;
   const displayName = sender?.name?.trim() || 'Unknown user';

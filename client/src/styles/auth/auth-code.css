@@ -1,0 +1,322 @@
+.auth-code-banner.is-resent {
+  border-color: rgba(1, 195, 109, 0.42);
+  box-shadow: 0 0 0 1px rgba(1, 195, 109, 0.08);
+  animation: auth-code-banner-resent 0.55s ease;
+}
+
+.auth-code-banner.is-resent .auth-code-banner__icon {
+  background: rgba(1, 195, 109, 0.22);
+}
+
+.auth-code-banner.is-resent .auth-code-banner__eyebrow {
+  color: var(--color-green);
+}
+
+.auth-code-banner.is-resent .auth-code-banner__aside {
+  color: var(--color-green);
+}
+
+@keyframes auth-code-banner-resent {
+  0% {
+    transform: scale(0.985);
+    opacity: 0.72;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-code-banner.is-resent {
+    animation: none;
+  }
+}
+
+.auth-otp-field {
+  padding: 1.25rem 0 1.75rem;
+}
+
+.auth-otp-field__label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(235, 236, 236, 0.55);
+}
+
+.auth-otp-field__error {
+  margin-top: 0.85rem;
+  font-size: 0.75rem;
+  color: var(--color-red);
+}
+
+@media (max-width: 419px) {
+  .auth-code-banner__aside {
+    display: none;
+  }
+}
+
+.auth-avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.5rem 0 1.25rem;
+}
+
+.auth-avatar-upload__trigger {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+  border-radius: 999px;
+  outline: none;
+}
+
+.auth-avatar-upload__trigger:focus-visible {
+  box-shadow: 0 0 0 3px rgba(1, 195, 109, 0.35);
+}
+
+.auth-avatar-upload__ring {
+  position: absolute;
+  inset: -0.35rem;
+  border-radius: 999px;
+  border: 2px dashed rgba(1, 195, 109, 0.35);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.auth-avatar-upload__trigger:hover .auth-avatar-upload__ring,
+.auth-avatar-upload__trigger:focus-within .auth-avatar-upload__ring {
+  border-color: rgba(1, 195, 109, 0.65);
+  transform: scale(1.02);
+}
+
+.auth-avatar-upload__image {
+  position: relative;
+  z-index: 1;
+  width: min(9.75rem, 52vw);
+  height: min(9.75rem, 52vw);
+  border-radius: 999px;
+  object-fit: cover;
+  border: 3px solid rgba(1, 195, 109, 0.35);
+  background: rgba(0, 0, 0, 0.45);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.auth-avatar-upload__trigger:hover .auth-avatar-upload__image,
+.auth-avatar-upload__trigger:focus-within .auth-avatar-upload__image {
+  border-color: rgba(1, 195, 109, 0.7);
+}
+
+.auth-avatar-upload__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.52);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.auth-avatar-upload__trigger:hover .auth-avatar-upload__overlay,
+.auth-avatar-upload__trigger:focus-within .auth-avatar-upload__overlay {
+  opacity: 1;
+}
+
+.auth-avatar-upload__overlay-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-avatar-upload__hint {
+  font-size: 0.8125rem;
+  color: rgba(235, 236, 236, 0.55);
+  text-align: center;
+}
+
+.auth-otp {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.auth-otp__cell {
+  width: 2.75rem;
+  height: 3.25rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.55);
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.auth-otp__cell:focus {
+  border-color: rgba(1, 195, 109, 0.55);
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: 0 0 0 3px rgba(1, 195, 109, 0.18);
+}
+
+.auth-otp__cell--filled {
+  border-color: rgba(1, 195, 109, 0.35);
+}
+
+.auth-otp__cell--error {
+  border-color: rgba(255, 88, 99, 0.55);
+}
+
+.auth-otp__cell--error:focus {
+  border-color: rgba(255, 88, 99, 0.6);
+  box-shadow: 0 0 0 3px rgba(255, 88, 99, 0.16);
+}
+
+@media (max-width: 380px) {
+  .auth-otp {
+    gap: 0.35rem;
+  }
+
+  .auth-otp__cell {
+    /* Keep height above 44px; shrink width only enough to fit 6 cells on SE */
+    width: 2.65rem;
+    height: 3rem;
+    font-size: 1.15rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-forgot__badge-dot {
+    animation: none !important;
+  }
+}
+
+.auth-field input {
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+/* Room for 3px focus ring — box-shadow does not expand layout */
+.auth-field > .relative {
+  padding-inline: 3px;
+}
+
+.auth-submit {
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-submit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.18) 48%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  transition: transform 0.55s ease;
+}
+
+.auth-submit:enabled:hover::after {
+  transform: translateX(120%);
+}
+
+/* Themed Google CTA — secondary to green primary, matches AuthField chrome */
+.auth-google-btn {
+  display: flex;
+  height: 2.75rem;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.035) 100%
+  );
+  color: #ebecec;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  outline: none;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.15s ease;
+}
+
+.auth-google-btn:enabled:hover {
+  border-color: rgba(1, 195, 109, 0.4);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.11) 0%,
+    rgba(1, 195, 109, 0.08) 100%
+  );
+  box-shadow: 0 0 0 3px rgba(1, 195, 109, 0.12);
+}
+
+.auth-google-btn:enabled:active {
+  transform: scale(0.985);
+}
+
+.auth-google-btn:focus-visible {
+  border-color: rgba(1, 195, 109, 0.55);
+  box-shadow: 0 0 0 3px rgba(1, 195, 109, 0.18);
+}
+
+.auth-google-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-google-btn__mark {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-ambience__glow--a,
+  .auth-ambience__glow--b,
+  .auth-ambience__glow--c,
+  .auth-ripple,
+  .auth-ambience__sine,
+  .auth-ambience__signal span,
+  .auth-panel-orbit,
+  .auth-panel__sheen,
+  .auth-panel__pulse,
+  .auth-submit::after {
+    animation: none !important;
+  }
+
+  .auth-submit:enabled:hover::after {
+    transform: none;
+  }
+}

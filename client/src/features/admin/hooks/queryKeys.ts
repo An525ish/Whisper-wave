@@ -10,6 +10,12 @@ export const adminQueryKeys = {
   activityPresence: ['adminActivity', 'presence'] as const,
   activityEvents: (type: string) => ['adminActivity', 'events', type] as const,
   impersonationLogs: ['adminImpersonationLogs'] as const,
+  rooms: ['adminRooms', 'list'] as const,
+  roomBans: ['adminRooms', 'bans'] as const,
+  audit: ['adminAudit', 'list'] as const,
+  reports: ['adminReports', 'list'] as const,
+  memeBlocklist: ['adminMemes', 'blocklist'] as const,
+  reportsPrefix: ['adminReports'] as const,
   // prefix invalidation helpers (matches all variants under each root)
   usersPrefix: ['adminUsers'] as const,
   messagesPrefix: ['adminMessages'] as const,

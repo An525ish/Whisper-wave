@@ -1,4 +1,4 @@
-import type { AdminMessageAttachment, AdminMessageStatusFilter, UserFilterOption } from '@/features/admin/types';
+import type { AdminMessageAttachment, AdminMessageStatusFilter, UserFilterOption } from '../types';
 import { resolveAttachmentKind, type AttachmentKind } from '@/shared/utils/fileFormat';
 
 export const messageRelativeTime = (dateStr?: string): string => {

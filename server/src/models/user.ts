@@ -29,6 +29,22 @@ const userSchema = new Schema<IUser>(
     lastSeen: { type: Date },
     passwordResetToken: { type: String, select: false },
     passwordResetExpires: { type: Date, select: false },
+    /**
+     * Opt-in unfiltered meme feed. Default off, members only, 18+
+     * self-declared at enable time — guests and non-opted members always
+     * get the blacklist-filtered feed.
+     */
+    memeUnfiltered: { type: Boolean, default: false },
+    memeUnfilteredAt: { type: Date },
+    /**
+     * Strikes for abuse (room bans, upheld reports). Drive the trust ladder
+     * (see `services/user/trust.ts`): only strikes inside 30 days count, so
+     * old history forgives itself without a decay job.
+     */
+    strikes: {
+      type: [{ reason: { type: String, required: true }, at: { type: Date, required: true } }],
+      default: [],
+    },
   },
   { timestamps: true }
 );

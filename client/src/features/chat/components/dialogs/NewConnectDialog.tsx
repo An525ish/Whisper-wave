@@ -4,52 +4,34 @@ import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft';
 import AddMemberIcon from '@/shared/components/ui/icons/AddMember';
 import CreateGroupIcon from '@/shared/components/ui/icons/CreateGroup';
 import Tabs from '@/shared/components/ui/swipeable-tabs/Tab';
-import { useEffect, useState } from 'react';
-import AddFriendsPanel from '@/features/chat/components/dialogs/AddFriendsPanel';
-import CreateGroupPanel from '@/features/chat/components/dialogs/CreateGroupPanel';
+import { useState } from 'react';
+import { NEW_CONNECT_TABS as TABS } from '../../constants/chat';
+import AddFriendsPanel from './AddFriendsPanel';
+import CreateGroupPanel from './CreateGroupPanel';
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
-import type { NewConnectTab } from '@/features/chat/types/chat';
+import type { NewConnectTab } from '../../types/chat';
 
-export type { NewConnectTab };
 
-type NewConnectDialogProps = {
+type Props = {
   isOpen: boolean;
   initialTab?: NewConnectTab;
   onClose: () => void;
 };
-
-const TABS: {
-  id: NewConnectTab;
-  label: string;
-  title: string;
-  hint: string;
-}[] = [
-  {
-    id: 'friends',
-    label: 'Friends',
-    title: 'Find people',
-    hint: 'Search and send a friend request',
-  },
-  {
-    id: 'group',
-    label: 'Group',
-    title: 'Build a group',
-    hint: 'Add a name, photo, and members',
-  },
-];
 
 /** Combined sheet — Add friends + Create group as tabs. */
 const NewConnectDialog = ({
   isOpen,
   initialTab = 'friends',
   onClose,
-}: NewConnectDialogProps) => {
+}: Props) => {
   const [activeTab, setActiveTab] = useState<NewConnectTab>(initialTab);
   const isMobileSheet = useMediaQuery('(max-width: 767px)');
 
-  useEffect(() => {
+  const [synced, setSynced] = useState({ isOpen, initialTab });
+  if (synced.isOpen !== isOpen || synced.initialTab !== initialTab) {
+    setSynced({ isOpen, initialTab });
     if (isOpen) setActiveTab(initialTab);
-  }, [isOpen, initialTab]);
+  }
 
   const activeIndex = TABS.findIndex((t) => t.id === activeTab);
   const active = TABS[activeIndex] ?? TABS[0];

@@ -1,6 +1,6 @@
 import SingleAreaChart from '@/shared/components/ui/charts/SingleAreaChart';
 import type { SparkVariant } from '@/shared/components/ui/charts/SingleAreaChart';
-import type { DashboardMetric, DashboardMetricKey } from '@/features/admin/types';
+import type { DashboardMetric, DashboardMetricKey } from '../../../types';
 import Metric from './Metric';
 import OnlineGauge from './OnlineGauge';
 import MetricDivider from '../shared/MetricDivider';
@@ -15,7 +15,7 @@ const SPARK_CONFIG: Record<
   pending: { label: 'Requests received', variant: 'yellow' },
 };
 
-type MetricStripProps = {
+type Props = {
   metrics: DashboardMetric[];
   seriesLabels: string[];
   newUsersSeries: number[];
@@ -49,7 +49,7 @@ const MetricStrip = ({
   requestsSeries,
   onlineUsers,
   totalUsers,
-}: MetricStripProps) => {
+}: Props) => {
   const seriesByKey: Record<Exclude<DashboardMetricKey, 'online'>, number[]> = {
     users: newUsersSeries,
     groups: groupsSeries,

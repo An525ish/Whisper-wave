@@ -1,4 +1,4 @@
-import type { FromFilter, FromOption } from '@/features/chat/types/chat'
+import type { FromFilter, FromOption } from '../../../types/chat'
 import { getInitial } from '@/shared/utils/helpers'
 const PersonAvatar = ({ option, selected }: { option: FromOption; selected: boolean }) => {
   if (option.avatar) {
@@ -19,7 +19,7 @@ const PersonAvatar = ({ option, selected }: { option: FromOption; selected: bool
   )
 }
 
-type SearchFiltersProps = {
+type Props = {
   mode: string
   isGroup: boolean
   fromOptions: FromOption[]
@@ -27,7 +27,7 @@ type SearchFiltersProps = {
   onFromChange: (id: FromFilter) => void
 }
 
-const SearchFilters = ({ mode, isGroup, fromOptions, from, onFromChange }: SearchFiltersProps) => {
+const SearchFilters = ({ mode, isGroup, fromOptions, from, onFromChange }: Props) => {
   if (mode === 'date') return null
 
   return (

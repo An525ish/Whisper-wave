@@ -1,5 +1,6 @@
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
+import * as messageAdminRepo from '../../repositories/messageAdmin.js';
 import type { AdminMessagesPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
 import { trimOptional } from '../../utils/normalize.js';
@@ -17,9 +18,9 @@ export const listMessages = async (input: AdminMessagesQuery): Promise<AdminMess
   const isFirstPage = !before;
 
   const [rows, total] = await Promise.all([
-    messageRepo.listForAdminPage({ limit: fetchLimit, before, status, q, senderId }),
+    messageAdminRepo.listForAdminPage({ limit: fetchLimit, before, status, q, senderId }),
     isFirstPage
-      ? messageRepo.countForAdmin({ status, q, senderId })
+      ? messageAdminRepo.countForAdmin({ status, q, senderId })
       : Promise.resolve(undefined),
   ]);
 
@@ -42,7 +43,7 @@ export const deleteMessage = async (id: string): Promise<void> => {
 };
 
 export const deleteAttachments = async (messageIds: string[]): Promise<void> => {
-  const msgs = await messageRepo.findManyByIds(messageIds);
+  const msgs = await messageAdminRepo.findManyByIds(messageIds);
   const keys = msgs.flatMap((m) =>
     (m.attachments ?? []).map((a: { publicId?: string }) => a.publicId).filter(Boolean) as string[],
   );

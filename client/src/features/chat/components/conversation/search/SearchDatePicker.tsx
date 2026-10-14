@@ -1,11 +1,11 @@
 import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft'
-import { useActiveMessageDatesQuery } from '@/features/chat/hooks'
+import { useActiveMessageDatesQuery } from '../../../hooks'
 import dayjs, { type Dayjs } from 'dayjs'
-import { WEEKDAYS } from '@/features/chat/constants/chat'
-import { useEffect, useMemo, useState } from 'react'
+import { WEEKDAYS } from '../../../constants/chat'
+import { useMemo, useState } from 'react'
 
 
-type SearchDatePickerProps = {
+type Props = {
   chatId?: string
   value: string
   onChange: (next: string) => void
@@ -15,16 +15,18 @@ type SearchDatePickerProps = {
   enabled?: boolean
 }
 
-const SearchDatePicker = ({ chatId, value, onChange, onJump, jumping, statusNote, enabled = true }: SearchDatePickerProps) => {
+const SearchDatePicker = ({ chatId, value, onChange, onJump, jumping, statusNote, enabled = true }: Props) => {
   const today = dayjs().startOf('day')
   const selected = value ? dayjs(value) : null
   const [cursor, setCursor] = useState<Dayjs>(() => (selected?.isValid() ? selected : today).startOf('month'))
   const [panel, setPanel] = useState<'days' | 'years'>('days')
   const [yearCursor, setYearCursor] = useState(() => (selected?.isValid() ? selected : today).year())
 
-  useEffect(() => {
+  const [prevValue, setPrevValue] = useState(value)
+  if (prevValue !== value) {
+    setPrevValue(value)
     if (selected?.isValid()) { setCursor(selected.startOf('month')); setYearCursor(selected.year()) }
-  }, [value]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   const days = useMemo(() => {
     const start = cursor.startOf('month')
@@ -50,9 +52,8 @@ const SearchDatePicker = ({ chatId, value, onChange, onJump, jumping, statusNote
     { enabled: Boolean(enabled && chatId) },
   )
 
-  const activeDates = activeDatesResult?.dates ?? []
   const minYear = activeDatesResult?.minYear ?? null
-  const activeDateSet = useMemo(() => new Set(activeDates), [activeDates])
+  const activeDateSet = useMemo(() => new Set(activeDatesResult?.dates ?? []), [activeDatesResult?.dates])
 
   const maxYear = today.year()
   const yearStart = Math.floor(yearCursor / 12) * 12

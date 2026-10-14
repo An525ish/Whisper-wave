@@ -3,18 +3,18 @@ import { createPortal } from 'react-dom';
 import { useSocket } from '@/shared/lib/socket/SocketProvider';
 import { SOCKET_EVENTS } from '@/shared/constants/socket';
 import { useAuthStore } from '@/features/auth';
-import ReactionAddIcon from '@/features/chat/components/message/ReactionAddIcon';
-import ReactionStrip, { REACTION_SURFACE_CLASS, saveRecentEmoji } from '@/features/chat/components/message/ReactionStrip';
-import type { MessageReaction } from '@/features/chat/types/chat';
+import ReactionAddIcon from '@/shared/components/ui/icons/ReactionAdd';
+import ReactionStrip, { REACTION_SURFACE_CLASS, saveRecentEmoji } from './ReactionStrip';
+import type { MessageReaction } from '../../types/chat';
 
-type MessageReactionsProps = {
+type Props = {
   reactions: MessageReaction[];
   messageId: string;
   chatId: string;
   sameSender: boolean;
 };
 
-const MessageReactions = ({ reactions, messageId, chatId, sameSender }: MessageReactionsProps) => {
+const MessageReactions = ({ reactions, messageId, chatId, sameSender }: Props) => {
   const socket = useSocket();
   const user = useAuthStore((s) => s.user);
   const [pickerOpen, setPickerOpen] = useState(false);

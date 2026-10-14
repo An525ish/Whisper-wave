@@ -1,12 +1,12 @@
-import AuthField from '@/features/auth/components/AuthField';
-import AuthSubmit from '@/features/auth/components/AuthSubmit';
-import OtpInput from '@/features/auth/components/OtpInput';
-import UsernameStatusBadge from '@/features/auth/components/UsernameStatusBadge';
+import AuthField from './AuthField';
+import AuthSubmit from './AuthSubmit';
+import OtpInput from './OtpInput';
+import UsernameStatusBadge from './UsernameStatusBadge';
 import CheckStrokeIcon from '@/shared/components/ui/icons/CheckStroke';
 import MailIcon from '@/shared/components/ui/icons/Mail';
-import { useUsernameAvailability } from '@/features/auth/hooks/useUsernameAvailability';
-import type { RegisterStep2Form } from '@/features/auth/types';
-import { validateOtp, validateUsername } from '@/features/auth/utils/authValidators';
+import { useUsernameAvailability } from '../hooks/useUsernameAvailability';
+import type { RegisterStep2Form } from '../types';
+import { validateOtp, validateUsername } from '../utils/authValidators';
 import { Controller, useForm } from 'react-hook-form';
 
 type RegisterStep2Props = {

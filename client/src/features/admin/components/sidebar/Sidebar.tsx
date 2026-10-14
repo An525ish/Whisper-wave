@@ -1,14 +1,10 @@
 import type { ReactNode } from 'react';
-import SidebarFooter from '@/features/admin/components/sidebar/SidebarFooter';
-import SidebarHeader from '@/features/admin/components/sidebar/SidebarHeader';
-import { SIDEBAR_PAD, sidebarAsideClass } from '@/features/admin/components/sidebar/constants';
-import { SidebarProvider, useSidebar } from '@/features/admin/components/sidebar/context';
+import SidebarFooter from './SidebarFooter';
+import SidebarHeader from './SidebarHeader';
+import { SIDEBAR_PAD, sidebarAsideClass } from './constants';
+import { SidebarProvider, useSidebar } from './context';
 
-type SidebarShellProps = {
-  children: ReactNode;
-};
-
-const SidebarShell = ({ children }: SidebarShellProps) => {
+const SidebarShell = ({ children }: { children: ReactNode }) => {
   const { expanded } = useSidebar();
 
   return (
@@ -27,12 +23,12 @@ const SidebarShell = ({ children }: SidebarShellProps) => {
   );
 };
 
-type SidebarProps = {
+type Props = {
   children: ReactNode;
   defaultExpanded?: boolean;
 };
 
-const Sidebar = ({ children, defaultExpanded }: SidebarProps) => (
+const Sidebar = ({ children, defaultExpanded }: Props) => (
   <SidebarProvider defaultExpanded={defaultExpanded}>
     <SidebarShell>{children}</SidebarShell>
   </SidebarProvider>

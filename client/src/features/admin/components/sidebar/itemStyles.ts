@@ -1,4 +1,4 @@
-import { ICON_TILE } from '@/features/admin/components/sidebar/constants';
+import { ICON_TILE } from './constants';
 
 type ItemStyleInput = {
   expanded: boolean;

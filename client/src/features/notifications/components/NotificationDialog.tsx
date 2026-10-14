@@ -1,6 +1,7 @@
 import DialogWrapper from '@/shared/components/ui/DialogWrapper';
 import BottomSheet from '@/shared/components/ui/BottomSheet';
-import NotificationTabView from '@/features/notifications/components/NotificationTabView';
+import NotificationTabView from './NotificationTabView';
+import PushToggle from './PushToggle';
 import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft';
 
 type NotificationDialogProps = {
@@ -39,6 +40,7 @@ const NotificationHeader = ({ onClose }: { onClose: () => void }) => (
 const NotificationBody = ({ onClose }: { onClose?: () => void }) => (
   <>
     {onClose ? <NotificationHeader onClose={onClose} /> : null}
+    <PushToggle />
     <div className="min-h-0 flex-1 overflow-hidden px-3 pb-4 sm:px-5">
       <NotificationTabView />
     </div>

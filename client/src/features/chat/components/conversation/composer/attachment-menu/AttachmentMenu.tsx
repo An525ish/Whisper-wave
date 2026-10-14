@@ -9,9 +9,9 @@ import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { useMediaQuery } from '@/shared/hooks';
 import { validateFiles } from '@/shared/utils/helpers';
-import { UPLOAD_TYPES, type UploadLimits } from '@/features/chat/constants/upload';
+import { UPLOAD_TYPES, type UploadLimits } from '../../../../constants/upload';
 
-type AttachmentMenuProps = {
+type Props = {
   onClose: () => void;
   onFileSelect: (type: string, files: File[]) => void;
   clipIconRef: RefObject<HTMLElement | null>;
@@ -41,7 +41,7 @@ const AttachmentMenu = ({
   onClose,
   onFileSelect,
   clipIconRef,
-}: AttachmentMenuProps) => {
+}: Props) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const isDesktop = useMediaQuery('(min-width: 640px)');
 

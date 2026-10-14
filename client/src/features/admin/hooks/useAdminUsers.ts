@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
-import * as adminApi from '@/features/admin/api/admin';
-import { adminQueryKeys as queryKeys } from '@/features/admin/hooks/queryKeys';
+import * as adminApi from '../api/admin';
+import { adminQueryKeys as queryKeys } from './queryKeys';
 
 export function useAdminUsersQuery(
   search = '',

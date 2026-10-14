@@ -1,8 +1,8 @@
-import LinkPreviewCard from '@/features/chat/components/link/LinkPreviewCard';
+import LinkPreviewCard from '../../link/LinkPreviewCard';
 import CloseIcon from '@/shared/components/ui/icons/Close';
-import type { ParsedLink } from '@/features/chat/utils/linkParser';
+import type { ParsedLink } from '../../../utils/linkParser';
 
-type ComposerLinkPreviewProps = {
+type Props = {
   link: ParsedLink;
   onDismiss: () => void;
   /** When stacked below the reply strip, skip top glow and match reply chrome. */
@@ -13,7 +13,7 @@ const ComposerLinkPreview = ({
   link,
   onDismiss,
   hasReplyAbove = false,
-}: ComposerLinkPreviewProps) => (
+}: Props) => (
   <div
     className="animate-reply-strip-rise relative motion-reduce:animate-none"
     role="status"

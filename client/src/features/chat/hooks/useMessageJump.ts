@@ -1,14 +1,9 @@
 import { useCallback } from 'react';
 import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
-import * as chatApi from '@/features/chat/api/chat';
+import * as chatApi from '../api/chat';
 import { queryKeys } from './queryKeys';
-import type { MessagesPage } from '@/features/chat/types/chat';
-
-type ContextResponse = {
-  page: number;
-  totalPages: number;
-  data: MessagesPage['data'];
-};
+import type { MessagesPage } from '../types/chat';
+import type { MessageContextResponse } from '../types/local';
 
 /**
  * Returns `ensureMessageLoaded(messageId)` — call it before setting
@@ -35,7 +30,7 @@ export function useMessageJump(chatId: string | undefined) {
         return;
       }
 
-      const ctx = (await chatApi.getMessageContext(chatId, messageId)) as ContextResponse;
+      const ctx = (await chatApi.getMessageContext(chatId, messageId)) as MessageContextResponse;
       const currentPageCount = cached?.pages.length ?? 0;
 
       if (ctx.page <= currentPageCount) return;

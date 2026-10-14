@@ -1,9 +1,11 @@
 import { getRedis } from '../../config/redis.js';
 import { META_FIELDS, REDIS_KEYS, TTL } from './keys.js';
 import { getSession } from './session.js';
+import { saveClaim } from './claim.js';
 import { issueConnectToken } from './connectToken.js';
 import { AppError } from '../../utils/AppError.js';
-import type { ConnectTokenPayload, LikeResult } from '../../types/match.js';
+import { logger } from '../../utils/logger.js';
+import type { ConnectTokenPayload, LikeResult, VibeTag } from '../../types/match.js';
 
 /**
  * Mutual-like token pairs a single session may mint. A re-like after the mutual
@@ -61,6 +63,26 @@ export const recordLike = async (
 
   const names = [session.name1, session.name2];
   const tags = [session.tags1, session.tags2];
+
+  // The tab-closing fix: a claim per seat, so a mutual vibe survives even if
+  // the tab (and its sessionStorage token) is gone. Best-effort — the mutual
+  // itself already happened; a failed write only loses the shortcut (logged).
+  const createdAt = Date.now();
+  const claimFor = (seat: 0 | 1) => ({
+    sessionId,
+    seat,
+    originNames: [names[0], names[1]] as [string, string],
+    originTags: [tags[0], tags[1]] as [VibeTag[], VibeTag[]],
+    createdAt,
+  });
+  try {
+    await Promise.all([
+      saveClaim(session.anon1, claimFor(0)),
+      saveClaim(session.anon2, claimFor(1)),
+    ]);
+  } catch (err) {
+    logger.warn({ err, sessionId }, 'Failed to save mutual-like claims');
+  }
 
   // No anonIds in a token: it is handed to the client and a JWT payload is
   // readable. `side` is the holder's seat; the server resolves ids from the session.

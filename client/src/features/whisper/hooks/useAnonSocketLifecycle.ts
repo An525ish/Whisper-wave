@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { io, type Socket } from 'socket.io-client';
-import { BASE_URL } from '@/shared/constants/app';
+import { useEffect, useRef } from 'react';
+import type { Socket } from 'socket.io-client';
+import { createNamespaceSocket } from '@/shared/lib/socket/createNamespaceSocket';
 import { SOCKET_LIFECYCLE } from '@/shared/constants/socket';
-import { CONNECTION_LOST_NOTICE, CONNECTION_REFUSED_NOTICE, RESUME_ENDED_NOTICE } from '../constants';
+import { ANON_NAMESPACE, CONNECTION_LOST_NOTICE, CONNECTION_REFUSED_NOTICE, RESUME_ENDED_NOTICE } from '../constants';
 import { useAnonStore } from '../stores/anonStore';
 import { bindAnonEvents } from './bindAnonEvents';
 import type { AnonSocketRef } from '../types';
@@ -15,9 +15,9 @@ interface Params {
 /**
  * Owns the `/anon` socket connection.
  *
- * Exception to "use the shared socket module": the guest `/anon` namespace has its
- * own handshake (httpOnly anonId cookie, no account) and its own lifetime, so it
- * cannot sit behind the app-wide `SocketProvider`; its raw lifecycle names come
+ * Built on the shared `createNamespaceSocket` factory, but not behind the app-wide
+ * `SocketProvider`: the guest `/anon` namespace has its own handshake (httpOnly
+ * anonId cookie, no account) and its own lifetime. Its raw lifecycle names come
  * from `shared/constants/socket.ts`.
  *
  * The socket connects only once the identity card is saved (status leaves
@@ -47,18 +47,10 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Param
     // One notice per outage: reconnection retries forever, and a toast per retry is noise.
     let outageNotified = false;
 
-    const socket = io(`${BASE_URL}/anon`, {
-      withCredentials: true,
+    const socket = createNamespaceSocket(ANON_NAMESPACE, {
       // Evaluated on every (re)connect attempt: only a refresh-restore asks the
       // server to replay without queueing; normal connects send nothing.
       auth: (cb) => cb(store().status === 'resuming' ? { resume: true } : {}),
-      autoConnect: false,
-      transports: ['websocket'],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 800,
-      reconnectionDelayMax: 5000,
-      timeout: 20_000,
     });
     socketRef.current = socket;
 
@@ -122,10 +114,4 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Param
   }, [shouldConnect]);
 
   return socketRef;
-}
-
-/** Partner typing indicator state, colocated with the socket that drives it. */
-export function usePartnerTyping(): [boolean, (v: boolean) => void] {
-  const [typing, setTyping] = useState(false);
-  return [typing, setTyping];
 }

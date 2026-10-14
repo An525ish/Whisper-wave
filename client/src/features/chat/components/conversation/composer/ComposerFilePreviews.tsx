@@ -1,9 +1,8 @@
 import type { Dispatch, SetStateAction } from 'react';
-import FilePreview from '@/features/chat/components/conversation/composer/attachment-menu/FilePreview';
+import FilePreview from './attachment-menu/FilePreview';
+import type { ImageQuality } from '../../../types/local';
 
-type ImageQuality = 'standard' | 'hd';
-
-type ComposerFilePreviewsProps = {
+type Props = {
   attachments: File[];
   onRemoveFile: (file: File) => void;
   imageQuality: ImageQuality;
@@ -20,7 +19,7 @@ const ComposerFilePreviews = ({
   onRemoveFile,
   imageQuality,
   setImageQuality,
-}: ComposerFilePreviewsProps) => {
+}: Props) => {
   const hasCompressibleImage = attachments.some(
     (f) => f.type.startsWith('image/') && f.type !== 'image/gif',
   );

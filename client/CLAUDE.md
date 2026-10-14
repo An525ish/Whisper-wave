@@ -87,15 +87,17 @@ src/
 │   └── RouteError.tsx
 │
 ├── pages/                    # Route entries. THIN. Compose features + route params only.
-│   ├── Home.tsx  Chat.tsx  Auth.tsx  Landing.tsx  SparkPass.tsx  PageNotFound.tsx
+│   ├── Home.tsx  Whisper.tsx  Memes.tsx  Rooms.tsx  Room.tsx  NewRoom.tsx
+│   ├── Chats.tsx  Chat.tsx  Auth.tsx  Landing.tsx  SparkPass.tsx  PageNotFound.tsx
 │   ├── admin/AdminAuth.tsx
-│   └── legal/Privacy.tsx  Terms.tsx  ReportAbuse.tsx
+│   └── legal/Privacy.tsx  Terms.tsx  Guidelines.tsx  Safety.tsx  Cookies.tsx  ReportAbuse.tsx
 │
-├── layout/                   # App-shell layout wrappers (AppWrapper, AdminWrapper)
+├── layout/                   # App-shell layout wrappers (HubShell, ChatsLayout,
+│                             #   hubNav, useAppSocketEvents, AdminWrapper)
 │                             #   app-wide presence/alert sockets OK here; message cache in features
 │
 ├── features/                 # THE BUSINESS FUNCTIONALITY — one folder per domain
-│   └── <domain>/             #   auth · chat · admin · profile · notifications · landing
+│   └── <domain>/             #   auth · chat · whisper · hub · rooms · memes · admin · profile · notifications · landing
 │       ├── api/              #   HTTP helpers via shared api client — no logic, no UI
 │       ├── components/       #   this domain's React components (may nest by sub-area)
 │       ├── hooks/            #   useXxxQueries / useXxxMutations / useXxx / queryKeys.ts
@@ -132,6 +134,8 @@ or `layout/`. No domain code in `shared/`.
 - Is it generic and reusable by any area, knowing nothing about the domain?
   → `shared/…`
 - Is it a URL the user navigates to? → `pages/…` (and it just composes features).
+- Is it app chrome (nav, shell frame, app-wide sockets)? → `layout/…`
+  (`HubShell` for everyone incl. guests, `ChatsLayout` for the messages app).
 - Is it app wiring (router/providers/query client)? → `app/…`
 
 ---
@@ -362,6 +366,21 @@ const { register, handleSubmit } = useForm<FormValues>({ mode: 'onChange' });
 5. New socket events → add name constants to `shared/constants/socket.ts`.
 6. New queries → add keys to that feature's `hooks/queryKeys.ts` (never inline).
 
+### Add a hub card
+
+Hub home cards are **feature-owned** (HUB_PLAN §7.1). The feature exports its card (and any
+preview) from its `index.ts`; `features/hub` only composes them in `HomeDoors` / `HomeSections`.
+A card takes `enabled` (the server flag) and renders nothing when off; it shows live counts only
+through `publicHeadcount` (3+ people). Cards reuse the hub home's `hw-*` classes (loaded by
+`HubHome`). Games is skipped — no card, no nav item.
+
+### Dialogs
+
+Use the shared `shared/components/ui/modal/Dialog` (portal, focus trap + restore, scroll lock,
+Escape, `aria-modal`/`aria-labelledby`) for every modal dialog; a feature's own dialog is a thin
+wrapper that supplies content and optional class overrides. Do not hand-roll `role="dialog"`.
+Sheets stay on `BottomSheet`, confirms on `ConfirmationModal`.
+
 ### Add a shared component
 1. Place it in the right `shared/components/<category>/` folder (create a kebab-case
    category folder if none fits).
@@ -371,7 +390,7 @@ const { register, handleSubmit } = useForm<FormValues>({ mode: 'onChange' });
 ### Before you consider a change done
 - No file exceeds 350 lines; no `console.*`; no `any`; no `shared → features` import.
 - No inline query keys; no second HTTP client; no new undeclared `VITE_*`.
-- Run **`npm run typecheck`** and **`npm run lint`** — both must pass.
+- Run **`npm run typecheck`**, **`npm run lint`** and **`npm test`** — all must pass.
 - New logic that isn't trivially obvious gets a test or a manual-verification note.
 
 ---

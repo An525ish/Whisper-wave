@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-type MetricProps = {
+type Props = {
   label: string;
   value: number | string;
   accent: string;
@@ -8,7 +8,7 @@ type MetricProps = {
   spark: ReactNode;
 };
 
-const Metric = ({ label, value, accent, hint, spark }: MetricProps) => (
+const Metric = ({ label, value, accent, hint, spark }: Props) => (
   <div className="flex min-h-36 min-w-22 flex-1 flex-col px-4 first:pl-0 last:pr-0 sm:min-w-28">
     <p className={`font-semibold text-3xl leading-none tabular-nums sm:text-4xl ${accent}`}>
       {value}

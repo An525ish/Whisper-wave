@@ -1,4 +1,4 @@
-import type { UsernameAvailabilityStatus } from '@/features/auth/hooks/useUsernameAvailability';
+import type { UsernameAvailabilityStatus } from '../hooks/useUsernameAvailability';
 
 type UsernameStatusBadgeProps = { status: UsernameAvailabilityStatus };
 

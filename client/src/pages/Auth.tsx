@@ -8,6 +8,7 @@ import {
 } from '@/features/auth';
 import { WhisperConnectNotice, useWhisperAuthIntent } from '@/features/whisper';
 import { PRODUCT_VOICE } from '@/shared/constants/app';
+import { ROUTES } from '@/shared/constants/routes';
 
 /**
  * Auth route entry. Composes feature components and reads route state only —
@@ -48,7 +49,7 @@ export default function Auth() {
     >
       <WhisperConnectNotice
         names={names}
-        onStayAnonymous={() => navigate('/whisper', { replace: true })}
+        onStayAnonymous={() => navigate(ROUTES.whisper, { replace: true })}
       />
 
       {isForget ? (

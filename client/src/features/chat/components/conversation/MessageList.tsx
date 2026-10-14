@@ -1,15 +1,15 @@
 import type { Dispatch, MouseEvent, SetStateAction } from 'react';
 import type { Virtualizer } from '@tanstack/react-virtual';
-import SwipeToReply from '@/features/chat/components/message/SwipeToReply';
-import ChatBox from '@/features/chat/components/message/MessageRow';
-import MessageReactions from '@/features/chat/components/message/MessageReactions';
-import ChatDayLabel from '@/features/chat/components/conversation/ChatDayLabel';
+import SwipeToReply from '@/shared/components/ui/SwipeToReply';
+import ChatBox from '../message/MessageRow';
+import MessageReactions from '../message/MessageReactions';
+import ChatDayLabel from './ChatDayLabel';
 import type { useLongPress } from '@/shared/hooks/useLongPress';
-import type { StickyDayHeader } from '@/features/chat/hooks/useChatScroll';
-import type { ChatMessage, ConfirmDeleteState, TimelineItem } from '@/features/chat/types/chat';
+import type { StickyDayHeader } from '../../types/local';
+import type { ChatMessage, ConfirmDeleteState, TimelineItem } from '../../types/chat';
 import type { MediaFile } from '@/shared/components/ui/image-viewer/ImageViewer';
 
-type MessageListProps = {
+type Props = {
   virtualizer: Virtualizer<HTMLDivElement, Element>;
   timelineItems: TimelineItem[];
   isDateHeaderScrolling: boolean;
@@ -43,7 +43,7 @@ const MessageList = ({
   chatId, sharedGalleryFiles, isGroupChat, isMessageRead,
   highlightedMessageId, highlightQuery,
   setConfirmDelete, openForwardDialog, startReply, openMessageContextMenu, bindLongPress,
-}: MessageListProps) => (
+}: Props) => (
   <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
     {virtualizer.getVirtualItems().map((item) => {
       const entry = timelineItems[item.index];

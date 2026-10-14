@@ -2,15 +2,19 @@ import AvatarCard from '@/shared/components/ui/AvatarCard';
 import useErrors from '@/shared/hooks/useError';
 import { useHandleFriendRequestMutation } from '@/features/chat';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import type {
   MessageNotifyItem,
   FriendRequestNotifyItemProps,
-} from '@/features/notifications/types';
+} from '../types';
 import CountBadge from '@/shared/components/ui/CountBadge';
+import { ROUTES } from '@/shared/constants/routes';
+import { useNowWhile } from '@/shared/hooks/useNowWhile';
+
+const RELATIVE_TIME_TICK_MS = 60_000;
 
 dayjs.extend(relativeTime);
 
@@ -19,21 +23,8 @@ type NotificationItemProps = {
 };
 
 const useRelativeTime = (timestamp?: string | number) => {
-  const [timeAgo, setTimeAgo] = useState('');
-
-  useEffect(() => {
-    if (!timestamp) {
-      setTimeAgo('');
-      return;
-    }
-
-    const update = () => setTimeAgo(dayjs(timestamp).fromNow());
-    update();
-    const timer = setInterval(update, 60_000);
-    return () => clearInterval(timer);
-  }, [timestamp]);
-
-  return timeAgo;
+  const now = useNowWhile(Boolean(timestamp), RELATIVE_TIME_TICK_MS);
+  return timestamp ? dayjs(timestamp).from(now) : '';
 };
 
 export const NotificationItem = ({ notification }: NotificationItemProps) => {
@@ -43,7 +34,7 @@ export const NotificationItem = ({ notification }: NotificationItemProps) => {
 
   return (
     <Link
-      to={`/chat/${id}`}
+      to={ROUTES.chat(id)}
       className="flex items-center gap-2 rounded-2xl px-2 py-2.5 transition hover:bg-gradient-row-hover"
     >
       <AvatarCard avatars={[avatar]} avatarClassName="shadow-none" />

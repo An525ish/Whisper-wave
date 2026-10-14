@@ -1,14 +1,14 @@
 import Image from '@/shared/components/ui/Image';
-import type { AdminGroupRow } from '@/features/admin/types';
-import { formatGroupCreated } from '@/features/admin/utils/groups';
+import type { AdminGroupRow } from '../../../types';
+import { formatGroupCreated } from '../../../utils/groups';
 import GroupAvatar from './GroupAvatar';
 
-type GroupRowProps = {
+type Props = {
   group: AdminGroupRow;
   onOpen: () => void;
 };
 
-const GroupRow = ({ group, onOpen }: GroupRowProps) => {
+const GroupRow = ({ group, onOpen }: Props) => {
   const memberCount = group.members?.length ?? 0;
   const creatorName = group.creator?.name ?? 'Unknown';
 

@@ -1,5 +1,5 @@
 import PencilIcon from '@/shared/components/ui/icons/Pencil'
-import { emptyProfileBioCopy } from '@/features/profile/constants'
+import { emptyProfileBioCopy } from '../constants'
 
 type ProfileNameBlockProps = {
   name?: string

@@ -14,7 +14,7 @@ import type { MouseEvent, ReactNode } from 'react';
 import VideosIcon from '@/shared/components/ui/icons/Video';
 import MicrophoneIcon from '@/shared/components/ui/icons/Microphone';
 
-type RenderAttachmentsProps = {
+type Props = {
   fileType: FileFormatKind | string;
   url: string;
   name?: string;
@@ -27,15 +27,6 @@ type RenderAttachmentsProps = {
   fill?: boolean;
   /** WhatsApp-style album tile — no outer radius, fills grid cell. */
   album?: boolean;
-  onDownload?: (e: MouseEvent) => void;
-};
-
-type RenderFileProps = {
-  fileExtension: string;
-  fileName?: string;
-  size?: number;
-  overlay?: ReactNode;
-  fill?: boolean;
   onDownload?: (e: MouseEvent) => void;
 };
 
@@ -121,7 +112,7 @@ const RenderAttachments = ({
   fill = false,
   album = false,
   onDownload,
-}: RenderAttachmentsProps) => {
+}: Props) => {
   const isGif = fileType === 'gif' || type === 'image/gif' || isGifFile(url, name);
   const isImage = type?.startsWith('image/') || fileType === 'image' || isGif;
   const isVideo = type?.startsWith('video/') || fileType === 'video';
@@ -226,7 +217,7 @@ const RenderFile = ({
   overlay,
   fill = false,
   onDownload,
-}: RenderFileProps) => {
+}: { fileExtension: string; fileName?: string; size?: number; overlay?: ReactNode; fill?: boolean; onDownload?: (e: MouseEvent) => void }) => {
   const fileDetails = fileData.find((file) => file.docType === fileExtension);
   const sizeLabel = formatBytes(size);
   const ext =

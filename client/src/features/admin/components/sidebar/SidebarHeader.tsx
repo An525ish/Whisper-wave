@@ -1,7 +1,7 @@
-import CollapseButton from '@/features/admin/components/sidebar/CollapseButton';
-import SidebarCollapseSlot from '@/features/admin/components/sidebar/SidebarCollapseSlot';
-import { BRAND_SLOT, SIDEBAR_PAD } from '@/features/admin/components/sidebar/constants';
-import { useSidebar } from '@/features/admin/components/sidebar/context';
+import CollapseButton from './CollapseButton';
+import SidebarCollapseSlot from './SidebarCollapseSlot';
+import { BRAND_SLOT, SIDEBAR_PAD } from './constants';
+import { useSidebar } from './context';
 
 const LOGO = '/logo-4.png';
 

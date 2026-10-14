@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { TimelineItem } from '@/features/chat/types/chat';
+import type { TimelineItem } from '../types/chat';
+import type { StickyDayHeader } from '../types/local';
 
 const NEAR_BOTTOM_PX = 120;
 const STICKY_TOP_PX = 10;
@@ -8,16 +9,9 @@ const DAY_ROW_ESTIMATE_PX = 44;
 const MESSAGE_ROW_ESTIMATE_PX = 120;
 const SCROLL_IDLE_MS = 700;
 
-export type StickyDayHeader = {
-  label: string;
-  dayIndex: number;
-  pushY: number;
-};
-
 interface Params {
   chatId: string | undefined;
   timelineItems: TimelineItem[];
-  timelineRef: React.MutableRefObject<TimelineItem[]>;
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   fetchNextPage: () => Promise<unknown>;
@@ -30,7 +24,6 @@ interface Params {
 export function useChatScroll({
   chatId,
   timelineItems,
-  timelineRef,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
@@ -40,6 +33,8 @@ export function useChatScroll({
   historyMessagesLength,
 }: Params) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const timelineRef = useRef(timelineItems);
+  useEffect(() => { timelineRef.current = timelineItems; }, [timelineItems]);
   const didInitialScrollRef = useRef(false);
   const isNearBottomRef = useRef(true);
   // Refs so the scroll handler reads the latest values without re-registering on every page fetch
@@ -60,7 +55,7 @@ export function useChatScroll({
     count: timelineItems.length,
     getScrollElement: () => containerRef.current,
     estimateSize: (index) =>
-      timelineRef.current[index]?.kind === 'day' ? DAY_ROW_ESTIMATE_PX : MESSAGE_ROW_ESTIMATE_PX,
+      timelineItems[index]?.kind === 'day' ? DAY_ROW_ESTIMATE_PX : MESSAGE_ROW_ESTIMATE_PX,
     overscan: 8,
     getItemKey: (index) => timelineItems[index]?.key ?? index,
   });

@@ -6,4 +6,8 @@ export const queryKeys = {
   /** The "how we met" story behind a DM. */
   connectionOrigin: (chatId: string | undefined) =>
     ['connection-origin', chatId] as const,
+  /** Mutual-like claims + rows waiting on the partner. Members only. */
+  pending: ['whisper', 'pending'] as const,
+  /** Remaining whispers today. Members only. */
+  quota: ['whisper', 'quota'] as const,
 } as const;

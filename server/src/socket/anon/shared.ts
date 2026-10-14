@@ -1,13 +1,6 @@
 import { MATCH_ERROR } from '../../constants/anon-events.js';
 import { AppError } from '../../utils/AppError.js';
-import type {
-  AnonFailureCode,
-  AnonLikeFailureCode,
-  AnonMessageSide,
-  AnonReaction,
-  AnonReactionEvent,
-  SocketAck,
-} from '../../types/match.js';
+import type { AnonFailureCode, AnonLikeFailureCode, AnonMessageSide, AnonReaction, AnonReactionEvent, SocketAck } from '../../types/matchMessage.js';
 import type { AnonSocket } from '../../types/anonSocket.js';
 
 /**

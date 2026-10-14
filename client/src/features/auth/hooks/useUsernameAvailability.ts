@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import * as authApi from '@/features/auth/api/auth';
-import { usernameSchema } from '@/features/auth/utils/authValidators';
+import * as authApi from '../api/auth';
+import { usernameSchema } from '../utils/authValidators';
 
 export type UsernameAvailabilityStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error';
 

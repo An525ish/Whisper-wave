@@ -1,8 +1,8 @@
 import SingleAreaChart from '@/shared/components/ui/charts/SingleAreaChart';
-import { DASHBOARD_PULSE_PANEL_CLASS } from '@/features/admin/constants/dashboard';
+import { DASHBOARD_PULSE_PANEL_CLASS } from '../../../constants/dashboard';
 import SectionHead from '../shared/SectionHead';
 
-type WeeklyPulseSectionProps = {
+type Props = {
   seriesLabels: string[];
   messagesSeries: number[];
 };
@@ -10,7 +10,7 @@ type WeeklyPulseSectionProps = {
 const WeeklyPulseSection = ({
   seriesLabels,
   messagesSeries,
-}: WeeklyPulseSectionProps) => (
+}: Props) => (
   <div className="flex flex-col lg:col-span-7">
     <SectionHead
       title="Weekly pulse"

@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useDeleteMessageMutation, useForwardMessagesMutation } from '@/features/chat';
-import type { MediaFile } from '@/features/profile/components/shared-content/types';
-import type { ViewerMediaFile } from '@/features/profile/types';
+import type { MediaFile } from '../components/shared-content/types';
+import type { ViewerMediaFile } from '../types';
 
 type UseProfileMediaViewerParams = {
   chatId: string | undefined;

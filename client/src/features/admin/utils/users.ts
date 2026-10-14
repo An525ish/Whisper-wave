@@ -1,4 +1,4 @@
-import type { AdminUserRow } from '@/features/admin/types';
+import type { AdminUserRow } from '../types';
 
 export const formatUserJoined = (dateStr?: string): string =>
   dateStr

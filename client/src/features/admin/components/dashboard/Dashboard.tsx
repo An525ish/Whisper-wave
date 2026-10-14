@@ -1,4 +1,4 @@
-import { useDashboardPage } from '@/features/admin/hooks';
+import { useDashboardPage } from '../../hooks';
 import DashboardHeader from './header/DashboardHeader';
 import MetricStrip from './metrics/MetricStrip';
 import GrowthChartSection from './charts/GrowthChartSection';

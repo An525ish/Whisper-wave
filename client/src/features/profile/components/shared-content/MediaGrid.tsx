@@ -2,7 +2,7 @@ import AudiosIcon from '@/shared/components/ui/icons/Audio'
 import EmptyState from '@/shared/components/ui/EmptyState'
 import { RetryableMediaImage, RetryableMediaVideo } from '@/shared/components/ui/media/RetryableMedia'
 import { getMediaDisplayName, getMediaKindFromFile } from '@/shared/utils/fileFormat'
-import type { MediaFile } from '@/features/profile/components/shared-content/types'
+import type { MediaFile } from './types'
 
 const ExpandIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 20 20" fill="none" aria-hidden>

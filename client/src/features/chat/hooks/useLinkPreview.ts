@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchLinkPreview } from '@/features/chat/api/linkPreview';
+import { fetchLinkPreview } from '../api/linkPreview';
 
 export function useLinkPreviewQuery(url: string | null) {
   return useQuery({

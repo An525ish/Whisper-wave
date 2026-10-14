@@ -2,7 +2,7 @@ import { before, after } from 'node:test';
 import { connectRedis, disconnectRedis } from '../../../config/redis.js';
 import { env } from '../../../config/env.js';
 import { getSession, recordMessage } from '../session.js';
-import type { StoredAnonMessage } from '../../../types/match.js';
+import type { StoredAnonMessage } from '../../../types/matchMessage.js';
 
 /**
  * Shared Redis lifecycle for the match integration suites.

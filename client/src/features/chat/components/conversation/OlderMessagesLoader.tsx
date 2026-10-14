@@ -1,8 +1,8 @@
-type OlderMessagesLoaderProps = {
+type Props = {
   visible: boolean;
 };
 
-const OlderMessagesLoader = ({ visible }: OlderMessagesLoaderProps) => {
+const OlderMessagesLoader = ({ visible }: Props) => {
   if (!visible) return null;
 
   return (

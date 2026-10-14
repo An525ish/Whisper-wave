@@ -1,30 +1,26 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { track } from '@/shared/lib/analytics';
 import { ApiError } from '@/shared/lib/api/client';
-import { RESUME_DEADLINE_MS, RESUME_ENDED_NOTICE, WHISPER_EVENTS } from '../constants';
+import { WHISPER_EVENTS } from '../constants';
 import { useAnonStore } from '../stores/anonStore';
-import { trackSessionEnd } from '../stores/trackSessionEnd';
-import { readStoredIdentity } from '../utils/anonIdentityStorage';
-import { clearResumeFlag, hasResumeFlag } from '../utils/resumeFlag';
-import { useAuthStore } from '@/features/auth';
-import { useAccountBinding } from './useAccountBinding';
+import { clearResumeFlag } from '../utils/resumeFlag';
 import { useAnonChat } from './useAnonChat';
 import { useAnonSocket } from './useAnonSocket';
-import { usePartnerTyping } from './useAnonSocketLifecycle';
-import { useLeaveGuard } from './useLeaveGuard';
+import { useLeaveConfirm } from './useLeaveConfirm';
 import { useJoinQueueMutation, useLeaveQueueMutation } from './useMatchQueueMutations';
-import { useOpenWhisperDm } from './useOpenWhisperDm';
+import { useWhisperSession } from './useWhisperSession';
 import type { JoinQueuePayload, NextSource } from '../types';
 
 /**
  * The whole Whisper flow as one controller.
  *
- * `pages/Whisper.tsx` is a route entry — the store selection, the redirect, the
- * Back-button rule, the leave/skip confirms and every analytics call live here.
+ * `pages/Whisper.tsx` is a route entry — the store selection, the redirect,
+ * the leave/skip confirms and every analytics call live here. The transport
+ * (socket, resume, account binding) lives in `WhisperSessionProvider`, so a
+ * live whisper survives navigating away from this route.
  */
 export function useWhisperFlow() {
-  useAccountBinding();
-  const openDm = useOpenWhisperDm();
+  const { socketRef, partnerTyping, setPartnerTyping } = useWhisperSession();
 
   // Match state
   const status = useAnonStore((s) => s.status);
@@ -32,7 +28,6 @@ export function useWhisperFlow() {
   // The current thread is called by the alias this match started with. Editing
   // the identity from the panel changes `displayName` for the *next* match.
   const sessionAlias = useAnonStore((s) => s.sessionAlias);
-  const sessionId = useAnonStore((s) => s.sessionId);
   const partnerName = useAnonStore((s) => s.partnerName);
   const partnerTags = useAnonStore((s) => s.partnerTags);
   const queueSize = useAnonStore((s) => s.queueSize);
@@ -56,9 +51,8 @@ export function useWhisperFlow() {
   const reconnecting = useAnonStore((s) => s.reconnecting);
   const error = useAnonStore((s) => s.error);
   const setError = useAnonStore((s) => s.setError);
-  const chatId = useAnonStore((s) => s.chatId);
+  const sessionId = useAnonStore((s) => s.sessionId);
 
-  const [partnerTyping, setPartnerTyping] = usePartnerTyping();
   const joinMutation = useJoinQueueMutation();
   const leaveMutation = useLeaveQueueMutation();
 
@@ -71,41 +65,14 @@ export function useWhisperFlow() {
     retryMessage,
     emitTypingStart,
     emitTypingStop,
-  } = useAnonSocket(setPartnerTyping, setError);
+  } = useAnonSocket(socketRef, setError);
 
   const { draft, messages, handleDraftChange, clearDraft } = useAnonChat(
     emitTypingStart,
     emitTypingStop
   );
 
-  // Refresh-restore: an empty store plus the marker means a match was live in this
-  // tab. Reconnect with `auth.resume` (the lifecycle hook) instead of queueing.
-  const accountId = useAuthStore((s) => s.user?._id);
-  useEffect(() => {
-    const state = useAnonStore.getState();
-    if (state.status !== 'idle' || state.sessionId || !hasResumeFlag()) return;
-    // Alias for "me" in the thread; the server only replays the partner's side.
-    const stored = readStoredIdentity(accountId);
-    if (stored && !state.displayName) {
-      state.setIdentityFields(stored.displayName, stored.vibeTags, stored.gender);
-    }
-    state.setStatus('resuming');
-    // Mount-only: later account changes are handled by `bindOwner`.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // The server never answered (neither MATCH_FOUND nor SESSION_EXPIRED).
-  useEffect(() => {
-    if (status !== 'resuming') return;
-    const id = window.setTimeout(
-      () => useAnonStore.getState().abortResume(RESUME_ENDED_NOTICE),
-      RESUME_DEADLINE_MS
-    );
-    return () => window.clearTimeout(id);
-  }, [status]);
-
-  const live = status === 'matched' || status === 'partner_left';
-  const guard = useLeaveGuard(live);
+  const guard = useLeaveConfirm();
 
   /** Skip: end our side, clear the composer, re-enter the queue. */
   const skip = useCallback(
@@ -139,22 +106,6 @@ export function useWhisperFlow() {
     if (kind === 'leave') leaveMatch();
     else skip('chat');
   };
-
-  // A real DM exists (we completed, or CONNECTION_READY arrived because the
-  // partner completed) — drop into it, exactly once.
-  useEffect(() => {
-    if (status === 'connected' && chatId) openDm(chatId, 'whisper');
-  }, [status, chatId, openDm]);
-
-  // The store outlives the route; revisiting /whisper must start at the picker
-  // with no half-finished match behind it.
-  useEffect(
-    () => () => {
-      trackSessionEnd('navigate_away');
-      useAnonStore.getState().reset();
-    },
-    []
-  );
 
   return {
     // The resume notice is a variant of the waiting room, not a separate screen.

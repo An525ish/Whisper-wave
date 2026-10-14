@@ -2,14 +2,7 @@ import { getRedis } from '../../config/redis.js';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { ANON_REACTIONS } from '../../constants/anon-reactions.js';
-import type {
-  AnonMessageReactions,
-  AnonMessageReactionsBySide,
-  AnonReaction,
-  AnonReactionAction,
-  AnonSessionReactions,
-  StoredAnonMessage,
-} from '../../types/match.js';
+import type { AnonMessageReactions, AnonMessageReactionsBySide, AnonReaction, AnonReactionAction, AnonSessionReactions, StoredAnonMessage } from '../../types/matchMessage.js';
 import { REDIS_KEYS, TTL } from './keys.js';
 import { requireActiveParticipant } from './pairing.js';
 import { getPartner } from './session.js';

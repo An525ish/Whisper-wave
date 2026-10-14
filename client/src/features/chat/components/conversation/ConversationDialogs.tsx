@@ -1,13 +1,13 @@
 import { lazy, Suspense, type Dispatch, type SetStateAction } from 'react';
 import ContextMenu from '@/shared/components/ui/context-menu/ContextMenu';
 import ConfirmationModal from '@/shared/components/ui/modal/confirmation-modal/ConfirmationModal';
-import MessageReceiptDialog from '@/features/chat/components/message/MessageReceiptDialog';
+import MessageReceiptDialog from '../message/MessageReceiptDialog';
 import type { ContextMenuState } from '@/shared/types';
-import type { ChatMessage, ConfirmDeleteState } from '@/features/chat/types/chat';
+import type { ChatMessage, ConfirmDeleteState } from '../../types/chat';
 
-const ForwardDialog = lazy(() => import('@/features/chat/components/dialogs/ForwardDialog'));
+const ForwardDialog = lazy(() => import('../dialogs/ForwardDialog'));
 
-type ConversationDialogsProps = {
+type Props = {
   chatId?: string;
   // Forward
   forwardOpen: boolean;
@@ -50,7 +50,7 @@ const ConversationDialogs = ({
   confirmDelete, setConfirmDelete, deletableSelectedCount, selectedCount, canModerateGroup,
   onDeleteOne, onDeleteSelected,
   receiptMessage, isGroupChat, onCloseReceipt,
-}: ConversationDialogsProps) => (
+}: Props) => (
   <>
     <Suspense fallback={null}>
       <ForwardDialog open={forwardOpen} sourceChatId={chatId ?? ''} messageIds={forwardMessageIds}

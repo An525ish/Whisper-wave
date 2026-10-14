@@ -134,7 +134,7 @@ export const toggleUserReaction = async (
   ];
 
   const updated = await Message.findOneAndUpdate({ _id: id, chat: chatId }, pipeline, {
-    new: true,
+    returnDocument: 'after',
     projection: 'reactions',
     // Mongoose 9 rejects array (aggregation-pipeline) updates unless opted in.
     updatePipeline: true,

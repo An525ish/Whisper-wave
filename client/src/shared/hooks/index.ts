@@ -8,3 +8,5 @@ export * from './useLongPress';
 export * from './useMediaQuery';
 export * from './useRetryableMediaSrc';
 export * from './useSocketEvent';
+export * from './useNowWhile';
+export * from './useFocusTrap';

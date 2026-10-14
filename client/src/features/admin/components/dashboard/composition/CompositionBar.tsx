@@ -1,6 +1,6 @@
-import type { DashboardCompositionSegment } from '@/features/admin/types';
+import type { DashboardCompositionSegment } from '../../../types';
 
-type CompositionBarProps = {
+type Props = {
   segments: DashboardCompositionSegment[];
   className?: string;
 };
@@ -8,7 +8,7 @@ type CompositionBarProps = {
 const segmentGradient = (from: string, to: string, angle = '135deg') =>
   `linear-gradient(${angle}, ${from}, ${to})`;
 
-const CompositionBar = ({ segments, className = '' }: CompositionBarProps) => {
+const CompositionBar = ({ segments, className = '' }: Props) => {
   const total = segments.reduce((sum, segment) => sum + segment.value, 0) || 1;
   const active = segments.filter((segment) => segment.value > 0);
 

@@ -5,7 +5,7 @@ import AttachmentsContent from './feed/AttachmentsContent';
 import AttachmentsStats from './stats/AttachmentsStats';
 import KindFilterTabs from './feed/KindFilterTabs';
 import SelectionBar from './feed/SelectionBar';
-import { useAttachmentsPage } from '@/features/admin/hooks';
+import { useAttachmentsPage } from '../../hooks';
 
 const Attachments = () => {
   const {

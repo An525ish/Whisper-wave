@@ -1,9 +1,9 @@
-import AuthField from '@/features/auth/components/AuthField';
-import AuthSubmit from '@/features/auth/components/AuthSubmit';
-import UsernameStatusBadge from '@/features/auth/components/UsernameStatusBadge';
-import { useUsernameAvailability } from '@/features/auth/hooks/useUsernameAvailability';
-import type { RegisterEditUsernameForm } from '@/features/auth/types';
-import { validateUsername } from '@/features/auth/utils/authValidators';
+import AuthField from './AuthField';
+import AuthSubmit from './AuthSubmit';
+import UsernameStatusBadge from './UsernameStatusBadge';
+import { useUsernameAvailability } from '../hooks/useUsernameAvailability';
+import type { RegisterEditUsernameForm } from '../types';
+import { validateUsername } from '../utils/authValidators';
 import { useForm } from 'react-hook-form';
 
 type RegisterEditUsernameProps = {

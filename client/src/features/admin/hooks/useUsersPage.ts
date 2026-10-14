@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
-import { ADMIN_MIN_SEARCH_LEN } from '@/features/admin/constants/users';
+import { ADMIN_MIN_SEARCH_LEN } from '../constants/users';
 import { SEARCH_DEBOUNCE_MS } from '@/shared/constants/app';
 import { useDebounce } from '@/shared/hooks/useDebounce';
-import { useAdminStatsQuery, useAdminUsersQuery } from '@/features/admin/hooks';
-import type { SignupMethodFilter } from '@/features/admin/types';
-import { sumSeries } from '@/features/admin/utils/dashboard';
+import { useAdminStatsQuery, useAdminUsersQuery } from '.';
+import type { SignupMethodFilter } from '../types';
+import { sumSeries } from '../utils/dashboard';
 
 export function useUsersPage() {
   const scrollRef = useRef<HTMLDivElement>(null);

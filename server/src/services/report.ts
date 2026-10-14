@@ -2,7 +2,7 @@ import { AppError } from '../utils/AppError.js';
 import { logger } from '../utils/logger.js';
 import * as reportRepo from '../repositories/report.js';
 import * as chatRepo from '../repositories/chat.js';
-import { getSession, getPartner, isParticipant, blockAnonId } from './match/index.js';
+import { getSession, getPartner, isParticipant, blockAnonId, blockUsers } from './match/index.js';
 import type { SubmitReportInput } from '../types/report.js';
 
 /** A repeat report of the same user in the same chat inside this window is a no-op. */
@@ -83,6 +83,13 @@ export const submitReport = async (input: SubmitReportInput): Promise<void> => {
     );
     // Idempotent: the earlier report is already in the queue.
     if (alreadyReported) return;
+
+    // A DM report must also block whisper rematching — otherwise the reported
+    // account meets the reporter again anonymously tomorrow. Best-effort: the
+    // report itself is already filed below.
+    await blockUsers(reporterUserId, targetUserId).catch((err: unknown) =>
+      logger.warn({ err, reporterUserId, targetUserId }, 'Failed to persist block after user report')
+    );
   }
 
   await reportRepo.create({

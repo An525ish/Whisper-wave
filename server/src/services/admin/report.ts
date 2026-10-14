@@ -3,7 +3,20 @@ import { logger } from '../../utils/logger.js';
 import * as reportRepo from '../../repositories/report.js';
 import { blockAnonId } from '../match/index.js';
 import type { AdminReportReviewBody, AdminReportsQuery } from '../../types/adminInput.js';
-import type { ReportQueuePage } from '../../types/report.js';
+import type { ReportQueuePage, ReportReason } from '../../types/report.js';
+
+const DAY_MS = 24 * 3_600_000;
+
+/** HUB_PLAN §9.4: 90 days after resolution; child safety 1 year (18 U.S.C. §2258A). */
+export const RETAIN_DAYS = 90;
+export const RETAIN_DAYS_CHILD_SAFETY = 365;
+
+/** When a resolved report's evidence may be deleted (Mongo TTL on `retainUntil`). */
+export const computeRetainUntil = (reason: ReportReason, reviewedAt: Date): Date =>
+  new Date(
+    reviewedAt.getTime() +
+      (reason === 'underage' ? RETAIN_DAYS_CHILD_SAFETY : RETAIN_DAYS) * DAY_MS
+  );
 
 /**
  * The moderation queue.
@@ -36,7 +49,18 @@ export const reviewReport = async (
   id: string,
   input: AdminReportReviewBody
 ) => {
-  const updated = await reportRepo.markReviewed(id, input.reviewed);
+  const existing = await reportRepo.findById(id);
+  if (!existing) throw new AppError(404, 'Report not found');
+
+  // Resolving starts the retention clock (kept from the first review); reopening
+  // stops it, so a report back in the queue can never expire under review.
+  const reviewedAt = input.reviewed ? (existing.reviewedAt ?? new Date()) : null;
+  const updated = await reportRepo.markReviewed(id, {
+    reviewed: input.reviewed,
+    reviewedAt,
+    retainUntil: reviewedAt ? computeRetainUntil(existing.reason, reviewedAt) : null,
+    actionNote: input.reviewed ? (input.actionNote ?? null) : existing.actionNote,
+  });
   if (!updated) throw new AppError(404, 'Report not found');
 
   if (input.blockAnonId && updated.targetAnonId && updated.reporterAnonId) {

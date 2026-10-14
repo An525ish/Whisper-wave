@@ -1,9 +1,9 @@
 import { type MouseEvent, type ReactNode } from 'react';
-import RenderAttachments from '@/features/chat/components/message/RenderAttachments';
-import type { ChatAttachment } from '@/features/chat/types/chat';
+import RenderAttachments from './RenderAttachments';
+import type { ChatAttachment } from '../../types/chat';
 import type { AttachmentKind } from '@/shared/utils/fileFormat';
 
-type MediaAlbumGridProps = {
+type Props = {
   attachments: ChatAttachment[];
   resolveKind: (attachment: ChatAttachment, url: string) => AttachmentKind;
   onFileAction: (e: MouseEvent, attachment: ChatAttachment) => void | Promise<void>;
@@ -36,7 +36,7 @@ const MediaAlbumGrid = ({
   onDownload,
   albumOverlay,
   isUploading,
-}: MediaAlbumGridProps) => {
+}: Props) => {
   const total = attachments.length;
   const visibleCount = total > 4 ? 4 : total;
   const overflow = total > 4 ? total - 4 : 0;

@@ -1,12 +1,12 @@
-import AuthField from '@/features/auth/components/AuthField';
-import AuthSubmit from '@/features/auth/components/AuthSubmit';
-import GoogleSignInButton from '@/features/auth/components/GoogleSignInButton';
-import type { RegisterStep1Form } from '@/features/auth/types';
+import AuthField from './AuthField';
+import AuthSubmit from './AuthSubmit';
+import GoogleSignInButton from './GoogleSignInButton';
+import type { RegisterStep1Form } from '../types';
 import {
   validateConfirmPassword,
   validateEmail,
   validatePassword,
-} from '@/features/auth/utils/authValidators';
+} from '../utils/authValidators';
 import { useForm } from 'react-hook-form';
 
 type RegisterStep1Props = {

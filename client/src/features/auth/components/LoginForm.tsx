@@ -1,9 +1,9 @@
-import AuthField from '@/features/auth/components/AuthField';
-import AuthLoginFaces from '@/features/auth/components/AuthLoginFaces';
-import AuthSubmit from '@/features/auth/components/AuthSubmit';
-import GoogleSignInButton from '@/features/auth/components/GoogleSignInButton';
-import { useSignInMutation } from '@/features/auth/hooks';
-import type { LoginForm } from '@/features/auth/types';
+import AuthField from './AuthField';
+import AuthLoginFaces from './AuthLoginFaces';
+import AuthSubmit from './AuthSubmit';
+import GoogleSignInButton from './GoogleSignInButton';
+import { useSignInMutation } from '../hooks';
+import type { LoginForm } from '../types';
 import { toErrorMessage } from '@/shared/utils/helpers';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';

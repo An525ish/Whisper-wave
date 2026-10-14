@@ -1,0 +1,176 @@
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
+@keyframes lw-orbit {
+  to { transform: rotate(360deg); }
+}
+@keyframes lw-orbit-rev {
+  to { transform: rotate(-360deg); }
+}
+/* equalizer bar bounce (transform-origin set to bottom on the element) */
+@keyframes lw-eq {
+  0%, 100% { transform: scaleY(0.34); }
+  50% { transform: scaleY(1); }
+}
+/* the signal arc breathes + drifts around the ring */
+@keyframes lw-arc {
+  0%, 100% { opacity: 0.4; transform: rotate(0deg); }
+  50% { opacity: 0.9; transform: rotate(8deg); }
+}
+/* elements rise into place on load */
+@keyframes lw-rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* CTA waves: two light bands sweep in from the left/right edges and converge,
+   focusing on the button's center (`left` animated → no transform conflict). */
+@keyframes lw-focus-l {
+  0% { left: 0%; opacity: 0; }
+  50% { opacity: 0.85; }
+  100% { left: 50%; opacity: 0; }
+}
+@keyframes lw-focus-r {
+  0% { left: 100%; opacity: 0; }
+  50% { opacity: 0.85; }
+  100% { left: 50%; opacity: 0; }
+}
+@keyframes lw-shard {
+  0% {
+    opacity: 0.85;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx, 24px), var(--dy, -28px)) scale(0.25);
+  }
+}
+@keyframes lw-vanish-loop {
+  0%, 18% { opacity: 1; filter: blur(0); transform: scale(1); }
+  42%, 100% { opacity: 0; filter: blur(5px); transform: scale(0.92); }
+}
+@keyframes lw-shield-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes lw-drift {
+  0%   { opacity: 0;    transform: translateY(0)     scale(0.95); }
+  8%   { opacity: 0.18; }
+  45%  { opacity: 0.12; transform: translateY(-14px) scale(1);    }
+  88%  { opacity: 0.08; }
+  100% { opacity: 0;    transform: translateY(-26px) scale(0.95); }
+}
+@keyframes lw-signal {
+  to { stroke-dashoffset: -16; }
+}
+/* Seamless horizontal drift for the signal-wave band. The SVG track is 200%
+   wide with two identical tiles, so translating by exactly -50% loops with no
+   visible seam. */
+@keyframes lw-wave {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes lw-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -12px; }
+}
+@keyframes lw-refract {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6%, -5%) scale(1.1); }
+}
+@keyframes lw-sheen {
+  0% { left: -40%; }
+  55%, 100% { left: 130%; }
+}
+@keyframes lw-frostin {
+  from { opacity: 0; filter: blur(14px); transform: translateY(14px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+@keyframes lw-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes lw-ping {
+  0% { transform: scale(1); opacity: 0.7; }
+  80%, 100% { transform: scale(3.2); opacity: 0; }
+}
+@keyframes lw-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+@keyframes lw-bloom {
+  0% { opacity: 0; transform: scale(0.6); }
+  25% { opacity: 0.9; }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+@keyframes lw-typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+@keyframes lw-pop {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes lw-radar {
+  0% { transform: scale(0.42); opacity: 0.55; }
+  70%, 100% { transform: scale(1); opacity: 0; }
+}
+@keyframes lw-sweep {
+  to { transform: rotate(360deg); }
+}
+@keyframes lw-merge-left {
+  0% { transform: translateX(-58px) scale(1); opacity: 1; }
+  55% { transform: translateX(0) scale(0.92); opacity: 1; }
+  100% { transform: translateX(0) scale(0.55); opacity: 0; }
+}
+@keyframes lw-merge-right {
+  0% { transform: translateX(58px) scale(1); opacity: 1; }
+  55% { transform: translateX(0) scale(0.92); opacity: 1; }
+  100% { transform: translateX(0) scale(0.55); opacity: 0; }
+}
+@keyframes lw-fuse-in {
+  0% { transform: scale(0.4) rotate(-14deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* ── Holographic hero ──────────────────────────────────────── */
+/* A bright scan bar sweeps down the projection, pausing at the base. */
+@keyframes lw-scan {
+  0% { transform: translateY(-8%); opacity: 0; }
+  8% { opacity: 1; }
+  70% { opacity: 1; }
+  85%, 100% { transform: translateY(108%); opacity: 0; }
+}
+/* Slow hue/position drift of the aurora mesh behind the projection. */
+@keyframes lw-aurora {
+  0%, 100% {
+    transform: translate3d(-4%, -2%, 0) scale(1.05) rotate(0deg);
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    transform: translate3d(5%, 3%, 0) scale(1.18) rotate(8deg);
+    filter: hue-rotate(-22deg);
+  }
+}
+/* Occasional unstable-projection flicker (subtle). */
+@keyframes lw-holo-flicker {
+  0%, 46%, 52%, 78%, 82%, 100% { opacity: 1; }
+  48%, 50% { opacity: 0.82; }
+  80% { opacity: 0.9; }
+}
+/* The whole projection powers on: rises + settles. */
+@keyframes lw-holo-rise {
+  from { opacity: 0; transform: translateY(22px) scale(0.94); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+/* Emitter rings pulsing out from the projector base. */
+@keyframes lw-holo-ring {
+  0% { transform: scale(0.55); opacity: 0.5; }
+  70%, 100% { transform: scale(1.4); opacity: 0; }
+}
+/* Ephemeral whisper: fades in, drifts up + slightly toward center, dissolves.
+   Ephemerality is the product — messages leave no trace. */
+@keyframes lw-whisper {
+  0% { opacity: 0; transform: translate3d(0, 26px, 0) scale(0.94); filter: blur(3px); }
+  14% { opacity: 1; transform: translate3d(0, 12px, 0) scale(1); filter: blur(0); }
+  62% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(0, -34px, 0) scale(0.97); filter: blur(4px); }
+}

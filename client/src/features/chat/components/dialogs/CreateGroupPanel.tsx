@@ -1,7 +1,7 @@
 import EmptyState from '@/shared/components/ui/EmptyState';
 import CountBadge from '@/shared/components/ui/CountBadge';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
-import { useCreateGroupMutation, useMyFriendsQuery } from '@/features/chat/hooks';
+import { useCreateGroupMutation, useMyFriendsQuery } from '../../hooks';
 import Searchbar from '@/shared/components/ui/Searchbar';
 import PencilIcon from '@/shared/components/ui/icons/Pencil';
 import {
@@ -12,19 +12,20 @@ import {
   type ChangeEvent,
 } from 'react';
 import toast from 'react-hot-toast';
-import SuggestionListItem from '@/features/chat/components/list/SuggestionListItem';
+import SuggestionListItem from '../list/SuggestionListItem';
 import { useNavigate } from 'react-router-dom';
 import AvatarSkeleton from '@/shared/components/ui/skeletons/AvatarSkeleton';
 import { AVATAR_FALLBACK } from '@/shared/constants/app';
 import { getInitial } from '@/shared/utils/helpers';
-import type { FriendsResponse, CreateGroupResult } from '@/features/chat/types/chat';
+import type { FriendsResponse, CreateGroupResult } from '../../types/chat';
+import { ROUTES } from '@/shared/constants/routes';
 
-type CreateGroupPanelProps = {
+type Props = {
   onCreated?: () => void;
 };
 
 /** Create-group body — used inside NewConnectDialog tabs. */
-const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
+const CreateGroupPanel = ({ onCreated }: Props) => {
   const [searchText, setSearchText] = useState('');
   const [groupname, setGroupName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
@@ -86,18 +87,8 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
       return;
     }
 
-    navigate(`/chat/${chatId}`);
+    navigate(ROUTES.chat(chatId));
   };
-
-  if (error) {
-    const message =
-      error instanceof Error ? error.message : 'Something went wrong';
-    return (
-      <div className="rounded-2xl bg-red-dark/40 p-4 text-sm text-red">
-        {message}
-      </div>
-    );
-  }
 
   const friendsData = useMemo(
     () => (friends as FriendsResponse | undefined)?.data ?? [],
@@ -109,6 +100,16 @@ const CreateGroupPanel = ({ onCreated }: CreateGroupPanelProps) => {
     ),
     [friendsData, searchText],
   );
+
+  if (error) {
+    const message =
+      error instanceof Error ? error.message : 'Something went wrong';
+    return (
+      <div className="rounded-2xl bg-red-dark/40 p-4 text-sm text-red">
+        {message}
+      </div>
+    );
+  }
 
   const canCreate =
     groupname.trim().length > 0 && selectedMembers.length >= 2;

@@ -33,6 +33,16 @@ export const anonMessageSchema = z.object({
  */
 export const anonIdSchema = z.string().uuid();
 
+/**
+ * Stable guest identity, as carried by the `gid` cookie (docs/HUB_PLAN.md §6.3).
+ *
+ * Same UUID shape as `anonId` but a different namespace with a different job:
+ * `anonId` rotates every 24 h with the matching session; `gid` lives 30 days
+ * for abuse control (bans, rate-limit continuity). Never mix the two — a gid
+ * must never be written where an anonId is read, or blocks leak across people.
+ */
+export const gidSchema = z.string().uuid();
+
 /** Payload-less events still parse an optional empty object. */
 export const anonNoPayloadSchema = z.object({}).passthrough().optional();
 

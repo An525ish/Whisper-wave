@@ -4,14 +4,14 @@ import type { MouseEvent } from 'react';
 import useContextMenu from '@/shared/hooks/useContextMenu';
 import { useSocket } from '@/shared/lib/socket/SocketProvider';
 import { SOCKET_EVENTS } from '@/shared/constants/socket';
-import { useEditMessageMutation, useForwardMessagesMutation } from '@/features/chat/hooks/useMessageMutations';
-import ReactionStrip from '@/features/chat/components/message/ReactionStrip';
+import { useEditMessageMutation, useForwardMessagesMutation } from './useMessageMutations';
+import ReactionStrip from '../components/message/ReactionStrip';
 import { isValidMessageId } from '@/shared/utils/helpers';
 import {
   buildChatCopyPayload,
   writeCopyPayloadToSystemClipboard,
-} from '@/features/chat/utils/chat';
-import { useChatClipboardStore } from '@/features/chat/stores/clipboard';
+} from '../utils/chat';
+import { useChatClipboardStore } from '../stores/clipboard';
 import PencilIcon from '@/shared/components/ui/icons/Pencil';
 import ReplyIcon from '@/shared/components/ui/icons/Reply';
 import ForwardIcon from '@/shared/components/ui/icons/Forward';
@@ -20,7 +20,7 @@ import SelectMessagesIcon from '@/shared/components/ui/icons/SelectMessages';
 import TrashIcon from '@/shared/components/ui/icons/Trash';
 import ReadReceipt from '@/shared/components/ui/icons/ReadReceipt';
 import type { Avatar } from '@/shared/types';
-import type { ChatMessage, ConfirmDeleteState } from '@/features/chat/types/chat';
+import type { ChatMessage, ConfirmDeleteState } from '../types/chat';
 
 const clearTextSelection = () => {
   window.getSelection()?.removeAllRanges();
@@ -74,6 +74,7 @@ export function useMessageActions({
   const [forwardMessageIds, setForwardMessageIds] = useState<string[]>([]);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [receiptMessage, setReceiptMessage] = useState<ChatMessage | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState>(null);
 
   const isEditing = Boolean(editingMessageId);
 
@@ -291,9 +292,6 @@ export function useMessageActions({
     },
     [openMenuAt],
   );
-
-  // External ref so delete actions can set confirmDelete
-  const [confirmDelete, setConfirmDelete] = useState<ConfirmDeleteState>(null);
 
   useEffect(() => { onEditingChange?.(isEditing); }, [isEditing, onEditingChange]);
 

@@ -151,7 +151,7 @@ Two kinds of identity:
 
 **User:** Sees “it’s a vibe” → Connect.
 
-**Backend:** They already have `connectToken` from `MUTUAL_LIKE`. The client **holds it in sessionStorage** (it survives the sign-in/up redirect, not a closed tab). Nothing permanent until A8/A9 succeeds.
+**Backend:** They already have `connectToken` from `MUTUAL_LIKE`. The client **holds it in sessionStorage** (it survives the sign-in/up redirect, not a closed tab). The server also wrote a **claim** (`match:claim:{anonId}:{sessionId}`, 7 d, indexed by `match:claims:{anonId}`) for their seat at mutual like — if the tab closes, the `anonId` cookie is still proof of the seat after sign-in. Nothing permanent until A8/A9 succeeds.
 
 ---
 
@@ -162,9 +162,9 @@ Two kinds of identity:
 **Backend:** Normal auth first, **then** `POST /api/connection/complete` with the token — the connect step is **not** part of signup.
 
 1. Signup/signin as in Phase 1 (R2/ImageKit avatar, httpOnly auth cookie).
-2. `POST /api/connection/complete` `{ connectToken }` (authenticated): verify signature/expiry, bind the caller's `userId` to their own side only, reject one account on both sides.
+2. `POST /api/connection/complete` `{ connectToken }` (authenticated): verify signature/expiry, bind the caller's `userId` to their own side only, reject one account on both sides. After a closed tab, `{ claimId }` (the session) redeems the Redis claim on this browser's `anonId` instead — same seat-binding path.
 3. Upsert **PendingConnection** (`sessionId`, two sides with `userId | null`, names, tags, 7-day expiry).
-4. Respond `{ status: "waiting_for_them" }`.
+4. Respond `{ status: "waiting_for_them" }`. The claim is consumed only after the seat binds, so a transient failure stays retryable.
 
 **Why pending?** The other person may not have an account yet.
 
@@ -211,7 +211,7 @@ Disconnect here does **not** delete the person. That’s the difference from ano
 
 ### B1. Open app
 
-**User:** Comes back, still logged in (cookie) or hits login. Signed-in users can also reach `/whisper` from the chat-list menu (Journey C).
+**User:** Comes back, still logged in (cookie) or hits login. Members land on the hub (`/home`); the Whisper card shows their remaining quota for the day.
 
 **Backend:**
 - `POST /api/auth/signin` if needed → set cookie.
@@ -228,16 +228,63 @@ Same as A10. Friend requests, groups, media, logout (`POST /api/auth/signout` cl
 
 ## Journey C — Logged-in user goes anonymous again
 
-**User:** Has an account, wants another stranger. Chat-list menu → “Whisper — talk to someone new” → `/whisper`.
+**User:** Has an account, wants another stranger. Hub nav → Whisper → `/whisper`. The session survives navigating to Chats or Home and back — a pill above the tab bar shows the live state and returns to the thread. Only the explicit Leave/Skip buttons end it.
 
 **Backend:** Same as A1–A6, with extras:
 
-1. They keep their JWT **and** get an `anonId` for the stranger session (anon identity stays separate so the partner never sees `userId`).
-2. Signed-in users have a rolling 24 h whisper quota (`match:whispers:{userId}`); an account can't match its own other device (`match:user:{userId}`).
+1. They keep their JWT **and** get an `anonId` for the stranger session (anon identity stays separate so the partner never sees `userId`). Every API caller also carries a `gid` (stable 30-day guest id for abuse control).
+2. Signed-in users have a rolling 24 h whisper quota (`match:whispers:{userId}`), readable via `GET /api/match/quota`; an account can't match its own other device (`match:user:{userId}`), and never rematches an account it already keeps (connected ids preloaded per join).
 3. If they Connect with the stranger → skip signup, `POST /api/connection/complete` with the token + auth cookie (A9).
-4. Premium flags (Journey D) are not built yet.
+4. Until the partner connects: `GET /api/connection/pending` lists the row, shown as a ghost row in the chat list ("waiting for them", expiry, cancel). When both connect, the DM carries `origin: 'whisper'` on the list row.
+5. Premium flags (Journey D) are not built yet.
 
-**We still do not** put this anon chat in their chat list unless both connect.
+**We still do not** put an unconnected anon chat in their chat list — only ghost rows for in-flight connections.
+
+---
+
+## Journey E — Guest uses the hub (no account)
+
+**User:** Opens the app without signing in. Landing → **Enter** (nav and closing CTA) → `/home`: a launcher with a door per live surface (Whisper always; Rooms and Memes only when their flag is on — a dark surface renders nothing), no wall. They can whisper end-to-end as a guest. `/chats` shows an empty state pointing at Whisper ("people you keep live here"), never a redirect; a specific conversation (`/chats/:id`) is members-only. Headcounts appear only at 3+ people. Persistence (chats, cloud saves) is the account's reward.
+
+**Backend:**
+
+1. First API contact mints a `gid` cookie (30 d, httpOnly) via `ensureGid`; every request resolves to one `Identity` shape (guest `{gid, anonId?}` or member `{userId, gid?, anonId?}`).
+2. `GET /api/hub/summary` returns server-driven feature flags (rooms/games/memes ship dark) — the client hides disabled nav items.
+3. Guests are never quota-capped; bans key on `gid` + `userId` so they survive sign-in.
+4. Mutual like writes a claim per seat (`match:claim:{anonId}:{sessionId}`, 7 d). A guest who closes the tab signs in later and redeems via `GET /api/connection/pending` → `POST /api/connection/complete { claimId }` (A8).
+
+---
+
+## Journey F — Rooms (guest or member)
+
+**User:** Home → Rooms (only visible when `FEATURE_ROOMS` is on) → lobby of live topic rooms (open/closed, hours, headcount at 3+) → picks a room → rules sheet → picks an alias → reads and posts text (slow mode, no links for guests and new members). Reports a message, mutes/blocks, leaves. Members can start their own room: **unlisted by default** (invite link), and accounts with trust `trusted` (7+ days, no strikes) are listed in the lobby instantly; everyone else waits for a one-tap admin approval.
+
+**Backend:** `/rooms` namespace, identity via `gid` (JWT optional) — see [`TECH.md`](./TECH.md) "Hub backend".
+
+1. `ROOM_JOIN { slug }` → ban check (`gid` and `userId`), hours check, instance placement (soft 60 / hard 100) → `ROOM_STATE`.
+2. `ROOM_MESSAGE` (acked): per-`gid` rate limit, word-list filter, automod (links, flood, duplicates), slow mode. Fan-out in process memory; **nothing is persisted** and Redis is not touched.
+3. Report: evidence snapshot (reported message ± neighbours; alias, text, time; no IP) is stored in Mongo `Report`; 3 distinct reporters auto-hide the message pending review. Retention 90 days after resolution, 1 year for child safety ([`LEGAL_BRIEF.md`](./LEGAL_BRIEF.md)).
+4. Mods (and admins) can delete, mute, kick (+15-min ban), shadow-mute, lock, set slow mode; admins can ban globally and close instances (queue actions in [`RUNBOOK.md`](./RUNBOOK.md)).
+5. Flag off → `/api/rooms` 404s, joins are refused and live rooms close.
+
+---
+
+## Journey G — Games (skipped)
+
+Not built and not planned for now (decision D7). No route, no nav item; the `FEATURE_GAMES` flag exists but surfaces nothing. The original design is kept in [`HUB_PLAN.md`](./HUB_PLAN.md) §7.4.
+
+---
+
+## Journey H — Memes (guest or member)
+
+**User:** Home → Memes (only when `FEATURE_MEMES` is on) → the joke tap: shelf chips (Mix, Misc, Programming, Puns), infinite scroll that ends at the last page, react (device-only), **save** (members sync to the account; guests keep it on the device with a sign-in nudge), share (members → a chat, or copy text), **report**, hide. A member can turn on **Unfiltered 18+** after confirming they are 18 or older; that unlocks the Dark shelf. Guests and everyone else only ever see the safe stream.
+
+**Backend:**
+
+1. `GET /api/memes?cat=&page=&exclude=` (optional auth, per-IP limit): the server fetches jokes from JokeAPI, drops anything on the `MemeBlock` blocklist, composes Memegen image URLs and caches. The unfiltered flag is read from the user record, never from the query; `cat=dark` is a 403 without it. A provider outage serves stale cache, else 503.
+2. `POST /api/memes/report { externalId, source, reason }` (guests allowed, one count per `gid` per joke): enough distinct reports auto-block the joke for everyone; admins manage the blocklist in Admin → Memes.
+3. Saves: `POST/GET/DELETE /api/memes/saves…` (member) → `MemeSave`. Mode: `GET/POST /api/memes/mode` (member) sets `User.unfiltered` with the 18+ declaration.
+4. The browser loads each image from `api.memegen.link` directly (disclosed on the Privacy page).
 
 ---
 

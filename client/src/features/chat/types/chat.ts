@@ -196,6 +196,8 @@ export type ChatRow = {
   lastMessage?: ChatLastMessage | null;
   unreadCount?: number;
   createdAt?: string;
+  /** Set when this DM began as an anonymous whisper match. */
+  origin?: 'whisper' | null;
 };
 
 export type ChatListEntry = {
@@ -206,10 +208,16 @@ export type ChatListEntry = {
   members?: Array<string | { _id?: string }>;
   lastMessage?: ChatLastMessage | null;
   unreadCount?: number;
+  /** Set when this DM began as an anonymous whisper match. */
+  origin?: 'whisper' | null;
 };
 
 export type ChatsResponse = {
   data?: ChatRow[];
+};
+
+export type NotificationsResponse = {
+  data?: unknown[];
 };
 
 export type FriendsResponse = {

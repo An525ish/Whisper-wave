@@ -1,12 +1,8 @@
 import type { ChainableCommander } from 'ioredis';
 import { getRedis } from '../../config/redis.js';
 import { logger } from '../../utils/logger.js';
-import type {
-  AnonSession,
-  CreateSessionInput,
-  SessionMessageCounts,
-  StoredAnonMessage,
-} from '../../types/match.js';
+import type { AnonSession, CreateSessionInput, SessionMessageCounts } from '../../types/match.js';
+import type { StoredAnonMessage } from '../../types/matchMessage.js';
 import { META_FIELDS, REDIS_KEYS, TTL } from './keys.js';
 
 /**

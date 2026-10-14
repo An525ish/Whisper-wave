@@ -9,32 +9,32 @@ import {
   useChatDetailsQuery, useChatMessages, useChatScroll, useDeleteActions,
   useMessageActions, useMessageSelection,
   useTypingIndicator,
-} from '@/features/chat/hooks';
-import { useConversationSend } from '@/features/chat/hooks/useConversationSend';
-import { useGetMediaQuery } from '@/features/chat/hooks/useMessageQueries';
+} from '../../hooks';
+import { useConversationSend } from '../../hooks/useConversationSend';
+import { useGetMediaQuery } from '../../hooks/useMessageQueries';
 import { getMediaKindFromFile } from '@/shared/utils/fileFormat';
 import CloseIcon from '@/shared/components/ui/icons/Close';
 import { useAuthStore } from '@/features/auth';
-import { ChatMessagesSkeleton } from '@/features/chat/components/ChatMessageSkeleton';
+import { ChatMessagesSkeleton } from '../ChatMessageSkeleton';
 import { normalizeMemberIds } from '@/shared/utils/helpers';
-import MessageList from '@/features/chat/components/conversation/MessageList';
-import ChatInput from '@/features/chat/components/conversation/composer/ChatInput';
-import ConversationDialogs from '@/features/chat/components/conversation/ConversationDialogs';
+import MessageList from './MessageList';
+import ChatInput from './composer/ChatInput';
+import ConversationDialogs from './ConversationDialogs';
 import type {
   ChatDetailsResponse, ChatMessage, ConversationPanelHandle,
   MediaResponse, SharedMediaRow,
-} from '@/features/chat/types/chat';
+} from '../../types/chat';
+import type { ImageQuality } from '../../types/local';
 import type { MediaFile } from '@/shared/components/ui/image-viewer/ImageViewer';
-import { isOutgoingMessageRead, buildReplySnapshot, getReplyPreviewText } from '@/features/chat/utils/chat';
+import { isOutgoingMessageRead, buildReplySnapshot, getReplyPreviewText } from '../../utils/chat';
 import DoubleChevronDown from '@/shared/components/ui/icons/DoubleChevronDown';
-import ReplyComposerBar from '@/features/chat/components/conversation/composer/ReplyBar';
-import ChatDayLabel from '@/features/chat/components/conversation/ChatDayLabel';
-import { CHAT_HEADER_OFFSET_CLASS, CHAT_HEADER_TOP_CLASS } from '@/features/chat/constants/chat';
+import ReplyComposerBar from '@/shared/components/ui/reply/ReplyBar';
+import ChatDayLabel from './ChatDayLabel';
+import { CHAT_HEADER_OFFSET_CLASS, CHAT_HEADER_TOP_CLASS } from '../../constants/chat';
 
 
-export type { ConversationPanelHandle };
 
-type ChatsViewPanelProps = {
+type Props = {
   ref?: Ref<ConversationPanelHandle>;
   chatId?: string;
   focusMessageId?: string | null;
@@ -56,14 +56,21 @@ const ConversationPanel = ({
   selectMode = false, onSelectModeChange, onSelectedCountChange,
   onDeletableSelectedCountChange, onDeletingSelectedChange, onEditingChange,
   onFetchingNextPageChange,
-}: ChatsViewPanelProps) => {
+}: Props) => {
   const socket = useSocket();
   const user = useAuthStore((s) => s.user);
   const isImpersonated = useAuthStore((s) => s.isImpersonated);
   const actAsUser = useAuthStore((s) => s.actAsUser);
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [imageQuality, setImageQuality] = useState<'standard' | 'hd'>('standard');
+  const [imageQuality, setImageQuality] = useState<ImageQuality>('standard');
+  const [composerChatId, setComposerChatId] = useState(chatId);
+  if (composerChatId !== chatId) {
+    setComposerChatId(chatId);
+    setMessage('');
+    setAttachments([]);
+    setImageQuality('standard');
+  }
 
   const { data: chatDetails, isLoading, error, isError } = useChatDetailsQuery(
     { id: chatId, populate: true }, { skip: !chatId },
@@ -85,7 +92,7 @@ const ConversationPanel = ({
   const {
     msgLoading, isFetchingNextPage, hasNextPage, fetchNextPage,
     dbError, dbIsError, liveMessages, setLiveMessages,
-    historyMessages, allMessages, timelineItems, timelineRef,
+    historyMessages, allMessages, timelineItems,
     peerLastReadAt, invalidateMessages, applyDeletedMessages, applyUpdatedMessage,
   } = useChatMessages({
     chatId, socket, user, isGroupChat,
@@ -139,7 +146,7 @@ const ConversationPanel = ({
     containerRef, virtualizer, showScrollToBottom, scrollToBottom, isNearBottomRef,
     highlightedMessageId, stickyDayHeader, isDateHeaderScrolling,
   } = useChatScroll({
-    chatId, timelineItems, timelineRef, hasNextPage, isFetchingNextPage, fetchNextPage,
+    chatId, timelineItems, hasNextPage, isFetchingNextPage, fetchNextPage,
     focusMessageId, searchOpen, liveMessagesLength: liveMessages.length, historyMessagesLength: historyMessages.length,
   });
 
@@ -158,7 +165,6 @@ const ConversationPanel = ({
   useErrors([{ error, isError }, { error: dbError, isError: dbIsError }]);
   useEffect(() => { onSelectedCountChange?.(selectedIds.size); }, [onSelectedCountChange, selectedIds]);
   useEffect(() => { onDeletableSelectedCountChange?.(deletableSelectedIds.length); }, [deletableSelectedIds.length, onDeletableSelectedCountChange]);
-  useEffect(() => { setMessage(''); setAttachments([]); setImageQuality('standard'); }, [chatId]);
 
 useImperativeHandle(ref, () => ({
     clearChat: () => { if (canClearChat) confirm.setConfirmClearOpen(true); },

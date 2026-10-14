@@ -23,8 +23,31 @@ import {
 import { authLimiter, requireAdmin, validate } from '../middlewares/index.js';
 import {
   listReportsController,
+  reportActionController,
   reviewReportController,
 } from '../controllers/admin/report.js';
+import {
+  banIdentityController,
+  closeInstanceController,
+  liftBanController,
+  listAuditController,
+  listRoomBansController,
+  listRoomsAdminController,
+  setFeatureController,
+  upsertRoomController,
+} from '../controllers/admin/rooms.js';
+import {
+  blockJokeController,
+  listBlockedController,
+  unblockJokeController,
+} from '../controllers/admin/memes.js';
+import {
+  adminFeatureFlagSchema,
+  adminRoomBanSchema,
+  adminRoomCloseSchema,
+  adminRoomUpsertSchema,
+} from '../validators/rooms.js';
+import { memeBlockParamsSchema, memeBlockSchema } from '../validators/memes.js';
 import {
   adminActivityEventsQuerySchema,
   adminAttachmentsQuerySchema,
@@ -33,6 +56,7 @@ import {
   adminImpersonationLogsQuerySchema,
   adminLoginSchema,
   adminRemoveMemberParamSchema,
+  adminReportActionSchema,
   adminReportIdParamSchema,
   adminReportsQuerySchema,
   adminReportReviewSchema,
@@ -100,6 +124,60 @@ adminRouter.patch(
   validate(adminReportIdParamSchema, 'params'),
   validate(adminReportReviewSchema, 'body'),
   reviewReportController
+);
+adminRouter.post(
+  '/reports/:id/action',
+  requireAdmin,
+  validate(adminReportIdParamSchema, 'params'),
+  validate(adminReportActionSchema, 'body'),
+  reportActionController
+);
+
+// Rooms — templates (the approval queue reads the unlisted ones), live
+// instance close, bans, and the feature kill-switch. Admin only.
+adminRouter.get('/rooms', requireAdmin, listRoomsAdminController);
+adminRouter.put('/rooms', requireAdmin, validate(adminRoomUpsertSchema), upsertRoomController);
+adminRouter.post(
+  '/rooms/instances/:id/close',
+  requireAdmin,
+  validate(adminIdParamSchema, 'params'),
+  validate(adminRoomCloseSchema),
+  closeInstanceController
+);
+adminRouter.get('/room-bans', requireAdmin, listRoomBansController);
+adminRouter.post(
+  '/room-bans',
+  requireAdmin,
+  validate(adminRoomBanSchema),
+  banIdentityController
+);
+adminRouter.delete(
+  '/room-bans/:id',
+  requireAdmin,
+  validate(adminIdParamSchema, 'params'),
+  liftBanController
+);
+adminRouter.post(
+  '/features',
+  requireAdmin,
+  validate(adminFeatureFlagSchema),
+  setFeatureController
+);
+adminRouter.get('/mod-audit', requireAdmin, listAuditController);
+
+// Memes blocklist — provider joke ids hidden from every batch. Admin only.
+adminRouter.get('/memes/blocklist', requireAdmin, listBlockedController);
+adminRouter.post(
+  '/memes/blocklist',
+  requireAdmin,
+  validate(memeBlockSchema),
+  blockJokeController
+);
+adminRouter.delete(
+  '/memes/blocklist/:id',
+  requireAdmin,
+  validate(memeBlockParamsSchema, 'params'),
+  unblockJokeController
 );
 
 adminRouter.delete('/users/:id', requireAdmin, validate(adminIdParamSchema, 'params'), deleteUser);

@@ -1,16 +1,16 @@
 import { type MouseEvent } from 'react';
 import { resolveAttachmentKind, type AttachmentKind } from '@/shared/utils/fileFormat';
-import type { ParsedLink } from '@/features/chat/utils/linkParser';
+import type { ParsedLink } from '../../utils/linkParser';
 import Image from '@/shared/components/ui/Image';
 import ReadReceipt from '@/shared/components/ui/icons/ReadReceipt';
-import RenderAttachments from '@/features/chat/components/message/RenderAttachments';
-import MediaAlbumGrid, { isMediaAlbumEligible } from '@/features/chat/components/message/MediaAlbumGrid';
-import LinkPreview from '@/features/chat/components/message/LinkPreview';
-import MessageContent from '@/features/chat/components/message/MessageContent';
-import ReplyQuote from '@/features/chat/components/message/ReplyQuote';
-import type { ChatAttachment, MessageReplyTo } from '@/features/chat/types/chat';
+import RenderAttachments from './RenderAttachments';
+import MediaAlbumGrid, { isMediaAlbumEligible } from './MediaAlbumGrid';
+import LinkPreview from './LinkPreview';
+import MessageContent from './MessageContent';
+import ReplyQuote from '@/shared/components/ui/reply/ReplyQuote';
+import type { ChatAttachment, MessageReplyTo } from '../../types/chat';
 
-export type MessageBubbleProps = {
+export type Props = {
   sameSender: boolean;
   isGroupChat?: boolean;
   avatarSrc?: string;
@@ -75,7 +75,7 @@ const MessageBubble = ({
   centered = false,
   onFileAction,
   onDownload,
-}: MessageBubbleProps) => {
+}: Props) => {
   const showAvatar = Boolean(isGroupChat && !sameSender);
   const showName = Boolean(isGroupChat && !sameSender);
 

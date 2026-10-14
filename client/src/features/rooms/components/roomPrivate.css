@@ -1,0 +1,167 @@
+/* Private rooms: invite terms, fresh-link card, visibility choice, "Your rooms", lock badge. */
+.rm-terms {
+  margin-top: 0.8rem;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.rm-terms__field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  color: var(--color-body-300);
+}
+
+.rm-terms__field input {
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+  color: var(--color-body);
+  outline: none;
+}
+
+.rm-terms__field input:focus {
+  border-color: rgba(1, 195, 109, 0.55);
+}
+
+.rm-terms__error {
+  margin-top: 0.4rem;
+  font-size: 0.74rem;
+  color: var(--color-red);
+}
+
+.rm-fresh {
+  margin-top: 0.8rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(1, 195, 109, 0.35);
+  background: rgba(1, 195, 109, 0.06);
+  padding: 0.7rem 0.85rem;
+}
+
+.rm-fresh__label {
+  font-size: 0.74rem;
+  font-weight: 650;
+  color: var(--color-green);
+}
+
+.rm-fresh__url {
+  display: block;
+  margin-top: 0.35rem;
+  overflow-wrap: anywhere;
+  font-size: 0.74rem;
+  color: var(--color-body-300);
+}
+
+.rm-fresh__actions {
+  margin-top: 0.55rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Create sheet: two-way visibility choice. */
+.rm-vis {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.rm-vis__opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  cursor: pointer;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.8rem 0.9rem;
+}
+
+.rm-vis__opt:has(input:checked) {
+  border-color: rgba(1, 195, 109, 0.55);
+  background: rgba(1, 195, 109, 0.07);
+}
+
+.rm-vis__opt--off {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.rm-vis__title {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-body);
+}
+
+.rm-vis__sub {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--color-body-300);
+}
+
+.rm-vis__note {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.76rem;
+  color: var(--color-yellow, #ffd47d);
+}
+
+/* Lobby: "Your rooms". */
+.rm-mine {
+  margin-bottom: 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.8rem 0.9rem;
+}
+
+.rm-mine__title {
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-body-300);
+}
+
+.rm-mine__list {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rm-mine__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rm-mine__name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  color: var(--color-body);
+}
+
+.rm-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.35rem;
+  font-size: 0.7rem;
+  color: var(--color-body-300);
+}
+
+.rm-lock svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}

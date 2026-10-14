@@ -4,7 +4,7 @@ import type {
   AttachmentKindFilter,
   FlatItem,
   LinkItem,
-} from '@/features/admin/types';
+} from '../types';
 import { resolveAttachmentKind, type AttachmentKind } from '@/shared/utils/fileFormat';
 
 const URL_RE = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;

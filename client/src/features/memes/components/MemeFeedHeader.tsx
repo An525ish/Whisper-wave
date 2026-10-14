@@ -1,0 +1,63 @@
+import type { Ref } from 'react';
+import MemeModeSwitch from './MemeModeSwitch';
+import type { MemeCategory, MemeCategoryChip } from '../types';
+import './memesHeader.css';
+import './memesList.css';
+
+type Props = {
+  unfiltered: boolean;
+  chips: MemeCategoryChip[];
+  category: MemeCategory;
+  onSelect: (category: MemeCategory) => void;
+  topRef: Ref<HTMLElement>;
+  barRef: Ref<HTMLSpanElement>;
+};
+
+/** Sticky glass header: title, the 18+ switch, shelf chips and the scroll hairline. */
+const MemeFeedHeader = ({ unfiltered, chips, category, onSelect, topRef, barRef }: Props) => (
+  <header ref={topRef} className="mm-top">
+    <div aria-hidden className="mm-top__wash" />
+    <div className="mm-top__head">
+      <div className="mm-top__title">
+        <span aria-hidden className="mm-mark">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </span>
+        <div>
+          <p className="mm-eyebrow">
+            <span aria-hidden className="mm-eyebrow__dot" />
+            quiet hours ·{' '}
+            <span className={unfiltered ? 'mm-eyebrow__raw' : 'mm-eyebrow__pour'}>
+              {unfiltered ? 'unfiltered' : 'pouring'}
+            </span>
+          </p>
+          <h1 className="mm-toptitle">
+            The joke <span className="mm-iri">tap.</span>
+          </h1>
+        </div>
+      </div>
+      <MemeModeSwitch />
+    </div>
+    <div role="group" aria-label="Joke shelves" className="mm-chips">
+      {chips.map((chip) => (
+        <button
+          key={chip.id}
+          type="button"
+          aria-pressed={chip.id === category}
+          onClick={() => onSelect(chip.id)}
+          className={`mm-shelf${chip.id === category ? ' mm-shelf--on' : ''}`}
+        >
+          {chip.label}
+        </button>
+      ))}
+    </div>
+    <div aria-hidden className="mm-progress">
+      <span ref={barRef} />
+    </div>
+  </header>
+);
+
+export default MemeFeedHeader;

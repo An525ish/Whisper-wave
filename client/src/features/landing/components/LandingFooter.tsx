@@ -1,4 +1,6 @@
+import '../styles/landing-footer.css';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/shared/constants/routes';
 
 const EXPLORE_LINKS = [
   { id: 'how', label: 'How it works' },
@@ -9,6 +11,9 @@ const EXPLORE_LINKS = [
 const LEGAL_LINKS = [
   { id: 'terms', label: 'Terms', to: '/terms' },
   { id: 'privacy', label: 'Privacy', to: '/privacy' },
+  { id: 'guidelines', label: 'Guidelines', to: '/guidelines' },
+  { id: 'safety', label: 'Safety', to: '/safety' },
+  { id: 'cookies', label: 'Cookies', to: '/cookies' },
   { id: 'report', label: 'Report abuse', to: '/report' },
 ] as const;
 
@@ -21,7 +26,7 @@ const LandingFooter = () => {
     if (pathname === '/') {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      navigate('/', { state: { scrollTo: id } });
+      navigate(ROUTES.landing, { state: { scrollTo: id } });
     }
   };
 
@@ -31,7 +36,7 @@ const LandingFooter = () => {
       <div className="landing-footer__top">
         {/* brand + a one-line mission for a little substance */}
         <div className="landing-footer__brandcol">
-          <Link to="/" className="landing-footer__brand" aria-label="Whisper Wave home">
+          <Link to={ROUTES.landing} className="landing-footer__brand" aria-label="Whisper Wave home">
             <span className="landing-footer__glyph" aria-hidden>
               <img src="/logo-4.png" alt="" />
             </span>

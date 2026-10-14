@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import CloseIcon from '@/shared/components/ui/icons/Close';
 import { fileData, fileFormat, type FileDocType } from '@/shared/utils/fileFormat';
 
-type FilePreviewProps = {
+type Props = {
   file: File;
   onRemove: (file: File) => void;
 };
@@ -10,7 +10,7 @@ type FilePreviewProps = {
 const thumbClass = 'h-24 w-24 rounded object-cover';
 const thumbBox = 'h-24 w-24';
 
-const FilePreview = ({ file, onRemove }: FilePreviewProps) => {
+const FilePreview = ({ file, onRemove }: Props) => {
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
   const isAudio = file.type.startsWith('audio/');
@@ -63,12 +63,7 @@ const FilePreview = ({ file, onRemove }: FilePreviewProps) => {
   );
 };
 
-type DocPreviewProps = {
-  fileExtension: string;
-  fileName: string;
-};
-
-const DocPreview = ({ fileExtension, fileName }: DocPreviewProps) => {
+const DocPreview = ({ fileExtension, fileName }: { fileExtension: string; fileName: string }) => {
   const fileDetails = fileData.find(
     (entry) => entry.docType === (fileExtension as FileDocType),
   );

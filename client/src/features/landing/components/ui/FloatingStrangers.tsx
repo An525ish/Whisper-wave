@@ -1,4 +1,4 @@
-import IncognitoGlyph from '@/features/landing/components/ui/IncognitoGlyph';
+import IncognitoGlyph from './IncognitoGlyph';
 
 /**
  * Floating strangers — faceless people drifting in the hero's side space, each
