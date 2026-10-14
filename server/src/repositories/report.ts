@@ -24,7 +24,7 @@ export const markReviewed = async (
   id: string,
   update: { reviewed: boolean; reviewedAt: Date | null; retainUntil: Date | null; actionNote: string | null }
 ): Promise<ReportLean | null> =>
-  Report.findByIdAndUpdate(id, { $set: update }, { new: true }).lean<ReportLean>();
+  Report.findByIdAndUpdate(id, { $set: update }, { returnDocument: 'after' }).lean<ReportLean>();
 
 /**
  * Has this reporter (any of their identity keys) already reported this

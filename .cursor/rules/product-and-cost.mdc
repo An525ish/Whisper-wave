@@ -23,6 +23,9 @@ Approved at $0 (self-hosted or free tier, no vendor contract):
 - **FCM web push** — Firebase Cloud Messaging is free with no quota charge. Optional and
   OFF by default (all `FCM_*` env vars must be set). Transport only: no Firebase Auth/DB/Analytics.
   Pushes never carry message text.
+- **Cloudflare Turnstile** — free, no quota charge. Optional: set both `TURNSTILE_SITE_KEY` and
+  `TURNSTILE_SECRET_KEY`, else the weak arithmetic fallback runs (dev/CI). Third-party script that loads
+  only on a guest's first room post (disclosed in Privacy + Cookies).
 - **Analytics** — a self-hosted/free collector via `VITE_ANALYTICS_ENDPOINT`
   (see `client/src/shared/lib/analytics.ts`). Disabled when the var is unset.
   Never a paid product (no Sentry/PostHog/Amplitude paid tier) without a new

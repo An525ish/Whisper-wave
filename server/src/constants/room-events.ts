@@ -47,6 +47,7 @@ export const ROOM_ERROR_CODES = {
   ALIAS_INVALID: 'alias_invalid',
   JOIN_IN_PROGRESS: 'join_in_progress',
   MOD_ABSENT: 'mod_absent',
+  CHALLENGE_UNAVAILABLE: 'challenge_unavailable',
   UNKNOWN: 'unknown',
 } as const satisfies Record<string, RoomAckCode>;
 

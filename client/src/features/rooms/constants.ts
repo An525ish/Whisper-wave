@@ -13,6 +13,9 @@ export const ROOM_EVENTS = {
   REPORT: 'room_report',
   CREATED: 'room_created',
   MOD_ACTION: 'room_mod_action',
+  CHALLENGE_SHOWN: 'room_challenge_shown',
+  CHALLENGE_PASSED: 'room_challenge_passed',
+  CHALLENGE_FAILED: 'room_challenge_failed',
 } as const;
 
 /**
@@ -189,7 +192,8 @@ export const ROOM_FAIL_COPY: Record<RoomAckCode, string> = {
   alias_invalid: 'That display name can’t be used — pick another.',
   join_in_progress: 'Already joining — one moment.',
   challenge_required: 'Quick check first — answer to post.',
-  challenge_failed: 'That answer wasn’t right — try again.',
+  challenge_failed: 'That check didn’t go through — try again.',
+  challenge_unavailable: 'The check is unavailable right now — try again in a moment.',
   unknown: 'Something went wrong.',
 };
 

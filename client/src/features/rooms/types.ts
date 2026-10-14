@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { z } from 'zod';
 import type { ROOM_REACTION_GLYPHS } from './constants';
+import type { RoomChallenge, RoomChallengeAnswer } from './types/challenge';
 import type { createRoomSchema, editRoomFormSchema, roomAliasSchema } from './utils/roomValidators';
 
 // ── Lobby / room info ──
@@ -146,6 +147,7 @@ export type RoomAckCode =
   | 'join_in_progress'
   | 'challenge_required'
   | 'challenge_failed'
+  | 'challenge_unavailable'
   | 'unknown';
 
 /** `ROOM_STATE` — sent to a socket after it is seated. */
@@ -165,10 +167,6 @@ export type RoomStatePayload = {
 
 /** One crisis line on the support card. */
 export type RoomHelpline = { name: string; contact: string; href: string };
-
-export type RoomChallenge = { token: string; prompt: string };
-
-export type RoomChallengeAnswer = { token: string; answer: string };
 
 export type RoomJoinAck = { ok: true; roomId: string } | { ok: false; code: RoomAckCode };
 
@@ -235,13 +233,6 @@ export type RoomEndState = {
 // ── Composer ──
 
 export type RoomReplyPreview = { id: string; alias: string; preview: string };
-
-/** A message awaiting the guest's first-post challenge answer. */
-export type RoomPendingChallenge = {
-  input: RoomMessageInput;
-  challenge: RoomChallenge;
-  failed: boolean;
-};
 
 // ── Message menu ──
 

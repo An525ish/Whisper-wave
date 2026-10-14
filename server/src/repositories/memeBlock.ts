@@ -16,7 +16,7 @@ export const recordReport = async (
       $set: { reason, updatedAt: new Date() },
       $setOnInsert: { source, externalId, blocked: false },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   ).lean<MemeBlockLean>();
   if (!doc) throw new Error('MemeBlock upsert returned no document');
   return doc;

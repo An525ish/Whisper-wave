@@ -88,6 +88,10 @@ const envSchema = z.object({
   FCM_WEB_APP_ID: z.string().optional().default(''),
   FCM_WEB_SENDER_ID: z.string().optional().default(''),
   FCM_WEB_VAPID_KEY: z.string().optional().default(''),
+  // Cloudflare Turnstile (optional, free) for the guest first-post challenge in Rooms.
+  // Both must be set to enable it; otherwise the weak arithmetic fallback runs.
+  TURNSTILE_SITE_KEY: z.string().optional().default(''),
+  TURNSTILE_SECRET_KEY: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -161,6 +165,8 @@ const testFallback = {
   FCM_WEB_APP_ID: '',
   FCM_WEB_SENDER_ID: '',
   FCM_WEB_VAPID_KEY: '',
+  TURNSTILE_SITE_KEY: '',
+  TURNSTILE_SECRET_KEY: '',
 };
 
 export const env = parsed.success ? parsed.data : testFallback;

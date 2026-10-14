@@ -32,7 +32,7 @@ export const consume = async (tokenHash: string): Promise<RoomInviteLean | null>
       $or: [{ maxUses: null }, { $expr: { $lt: ['$uses', '$maxUses'] } }],
     },
     { $inc: { uses: 1 } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean<RoomInviteLean | null>();
 
 /** Peek without consuming (info sheet, validation). */

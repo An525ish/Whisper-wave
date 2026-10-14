@@ -5,7 +5,7 @@
   .rm-empty__btn, .rm-guest__btn, .rm-backlink, .rm-swatch, .rm-joinbtn,
   .rm-invite__btn, .rm-danger__btn, .rm-statecard__btn, .rm-statecard__link,
   .rm-react, .rm-reactadd, .rm-reactpicker__btn, .rm-actionsbtn, .rm-jump,
-  .rm-challenge__btn, .rm-challenge__cancel, .rm-support__dismiss, .rm-composerbtn
+  .rm-chal__btn, .rm-chal__cancel, .rm-support__dismiss, .rm-composerbtn
 ):focus-visible {
   outline: 2px solid var(--color-green);
   outline-offset: 2px;

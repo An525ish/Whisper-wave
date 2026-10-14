@@ -56,6 +56,23 @@ const Privacy = () => (
     </section>
 
     <section>
+      <h2>Bot check (Cloudflare Turnstile)</h2>
+      <p>
+        When a guest posts in a room for the first time, we show a short bot check from Cloudflare Turnstile. Its
+        script loads from Cloudflare only at that moment, not on other pages. Cloudflare receives your IP address and
+        browser signals to tell humans from bots, and may set cookies to do so. Signed-in members skip the check.
+      </p>
+    </section>
+
+    <section>
+      <h2>Push notifications</h2>
+      <p>
+        If you enable push notifications, your browser&apos;s push token is stored with your account and notifications
+        are delivered through Google Firebase Cloud Messaging; these notifications never include message content.
+      </p>
+    </section>
+
+    <section>
       <h2>Memes and jokes</h2>
       <ul>
         <li>The joke text comes from JokeAPI, fetched through our server.</li>

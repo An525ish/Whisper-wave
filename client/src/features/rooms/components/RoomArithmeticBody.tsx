@@ -1,20 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { ROOM_LIMITS } from '../constants';
-import type { RoomChallenge } from '../types';
 
 type Props = {
-  challenge: RoomChallenge;
+  prompt: string;
   /** The last answer was wrong. */
   failed: boolean;
   /** Local "not a number" complaint, before anything is sent. */
   error: string | null;
   busy: boolean;
   onAnswer: (raw: string) => void;
-  onCancel: () => void;
 };
 
-/** First-post check for guests: "7 + 4 = ?" answered inline, then the same message goes out. */
-const RoomChallengePrompt = ({ challenge, failed, error, busy, onAnswer, onCancel }: Props) => {
+/** Dev/CI fallback check inside the challenge modal: "7 + 4 = ?" answered inline. */
+const RoomArithmeticBody = ({ prompt, failed, error, busy, onAnswer }: Props) => {
   const [value, setValue] = useState('');
 
   const submit = (e: FormEvent) => {
@@ -23,9 +21,9 @@ const RoomChallengePrompt = ({ challenge, failed, error, busy, onAnswer, onCance
   };
 
   return (
-    <form onSubmit={submit} className="rm-challenge" aria-label="Quick check before your first post">
-      <label htmlFor="room-challenge-answer" className="rm-challenge__q">
-        Quick check: <b>{challenge.prompt}</b> =
+    <form onSubmit={submit} className="rm-chal__math">
+      <label htmlFor="room-challenge-answer" className="rm-chal__q">
+        <b>{prompt}</b> =
       </label>
       <input
         id="room-challenge-answer"
@@ -36,16 +34,13 @@ const RoomChallengePrompt = ({ challenge, failed, error, busy, onAnswer, onCance
         autoFocus
         maxLength={ROOM_LIMITS.CHALLENGE_ANSWER_MAX}
         aria-invalid={failed || error !== null}
-        className="rm-challenge__input"
+        className="rm-chal__input"
       />
-      <button type="submit" disabled={busy || value.trim() === ''} className="rm-challenge__btn">
+      <button type="submit" disabled={busy || value.trim() === ''} className="rm-chal__btn">
         {busy ? 'Checking…' : 'Verify'}
       </button>
-      <button type="button" onClick={onCancel} className="rm-challenge__cancel">
-        Cancel
-      </button>
       {(failed || error) && (
-        <p role="alert" className="rm-challenge__err">
+        <p role="alert" className="rm-chal__status rm-chal__status--err">
           {error ?? 'That wasn’t right — try the new one.'}
         </p>
       )}
@@ -53,4 +48,4 @@ const RoomChallengePrompt = ({ challenge, failed, error, busy, onAnswer, onCance
   );
 };
 
-export default RoomChallengePrompt;
+export default RoomArithmeticBody;

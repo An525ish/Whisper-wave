@@ -14,16 +14,16 @@ import type { RoomMessageInput, RoomReactInput, RoomSocket } from '../../types/r
  * so the client can settle its pending bubble. A shadow-muted post is echoed
  * to ALL of the sender's tabs and nobody else.
  */
-export const handleMessage = (
+export const handleMessage = async (
   nsp: Namespace,
   socket: RoomSocket,
   input: RoomMessageInput
-): Record<string, unknown> => {
+): Promise<Record<string, unknown>> => {
   const clientId = input.id ? { clientId: input.id } : {};
   const instanceId = currentInstance(socket);
   if (!instanceId) return { ok: false, code: ROOM_ERROR_CODES.NOT_JOINED, ...clientId };
 
-  const result = postRoomMessage({
+  const result = await postRoomMessage({
     instanceId,
     identity: socket.userId
       ? { kind: 'member', userId: socket.userId, gid: socket.gid }

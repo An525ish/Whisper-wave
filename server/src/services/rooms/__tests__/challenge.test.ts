@@ -1,6 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkChallenge, issueChallenge, markChallengePassed, verifyChallenge } from '../challenge.js';
+import {
+  checkChallenge,
+  issueArithmeticChallenge as issueChallenge,
+  markChallengePassed,
+  verifyChallenge,
+} from '../challenge.js';
 
 const solve = (prompt: string): string => String(prompt.split(' + ').map(Number).reduce((a, b) => a + b, 0));
 
@@ -27,21 +32,21 @@ describe('first-post challenge', () => {
     assert.equal(verifyChallenge('cg-2', { token, answer: 'abc' }), false);
   });
 
-  it('gates guests, waves members and passed gids through, and rate-limits wrong answers', () => {
-    assert.deepStrictEqual(checkChallenge({ gid: 'cg-3', isMember: true }), { ok: true });
-    const first = checkChallenge({ gid: 'cg-3', isMember: false });
+  it('gates guests, waves members and passed gids through, and rate-limits wrong answers', async () => {
+    assert.deepStrictEqual(await checkChallenge({ gid: 'cg-3', isMember: true }), { ok: true });
+    const first = await checkChallenge({ gid: 'cg-3', isMember: false });
     assert.ok(!first.ok && first.code === 'challenge_required' && first.challenge);
 
-    let verdict = checkChallenge({ gid: 'cg-4', isMember: false, answer: { token: 'a.b', answer: '1' } });
+    let verdict = await checkChallenge({ gid: 'cg-4', isMember: false, answer: { token: 'a.b', answer: '1' } });
     assert.ok(!verdict.ok && verdict.code === 'challenge_failed' && verdict.challenge);
     for (let i = 0; i < 6; i += 1) {
-      verdict = checkChallenge({ gid: 'cg-4', isMember: false, answer: { token: 'a.b', answer: '1' } });
+      verdict = await checkChallenge({ gid: 'cg-4', isMember: false, answer: { token: 'a.b', answer: '1' } });
     }
     assert.ok(!verdict.ok && verdict.code === 'rate_limited' && verdict.retryAfterMs);
 
     markChallengePassed('cg-5');
-    assert.deepStrictEqual(checkChallenge({ gid: 'cg-5', isMember: false }), { ok: true });
+    assert.deepStrictEqual(await checkChallenge({ gid: 'cg-5', isMember: false }), { ok: true });
     const later = Date.now() + 31 * 60_000;
-    assert.ok(!checkChallenge({ gid: 'cg-5', isMember: false, now: later }).ok);
+    assert.ok(!(await checkChallenge({ gid: 'cg-5', isMember: false, now: later })).ok);
   });
 });

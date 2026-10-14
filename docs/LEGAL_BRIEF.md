@@ -95,9 +95,12 @@ shadow-mute/lock/ban/close · kill-switch flags · grievance contact on
     created by accounts that are 7+ days old with no strikes appear in the public
     lobby without review; everyone else needs one-tap admin approval. Does
     instant listing weaken safe harbour or the "unlisted until approved" model?
-13. **Challenge strength**: the first-post guest check is an arithmetic
-    challenge, not a Turnstile-class bot check. Is it adequate for launch, or
-    is the upgrade a gate?
+13. **Challenge strength / disclosure**: implemented — the first-post guest
+    check is Cloudflare Turnstile (arithmetic only as a dev/CI fallback). The
+    script loads from Cloudflare only on a guest's first room post; Cloudflare
+    receives IP and browser signals and may set cookies. Privacy and Cookies
+    disclose this. Remaining question: is that disclosure sufficient, or is a
+    consent step needed before the widget loads?
 14. **Memegen / JokeAPI**: any notice, consent or licence concern in sending
     users' IP/UA to a public Memegen instance, or in re-rendering JokeAPI text
     (MIT-licensed project, no stated attribution requirement)?

@@ -27,6 +27,15 @@ const Cookies = () => (
     </section>
 
     <section>
+      <h2>Third-party bot check</h2>
+      <p>
+        The first time a guest posts in a room, a Cloudflare Turnstile check loads from Cloudflare. Cloudflare may set
+        its own cookies or storage to tell humans from bots. It loads only at that moment and is not used for
+        advertising or tracking.
+      </p>
+    </section>
+
+    <section>
       <h2>What we don&apos;t use</h2>
       <p>No advertising or tracking cookies.</p>
     </section>

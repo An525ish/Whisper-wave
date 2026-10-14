@@ -84,7 +84,7 @@ export const upsertBySlug = async (
       },
       $setOnInsert: { slug: params.slug.toLowerCase(), createdBy: params.createdBy ?? null },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   ).lean<RoomLean>();
   if (!doc) throw new Error('Room upsert returned no document');
   return doc;

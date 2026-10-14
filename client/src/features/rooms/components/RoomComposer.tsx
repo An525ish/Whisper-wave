@@ -12,7 +12,7 @@ import {
 import { ROOM_LIMITS, ROOM_LISTENING_COPY } from '../constants';
 import { useRoomComposer } from '../hooks/useRoomComposer';
 import type { RoomMessageAck, RoomMessageInput, RoomReplyPreview } from '../types';
-import RoomChallengePrompt from './RoomChallengePrompt';
+import RoomChallengeModal from './RoomChallengeModal';
 import RoomEmojiPopover from './RoomEmojiPopover';
 import './roomComposer.css';
 
@@ -61,13 +61,12 @@ const RoomComposer = ({ replyTo, onClearReply, onSend }: Props) => {
           </div>
         )}
         {composer.challenge && (
-          <RoomChallengePrompt
-            key={composer.challenge.challenge.token}
-            challenge={composer.challenge.challenge}
-            failed={composer.challenge.failed}
-            error={composer.answerError}
+          <RoomChallengeModal
+            pending={composer.challenge}
             busy={composer.sending}
+            answerError={composer.answerError}
             onAnswer={composer.answer}
+            onToken={composer.answerToken}
             onCancel={composer.cancelChallenge}
           />
         )}

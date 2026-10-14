@@ -129,26 +129,42 @@ export type RoomAckCode =
   | 'join_in_progress'
   | 'challenge_required'
   | 'challenge_failed'
+  | 'challenge_unavailable'
   | 'unknown';
 
 /** Trust ladder (HUB_PLAN §6.2). */
 export type TrustLevel = 'new' | 'standard' | 'trusted';
 
-/** First-post challenge handed to a guest (D9). Raises the bar vs bots; not Turnstile. */
-export type RoomChallenge = { token: string; prompt: string };
+/**
+ * First-post challenge handed to a guest (D9). Turnstile when configured; the
+ * stateless arithmetic question is the dev/CI fallback.
+ */
+export type RoomChallenge =
+  | { provider: 'turnstile'; siteKey: string }
+  | { provider: 'arithmetic'; token: string; prompt: string };
 
 /** What the client sends back with the re-sent message. */
-export type RoomChallengeAnswer = { token: string; answer: string };
+export type RoomChallengeAnswer =
+  | { provider: 'turnstile'; token: string }
+  | { provider?: 'arithmetic'; token: string; answer: string };
 
 /** Outcome of the challenge gate for one post. */
 export type RoomChallengeVerdict =
   | { ok: true }
   | {
       ok: false;
-      code: 'challenge_required' | 'challenge_failed' | 'rate_limited';
+      code: 'challenge_required' | 'challenge_failed' | 'challenge_unavailable' | 'rate_limited';
       challenge?: RoomChallenge;
       retryAfterMs?: number;
     };
+
+/** Result of one Turnstile siteverify call. `unavailable` = network/5xx/timeout (fail closed, retryable). */
+export type TurnstileOutcome = 'success' | 'failed' | 'unavailable';
+
+/** Resolved challenge provider settings (Turnstile keys, or the arithmetic fallback). */
+export type ChallengeSettings =
+  | { provider: 'turnstile'; siteKey: string; secretKey: string }
+  | { provider: 'arithmetic' };
 
 export type RoomModVerdict =
   | { allowed: true }
@@ -293,7 +309,7 @@ export type PostRoomMessageResult =
     }
   | {
       ok: false;
-      code: RoomErrorCode | 'rate_limited' | 'challenge_required' | 'challenge_failed';
+      code: RoomErrorCode | 'rate_limited' | 'challenge_required' | 'challenge_failed' | 'challenge_unavailable';
       retryAfterMs?: number;
       challenge?: RoomChallenge;
       /** Self-harm language detected: show the resources card, never auto-ban. */

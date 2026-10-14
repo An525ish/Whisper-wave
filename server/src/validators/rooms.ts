@@ -62,13 +62,22 @@ const messageIdSchema = z
   .max(64)
   .regex(/^[A-Za-z0-9_-]+$/, 'Message id may only contain letters, digits, - and _');
 
+const roomChallengeAnswerSchema = z.union([
+  z.object({ provider: z.literal('turnstile'), token: z.string().min(1).max(2048) }),
+  z.object({
+    provider: z.literal('arithmetic').optional(),
+    token: z.string().max(300),
+    answer: z.string().max(12),
+  }),
+]);
+
 /** `ROOM_MESSAGE` — acked. `id` is the sender's idempotency key. */
 export const roomMessageSchema = z.object({
   id: messageIdSchema.optional(),
   text: z.string().trim().min(1).max(1000),
   replyTo: messageIdSchema.optional(),
-  /** First-post challenge answer (guests): the token from the `challenge_required` ack + the typed answer. */
-  challenge: z.object({ token: z.string().max(300), answer: z.string().max(12) }).optional(),
+  /** First-post challenge answer (guests): a Turnstile token, or the arithmetic token + typed answer. */
+  challenge: roomChallengeAnswerSchema.optional(),
 });
 
 /** `ROOM_LEAVE` — payload-less. */

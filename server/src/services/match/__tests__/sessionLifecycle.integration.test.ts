@@ -14,7 +14,7 @@ import {
 import { recordLike } from '../like.js';
 import { REDIS_KEYS, TTL } from '../keys.js';
 import { meetsVibeGate, VIBE_UNLOCK } from '../vibeEligibility.js';
-import { bufferTestMessage, card, skipUnlessRedis } from './redisHarness.js';
+import { bufferTestMessage, card, skipUnlessRedis, useTestRedis } from './redisHarness.js';
 
 /**
  * Integration tests for the anon session lifecycle (Redis).
@@ -25,6 +25,8 @@ import { bufferTestMessage, card, skipUnlessRedis } from './redisHarness.js';
  *
  * SAFETY: see `redisHarness.ts` — the prefix guard is mandatory.
  */
+
+useTestRedis();
 
 describe('anon session lifecycle (Redis integration)', () => {
   it('round-trips a session and confirms both participants', async (t) => {

@@ -1,17 +1,16 @@
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useNowWhile } from '@/shared/hooks/useNowWhile';
+import { track } from '@/shared/lib/analytics';
 import { newClientId } from '@/shared/utils/id';
-import { ROOM_COUNTDOWN_TICK_MS } from '../constants';
+import { ROOM_COUNTDOWN_TICK_MS, ROOM_EVENTS } from '../constants';
 import { useRoomStore } from '../stores/roomStore';
 import { parseChallengeAnswer } from '../utils/challenge';
 import { failCopy } from '../utils/roomErrors';
-import type {
-  RoomMessageAck,
-  RoomMessageInput,
-  RoomPendingChallenge,
-  RoomReplyPreview,
-} from '../types';
+import type { RoomMessageAck, RoomMessageInput, RoomReplyPreview } from '../types';
+import type { RoomChallengeAnswer, RoomChallengeCode, RoomPendingChallenge } from '../types/challenge';
+
+const CHALLENGE_CODES = new Set<string>(['challenge_required', 'challenge_failed', 'challenge_unavailable']);
 
 interface Params {
   replyTo: RoomReplyPreview | null;
@@ -22,7 +21,8 @@ interface Params {
 /**
  * Composer behaviour: the draft survives until the server acks it, slow-mode
  * and mute verdicts become live countdowns, and a guest's first-post challenge
- * re-sends the SAME message (same id) with the answer attached.
+ * (Turnstile modal) re-sends the SAME message (same id) with the answer attached.
+ * Cancelling the modal leaves the draft in the composer; nothing is lost.
  */
 export function useRoomComposer({ replyTo, onClearReply, onSend }: Params) {
   const [draft, setDraft] = useState('');
@@ -44,19 +44,30 @@ export function useRoomComposer({ replyTo, onClearReply, onSend }: Params) {
   const canSend = ready && !locked && !sending && cooldownMs === 0 && draft.trim().length > 0;
 
   const deliver = useCallback(
-    async (input: RoomMessageInput) => {
+    async (input: RoomMessageInput, retry = false) => {
       setSending(true);
       const res = await onSend(input);
       setSending(false);
       if (res.ok) {
         setDraft('');
-        setPending(null);
+        // Keep the modal for its success beat (unless the guest already cancelled it).
+        setPending((prev) => (prev ? { ...prev, passed: true } : null));
         setAnswerError(null);
+        if (retry) track(ROOM_EVENTS.CHALLENGE_PASSED, {});
         if (replyTo) onClearReply();
         return;
       }
-      if (res.challenge) {
-        setPending({ input, challenge: res.challenge, failed: res.code === 'challenge_failed' });
+      if (res.challenge && CHALLENGE_CODES.has(res.code)) {
+        const { challenge } = res;
+        const code = res.code as RoomChallengeCode;
+        if (retry) track(ROOM_EVENTS.CHALLENGE_FAILED, { provider: challenge.provider, code });
+        else track(ROOM_EVENTS.CHALLENGE_SHOWN, { provider: challenge.provider });
+        // A retry answers a modal that may have been cancelled meanwhile: don't resurrect it.
+        setPending((prev) =>
+          retry && !prev
+            ? null
+            : { input, challenge, code, nonce: (prev?.nonce ?? 0) + 1, passed: false }
+        );
         return;
       }
       setPending(null);
@@ -83,18 +94,33 @@ export function useRoomComposer({ replyTo, onClearReply, onSend }: Params) {
     });
   }, [canSend, deliver, draft, replyTo]);
 
+  const sendAnswer = useCallback(
+    (challenge: RoomChallengeAnswer) => {
+      if (!pending || sending) return;
+      void deliver({ ...pending.input, challenge }, true);
+    },
+    [deliver, pending, sending]
+  );
+
+  /** Arithmetic fallback: the typed sum. */
   const answer = useCallback(
     (raw: string) => {
-      if (!pending || sending) return;
+      if (pending?.challenge.provider !== 'arithmetic') return;
       const parsed = parseChallengeAnswer(raw);
       if (parsed === null) {
         setAnswerError('Answer with a number.');
         return;
       }
       setAnswerError(null);
-      void deliver({ ...pending.input, challenge: { token: pending.challenge.token, answer: parsed } });
+      sendAnswer({ token: pending.challenge.token, answer: parsed });
     },
-    [deliver, pending, sending]
+    [pending, sendAnswer]
+  );
+
+  /** Turnstile: the widget's token. */
+  const answerToken = useCallback(
+    (token: string) => sendAnswer({ provider: 'turnstile', token }),
+    [sendAnswer]
   );
 
   const cancelChallenge = useCallback(() => {
@@ -107,6 +133,7 @@ export function useRoomComposer({ replyTo, onClearReply, onSend }: Params) {
     setDraft,
     submit,
     answer,
+    answerToken,
     cancelChallenge,
     challenge: pending,
     answerError,

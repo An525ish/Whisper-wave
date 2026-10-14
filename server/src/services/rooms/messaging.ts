@@ -16,7 +16,7 @@ import type { PostRoomMessageInput, PostRoomMessageResult } from '../../types/ro
  * Post one room message: membership → mod gate (listening rooms) → mute → guest challenge → flood cap →
  * slow mode + automod → ring.
  *
- * Returns a result, never throws for content verdicts — the namespace maps
+ * Async only because the Turnstile check calls Cloudflare. Returns a result, never throws for content verdicts — the namespace maps
  * these straight onto the ack. Only a missing seat/instance throws (a caller
  * bug or a restart race, not a user verdict).
  *
@@ -26,7 +26,7 @@ import type { PostRoomMessageInput, PostRoomMessageResult } from '../../types/ro
  * never stored. Ids are server-minted; the sender's own id is a `clientId`
  * the caller echoes back.
  */
-export const postRoomMessage = (input: PostRoomMessageInput): PostRoomMessageResult => {
+export const postRoomMessage = async (input: PostRoomMessageInput): Promise<PostRoomMessageResult> => {
   const key = input.identity.userId ?? input.identity.gid;
   if (!key) throw new AppError(401, 'Room identity required');
   const { instanceId } = input;
@@ -43,7 +43,7 @@ export const postRoomMessage = (input: PostRoomMessageInput): PostRoomMessageRes
   if (isMuted(instanceId, key)) return { ok: false, code: 'muted' };
 
   const senderGid = member.gid ?? input.identity.gid ?? key;
-  const gate = checkChallenge({
+  const gate = await checkChallenge({
     gid: senderGid,
     isMember: input.identity.kind === 'member',
     ...(input.challenge ? { answer: input.challenge } : {}),

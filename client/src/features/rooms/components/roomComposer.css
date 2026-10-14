@@ -1,4 +1,4 @@
-/** Composer shell, support notice, emoji popover anchor, slow-mode note, first-post challenge. */
+/** Composer shell, support notice, emoji popover anchor, slow-mode note. */
 
 /* Composer: transmitter box — action, autogrow text, send with ring. */
 .rm-composer {
@@ -67,66 +67,6 @@
   padding-inline: 0.75rem;
   font-size: 0.75rem;
   color: var(--color-body-300);
-}
-
-.rm-challenge {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(139, 107, 255, 0.35);
-  background: rgba(139, 107, 255, 0.08);
-  padding: 0.6rem 0.8rem;
-}
-
-.rm-challenge__q {
-  font-size: 0.85rem;
-  color: var(--color-body);
-}
-
-.rm-challenge__input {
-  width: 5rem;
-  border-radius: 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(0, 0, 0, 0.3);
-  padding: 0.4rem 0.6rem;
-  font-size: 16px;
-  color: var(--color-body);
-}
-
-.rm-challenge__input:focus-visible {
-  border-color: rgba(1, 195, 109, 0.6);
-  outline: 2px solid rgba(1, 195, 109, 0.35);
-  outline-offset: 1px;
-}
-
-.rm-challenge__btn {
-  min-height: 2rem;
-  border-radius: 999px;
-  background: var(--color-green);
-  padding: 0.3rem 0.9rem;
-  font-size: 0.8rem;
-  font-weight: 650;
-  color: #06130d;
-}
-
-.rm-challenge__btn:disabled {
-  opacity: 0.5;
-}
-
-.rm-challenge__cancel {
-  min-height: 2rem;
-  padding-inline: 0.5rem;
-  font-size: 0.78rem;
-  color: var(--color-body-300);
-}
-
-.rm-challenge__err {
-  flex-basis: 100%;
-  font-size: 0.75rem;
-  color: var(--color-red);
 }
 
 .rm-listening {

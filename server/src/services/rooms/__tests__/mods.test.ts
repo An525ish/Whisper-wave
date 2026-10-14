@@ -16,7 +16,7 @@ import { appendMessage, clearRegistry, hideMessage, joinInstance, recentMessages
 import { guest, seat, template } from './helpers.js';
 
 describe('room mods', () => {
-  it('members cannot moderate; mods can delete, unhide and mute', () => {
+  it('members cannot moderate; mods can delete, unhide and mute', async () => {
     clearRegistry();
     try {
       const { instanceId } = seat('mods-m', 'M', 'mod');
@@ -37,7 +37,7 @@ describe('room mods', () => {
       assert.equal(muteMember(instanceId, 'mods-m', 'mods-u', 60), true);
       assert.equal(isMuted(instanceId, 'mods-u'), true);
       assert.equal(isMuted(instanceId, 'mods-m'), false);
-      const res = postRoomMessage({ instanceId, identity: guest('mods-u'), text: 'can I talk?' });
+      const res = await postRoomMessage({ instanceId, identity: guest('mods-u'), text: 'can I talk?' });
       assert.ok('ok' in res && res.code === 'muted');
     } finally {
       clearRegistry();

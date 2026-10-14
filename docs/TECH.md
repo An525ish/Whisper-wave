@@ -387,6 +387,21 @@ set = off; all push code no-ops). Sending uses FCM HTTP v1 via `google-auth-libr
 | `FCM_WEB_API_KEY`, `FCM_WEB_APP_ID`, `FCM_WEB_SENDER_ID` | Web app config (public) |
 | `FCM_WEB_VAPID_KEY` | Web Push certificate key pair (public) |
 
+### Guest first-post challenge (Turnstile)
+
+Rooms guests clear one check before their first post (members skip; a pass lasts 30 min). Cloudflare
+Turnstile is free and optional: **on only when both `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` are
+set**; otherwise a stateless arithmetic question runs as the dev/CI fallback (production logs a boot warning).
+
+- Ack `challenge`: `{ provider:'turnstile', siteKey }` or `{ provider:'arithmetic', token, prompt }`. Retry `challenge`: `{ provider:'turnstile', token }` (≤ 2048) or `{ token, answer }`.
+- Server verifies via siteverify (`services/rooms/turnstile.ts`, 4 s timeout, form-encoded). Wrong/expired token → `challenge_required`/`challenge_failed` with a fresh challenge; network/5xx/timeout → fail closed, `challenge_unavailable` (retryable). Failures count against the 5/min/gid limiter. Tokens/secrets are never logged.
+- The client loads `challenges.cloudflare.com` lazily (first guest post only); the server CSP allows it in `script-src`, `frame-src`, `connect-src`.
+
+| Env | Purpose |
+|---|---|
+| `TURNSTILE_SITE_KEY` | Public widget key (test: `1x00000000000000000000AA`) |
+| `TURNSTILE_SECRET_KEY` | Secret (test: `1x0000000000000000000000000000000AA`) |
+
 ### Socket Origin allowlist
 
 Socket.IO's `allowRequest` checks `Origin` (`config/cors.ts`

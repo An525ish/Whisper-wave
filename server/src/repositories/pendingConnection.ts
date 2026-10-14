@@ -32,7 +32,7 @@ export const findOrCreate = async (
         expiresAt: new Date(Date.now() + SEVEN_DAYS_MS),
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   ).lean<PendingLean>();
   if (!doc) throw new Error('PendingConnection upsert returned no document');
   return doc;
@@ -105,7 +105,9 @@ export const unbindUser = async (sessionId: string, userId: string): Promise<boo
           },
         },
       },
-    ]
+    ],
+    // Mongoose 9 rejects array (aggregation-pipeline) updates unless opted in.
+    { updatePipeline: true }
   );
   return res.modifiedCount > 0;
 };
@@ -155,7 +157,7 @@ export const bindSideToUser = async (
   return PendingConnection.findOneAndUpdate(
     { sessionId, [field]: { $in: [null, userId] } },
     { $set: { [field]: userId } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean<PendingLean>();
 };
 
@@ -163,12 +165,12 @@ export const markCompleted = async (sessionId: string) =>
   PendingConnection.findOneAndUpdate(
     { sessionId },
     { $set: { status: 'completed', processingAt: null } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean();
 
 export const updateStatus = async (sessionId: string, status: PendingConnectionStatusDoc) =>
   PendingConnection.findOneAndUpdate(
     { sessionId },
     { $set: { status, processingAt: null } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean();

@@ -1094,7 +1094,7 @@ limits · Redis sliding-window message limiter · anon sessions not stored in Mo
 | Shadow-mute (admin) | Rooms | Sender sees their message; nobody else does |
 | **Kill-switch** | all | Admin one-click: close room, disable feature flag, hide meme, ban `gid` — **target < 60 s from alert to action** |
 | Self-harm response | Rooms/Whisper | Detect high-risk phrases → show a **resources card** (helplines by region) to the sender; never auto-ban for it |
-| Turnstile-style bot check | Rooms (guest first post) | A free Cloudflare/hCaptcha-class challenge on first post only. *Needs verification at build time* (not researched here). |
+| Turnstile bot check | Rooms (guest first post) | **Built.** Cloudflare Turnstile (free) on a guest's first post only, in a modal; server verifies via siteverify and fails closed (`challenge_unavailable`). Optional: needs `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY`, else the arithmetic fallback runs (dev/CI; boot warning in production). Failures share the 5/min/gid limiter; a pass lasts 30 min. |
 | Safe default for Venting room | Rooms | **Built.** Template flag `requiresModPresence` (set on the Venting seed). Lobby `status: open \| closed \| waiting_mod`; with no mod seated (3 min grace after the last leaves) the room stays readable but posting is refused `mod_absent`, composers disable live (`ROOM_PAUSED`/`ROOM_RESUMED`). First member into a waiting room pushes the mods (`room-mod-{slug}`, ≥ 10 min per mod). Strict profile: slow ≥ 8 s, no links, 280 chars, no @mentions, wider duplicate window (staff exempt from slow/links). Persistent "Not a crisis service" strip + region-aware helplines card |
 
 ### 9.4 Evidence and retention (the honest trade-off)
@@ -1252,7 +1252,7 @@ be recalibrated after Phase 0.
 |---|---|
 | 0 Foundations, 1 Whisper in the hub | Shipped |
 | 2 Memes v1 | Built, dark (`FEATURE_MEMES`); JokeAPI + Memegen; Unfiltered 18+ / Dark shelf pending counsel |
-| 3a Rooms | Built, dark (`FEATURE_ROOMS`); "Remind me when it opens" for closed rooms with hours (Phase 6 FCM push: `RoomReminder`, 8-day TTL, 20/user, 60 s dispatcher, one-shot, 409 when push is off); Venting listening-room rule built (mod presence + strict profile, §9.3); gates still open: staffed hours (mod-presence pauses the room when nobody is on, it does not replace staffing), counsel review, stronger first-post challenge, 300-socket load test script |
+| 3a Rooms | Built, dark (`FEATURE_ROOMS`); "Remind me when it opens" for closed rooms with hours (Phase 6 FCM push: `RoomReminder`, 8-day TTL, 20/user, 60 s dispatcher, one-shot, 409 when push is off); Venting listening-room rule built (mod presence + strict profile, §9.3); gates still open: staffed hours (mod-presence pauses the room when nobody is on, it does not replace staffing), counsel review, 300-socket load test script (stronger first-post challenge: done — Turnstile, §9.3) |
 | 3b | Partly early: trust ladder + trusted instant listing (D4). Volunteer mods, game night, unreviewed public listing: not built |
 | 4 Games | Skipped (D7) |
 | 5 Memes v2 / Premium hooks, 6 Scale | Not started |
@@ -1387,7 +1387,7 @@ Each has a recommendation; the plan assumes them unless overridden.
 | **D6** | Meme source v1 | KLIPY / curated / UGC | **LOCKED Oct 2026: JokeAPI v2 + Memegen.link render (Option 2), AMENDED: the Dark shelf and a member-opt-in "Unfiltered 18+" mode are KEPT** — never in the guest/default feed (default = Misc/Programming/Pun, safe-mode semantics + full blacklist; Dark only for members with unfiltered on). Two-part jokes map to top/bottom meme text, server picks template by rotation, truncates lines, caches the mapping, falls back to text cards. Zero bandwidth, no key. **Counsel sign-off pending** (`LEGAL_BRIEF.md`). |
 | **D7** | Games v1 set | see §7.4.1 | **Would You Rather + Tic-Tac-Toe in Whisper first** |
 | **D8** | Guest stable id | `gid` 30 d cookie / none | **`gid`** (disclosed, safety-only) |
-| **D9** | Guest posting in rooms | Allowed with challenge / read-only | **Allowed after alias + first-post challenge, text-only, no links** |
+| **D9** | Guest posting in rooms | Allowed with challenge / read-only | **Allowed after alias + first-post challenge, text-only, no links** (challenge = Cloudflare Turnstile; arithmetic fallback only without keys) |
 | **D10** | Who is on call for reports (2 h SLA)? | Name an owner | **LOCKED Oct 2026: you, always.** Obligates: published Grievance Officer contact on `/report`, report-age/SLA display in the admin queue. |
 | **D11** | Production domain | Buy now / later | **LOCKED Oct 2026: deferred.** `whisper-wave.onrender.com` + localhost cover testing through Phase 3 (same-origin client serving keeps cookies first-party). Real triggers to buy: UGC memes (R2 custom domain — `r2.dev` is rate-limited) or leaving Render (subdomain dies with the host). |
 | **D12** | Moderation model | Staff + automod / volunteer mods | **Staff + automod at launch**, volunteers in 3b |

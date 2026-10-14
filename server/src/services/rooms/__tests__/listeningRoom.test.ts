@@ -70,17 +70,17 @@ describe('mod_absent gate', () => {
     assert.equal(isPostingPaused(undefined, false), false);
   });
 
-  it('refuses posts until a mod seats, then lets them through', () => {
+  it('refuses posts until a mod seats, then lets them through', async () => {
     clearRegistry();
     try {
       seatVent('ga-member');
       assert.equal(isStaffed('vent-test'), false);
-      const refused = postRoomMessage({ instanceId: 'vent-test#1', identity: guest('ga-member'), text: 'hello' });
+      const refused = await postRoomMessage({ instanceId: 'vent-test#1', identity: guest('ga-member'), text: 'hello' });
       assert.ok('ok' in refused && refused.code === 'mod_absent');
 
       seatVent('ga-mod', 'mod');
       assert.equal(isStaffed('vent-test'), true);
-      const allowed = postRoomMessage({ instanceId: 'vent-test#1', identity: guest('ga-member'), text: 'hello again' });
+      const allowed = await postRoomMessage({ instanceId: 'vent-test#1', identity: guest('ga-member'), text: 'hello again' });
       assert.ok('message' in allowed);
     } finally {
       clearRegistry();

@@ -9,6 +9,8 @@ type Props = {
   onClose: () => void;
   /** id of the element that names the dialog. */
   labelledBy: string;
+  /** id of the element that describes the dialog (optional). */
+  describedBy?: string;
   rootClassName?: string;
   backdropClassName?: string;
   panelClassName?: string;
@@ -30,6 +32,7 @@ const Dialog = ({
   open,
   onClose,
   labelledBy,
+  describedBy,
   rootClassName = DEFAULT_ROOT,
   backdropClassName = DEFAULT_BACKDROP,
   panelClassName = DEFAULT_PANEL,
@@ -57,6 +60,7 @@ const Dialog = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
+        aria-describedby={describedBy}
         tabIndex={-1}
       >
         {children}

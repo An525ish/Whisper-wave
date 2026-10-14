@@ -23,6 +23,9 @@
  *   whose cap x instance limit is below SOCKETS will report join failures.
  * - First post per guest returns `challenge_required`; the arithmetic prompt is
  *   solved and the post retried. That extra round trip is not counted as an error.
+ *   With Turnstile enabled on the server (TURNSTILE_* set) the script sends Cloudflare's
+ *   dummy token 'XXXX.DUMMY.TOKEN.XXXX', which only verifies against Cloudflare's
+ *   dummy secret (1x0000000000000000000000000000000AA) — use the TEST key pair.
  * - Text is varied (random words + counter) to dodge the duplicate check; automod
  *   may still reject some. Every non-ok final ack counts toward the error rate.
  * - Server memory is NOT measured here — watch the process separately.
@@ -30,7 +33,7 @@
 import { randomUUID } from 'node:crypto';
 import { io, type Socket } from 'socket.io-client';
 
-type Ack = { ok: boolean; code?: string; retryAfterMs?: number; challenge?: { token: string; prompt: string } };
+type Ack = { ok: boolean; code?: string; retryAfterMs?: number; challenge?: { provider?: string; token?: string; prompt?: string } };
 type Guest = { socket: Socket; nextAt: number; challenged: boolean };
 
 const env = (name: string, fallback: string): string => process.env[name] ?? fallback;
@@ -48,6 +51,7 @@ const DURATION_MS = num('DURATION', 60) * 1000;
 const MAX_P95_MS = num('MAX_P95_MS', 500);
 const ACK_TIMEOUT_MS = 10_000;
 const MAX_ERROR_RATE = 0.01;
+const TURNSTILE_DUMMY_TOKEN = 'XXXX.DUMMY.TOKEN.XXXX';
 
 const WORDS = ['coffee', 'night', 'music', 'rain', 'movie', 'sleep', 'train', 'book', 'walk', 'tea', 'code', 'moon', 'city', 'dream', 'cat', 'road'];
 const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)] as T;
@@ -94,12 +98,13 @@ const post = async (guest: Guest, i: number, n: number): Promise<void> => {
   const started = performance.now();
   let res = await emitAck(guest.socket, 'ROOM_MESSAGE', { text: body, id: `lt-${i}-${n}` });
   if (!res.ok && res.code === 'challenge_required' && res.challenge) {
-    const [a, b] = res.challenge.prompt.split('+').map((s) => Number(s.trim()));
-    res = await emitAck(guest.socket, 'ROOM_MESSAGE', {
-      text: body,
-      id: `lt-${i}-${n}`,
-      challenge: { token: res.challenge.token, answer: String((a ?? 0) + (b ?? 0)) },
-    });
+    const { provider, token = '', prompt = '' } = res.challenge;
+    const [a, b] = prompt.split('+').map((s) => Number(s.trim()));
+    const answer =
+      provider === 'turnstile'
+        ? { provider, token: TURNSTILE_DUMMY_TOKEN }
+        : { token, answer: String((a ?? 0) + (b ?? 0)) };
+    res = await emitAck(guest.socket, 'ROOM_MESSAGE', { text: body, id: `lt-${i}-${n}`, challenge: answer });
     guest.challenged = true;
   }
   latencies.push(performance.now() - started);
