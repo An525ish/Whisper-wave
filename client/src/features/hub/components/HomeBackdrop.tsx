@@ -1,21 +1,14 @@
 import AmbientBackdrop from '@/shared/components/ui/backdrop/AmbientBackdrop';
+import BokehCrowd from '@/shared/components/ui/backdrop/BokehCrowd';
 
 /**
- * Full-page atmosphere for the hub home — the landing/auth treatment,
- * retuned to the home's midnight-shore palette.
- *
- * Layers (all decorative, `aria-hidden` by the caller):
- * shared ambient backdrop + signal bars.
- * Still under `prefers-reduced-motion` via home.css.
+ * Full-page atmosphere for the hub home: the shared backdrop with the same
+ * tuning and drifting lights as Rooms (violet mesh, teal glow, no green).
+ * Decorative, `aria-hidden` by the component itself.
  */
 const HomeBackdrop = () => (
-  <AmbientBackdrop className="hw-bg">
-    <div className="hw-signal">
-      <span />
-      <span />
-      <span />
-      <span />
-    </div>
+  <AmbientBackdrop className="hw-bg" green={false}>
+    <BokehCrowd />
   </AmbientBackdrop>
 );
 

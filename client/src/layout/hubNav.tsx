@@ -4,6 +4,7 @@ import HomeIcon from '@/shared/components/ui/icons/Home';
 import WaveIcon from '@/shared/components/ui/icons/Wave';
 import MembersIcon from '@/shared/components/ui/icons/Members';
 import MemesIcon from '@/shared/components/ui/icons/Memes';
+import GamepadIcon from '@/shared/components/ui/icons/Gamepad';
 import ChatIcon from '@/shared/components/ui/icons/Chat';
 import { buildHubNavSpecs } from './hubNavSpecs';
 import type { BuildNavParams } from './types';
@@ -13,6 +14,7 @@ const ICONS: Record<string, ReactNode> = {
   rooms: <MembersIcon />,
   whisper: <WaveIcon />,
   memes: <MemesIcon />,
+  games: <GamepadIcon />,
   chats: <ChatIcon />,
 };
 

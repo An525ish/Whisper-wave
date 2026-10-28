@@ -50,7 +50,12 @@ const OFFICIAL_ROOMS = [
     slug: 'gaming',
     title: 'Gaming',
     description: 'LFG, banter and post-match breakdowns.',
-    rules: ['No links (clips go in chat later).', 'Trash talk the play, not the player.', '18+ only.'],
+    rules: [
+      'No links (clips go in chat later).',
+      'Trash talk the play, not the player.',
+      'No cheats, boosting or account selling.',
+      '18+ only.',
+    ],
     lang: 'en',
     official: true as const,
     hours: null,

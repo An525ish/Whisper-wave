@@ -6,18 +6,20 @@ const ids = (params: Parameters<typeof buildHubNavSpecs>[0]) =>
 
 describe('buildHubNavSpecs', () => {
   it('hides dark surfaces until their flag is on', () => {
-    expect(ids({ unread: 0 })).toEqual(['home', 'whisper', 'chats']);
+    expect(ids({ unread: 0 })).toEqual(['home', 'whisper', 'games', 'chats']);
     expect(ids({ unread: 0, features: { rooms: true, games: true, memes: true, privateRooms: false } })).toEqual([
       'home',
       'rooms',
       'whisper',
       'memes',
+      'games',
       'chats',
     ]);
   });
 
-  it('never surfaces Games, even when the server flag is on', () => {
-    expect(ids({ unread: 0, features: { rooms: false, games: true, memes: false, privateRooms: false } })).not.toContain('play');
+  it('lists Games on the rail only, as a coming-soon page', () => {
+    const games = buildHubNavSpecs({ unread: 0 }).find((s) => s.id === 'games');
+    expect(games?.railOnly).toBe(true);
   });
 
   it('keeps Memes off the phone tab bar', () => {

@@ -2,42 +2,6 @@
 
 /* ── Header ───────────────────────────────────────────────────────── */
 
-.rm-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  border-radius: 999px;
-  border: 1px solid rgba(1, 195, 109, 0.4);
-  background:
-    linear-gradient(180deg, rgba(1, 195, 109, 0.14), rgba(1, 195, 109, 0.04)),
-    rgba(13, 9, 18, 0.5);
-  box-shadow:
-    0 0 0 1px rgba(1, 195, 109, 0.1),
-    0 8px 26px -8px rgba(1, 195, 109, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  padding: 0.36rem 0.8rem;
-  font-family: var(--font-hw-mono, ui-monospace, monospace);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-green);
-}
-
-.rm-eyebrow__dot {
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 999px;
-  background: var(--color-green);
-  box-shadow: 0 0 8px rgba(1, 195, 109, 0.9);
-  animation: rm-blink 2.4s ease-in-out infinite;
-}
-
-@keyframes rm-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
-}
-
 .rm-title {
   margin-top: 0.6rem;
   font-family: var(--font-display);
@@ -230,7 +194,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rm-eyebrow__dot,
   .rm-iconbtn--spin svg {
     animation: none !important;
   }

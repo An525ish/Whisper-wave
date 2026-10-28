@@ -5,9 +5,8 @@
  * without a hunt through the codebase. Builders take the dynamic segment.
  * Admin paths live with the admin feature and are not listed here.
  *
- * Games (`/play`) and a persona page (`/me`) are intentionally absent: Games
- * is skipped by decision (see docs/HUB_PLAN.md D7) and the persona editor has
- * no route yet.
+ * A persona page (`/me`) is intentionally absent: the persona editor has no
+ * route yet. `/games` is a coming-soon page until Games ships (D7).
  */
 export const ROUTES = {
   landing: '/',
@@ -17,6 +16,7 @@ export const ROUTES = {
   newRoom: '/rooms/new',
   room: (slug: string) => `/rooms/${slug}`,
   memes: '/memes',
+  games: '/games',
   chats: '/chats',
   chat: (chatId: string) => `/chats/${chatId}`,
   auth: '/auth',

@@ -1,225 +1,156 @@
-/** The door scene: stage, light, crowd faces, and the compact centered state card. */
+/** The room's join page: tinted banner, join panel, house rules, centered state card. */
 
-/* ── Doorway: knock and enter ─────────────────────────────────────── */
+/* Each room gets one of four tints (stable per slug) as an RGB triplet. */
+.rmq-tone--0 { --tone: 139 107 255; }
+.rmq-tone--1 { --tone: 53 224 200; }
+.rmq-tone--2 { --tone: 1 195 109; }
+.rmq-tone--3 { --tone: 86 152 255; }
 
 .rmq-page {
+  --tone: 139 107 255;
   position: relative;
   min-height: 100%;
-  overflow: hidden;
+  overflow-x: clip;
+}
+
+.rmq-main {
+  position: relative;
+  z-index: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg, #100c1a 0%, #1a1520 55%, #211a2a 100%);
+  max-width: 64rem;
+  flex-direction: column;
+  gap: 1.75rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+@media (min-width: 768px) {
+  .rmq-main { gap: 2.5rem; padding: 2.5rem 2rem 4rem; }
+}
+
+.rmq-center {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: 100%;
+  place-items: center;
   padding: 1.25rem;
 }
 
-.rmq-stars {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.7;
-  background-image:
-    radial-gradient(1.5px 1.5px at 12% 8%, rgba(255, 255, 255, 0.8), transparent 100%),
-    radial-gradient(1px 1px at 28% 18%, rgba(255, 255, 255, 0.5), transparent 100%),
-    radial-gradient(1.5px 1.5px at 44% 6%, rgba(182, 164, 255, 0.8), transparent 100%),
-    radial-gradient(1px 1px at 61% 14%, rgba(255, 255, 255, 0.5), transparent 100%),
-    radial-gradient(2px 2px at 76% 7%, rgba(255, 255, 255, 0.7), transparent 100%),
-    radial-gradient(1px 1px at 88% 20%, rgba(53, 224, 200, 0.7), transparent 100%),
-    radial-gradient(1px 1px at 8% 26%, rgba(255, 255, 255, 0.4), transparent 100%),
-    radial-gradient(1.5px 1.5px at 94% 30%, rgba(255, 255, 255, 0.5), transparent 100%);
-}
+/* ── Banner + join panel ──────────────────────────────────────────── */
 
-.rmq-moon {
-  position: absolute;
-  top: -3rem;
-  right: -3rem;
-  width: 11rem;
-  height: 11rem;
-  border-radius: 999px;
-  pointer-events: none;
-  background: radial-gradient(circle, rgba(182, 164, 255, 0.35), transparent 65%);
-  filter: blur(6px);
-}
-
-.rmq-wrap {
-  position: relative;
-  display: grid;
-  width: 100%;
-  max-width: 56rem;
-  overflow: hidden;
-  border-radius: 1.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(20, 14, 32, 0.72);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow:
-    0 40px 90px -28px rgba(0, 0, 0, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
+.rmq-grid { display: grid; gap: 1.75rem; }
 
 @media (min-width: 768px) {
-  .rmq-wrap {
-    grid-template-columns: 0.9fr 1.1fr;
-  }
+  .rmq-grid { grid-template-columns: 0.8fr 1.2fr; align-items: stretch; gap: 2.5rem; }
 }
 
-.rmq-back {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  z-index: 3;
-}
+.rmq-info { display: flex; flex-direction: column; justify-content: center; gap: 1.1rem; }
 
-/* The door scene: full-bleed art with the room laid over it. */
+.rmq-hero { position: relative; }
+
+/* The gate: an art panel, tall on desktop, a wide crop on phones. */
 .rmq-scene {
-  position: relative;
-  min-height: 12rem;
-  overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  .rmq-scene {
-    min-height: 100%;
-  }
-}
-
-.rmq-scene > svg {
-  position: absolute;
-  inset: 0;
+  display: block;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 5 / 4;
+  border-radius: 1.75rem;
+  border: 1px solid rgb(var(--tone) / 0.28);
+  box-shadow: 0 40px 90px -30px rgb(var(--tone) / 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.rmq-scene::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, transparent 30%, rgba(10, 6, 16, 0.55) 62%, rgba(10, 6, 16, 0.92) 100%);
+/* Desktop: the gate stretches to the height of the details beside it, so the two
+   columns always end on the same line. */
+@media (min-width: 768px) {
+  .rmq-scene { height: 100%; min-height: 28rem; aspect-ratio: auto; }
 }
 
-.rmq-stageinfo {
-  position: absolute;
-  inset: auto 0 0 0;
-  z-index: 2;
-  padding: 0.85rem 1.1rem 1rem;
+/* Door: hinged on the left edge of the opening (x = 120). Knocking swings it wider. */
+.rmq-leaf {
+  transform-origin: 120px 300px;
+  transform: scaleX(0.6) skewY(-4deg);
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.rmq-stageinfo .rm-jointitle {
-  margin-top: 0.5rem;
-  font-size: clamp(1.5rem, 3.6vw, 2rem);
+.rmq-open .rmq-leaf { transform: scaleX(0.2) skewY(-9deg); }
+
+.rmq-room,
+.rmq-halo,
+.rmq-spill { opacity: 0.8; transition: opacity 0.8s ease; }
+
+.rmq-open .rmq-room,
+.rmq-open .rmq-halo,
+.rmq-open .rmq-spill { opacity: 1; }
+
+.rmq-sway { animation: rmq-sway 6s ease-in-out infinite; }
+.rmq-bubble { animation: rmq-bob 5s ease-in-out infinite; }
+.rmq-lamp { animation: rmq-flicker 3.6s ease-in-out infinite; }
+.rmq-dust { animation: rmq-dust 7s linear infinite; opacity: 0; }
+
+@keyframes rmq-sway { 0%, 100% { transform: translateX(-2px); } 50% { transform: translateX(3px); } }
+@keyframes rmq-bob { 0%, 100% { transform: translateY(0); opacity: 0.85; } 50% { transform: translateY(-9px); opacity: 1; } }
+@keyframes rmq-flicker { 0%, 100% { opacity: 0.85; } 35% { opacity: 1; } 60% { opacity: 0.78; } 80% { opacity: 0.95; } }
+@keyframes rmq-dust {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 0.7; }
+  100% { transform: translateY(-70px); opacity: 0; }
 }
 
-.rmq-stageinfo .rm-joindesc {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-size: 0.85rem;
+.rmq-pills { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+
+.rmq-pills .rm-officialpill {
+  border-color: rgb(var(--tone) / 0.5);
+  background: rgb(var(--tone) / 0.14);
+  color: rgb(var(--tone));
 }
 
-.rmq-stageinfo .rm-joinpills {
-  margin-top: 0.6rem;
-}
-
-.rmq-crowd {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.55rem;
-}
-
-.rmq-quiet {
-  margin: 0 0 0.55rem;
-  width: fit-content;
+.rmq-chip {
   border-radius: 999px;
-  border: 1px dashed rgba(235, 236, 236, 0.22);
-  padding: 0.3rem 0.85rem;
-  font-size: 0.74rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.28rem 0.7rem;
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
   color: var(--color-body-300);
 }
 
-/* Compact centered card for loading / missing / closed states. */
-.rmq-state {
-  border-radius: 1.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background:
-    linear-gradient(165deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015) 45%),
-    linear-gradient(165deg, rgba(42, 33, 56, 0.96), rgba(26, 20, 36, 0.98));
-  box-shadow:
-    0 32px 70px -24px rgba(0, 0, 0, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  padding: 1.75rem 1.5rem;
+.rmq-title {
+  margin-top: 0.7rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5.5vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #fff;
 }
 
-/* The action side: rules, persona, knock. */
-.rmq-side {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.85rem;
-  background: rgba(13, 9, 18, 0.55);
-  padding: 1.25rem;
+.rmq-desc {
+  margin-top: 0.6rem;
+  max-width: 30rem;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: var(--color-body-300);
 }
 
-@media (min-width: 768px) {
-  .rmq-side {
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 1.5rem 1.5rem 1.5rem 1.35rem;
-  }
+.rmq-crowd { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.9rem; }
+.rmq-crowd p { font-size: 0.85rem; font-weight: 600; color: var(--color-green); }
+
+.rmq-quiet {
+  width: fit-content;
+  margin-top: 0.9rem;
+  border-radius: 999px;
+  border: 1px dashed rgba(235, 236, 236, 0.22);
+  padding: 0.3rem 0.85rem;
+  font-size: 0.78rem;
+  color: var(--color-body-300);
 }
 
-.rmq-door {
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  transform-box: fill-box;
-  transform-origin: left center;
-}
-
-.rmq-open .rmq-door {
-  transform: skewY(-4deg) translateX(-3px);
-}
-
-.rmq-light {
-  opacity: 0.8;
-  transition: opacity 0.6s ease;
-}
-
-.rmq-open .rmq-light {
-  opacity: 1;
-}
-
-.rmq-bubble {
-  animation: rmq-bob 5s ease-in-out infinite;
-}
-
-@keyframes rmq-bob {
-  0%, 100% { transform: translateY(0); opacity: 0.85; }
-  50% { transform: translateY(-9px); opacity: 1; }
-}
-
-.rmq-flicker {
-  animation: rmq-flicker 4s ease-in-out infinite;
-}
-
-@keyframes rmq-flicker {
-  0%, 100% { opacity: 0.75; }
-  40% { opacity: 0.95; }
-  60% { opacity: 0.8; }
-  80% { opacity: 1; }
-}
-
-/* Who's already inside: faceless dots + the count. */
-
-.rmq-faces {
-  display: flex;
-  align-items: center;
-}
+.rmq-faces { display: flex; align-items: center; }
 
 .rmq-face {
   display: grid;
   place-items: center;
-  width: 1.7rem;
-  height: 1.7rem;
+  width: 1.8rem;
+  height: 1.8rem;
   margin-left: -0.5rem;
   border-radius: 999px;
   border: 2px solid #241c33;
@@ -230,33 +161,109 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
-.rmq-face:first-child {
-  margin-left: 0;
-}
-
+.rmq-face:first-child { margin-left: 0; }
 .rmq-face:nth-child(4n+1) { background: linear-gradient(150deg, #4b3680, #221639); }
 .rmq-face:nth-child(4n+2) { background: linear-gradient(150deg, #175048, #0d211d); }
 .rmq-face:nth-child(4n+3) { background: linear-gradient(150deg, #1a5c3a, #0e241b); }
 .rmq-face:nth-child(4n) { background: linear-gradient(150deg, #31487a, #141c30); }
 
-.rmq-crowd p {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-green);
+/* Join area: no box, just a tinted rule above it so it reads as the next step. */
+.rmq-join {
+  border-top: 1px solid rgb(var(--tone) / 0.3);
+  padding-top: 1.1rem;
 }
 
-.rmq-state--center {
-  text-align: center;
+.rmq-join .rm-persona,
+.rmq-join .rm-rulescard { border: 0; background: none; padding: 0; }
+
+/* ── House rules: a rulebook panel, numbered rows in two columns ──── */
+
+.rmq-rules {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 14, 32, 0.5);
+  padding: 1.4rem 1.4rem 0.6rem;
 }
+
+.rmq-rules::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgb(var(--tone)), transparent);
+}
+
+.rmq-rules header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1rem; }
+.rmq-rules header p { font-size: 0.85rem; color: var(--color-body-300); }
+
+.rmq-rules__label {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.rmq-rules ol {
+  display: grid;
+  margin-top: 0.9rem;
+  list-style: none;
+  counter-reset: rmq-rule;
+}
+
+@media (min-width: 768px) {
+  .rmq-rules ol { grid-template-columns: 1fr 1fr; column-gap: 2.5rem; }
+}
+
+.rmq-rules li {
+  counter-increment: rmq-rule;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 1rem 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-body);
+}
+
+.rmq-rules li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+.rmq-rules li::before {
+  content: counter(rmq-rule, decimal-leading-zero);
+  flex-shrink: 0;
+  min-width: 2.4rem;
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  line-height: 1;
+  color: rgb(var(--tone));
+}
+
+/* ── Centered state card (loading, missing, closed) ───────────────── */
+
+.rmq-state {
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(20, 14, 32, 0.7);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 32px 70px -24px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 1.75rem 1.5rem;
+}
+
+.rmq-state--center { text-align: center; }
 
 @media (prefers-reduced-motion: reduce) {
+  .rmq-sway,
   .rmq-bubble,
-  .rmq-flicker {
-    animation: none !important;
-  }
+  .rmq-lamp,
+  .rmq-dust { animation: none !important; }
 
-  .rmq-door,
-  .rmq-light {
-    transition: none;
-  }
+  .rmq-leaf,
+  .rmq-room,
+  .rmq-halo,
+  .rmq-spill { transition: none; }
 }

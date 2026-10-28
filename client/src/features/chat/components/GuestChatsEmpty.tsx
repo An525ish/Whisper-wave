@@ -1,38 +1,55 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import EmptyState from '@/shared/components/ui/EmptyState';
+import WaveIcon from '@/shared/components/ui/icons/Wave';
+import ChatIcon from '@/shared/components/ui/icons/Chat';
+import CheckStrokeIcon from '@/shared/components/ui/icons/CheckStroke';
+import './guestChatsEmpty.css';
+
+const STEPS = [
+  { title: 'Match', body: 'Meet someone', icon: <WaveIcon /> },
+  { title: 'Talk', body: 'No names, no profile', icon: <ChatIcon /> },
+  { title: 'Keep', body: 'Save them to Chats', icon: <CheckStrokeIcon /> },
+] as const;
 
 /**
  * What a guest sees at `/chats`: the people you keep live here, and the way
  * to find them is Whisper. Never a redirect wall.
  */
 const GuestChatsEmpty = () => (
-  <main className="grid h-full min-h-0 place-items-center px-6">
-    <EmptyState
-      imageSrc="/logo-4.png"
-      imageClassName="w-24 opacity-90"
-      contentClassName="max-w-sm"
-      titleClassName="mt-4 text-center font-display text-2xl text-white"
-      descriptionClassName="mt-2 text-center text-sm leading-relaxed text-body-300"
-      title="People you keep live here"
-      description="Chats is where the strangers you vibe with become people you can message. Find someone first — if it clicks, you can keep them."
-      action={
-        <div className="flex flex-col items-center gap-2">
-          <Link
-            to={ROUTES.whisper}
-            className="rounded-full bg-gradient-action-button-green px-7 py-3 text-sm font-semibold text-body transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
-          >
-            Find someone with Whisper →
-          </Link>
-          <Link
-            to={ROUTES.authLogin}
-            className="text-sm font-medium text-body-300 transition hover:text-green focus-visible:outline-2 focus-visible:outline-green"
-          >
-            Already have an account? Sign in
-          </Link>
-        </div>
-      }
-    />
+  <main className="gc-page">
+    <div className="gc-card">
+      <div aria-hidden className="gc-art">
+        <span className="gc-bubble gc-bubble--in">hey, you up?</span>
+        <span className="gc-bubble gc-bubble--out">
+          <i /><i /><i />
+        </span>
+        <span className="gc-kept">Kept</span>
+      </div>
+
+      <h1 className="gc-title">People you keep live here</h1>
+      <p className="gc-desc">
+        Chats holds the people you matched with and chose to keep. Find someone first. If it clicks,
+        they show up here.
+      </p>
+
+      <ol className="gc-steps">
+        {STEPS.map((step) => (
+          <li key={step.title}>
+            <span className="gc-steps__node">{step.icon}</span>
+            <strong>{step.title}</strong>
+            <span>{step.body}</span>
+          </li>
+        ))}
+      </ol>
+
+      <Link to={ROUTES.whisper} className="gc-cta">
+        Find someone with Whisper
+        <span aria-hidden>→</span>
+      </Link>
+      <Link to={ROUTES.authLogin} className="gc-signin">
+        Already have an account? <span>Sign in</span>
+      </Link>
+    </div>
   </main>
 );
 

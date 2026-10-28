@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { track } from '@/shared/lib/analytics';
 import { ROUTES } from '@/shared/constants/routes';
 import { useAuthStore } from '@/features/auth';
 import AmbientBackdrop from '@/shared/components/ui/backdrop/AmbientBackdrop';
+import BokehCrowd from '@/shared/components/ui/backdrop/BokehCrowd';
 import { useNowWhile } from '@/shared/hooks/useNowWhile';
-import { ROOM_CROWD, ROOM_EVENTS, ROOM_FILTERS, ROOM_LOBBY_CLOCK_MS } from '../constants';
+import { ROOM_EVENTS, ROOM_FILTERS, ROOM_LOBBY_CLOCK_MS } from '../constants';
 import { useRoomReminderControls } from '../hooks/useRoomReminderControls';
 import { useRoomsList } from '../hooks/useRoomsQueries';
 import type { RoomsFilter } from '../types';
@@ -73,30 +74,11 @@ const RoomsLobby = () => {
   return (
     <div className="rm-page">
       <AmbientBackdrop className="rm-bg" green={false}>
-        <div className="rm-crowd">
-          {ROOM_CROWD.map((mote, i) => (
-            <span
-              key={i}
-              className={`rm-mote ${mote.tone}`}
-              style={
-                {
-                  '--rm-x': mote.left,
-                  '--rm-size': mote.size,
-                  '--rm-dur': mote.dur,
-                  '--rm-delay': mote.delay,
-                } as CSSProperties
-              }
-            />
-          ))}
-        </div>
+        <BokehCrowd />
       </AmbientBackdrop>
 
       <main className="rm-wrap">
         <header>
-          <p className="rm-eyebrow">
-            <span aria-hidden className="rm-eyebrow__dot" />
-            Live rooms
-          </p>
           <h1 className="rm-title">
             Find your <span className="rm-iri">crowd.</span>
           </h1>

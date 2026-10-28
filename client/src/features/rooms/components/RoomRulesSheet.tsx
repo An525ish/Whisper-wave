@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import '@/shared/components/ui/backdrop/ambientBackdrop.css';
+import AmbientBackdrop from '@/shared/components/ui/backdrop/AmbientBackdrop';
+import BokehCrowd from '@/shared/components/ui/backdrop/BokehCrowd';
 import { ROUTES } from '@/shared/constants/routes';
 import { useAuthStore } from '@/features/auth';
 import { useNowWhile } from '@/shared/hooks/useNowWhile';
@@ -8,12 +9,15 @@ import { ROOM_COUNTDOWN_TICK_MS } from '../constants';
 import { useRoomsPersona } from '../hooks/useRoomsPersona';
 import { useRoomInfo } from '../hooks/useRoomsQueries';
 import { useRoomStore } from '../stores/roomStore';
-import { hoursSummary, nextOpensLabel } from '../utils/hours';
+import { initialOf, roomArtVariant } from '../utils/art';
+import { nextOpensLabel } from '../utils/hours';
 import { isJoinable } from '../utils/roomStatus';
 import type { RoomsPersona } from '../types';
+import RoomDoorHero from './RoomDoorHero';
 import RoomDoorScene from './RoomDoorScene';
 import RoomPersonaForm from './RoomPersonaForm';
 import RoomSignInPrompt from './RoomSignInPrompt';
+import './roomsBackdrop.css';
 import './roomJoin.css';
 import './roomDoor.css';
 import './roomsStates.css';
@@ -24,18 +28,35 @@ type Props = {
   onJoin: (params: RoomsPersona) => void;
 };
 
-const Backdrop = () => (
-  <>
-    <div aria-hidden className="rmq-stars" />
-    <div aria-hidden className="rmq-moon" />
-  </>
+/** Page shell: the same drifting-light backdrop as the lobby, content above it. */
+const Shell = ({ tone, knock = false, children }: { tone?: number; knock?: boolean; children: ReactNode }) => (
+  <div className={`rmq-page${tone === undefined ? '' : ` rmq-tone--${tone}`}${knock ? ' rmq-open' : ''}`}>
+    <AmbientBackdrop className="rm-bg" green={false}>
+      <BokehCrowd />
+    </AmbientBackdrop>
+    {children}
+  </div>
+);
+
+/** A single centered card for loading, missing and closed rooms. */
+const StateCard = ({ title, sub }: { title: string; sub: string }) => (
+  <Shell>
+    <main className="rmq-center">
+      <div className="rmq-state rmq-state--center">
+        <p className="rm-empty__title">{title}</p>
+        <p className="rm-empty__sub">{sub}</p>
+        <Link to={ROUTES.rooms} className="rm-joinbtn mt-5 inline-block w-full">
+          Browse rooms
+        </Link>
+      </div>
+    </main>
+  </Shell>
 );
 
 /**
- * The doorway as a door: slightly ajar, light spilling out, chatter leaking
- * through the gap. The crowd shows who's already inside; knocking (the join
- * button) swings it wider. Joining from here is the only entry — the socket
- * never sends a persona the user hasn't seen and confirmed.
+ * The room's join page: an arched gate lit in the room's colour, the room's
+ * details, a join panel to pick a name and enter, and the house rules. Joining from here is the only entry:
+ * the socket never sends a persona the user hasn't seen and confirmed.
  */
 const RoomRulesSheet = ({ slug, invite, onJoin }: Props) => {
   const { data: room, isLoading, isError } = useRoomInfo(slug, invite);
@@ -49,10 +70,9 @@ const RoomRulesSheet = ({ slug, invite, onJoin }: Props) => {
 
   if (isLoading) {
     return (
-      <div className="rmq-page">
-        <Backdrop />
-        <main className="rmq-wrap" aria-label="Loading room">
-          <div className="rmq-state mx-auto w-full max-w-md md:col-span-2">
+      <Shell>
+        <main className="rmq-center" aria-label="Loading room">
+          <div className="rmq-state">
             <div className="rm-skel__art rm-skel__art--hero" aria-hidden />
             <div className="rm-skel__lines--spaced" aria-hidden>
               <div className="rm-skel__line" />
@@ -60,125 +80,69 @@ const RoomRulesSheet = ({ slug, invite, onJoin }: Props) => {
             </div>
           </div>
         </main>
-      </div>
+      </Shell>
     );
   }
 
   if (isError || !room) {
-    return (
-      <div className="rmq-page">
-        <Backdrop />
-        <main className="rmq-wrap">
-          <div className="rmq-state rmq-state--center mx-auto w-full max-w-md md:col-span-2">
-            <p className="rm-empty__title">No door here.</p>
-            <p className="rm-empty__sub">It may have been removed — or the link is wrong.</p>
-            <Link to={ROUTES.rooms} className="rm-joinbtn mt-5 inline-block w-full">
-              Browse rooms
-            </Link>
-          </div>
-        </main>
-      </div>
-    );
+    return <StateCard title="Room not found." sub="It may have been removed, or the link is wrong." />;
   }
 
   if (!isJoinable(room)) {
     return (
-      <div className="rmq-page">
-        <Backdrop />
-        <main className="rmq-wrap">
-          <div className="rmq-state rmq-state--center mx-auto w-full max-w-md md:col-span-2">
-            <p className="rm-empty__title">The door is shut.</p>
-            <p className="rm-empty__sub">
-              {room.title} keeps hours. {nextOpensLabel(room.hours, now)}.
-            </p>
-            <Link to={ROUTES.rooms} className="rm-joinbtn mt-5 inline-block w-full">
-              Browse rooms
-            </Link>
-          </div>
-        </main>
-      </div>
+      <StateCard
+        title="This room is closed."
+        sub={`${room.title} keeps hours. ${nextOpensLabel(room.hours, now)}.`}
+      />
     );
   }
 
-  const live = room.totalOnline > 0;
-  const faces = Math.min(room.totalOnline, 8);
-
   return (
-    <div className="rmq-page">
-      <Backdrop />
-      <div aria-hidden className="ab-grain" />
-      <main className="rmq-wrap">
-        <Link to={ROUTES.rooms} className="rm-backlink rmq-back">
+    <Shell tone={roomArtVariant(room.slug)} knock={knock}>
+      <main className="rmq-main">
+        <Link to={ROUTES.rooms} className="rm-backlink">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden>
             <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           All rooms
         </Link>
 
-        <div className={`rmq-scene${knock ? ' rmq-open' : ''}`}>
-          <RoomDoorScene />
-          <div className="rmq-stageinfo">
-            {live ? (
-              <div className="rmq-crowd">
-                <span className="rmq-faces" aria-hidden>
-                  {Array.from({ length: faces }, (_, i) => (
-                    <span key={i} className="rmq-face">?</span>
-                  ))}
-                </span>
-                <p>
-                  {room.totalOnline} {room.totalOnline === 1 ? 'soul' : 'souls'} inside right now
-                </p>
-              </div>
-            ) : (
-              <p className="rmq-quiet">Quiet now — you’d be the first face in the door</p>
-            )}
-            <div className="rm-joinpills">
-              <span className="rm-officialpill">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path
-                    d="M12 2l2.4 4.9 5.6.8-4 4 1 5.6-5-2.6-5 2.6 1-5.6-4-4 5.6-.8L12 2z"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {room.official ? 'Official room' : 'Community room'}
-              </span>
-            </div>
-            <h1 className="rm-jointitle">{room.title}</h1>
-            <p className="rm-joindesc">{room.description}</p>
-            <div className="rm-joinmeta">
-              <span>{hoursSummary(room.hours, now)}</span>
-              <span>{room.lang}</span>
+        <div className="rmq-grid">
+          <RoomDoorScene initial={initialOf(room.title)} />
+
+          <div className="rmq-info">
+            <RoomDoorHero room={room} now={now} />
+
+            <div className="rmq-join">
+              {room.visibility === 'private' && !user ? (
+                <RoomSignInPrompt />
+              ) : (
+                <RoomPersonaForm
+                  persona={persona}
+                  connection={connection}
+                  joining={joining}
+                  joinError={joinError}
+                  onJoin={onJoin}
+                  onKnockChange={setKnock}
+                />
+              )}
             </div>
           </div>
         </div>
 
-        <div className="rmq-side">
-          <section aria-label="House rules" className="rm-rulescard">
-            <h2 className="rm-rulescard__label">House rules</h2>
-            <ol>
-              {room.rules.map((rule, i) => (
-                <li key={`${i}-${rule}`}>{rule}</li>
-              ))}
-            </ol>
-          </section>
-
-          {room.visibility === 'private' && !user ? (
-            <RoomSignInPrompt />
-          ) : (
-            <RoomPersonaForm
-              persona={persona}
-              connection={connection}
-              joining={joining}
-              joinError={joinError}
-              onJoin={onJoin}
-              onKnockChange={setKnock}
-            />
-          )}
-        </div>
+        <section aria-label="House rules" className="rmq-rules">
+          <header>
+            <h2 className="rmq-rules__label">House rules</h2>
+            <p>Read these before you join.</p>
+          </header>
+          <ol>
+            {room.rules.map((rule, i) => (
+              <li key={`${i}-${rule}`}>{rule}</li>
+            ))}
+          </ol>
+        </section>
       </main>
-    </div>
+    </Shell>
   );
 };
 

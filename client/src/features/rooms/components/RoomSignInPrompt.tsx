@@ -12,8 +12,8 @@ const RoomSignInPrompt = () => (
   <section aria-label="Sign in to join" className="rm-rulescard">
     <h2 className="rm-rulescard__label">Members only</h2>
     <p className="mt-2 text-sm text-body-300">
-      This is a private room — you’re invited, but it’s open to signed-in members only. Sign in or make an account
-      and you’ll come straight back to this door.
+      This is a private room. You’re invited, but it’s for signed-in members only. Sign in or make an account and you’ll
+      come straight back here.
     </p>
     <Link
       to={ROUTES.authLogin}

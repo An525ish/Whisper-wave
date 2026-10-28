@@ -5,9 +5,13 @@
  * Motion contract: glows freeze under `prefers-reduced-motion`.
  */
 
+/* Viewport-fixed, so the atmosphere runs behind the floating nav dock and stays put
+   while a page scrolls. The dock, tab bar and live pill sit above it (z-20), and a
+   page's own content must be positioned (`relative`) to paint over it. */
 .ab-bg {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
 }

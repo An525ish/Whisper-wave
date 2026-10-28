@@ -1,58 +1,116 @@
-/** Pre-join persona: preview, name field, color swatches, knock button. */
+/** Pre-join persona: numbered steps, name pill, color swatches, join button. */
 
 /* Persona: live preview, alias, colors, step inside. */
-.rm-persona {
-  border-radius: 1.4rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.02);
-  padding: 1.1rem 1.25rem 1.25rem;
-}
-
-.rm-persona__preview {
+/* Steps: a small numbered stepper with a line running down, like the home steps. */
+.rm-steprow {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(0, 0, 0, 0.25);
-  padding: 0.7rem 0.9rem;
+  gap: 0.9rem;
+  padding-bottom: 1.1rem;
 }
 
-.rm-persona__avatar {
+.rm-steprow:not(.rm-steprow--last)::before {
+  content: '';
+  position: absolute;
+  top: 1.9rem;
+  bottom: 0.25rem;
+  left: 0.85rem;
+  width: 1px;
+  background: linear-gradient(180deg, rgb(var(--tone, 1 195 109) / 0.5), transparent);
+}
+
+.rm-steprow__num {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 2.6rem;
-  height: 2.6rem;
+  width: 1.7rem;
+  height: 1.7rem;
   border-radius: 999px;
-  border: 1.5px solid;
-  font-size: 1.05rem;
+  border: 1px solid rgb(var(--tone, 1 195 109) / 0.55);
+  background: rgb(var(--tone, 1 195 109) / 0.14);
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.7rem;
   font-weight: 700;
+  color: #fff;
+}
+
+.rm-steprow__body { min-width: 0; flex: 1; }
+
+.rm-step {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0.2rem 0 0.55rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.rm-step__value {
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pc);
+}
+
+/* Name field: a pill with your colored initial in front. */
+.rm-namefield {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.35rem 1rem 0.35rem 0.4rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rm-namefield:focus-within {
+  border-color: rgba(1, 195, 109, 0.55);
+  box-shadow: 0 0 0 3px rgba(1, 195, 109, 0.14);
+}
+
+.rm-namefield__avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pc) 24%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--pc) 65%, transparent);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--pc);
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 
-.rm-persona__who {
+.rm-namefield__input {
   min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 0.4rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--pc);
+  outline: 0;
 }
 
-.rm-persona__who p:first-child {
+.rm-namefield__count {
+  flex-shrink: 0;
   font-family: var(--font-hw-mono, ui-monospace, monospace);
-  font-size: 0.6rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-body-300);
+  font-size: 0.64rem;
+  color: rgba(235, 236, 236, 0.35);
 }
 
-.rm-persona__who p:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.95rem;
-  font-weight: 700;
-}
+.rm-namefield__input::placeholder { font-weight: 400; color: rgba(235, 236, 236, 0.32); }
 
 .rm-field {
-  margin-top: 0.9rem;
+  margin-top: 0.7rem;
   display: block;
   font-size: 0.85rem;
   font-weight: 600;
@@ -97,8 +155,8 @@
 .rm-swatch {
   display: grid;
   place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.1rem;
+  height: 2.1rem;
   border-radius: 999px;
   color: rgba(0, 0, 0, 0.75);
   opacity: 0.55;
@@ -122,60 +180,75 @@
   height: 1rem;
 }
 
+/* Join button: a green pill with a dark arrow chip on the right. Links that reuse
+   the class (no chip) just get centered text. */
 .rm-joinbtn {
   position: relative;
   margin-top: 1.1rem;
   display: flex;
   width: 100%;
+  min-height: 3.4rem;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
   overflow: hidden;
   border-radius: 999px;
-  padding: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  padding: 0 1.5rem;
   font-size: 1rem;
   font-weight: 700;
-  color: #06130d;
-  background: linear-gradient(180deg, #2bd889 0%, #159a5c 100%);
+  letter-spacing: 0.01em;
+  color: #04140c;
+  background: linear-gradient(180deg, #3be69a 0%, #13a35f 100%);
   box-shadow:
-    0 16px 40px -12px rgba(1, 195, 109, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    0 18px 40px -14px rgba(1, 195, 109, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.rm-joinbtn:hover {
-  box-shadow:
-    0 20px 48px -12px rgba(1, 195, 109, 0.85),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+.rm-joinbtn:has(> span[aria-hidden]) { padding-right: 3.6rem; }
+
+.rm-joinbtn > span[aria-hidden] {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  bottom: 0.3rem;
+  display: grid;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 999px;
+  background: #06130d;
+  color: #7dffb8;
+  font-size: 1.05rem;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.rm-joinbtn:active {
-  transform: scale(0.98);
-}
-
-.rm-joinbtn:disabled {
-  opacity: 0.5;
-  box-shadow: none;
-}
+.rm-joinbtn:hover { box-shadow: 0 22px 48px -14px rgba(1, 195, 109, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.rm-joinbtn:hover > span[aria-hidden] { transform: translateX(-4px) scale(1.06); }
+.rm-joinbtn:active { transform: scale(0.985); }
+.rm-joinbtn:disabled { opacity: 0.5; box-shadow: none; }
 
 .rm-joinbtn::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.25) 48%, transparent 62%);
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.28) 48%, transparent 62%);
   transform: translateX(-120%);
   transition: transform 0.55s ease;
   pointer-events: none;
 }
 
-.rm-joinbtn:hover::after {
-  transform: translateX(120%);
+.rm-joinbtn:hover::after { transform: translateX(120%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-joinbtn,
+  .rm-joinbtn > span[aria-hidden],
+  .rm-joinbtn::after { transition: none; }
 }
 
 .rm-joinhint {
-  margin-top: 0.7rem;
+  margin-top: 0.5rem;
   text-align: center;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   line-height: 1.5;
   color: var(--color-body-300);
 }

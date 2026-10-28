@@ -71,7 +71,7 @@ const RoomLobbyCard = ({ room, index = 0, now }: Props) => {
           {room.hours && <span className="rm-roomhours">{hours}</span>}
         </span>
       </span>
-      <span aria-hidden className="rm-roomcard__arrow">→</span>
+      <span aria-hidden className="rm-roomcard__go">{closed ? 'View' : 'Join'}</span>
     </Link>
   );
 };

@@ -1,0 +1,63 @@
+/** Bokeh crowd: blurred glowing dots drifting up like fireflies. */
+.bk-crowd {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bk-mote {
+  position: absolute;
+  bottom: -3rem;
+  left: var(--bk-x, 50%);
+  width: var(--bk-size, 14px);
+  height: var(--bk-size, 14px);
+  border-radius: 999px;
+  filter: blur(3px);
+  opacity: 0;
+  animation: bk-crowd-drift var(--bk-dur, 22s) linear infinite;
+  animation-delay: var(--bk-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.bk-mote--v {
+  background: radial-gradient(circle, rgba(139, 107, 255, 0.8), rgba(139, 107, 255, 0) 70%);
+}
+
+.bk-mote--t {
+  background: radial-gradient(circle, rgba(53, 224, 200, 0.7), rgba(53, 224, 200, 0) 70%);
+}
+
+.bk-mote--g {
+  background: radial-gradient(circle, rgba(1, 195, 109, 0.7), rgba(1, 195, 109, 0) 70%);
+}
+
+@keyframes bk-crowd-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.55;
+  }
+  85% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate3d(2.5rem, -115vh, 0);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .bk-mote:nth-child(even) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bk-mote {
+    animation: none !important;
+    display: none;
+  }
+}

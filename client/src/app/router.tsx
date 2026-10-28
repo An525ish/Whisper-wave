@@ -134,6 +134,13 @@ const appRoutes = [
         },
       },
       {
+        path: ROUTES.games,
+        lazy: async () => {
+          const module = await import('@/pages/Games');
+          return { Component: module.default };
+        },
+      },
+      {
         // The messages app. The index renders for everyone (guests see an
         // empty state that points at Whisper, never a wall); a specific
         // conversation is members-only and AuthedLayout sends guests to /auth.

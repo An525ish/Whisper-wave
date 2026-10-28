@@ -142,22 +142,6 @@ export const ROOM_FILTERS: Array<{ id: RoomsFilter; label: string }> = [
   { id: 'later', label: 'Opening later' },
 ];
 
-/** Bokeh crowd behind the lobby — violet/teal/green fireflies, slow rise. */
-export const ROOM_CROWD: Array<{ left: string; size: string; dur: string; delay: string; tone: string }> = [
-  { left: '4%', size: '22px', dur: '24s', delay: '0s', tone: 'rm-mote--v' },
-  { left: '12%', size: '12px', dur: '18s', delay: '-6s', tone: 'rm-mote--t' },
-  { left: '21%', size: '16px', dur: '21s', delay: '-12s', tone: 'rm-mote--g' },
-  { left: '30%', size: '10px', dur: '17s', delay: '-3s', tone: 'rm-mote--v' },
-  { left: '39%', size: '26px', dur: '27s', delay: '-9s', tone: 'rm-mote--t' },
-  { left: '47%', size: '13px', dur: '19s', delay: '-15s', tone: 'rm-mote--g' },
-  { left: '55%', size: '18px', dur: '23s', delay: '-7s', tone: 'rm-mote--v' },
-  { left: '63%', size: '11px', dur: '16s', delay: '-11s', tone: 'rm-mote--t' },
-  { left: '71%', size: '24px', dur: '25s', delay: '-4s', tone: 'rm-mote--g' },
-  { left: '79%', size: '14px', dur: '20s', delay: '-14s', tone: 'rm-mote--v' },
-  { left: '87%', size: '19px', dur: '22s', delay: '-8s', tone: 'rm-mote--t' },
-  { left: '94%', size: '12px', dur: '18s', delay: '-2s', tone: 'rm-mote--g' },
-];
-
 /** Reasons offered on the report sheet. */
 export const ROOM_REPORT_REASONS = [
   { id: 'inappropriate_content', label: 'Inappropriate content' },

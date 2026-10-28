@@ -19,14 +19,6 @@
   height: 1rem;
 }
 
-.rm-joinpills {
-  position: relative;
-  margin-top: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
 .rm-officialpill {
   display: inline-flex;
   align-items: center;
@@ -46,45 +38,6 @@
   width: 0.75rem;
   height: 0.75rem;
 }
-.rm-jointitle {
-  position: relative;
-  margin-top: 0.7rem;
-  font-family: var(--font-display);
-  font-size: clamp(2.2rem, 7vw, 3rem);
-  line-height: 1.02;
-  letter-spacing: -0.02em;
-  color: #fff;
-}
-
-.rm-joindesc {
-  position: relative;
-  margin-top: 0.5rem;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--color-body-700);
-}
-
-.rm-joinmeta {
-  position: relative;
-  margin-top: 0.9rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.rm-joinmeta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  padding: 0.3rem 0.7rem;
-  font-family: var(--font-hw-mono, ui-monospace, monospace);
-  font-size: 0.64rem;
-  letter-spacing: 0.08em;
-  color: var(--color-body-300);
-}
-
 /* Rules list. */
 .rm-rulescard {
   border-radius: 1.4rem;
