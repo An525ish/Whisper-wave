@@ -30,7 +30,11 @@ type Props = {
   onRoomsClick?: () => void;
 };
 
-const HERO_PROMISES = ['No real names', 'Chats aren’t stored', 'Safety reports kept briefly'];
+const HERO_STEPS = [
+  { title: 'Pick a name', text: 'Any nickname and up to 3 vibes. No account.' },
+  { title: 'Get matched', text: 'Paired with someone who is online right now.' },
+  { title: 'Keep or skip', text: 'Both tap the heart to keep each other. Chats aren’t stored.' },
+];
 
 /** Deterministic starfield — fixed seed, so every visit shares one sky. */
 const STARS: Array<{ left: string; top: string; size: number; delay: string; dim: boolean }> = (() => {
@@ -57,9 +61,7 @@ const HomeHero = ({
   onWhisperClick,
   onRoomsClick,
 }: Props) => {
-  const greeting = userName
-    ? `${hourGreeting(new Date().getHours())}${userName ? `, ${userName}` : ''}`
-    : 'Where do you want to start?';
+  const greeting = `${hourGreeting(new Date().getHours())}${userName ? `, ${userName}` : ''}`;
 
   return (
     <header className="hw-hero hw-glass hw-rim relative overflow-hidden rounded-3xl md:rounded-[2rem]">
@@ -92,29 +94,28 @@ const HomeHero = ({
             {liveCount > 0 ? (
               <span>
                 <span className="font-semibold text-white">{liveCount}</span>{' '}
-                people drifting now
+                people online
               </span>
             ) : (
-              <span>quiet water tonight</span>
+              <span>Pretty quiet right now</span>
             )}
           </p>
 
           <p className="mt-5 text-xs font-medium uppercase tracking-[0.28em] text-green">
-            Whisper Wave
+            {userName ? greeting : 'Whisper Wave'}
           </p>
-          <h1 className="mx-auto mt-3 max-w-xl font-display text-4xl leading-[1.05] text-white md:mx-0 md:text-5xl">
-            {greeting}
-            <span className="hw-iri block italic">the night is open.</span>
+          <h1 className="mx-auto mt-3 max-w-xl font-display text-4xl leading-[1.05] text-white md:mx-0 md:text-6xl">
+            Talk to <span className="hw-iri italic">a stranger.</span>
           </h1>
-          <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-body-300 md:mx-0 md:text-base">
-            One stranger, one room, one shuffled laugh — no real names, and
-            your conversations aren&apos;t stored. Pick the water that fits your mood.
+          <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-body-300 md:mx-0 md:text-base">
+            We match you with one random person. Chat for as long as it&apos;s
+            fun, and keep them if it clicks.
           </p>
 
           <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start">
             {quotaExhausted ? (
               <p className="mx-auto max-w-xs rounded-full border border-border/60 px-6 py-3.5 text-sm font-medium text-body-300 md:mx-0">
-                Back tomorrow — the wave rests too.
+                You&apos;re out of whispers today. Come back tomorrow.
               </p>
             ) : (
               <Link
@@ -122,7 +123,7 @@ const HomeHero = ({
                 onClick={onWhisperClick}
                 className="hw-sheen inline-block rounded-full bg-gradient-action-button-green px-9 py-3.5 text-base font-semibold text-body shadow-[0_8px_32px_-8px_rgba(1,195,109,0.6)] transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green active:scale-[0.98]"
               >
-                Find someone →
+                Find someone
               </Link>
             )}
             {roomsLive && !quotaExhausted && (
@@ -138,20 +139,16 @@ const HomeHero = ({
           {quotaText && (
             <p className="mt-2.5 text-xs font-medium text-green">{quotaText}</p>
           )}
-          {!quotaText && !quotaExhausted && (
-            <p className="mt-2.5 text-xs text-body-300">
-              One stranger. No real names — just the moment.
-            </p>
-          )}
 
-          <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 md:justify-start">
-            {HERO_PROMISES.map((t) => (
-              <li key={t} className="hw-hud flex items-center gap-2 text-body-300">
-                <span aria-hidden className="h-1 w-1 rounded-full bg-green" />
-                {t}
+          <ol className="hw-steps mt-8 text-left" aria-label="How it works">
+            {HERO_STEPS.map((step, i) => (
+              <li key={step.title} className="hw-step">
+                <span aria-hidden className="hw-step__num">{i + 1}</span>
+                <span className="hw-step__title">{step.title}</span>
+                <span className="hw-step__text">{step.text}</span>
               </li>
             ))}
-          </ul>
+          </ol>
         </div>
 
         {/* ── stage ── */}

@@ -1,0 +1,32 @@
+---
+description: Human product voice — no AI-sounding UI/docs copy
+alwaysApply: true
+---
+
+# Product Voice (user-facing copy)
+
+Canonical detail: `docs/PRODUCT.md` § Voice, and `client/CLAUDE.md` § Product Voice.
+Applies to **UI strings, empty states, toasts, emails, landing, legal blurbs, and product docs** — not to code identifiers.
+
+## Sound like a person, not a model
+
+Write the way a sharp friend texts. Short. Concrete. What happens next.
+
+- **No em dashes (`—`).** Use a period, comma, colon, or rewrite. Em dashes are an AI tell.
+- **No stacked metaphors.** One brand image is enough (Wave). Do not pile shore / tide / ripple / void / séance in the same block.
+- **No fake profundity.** Cut lines like "the night is open", "quiet water", "pick the water that fits your mood", "still water", "first ripple".
+- **No filler cadence.** Avoid "It's not X. It's Y.", triple parallel slogans, and italic dramatic fragments used as fake poetry.
+- **No corporate warmth.** Skip "we're thrilled", "delve", "leverage", "seamless", "journey", "elevate".
+- **Prefer facts and actions.** "Find someone", "Chats aren't stored", "12 people online" beat vibey abstractions.
+- **One job per sentence.** Hero says what Whisper is and what to tap. Trust bullets stay plain.
+
+## Product bar for hub `/home`
+
+Home is a launcher, not a manifesto.
+
+1. Primary CTA = Whisper ("Find someone").
+2. Secondary = Rooms / Memes only when those flags are on.
+3. Returning members see pending connections and chats in plain language.
+4. Trust line once, plainly (names, storage, reports) — do not romanticize anonymity.
+
+If copy fails the "would a real person say this out loud?" test, rewrite before shipping.

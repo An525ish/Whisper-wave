@@ -7,24 +7,22 @@ import { track } from '@/shared/lib/analytics';
 import { HUB_EVENTS } from '../constants';
 import { useHubSummary } from '../hooks/useHubSummary';
 import HomeBackdrop from './HomeBackdrop';
-import HomeDoors from './HomeDoors';
+import HomeExplore from './HomeExplore';
 import HomeFooter from './HomeFooter';
 import HomeHero from './HomeHero';
-import HomeSections from './HomeSections';
 import './homeHero.css';
 import './homeSurface.css';
-import './homeRooms.css';
 import './homeBackdrop.css';
 import './homeStage.css';
-import './homeDoors.css';
-import './homeDrift.css';
+import './homeExplore.css';
+import './homeRooms.css';
+import './homeGames.css';
 
 /**
- * The hub home: a midnight-shore page with landing-grade atmosphere —
- * mesh grid, aurora, ripples and grain behind a split hero stage, a
- * three-door launcher, living previews, and a shoreline footer.
- * Composes only — data arrives through domain hooks, sections render
- * it, and every live-data card stays owned by its feature. A summary
+ * The hub home: a hero (Whisper first), one screen of explore panels (Rooms,
+ * Memes), and what waits for you. Composes only: data arrives through domain
+ * hooks, sections render it, and every live-data panel stays owned by its
+ * feature. A summary
  * failure falls back to the static skeleton; the home screen never
  * breaks on a flag fetch.
  */
@@ -62,8 +60,8 @@ const HubHome = () => {
   return (
     <div className="hw-page relative min-h-dvh">
       <HomeBackdrop />
-      <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 py-8 md:gap-12 md:px-8 md:py-12">
-        <div className="hw-rise" style={{ '--hw-d': '0ms' } as React.CSSProperties}>
+      <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 pb-2 pt-8 md:gap-8 md:px-8 md:pb-3 md:pt-28 lg:pt-32">
+        <div className="hw-rise pb-2 md:pb-5" style={{ '--hw-d': '0ms' } as React.CSSProperties}>
           <HomeHero
             userName={user?.name ?? null}
             quotaText={
@@ -78,19 +76,12 @@ const HubHome = () => {
         </div>
 
         <div className="hw-rise" style={{ '--hw-d': '60ms' } as React.CSSProperties}>
-          <HomeDoors
+          <HomeExplore
             roomsLive={Boolean(features?.rooms)}
             memesLive={Boolean(features?.memes)}
-            quotaExhausted={Boolean(user && quota && quota.remaining <= 0)}
-            onDoorClick={handleCardClick}
+            onCardClick={handleCardClick}
           />
         </div>
-
-        <HomeSections
-          roomsLive={Boolean(features?.rooms)}
-          memesLive={Boolean(features?.memes)}
-          onDoorClick={handleCardClick}
-        />
 
         <HomeFooter
           signedIn={Boolean(user)}

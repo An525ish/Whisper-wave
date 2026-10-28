@@ -38,6 +38,27 @@ Omegle proved the demand. It failed on safety, UX, and monetization. We build th
 
 ---
 
+## Voice (user-facing copy)
+
+Whisper Wave talks like a sharp friend, not a brand deck and not a chatbot.
+
+**Do**
+- Short sentences. Say what happens next.
+- Concrete product facts: anonymous, one stranger, chats not stored, find someone.
+- One clear primary action on hub home: Whisper.
+
+**Don't**
+- Em dashes (`—`). They read as AI. Use a period, comma, colon, or rewrite.
+- Stacked water metaphors (shore / tide / ripple / void) on top of the Wave brand.
+- Fake profundity ("the night is open", "quiet water", "still water").
+- Corporate warmth ("seamless", "journey", "we're thrilled", "delve").
+
+Hub `/home` is a **launcher**, not a manifesto: Whisper CTA first, Rooms/Memes only when live, pending chats in plain language for members. Trust said once, plainly.
+
+Cursor/Claude mirrors: `.cursor/rules/product-voice.mdc`, `.cursorrules`, `client/CLAUDE.md` § Product Voice.
+
+---
+
 ## User States
 
 | State | Description |

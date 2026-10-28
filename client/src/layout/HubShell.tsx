@@ -4,6 +4,7 @@ import { SocketProvider } from '@/shared/lib/socket/SocketProvider';
 import { ROUTES, ROUTE_PATTERNS } from '@/shared/constants/routes';
 import type { NavItem } from '@/shared/types/ui';
 import NavRail from '@/shared/components/nav/NavRail';
+import SignInIcon from '@/shared/components/ui/icons/SignIn';
 import BottomTabBar from '@/shared/components/nav/BottomTabBar';
 import { track } from '@/shared/lib/analytics';
 import { HUB_EVENTS, useHubSummary, type HubFeatures } from '@/features/hub';
@@ -50,7 +51,7 @@ const ShellChrome = ({ items, footer, hideTabBar, hidePill }: ShellChromeProps) 
               <Link
                 to={ROUTES.home}
                 aria-label="Whisper Wave home"
-                className="grid h-12 w-12 place-items-center rounded-2xl transition hover:bg-white/[0.06] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
+                className="grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] transition hover:bg-white/[0.09] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
               >
                 <img
                   src="/logo-4.png"
@@ -146,12 +147,16 @@ const GuestHubShell = () => {
       hideTabBar={hideTabBar}
       hidePill={Boolean(inWhisper)}
       footer={
-        <Link
-          to={ROUTES.authLogin}
-          className="px-1 text-center text-[11px] font-medium leading-tight text-body-300 transition hover:text-green focus-visible:outline-2 focus-visible:outline-green"
-        >
-          Sign in
-        </Link>
+        <div className="flex justify-center">
+          <Link
+            to={ROUTES.authLogin}
+            aria-label="Sign in"
+            title="Sign in"
+            className="grid h-10 w-10 place-items-center rounded-full border border-green/35 bg-green/10 text-green shadow-[0_0_18px_-6px_rgba(1,195,109,0.7)] transition hover:bg-green hover:text-white-pure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
+          >
+            <SignInIcon className="h-[18px] w-[18px]" />
+          </Link>
+        </div>
       }
     />
   );

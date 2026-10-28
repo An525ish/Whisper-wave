@@ -71,13 +71,7 @@
   }
 }
 
-/* Illustration motion — slow, ambient, never the focus. */
-.hw-ping-ring {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: hw-ping 3.2s ease-out infinite;
-}
-
+/* Illustration motion: slow, ambient, never the focus. */
 @keyframes hw-spin {
   to {
     transform: rotate(360deg);
@@ -115,11 +109,73 @@
   }
 }
 
+/* ── Hero "how it works" stepper ──────────────────────────────────── */
+
+.hw-steps {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  max-width: 34rem;
+}
+
+/* Line that threads the numbers together. */
+.hw-steps::before {
+  content: '';
+  position: absolute;
+  top: 0.85rem;
+  bottom: 0.85rem;
+  left: 0.85rem;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(139, 107, 255, 0.7), rgba(53, 224, 200, 0.7), rgba(1, 195, 109, 0.8));
+  opacity: 0.5;
+}
+
+.hw-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.7rem 1fr;
+  column-gap: 0.9rem;
+  row-gap: 0.1rem;
+}
+
+.hw-step__num {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  border: 1px solid rgba(139, 107, 255, 0.55);
+  background: #241a34;
+  font-family: var(--font-hw-mono);
+  font-size: 0.7rem;
+  color: #c9bcff;
+}
+
+.hw-step:nth-child(2) .hw-step__num { border-color: rgba(53, 224, 200, 0.55); color: #b4f5ec; }
+.hw-step:nth-child(3) .hw-step__num { border-color: rgba(1, 195, 109, 0.7); color: #7dffb8; }
+
+.hw-step__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.7rem;
+  color: #fff;
+}
+
+.hw-step__text {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-body-300);
+}
+
+@media (min-width: 1024px) {
+  .hw-steps { gap: 1.1rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hw-moon,
   .hw-tide,
   .hw-star,
-  .hw-ping-ring,
   .hw-rise,
   .hw-orbit {
     animation: none;

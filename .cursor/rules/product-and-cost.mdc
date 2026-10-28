@@ -7,9 +7,10 @@ alwaysApply: true
 
 Canonical docs (read when changing product/backend direction):
 
-- `docs/PRODUCT.md` — product vision
+- `docs/PRODUCT.md` — product vision + § Voice (human copy, no AI tells)
 - `docs/TECH.md` — stack, cost, folder conventions
 - `docs/USER_JOURNEY.md` — backend journey steps
+- `.cursor/rules/product-voice.mdc` / `.cursorrules` — user-facing copy standard
 
 ## Cost
 

@@ -1,0 +1,294 @@
+/**
+ * Hub home (`hw-*`) — the explore section (Rooms / Memes panels) and the few
+ * shared bits the footer and hero still use (live dot, shore glow).
+ * Motion contract: everything decorative freezes under `prefers-reduced-motion`,
+ * and entrance states end visible.
+ */
+
+/* ── Shared: live dot + shore glow ────────────────────────────────── */
+
+.hw-live-dot {
+  box-shadow: 0 0 6px #01c36d;
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+@keyframes hw-blink-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.hw-cardglow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.hw-cardglow--shore {
+  top: -60%;
+  left: 20%;
+  right: 20%;
+  height: 200%;
+  border-radius: 0;
+  filter: blur(50px);
+  background: radial-gradient(ellipse, rgba(139, 107, 255, 0.1), transparent 70%);
+}
+
+/* ── Showcase sections: one per surface, stacked ──────────────────── */
+
+.hw-explore { display: flex; flex-direction: column; overflow-x: clip; }
+
+.hw-explore__head { padding: 2rem 0 3rem; text-align: center; }
+.hw-explore__head .hw-hud { justify-content: center; }
+
+@media (min-width: 768px) {
+  .hw-explore__head { padding: 4rem 0 5rem; }
+}
+
+.hw-show {
+  position: relative;
+  display: grid;
+  align-items: center;
+  gap: 2rem;
+  padding: 3rem 0;
+}
+
+/* No boxes: a hairline between sections is the only divider. */
+.hw-show + .hw-show { border-top: 1px solid rgba(255, 255, 255, 0.08); }
+
+@media (min-width: 768px) {
+  .hw-show {
+    min-height: min(34rem, calc(100dvh - 6rem));
+    grid-template-columns: 1fr 1.1fr;
+    gap: 3rem;
+    padding: 4.5rem 0;
+  }
+
+  .hw-show--flip { grid-template-columns: 1.1fr 1fr; }
+  .hw-show--flip .hw-show__copy { order: 2; }
+}
+
+/* Soft colour wash: a plain radial gradient that fades to nothing well inside
+   the section, so it never shows an edge or bleeds into its neighbour. */
+.hw-show { isolation: isolate; }
+
+.hw-show::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hw-show--rooms::before { background: radial-gradient(ellipse 45% 60% at 82% 50%, rgba(139, 107, 255, 0.2), transparent 100%); }
+.hw-show--memes::before { background: radial-gradient(ellipse 45% 60% at 18% 50%, rgba(53, 224, 200, 0.16), transparent 100%); }
+.hw-show--games::before { background: radial-gradient(ellipse 40% 90% at 85% 50%, rgba(255, 190, 90, 0.13), transparent 100%); }
+
+/* Oversized outline word behind the copy. Decoration only. */
+.hw-show__ghost {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  font-family: var(--font-display);
+  font-size: clamp(6rem, 17vw, 13rem);
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  user-select: none;
+}
+
+.hw-show--flip .hw-show__ghost { left: auto; right: 0; }
+
+.hw-show__copy { position: relative; display: flex; flex-direction: column; gap: 0.9rem; }
+
+.hw-show__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-hw-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-body-300);
+}
+
+.hw-show__num { color: #fff; }
+
+.hw-show__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--color-green);
+  box-shadow: 0 0 8px rgba(1, 195, 109, 0.9);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+.hw-show__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: 1;
+  color: #fff;
+}
+
+.hw-show__desc { max-width: 26rem; font-size: 1rem; line-height: 1.5; color: var(--color-body-300); }
+
+.hw-show__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: flex-start;
+  margin-top: 0.4rem;
+  border-radius: 999px;
+  background: var(--color-green);
+  padding: 0.7rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #06130d;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hw-show__go::after {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-top: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+.hw-show__go:hover { transform: translateY(-2px); box-shadow: 0 12px 30px -10px rgba(1, 195, 109, 0.7); }
+.hw-show__go:hover::after { transform: translateX(3px) rotate(45deg); }
+.hw-show__go:focus-visible,
+.hw-roomcard:focus-visible,
+.hw-memefan__card:focus-visible { outline: 2px solid var(--color-green); outline-offset: 2px; }
+
+.hw-show__art { position: relative; }
+
+/* ── Closing band for guests: centered, no box ────────────────────── */
+
+.hw-closing {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  margin-top: 3rem;
+  padding: 4rem 0 3.5rem;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .hw-closing { margin-top: 5rem; padding: 5.5rem 0 5rem; }
+}
+
+/* Concentric rings fading out from the centre: the hero's signal motif, quieter. */
+.hw-closing__rings {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  z-index: -1;
+  width: min(44rem, 120%);
+  translate: -50% 0;
+  background:
+    radial-gradient(circle at 50% 55%, rgba(1, 195, 109, 0.16), transparent 60%),
+    repeating-radial-gradient(circle at 50% 55%, transparent 0 3.2rem, rgba(255, 255, 255, 0.07) 3.2rem calc(3.2rem + 1px));
+  mask-image: radial-gradient(ellipse at 50% 55%, #000 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hw-closing__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(1, 195, 109, 0.35);
+  background: rgba(1, 195, 109, 0.08);
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7dffb8;
+}
+
+.hw-closing__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 7vw, 5rem);
+  line-height: 1;
+  color: #fff;
+}
+
+.hw-closing__desc { max-width: 30rem; font-size: 1.05rem; line-height: 1.5; color: var(--color-body-300); }
+
+.hw-closing__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 0.6rem; }
+.hw-closing__actions .hw-show__go { margin-top: 0; align-self: auto; }
+
+.hw-closing__ghost {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 0.7rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.hw-closing__ghost:hover { border-color: rgba(1, 195, 109, 0.5); background: rgba(1, 195, 109, 0.1); }
+.hw-closing__ghost:focus-visible { outline: 2px solid var(--color-green); outline-offset: 2px; }
+
+/* ── Memes: a fan of real cards ───────────────────────────────────── */
+
+.hw-memefan { position: relative; min-height: 20rem; }
+
+.hw-memefan__card {
+  position: absolute;
+  top: var(--t);
+  left: var(--l);
+  z-index: var(--z);
+  display: flex;
+  width: 54%;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #2a2136;
+  box-shadow: 0 18px 36px -14px rgba(0, 0, 0, 0.7);
+  rotate: var(--r);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), rotate 0.35s ease;
+}
+
+.hw-memefan__card:hover { z-index: 9; rotate: 0deg; transform: translateY(-8px) scale(1.03); }
+
+.hw-memefan__img { display: block; aspect-ratio: 16 / 10; overflow: hidden; background: linear-gradient(135deg, #8b6bff, #35e0c8); }
+.hw-memefan__img img { width: 100%; height: 100%; object-fit: cover; }
+
+.hw-memefan__text {
+  display: -webkit-box;
+  overflow: hidden;
+  padding: 0.6rem 0.75rem 0.7rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: #fff;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@media (min-width: 768px) {
+  .hw-memefan { min-height: 26rem; }
+}
+
+@media (max-width: 767px) {
+  .hw-memefan { min-height: 18rem; }
+  .hw-memefan__card { width: 66%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-live-dot,
+  .hw-show__dot { animation: none !important; }
+
+  .hw-memefan__card,
+  .hw-show__go,
+  .hw-show__go::after { transition: none; }
+}

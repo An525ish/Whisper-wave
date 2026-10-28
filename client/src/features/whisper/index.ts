@@ -23,4 +23,3 @@ export { default as WhisperSessionProvider } from './components/WhisperSessionPr
 export { default as LiveWhisperPill } from './components/LiveWhisperPill';
 export { default as WhisperConnectNotice } from './components/WhisperConnectNotice';
 export { default as ConnectionOriginStrip } from './components/ConnectionOriginStrip';
-export { default as WhisperHubCard } from './components/WhisperHubCard';

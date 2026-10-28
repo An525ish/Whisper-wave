@@ -37,7 +37,7 @@ const LiveWhisperPill = () => {
       : `${partnerName ?? 'Stranger'}${preview ? ` · “${preview}”` : ''}`;
 
   return (
-    <div className="shrink-0 px-4 pb-2 pt-1">
+    <div className="relative z-20 shrink-0 px-4 pb-2 pt-1">
       <Link
         to={ROUTES.whisper}
         onClick={() => track(WHISPER_EVENTS.PILL_CLICK, { state: status })}

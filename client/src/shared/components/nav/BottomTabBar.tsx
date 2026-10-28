@@ -19,7 +19,7 @@ type Props = {
 const BottomTabBar = ({ items, ariaLabel, onNavigate, className = '' }: Props) => (
   <nav
     aria-label={ariaLabel}
-    className={`shrink-0 border-t border-border/50 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md ${className}`.trim()}
+    className={`relative z-20 shrink-0 border-t border-border/50 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md ${className}`.trim()}
   >
     <ul className="flex items-stretch justify-around">
       {items.filter((item) => !item.railOnly).map((item) => (
@@ -38,9 +38,9 @@ const BottomTabBar = ({ items, ariaLabel, onNavigate, className = '' }: Props) =
                 <span
                   className={`grid place-items-center transition-shadow duration-200 [&>svg]:h-6 [&>svg]:w-6 ${
                     item.emphasis
-                      ? `h-9 w-9 rounded-full bg-gradient-green text-white [&>svg]:h-5 [&>svg]:w-5 ${
+                      ? `h-9 w-9 rounded-full bg-green bg-gradient-green text-white-pure [&>svg]:h-5 [&>svg]:w-5 ${
                           isActive
-                            ? 'shadow-[0_0_20px_-2px_rgba(1,195,109,0.9)]'
+                            ? 'shadow-[0_0_0_2px_#01c36d,0_0_18px_-4px_rgba(1,195,109,0.85)]'
                             : 'shadow-[0_4px_14px_-6px_rgba(1,195,109,0.7)]'
                         }`
                       : 'h-6 w-6'

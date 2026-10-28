@@ -1,7 +1,11 @@
-/** The auth-screen backdrop (mesh, glows, ripples, grain) shared by the picker and waiting room. */
+/**
+ * Backdrop (mesh, glows, ripples, grain) for the picker and waiting room.
+ * Must be `absolute` inside `.auth-shell` — `fixed` paints over the hub NavRail
+ * / tab bar and makes the Whisper nav look washed out / transparent.
+ */
 export default function AuthAmbience() {
   return (
-    <div className="auth-ambience pointer-events-none fixed inset-0" aria-hidden>
+    <div className="auth-ambience pointer-events-none absolute inset-0" aria-hidden>
       <div className="auth-ambience__mesh" />
       <div className="auth-ambience__glow auth-ambience__glow--a" />
       <div className="auth-ambience__glow auth-ambience__glow--b" />

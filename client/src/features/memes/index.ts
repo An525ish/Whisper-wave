@@ -4,4 +4,3 @@
  */
 export { default as MemeFeed } from './components/MemeFeed';
 export { default as MemesHubCard } from './components/MemesHubCard';
-export { default as MemesHubPreview } from './components/MemesHubPreview';

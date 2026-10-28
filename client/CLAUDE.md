@@ -8,7 +8,26 @@ file and the Cursor mirrors in `.cursor/rules/client-architecture.mdc` +
 `client-code-quality.mdc` in the same change so docs and code never drift.
 
 Those `.mdc` files are the condensed Cursor mirrors of this doc (applied via
-`globs: client/**`). Keep them in sync with this file.
+`globs: client/**`). Keep them in sync with this file. Product voice is mirrored
+in `.cursor/rules/product-voice.mdc`, root `.cursorrules`, and `docs/PRODUCT.md`
+§ Voice — update those together when the voice standard changes.
+
+---
+
+## Product Voice (user-facing copy)
+
+UI strings, empty states, toasts, hub/landing copy, and product blurbs must
+sound human. Gen Z can smell AI prose.
+
+1. **No em dashes (`—`).** Period, comma, colon, or rewrite.
+2. **No stacked metaphors or fake profundity.** Wave is the brand; do not pile
+   shore/tide/ripple/void poetry into the same block.
+3. **Concrete > vibey.** "Find someone", "Chats aren't stored", "12 people online".
+4. **Hub `/home` is a launcher.** Primary CTA = Whisper. Rooms/Memes only when
+   flagged on. Returning members get pending + chats in plain language. Trust
+   once, plainly (no romanticizing anonymity).
+
+If it would sound weird said out loud, rewrite before shipping.
 
 ---
 
