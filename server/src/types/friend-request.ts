@@ -1,4 +1,5 @@
 import type { Types } from 'mongoose';
+import type { RealtimeNotify } from './chat.js';
 
 export type IRequestFields = {
   _id: Types.ObjectId;
@@ -43,6 +44,8 @@ export type RequestWithParties = {
 export type HandleFriendRequestResult = {
   message: string;
   data?: { senderId: Types.ObjectId; chatId?: string };
+  /** Realtime + push fan-out for the controller to flush (accepted only). */
+  notifications?: RealtimeNotify[];
 };
 
 export type HandleFriendRequestInput = {

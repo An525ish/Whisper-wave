@@ -43,6 +43,7 @@ export const handleRequest: RequestHandler = catchAsync(async (req, res) => {
     ]);
     flushNotifications(io, [
       { event: REFETCH_CHATS, chatId, data: { chatId } },
+      ...(result.notifications ?? []),
     ]);
   }
 

@@ -132,6 +132,11 @@ export default function MutualVibeModal({
                 <time>{formatCountdown(msLeft)}</time> left to connect
               </p>
             )}
+            {isWaitingForPartner && (
+              <p className="mvs-note" role="status">
+                They haven&rsquo;t connected yet. You can keep chatting here.
+              </p>
+            )}
             {partnerLeft && (
               <p className="mvs-note">
                 {them} has left the chat, but you can still connect until the timer

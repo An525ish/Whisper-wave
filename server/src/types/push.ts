@@ -57,6 +57,8 @@ export type PushPayload = {
 export type PushIntent =
   | { kind: 'message'; senderName: string; hasAttachment: boolean; forwarded?: boolean }
   | { kind: 'request'; senderName: string }
+  /** Your friend request was accepted; `accepterName` is their public account name. */
+  | { kind: 'request-accepted'; accepterName: string }
   /** `displayName` is the peer's identity-card name, already public to the recipient. */
   | { kind: 'connection'; displayName: string }
   /** Room reminder fired; `title` is the public room title. */

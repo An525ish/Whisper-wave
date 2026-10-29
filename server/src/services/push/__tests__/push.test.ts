@@ -200,6 +200,14 @@ describe('dispatcher', () => {
     );
     assert.deepEqual(sent, ['tok-b']);
   });
+  it('accepted request goes to the offline sender', async () => {
+    const { dispatcher, sent } = build('ok');
+    await dispatcher.dispatch(
+      [{ event: 'REFETCH_CHATS', members: ['b'], push: { kind: 'request-accepted', accepterName: 'A' } }],
+      () => false
+    );
+    assert.deepEqual(sent, ['tok-b']);
+  });
   it('connection push reaches only the offline side', async () => {
     const { dispatcher, sent } = build('ok');
     await dispatcher.dispatch(

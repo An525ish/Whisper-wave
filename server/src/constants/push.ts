@@ -15,6 +15,7 @@ export const PUSH_USER_AGENT_MAX = 200;
 
 export const PUSH_TAG_REQUEST = 'request';
 export const PUSH_TAG_CONNECTION = 'connection';
+export const PUSH_TAG_REQUEST_ACCEPTED = 'request-accepted';
 export const pushChatTag = (chatId: string): string => `chat-${chatId}`;
 
 /** Client routes (client/src/shared/constants/routes.ts). Requests live in the chats list. */
@@ -25,4 +26,5 @@ export const PUSH_BODY_MESSAGE = 'New message';
 export const PUSH_BODY_ATTACHMENT = 'Sent an attachment';
 export const PUSH_BODY_FORWARD = 'Forwarded a message';
 export const PUSH_TITLE_REQUEST = 'New friend request';
+export const PUSH_TITLE_REQUEST_ACCEPTED = 'Friend request accepted';
 export const PUSH_TITLE_CONNECTION = 'Connection saved';

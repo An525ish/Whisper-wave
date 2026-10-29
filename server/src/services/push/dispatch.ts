@@ -5,8 +5,10 @@ import {
   PUSH_CONCURRENCY,
   PUSH_TAG_CONNECTION,
   PUSH_TAG_REQUEST,
+  PUSH_TAG_REQUEST_ACCEPTED,
   PUSH_TITLE_CONNECTION,
   PUSH_TITLE_REQUEST,
+  PUSH_TITLE_REQUEST_ACCEPTED,
   PUSH_URL_CHATS,
   pushChatTag,
   pushChatUrl,
@@ -54,6 +56,14 @@ export const buildRequestPayload = (senderName: string): PushPayload => ({
   body: `${senderName} wants to connect`,
   url: PUSH_URL_CHATS,
   tag: PUSH_TAG_REQUEST,
+  urgent: false,
+});
+
+export const buildRequestAcceptedPayload = (accepterName: string): PushPayload => ({
+  title: PUSH_TITLE_REQUEST_ACCEPTED,
+  body: `${accepterName} accepted your request`,
+  url: PUSH_URL_CHATS,
+  tag: PUSH_TAG_REQUEST_ACCEPTED,
   urgent: false,
 });
 
@@ -143,7 +153,7 @@ export const createPushDispatcher = (deps: PushDispatchDeps) => {
       return;
     }
 
-    if (push.kind === 'request' || push.kind === 'connection') {
+    if (push.kind === 'request' || push.kind === 'request-accepted' || push.kind === 'connection') {
       const recipients = selectRecipients(
         (n.members ?? []).map(String),
         n.excludeUserId,
@@ -153,7 +163,9 @@ export const createPushDispatcher = (deps: PushDispatchDeps) => {
           recipients,
           push.kind === 'request'
             ? buildRequestPayload(push.senderName)
-            : buildConnectionPayload(push.displayName)
+            : push.kind === 'request-accepted'
+              ? buildRequestAcceptedPayload(push.accepterName)
+              : buildConnectionPayload(push.displayName)
         );
       return;
     }

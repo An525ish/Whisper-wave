@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { NEW_REQUEST } from '../../constants/socket-events.js';
+import { NEW_REQUEST, REFETCH_CHATS } from '../../constants/socket-events.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as chatReadRepo from '../../repositories/chatRead.js';
 import * as requestRepo from '../../repositories/request.js';
@@ -78,6 +78,13 @@ export const handleRequest = async (
   return {
     message: 'Request accepted',
     data: { senderId, chatId: String(chat._id) },
+    notifications: [
+      {
+        event: REFETCH_CHATS,
+        members: [String(senderId)],
+        push: { kind: 'request-accepted', accepterName: request.receiver.name },
+      },
+    ],
   };
 };
 
