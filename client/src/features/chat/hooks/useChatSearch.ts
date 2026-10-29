@@ -1,31 +1,27 @@
-import { useActiveMessageDatesQuery, useChatDetailsQuery, useJumpToDateMutation, useSearchMessagesQuery } from '@/features/chat/hooks'
+import { useActiveMessageDatesQuery, useChatDetailsQuery, useJumpToDateMutation, useSearchMessagesQuery } from '.'
 import { useAuthStore } from '@/features/auth'
 import { getFirstName } from '@/shared/utils/helpers'
 import dayjs from 'dayjs'
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type {
-  ChatSearchHit, SearchMode, FromFilter, FromOption,
+  SearchMode, FromFilter, FromOption,
   ChatDetailsResponse,
-} from '@/features/chat/types/chat'
-
-/** Narrowed member shape used for the from-filter selector. */
-type ChatMemberObject = { _id?: string; name?: string; avatar?: string }
-type SearchResponse = { data?: ChatSearchHit[]; total?: number }
-type JumpDateResponse = { data?: { _id: string; createdAt: string; exactDay: boolean } | null }
+} from '../types/chat'
+import type { ChatMemberObject, JumpDateResponse, SearchResponse } from '../types/local'
 
 const dayBounds = (isoDate: string) => ({
   dateFrom: dayjs(isoDate).startOf('day').toISOString(),
   dateTo: dayjs(isoDate).endOf('day').toISOString(),
 })
 
-type UseChatSearchProps = {
+interface Params {
   chatId?: string
   open: boolean
   onClose: () => void
   onJumpToMessage: (messageId: string, query: string, options?: { closeSearch?: boolean }) => void
 }
 
-export const useChatSearch = ({ chatId, open, onClose, onJumpToMessage }: UseChatSearchProps) => {
+export const useChatSearch = ({ chatId, open, onClose, onJumpToMessage }: Params) => {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const user = useAuthStore((s) => s.user)
 
@@ -55,9 +51,9 @@ export const useChatSearch = ({ chatId, open, onClose, onJumpToMessage }: UseCha
   }, [chatData?.members, user?._id])
 
   useEffect(() => {
-    if (!open) { setEntered(false); return }
+    if (!open) return
     const id = requestAnimationFrame(() => setEntered(true))
-    return () => cancelAnimationFrame(id)
+    return () => { cancelAnimationFrame(id); setEntered(false) }
   }, [open])
 
   useEffect(() => {
@@ -76,7 +72,8 @@ export const useChatSearch = ({ chatId, open, onClose, onJumpToMessage }: UseCha
   }, [open, mode])
 
   useEffect(() => {
-    if (!open) { setMode('messages'); setDraft(''); setQuery(''); setFrom('anyone'); setSelectedDate(''); setActiveIndex(-1); setDateJumpNote(null) }
+    if (!open) return
+    return () => { setMode('messages'); setDraft(''); setQuery(''); setFrom('anyone'); setSelectedDate(''); setActiveIndex(-1); setDateJumpNote(null) }
   }, [open])
 
   useEffect(() => {
@@ -104,21 +101,24 @@ export const useChatSearch = ({ chatId, open, onClose, onJumpToMessage }: UseCha
     { enabled: open && mode === 'date' && Boolean(chatId) },
   )
 
-  const presetActiveDates = presetActiveDatesResult?.dates ?? []
-  const presetActiveSet = useMemo(() => new Set(presetActiveDates), [presetActiveDates])
+  const presetActiveSet = useMemo(() => new Set(presetActiveDatesResult?.dates ?? []), [presetActiveDatesResult?.dates])
 
-  const hits = useMemo(() => {
-    const rows = ((data as SearchResponse | undefined)?.data ?? []).slice()
-    return rows.reverse()
-  }, [(data as SearchResponse | undefined)?.data]) // eslint-disable-line react-hooks/exhaustive-deps
+  const rawHits = (data as SearchResponse | undefined)?.data
+  const hits = useMemo(() => [...(rawHits ?? [])].reverse(), [rawHits])
 
   const total = hits.length
 
-  useEffect(() => {
+  // Any change to the search inputs invalidates the active hit and the date-jump note.
+  const searchKey = `${query}|${mode}|${from}|${selectedDate}|${open}`
+  const [prevSearchKey, setPrevSearchKey] = useState(searchKey)
+  if (prevSearchKey !== searchKey) {
+    setPrevSearchKey(searchKey)
     setActiveIndex(-1)
     setDateJumpNote(null)
-    if (open) onJumpToMessage('', '')
-  }, [query, mode, from, selectedDate, open]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
+
+  const clearJumpTarget = useEffectEvent(() => { if (open) onJumpToMessage('', '') })
+  useEffect(() => { clearJumpTarget() }, [query, mode, from, selectedDate, open])
 
   const handleJumpToSelectedDate = async () => {
     if (!chatId || !selectedDate) return

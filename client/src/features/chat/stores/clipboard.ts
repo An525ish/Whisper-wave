@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ChatCopyPayload } from '@/features/chat/types/chat';
+import type { ChatCopyPayload } from '../types/chat';
 
 type ChatClipboardState = {
   payload: ChatCopyPayload | null;

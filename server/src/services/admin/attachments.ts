@@ -1,6 +1,6 @@
-import * as messageRepo from '../../repositories/message.js';
+import * as messageAdminRepo from '../../repositories/messageAdmin.js';
 import type { AdminAttachmentsPage } from '../../types/admin.js';
-import type { AdminAttachmentsQuery } from '../../validators/admin.js';
+import type { AdminAttachmentsQuery } from '../../types/adminInput.js';
 import { trimOptional } from '../../utils/normalize.js';
 import { parseBeforeCursor } from './shared.js';
 
@@ -14,8 +14,8 @@ export const listAttachments = async (input: AdminAttachmentsQuery): Promise<Adm
   const isFirstPage = !before;
 
   const [rows, total] = await Promise.all([
-    messageRepo.listAttachmentsForAdmin({ limit: fetchLimit, before, q, senderId, kind }),
-    isFirstPage ? messageRepo.countAttachmentsForAdmin({ q, senderId, kind }) : Promise.resolve(undefined),
+    messageAdminRepo.listAttachmentsForAdmin({ limit: fetchLimit, before, q, senderId, kind }),
+    isFirstPage ? messageAdminRepo.countAttachmentsForAdmin({ q, senderId, kind }) : Promise.resolve(undefined),
   ]);
 
   const messages = rows.slice(0, limit);

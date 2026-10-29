@@ -1,0 +1,15 @@
+# Whisper Wave — Cursor rules
+
+Detailed rules live in `.cursor/rules/*.mdc` (always apply + client/server globs).
+Read those first; do not invent rules that are not there or in `docs/`.
+
+## Product voice (always)
+
+User-facing copy must sound human, not AI-generated.
+
+- No em dashes (`—`). Prefer periods, commas, colons, or a rewrite.
+- No stacked metaphors, fake profundity, or corporate warmth.
+- Prefer concrete actions and facts ("Find someone", "Chats aren't stored").
+- Full standard: `.cursor/rules/product-voice.mdc`, `docs/PRODUCT.md` § Voice, `client/CLAUDE.md` § Product Voice.
+
+Hub `/home` is a launcher: Whisper first, then Rooms/Memes when live, then chats for returning members.

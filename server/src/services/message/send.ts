@@ -96,7 +96,13 @@ export const sendAttachments = async (
     },
     notifications: [
       { event: NEW_MESSAGE, chatId, data: { chatId, message: formatted } },
-      { event: NEW_MESSAGE_ALERT, chatId, excludeUserId: userId, data: { chatId } },
+      {
+        event: NEW_MESSAGE_ALERT,
+        chatId,
+        excludeUserId: userId,
+        data: { chatId },
+        push: { kind: 'message', senderName: user.name, hasAttachment: true },
+      },
       { event: NEW_ATTACHMENT, chatId, data: { chatId } },
       { event: REFETCH_CHATS, chatId, excludeUserId: userId, data: { chatId } },
     ],
@@ -161,7 +167,13 @@ export const sendGif = async (input: SendGifInput): Promise<SendMessageResult> =
     },
     notifications: [
       { event: NEW_MESSAGE, chatId, data: { chatId, message: formatted } },
-      { event: NEW_MESSAGE_ALERT, chatId, excludeUserId: userId, data: { chatId } },
+      {
+        event: NEW_MESSAGE_ALERT,
+        chatId,
+        excludeUserId: userId,
+        data: { chatId },
+        push: { kind: 'message', senderName: user.name, hasAttachment: true },
+      },
       { event: NEW_ATTACHMENT, chatId, data: { chatId } },
       { event: REFETCH_CHATS, chatId, data: { chatId } },
     ],

@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import TrashIcon from '@/shared/components/ui/icons/Trash';
 
-type SelectionBarProps = {
+type Props = {
   count: number;
   total: number;
   isDeleting: boolean;
@@ -17,7 +17,7 @@ const SelectionBar = ({
   onSelectAll,
   onClear,
   onDelete,
-}: SelectionBarProps) => {
+}: Props) => {
   if (count === 0) return null;
 
   const allSelected = count >= total;

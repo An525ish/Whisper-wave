@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import type { Socket } from 'socket.io-client';
 import dayjs from 'dayjs';
 import useSocketEvent from '@/shared/hooks/useSocketEvent';
 import { SOCKET_EVENTS } from '@/shared/constants/socket';
-import { queryKeys } from '@/features/chat/hooks';
+import { queryKeys } from '.';
 import { useNotificationsStore } from '@/features/notifications';
 import { formatChatDayLabel } from '@/shared/utils/helpers';
-import { useInfiniteMessagesQuery, useMarkChatReadMutation } from '@/features/chat/hooks/useMessageQueries';
+import { useInfiniteMessagesQuery, useMarkChatReadMutation } from './useMessageQueries';
 import { useAuthStore } from '@/features/auth';
 import type {
   ChatClearedPayload,
@@ -20,7 +20,7 @@ import type {
   NewMessagePayload,
   TimelineItem,
   SocketUser,
-} from '@/features/chat/types/chat';
+} from '../types/chat';
 
 interface Params {
   chatId: string | undefined;
@@ -55,27 +55,29 @@ export function useChatMessages({
   } = useInfiniteMessagesQuery(chatId);
 
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
-  const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
+  const [socketPeerReadAt, setSocketPeerReadAt] = useState<string | null>(null);
+  const [stateChatId, setStateChatId] = useState(chatId);
+  if (stateChatId !== chatId) {
+    // Reset all live state on chat switch.
+    setStateChatId(chatId);
+    setLiveMessages([]);
+    setSocketPeerReadAt(null);
+  }
 
   const historyMessages = useMemo(() => {
     const pages = (messagesData?.pages ?? []) as MessagesPage[];
     return [...pages].reverse().flatMap((page) => page.data ?? []);
   }, [messagesData?.pages]);
 
+  const historyIds = useMemo(() => new Set(historyMessages.map((m) => m._id)), [historyMessages]);
+
   // Drop live copies once history contains them (prevents duplicate keys in the virtualizer).
-  useEffect(() => {
-    if (liveMessages.length === 0) return;
-    const historyIds = new Set(historyMessages.map((m) => m._id));
-    setLiveMessages((prev) => {
-      const next = prev.filter(
-        (m) =>
-          m.isUploading ||
-          m._id.startsWith('pending-') ||
-          !historyIds.has(m._id),
-      );
-      return next.length === prev.length ? prev : next;
-    });
-  }, [historyMessages, liveMessages.length]);
+  if (liveMessages.length > 0) {
+    const pruned = liveMessages.filter(
+      (m) => m.isUploading || m._id.startsWith('pending-') || !historyIds.has(m._id),
+    );
+    if (pruned.length !== liveMessages.length) setLiveMessages(pruned);
+  }
 
   const allMessages = useMemo(() => {
     const seen = new Set<string>();
@@ -108,9 +110,6 @@ export function useChatMessages({
     }
     return items;
   }, [allMessages]);
-
-  const timelineRef = useRef<TimelineItem[]>(timelineItems);
-  timelineRef.current = timelineItems;
 
   const invalidateMessages = useCallback(() => {
     if (!chatId) return;
@@ -145,35 +144,24 @@ export function useChatMessages({
     if (!isImpersonated) markReadMutation.mutate({ chatId });
   }, [chatId, isImpersonated, markReadMutation, removeMessageNotification]);
 
-  // Reset all live state on chat switch
+  const markReadOnChatSwitch = useEffectEvent(markCurrentChatRead);
   useEffect(() => {
-    setLiveMessages([]);
-    setPeerLastReadAt(null);
-    markCurrentChatRead();
-    // markCurrentChatRead is stable via useCallback; intentionally omitted from deps
-    // so this only runs on chatId change, not on every re-render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    markReadOnChatSwitch();
   }, [chatId]);
 
-  // Peer read tracking from history
-  useEffect(() => {
-    if (isGroupChat || !user?._id) return;
-    let latest: string | null = null;
+  // Peer read tracking: latest of what history shows and what the socket reported.
+  const myId = user?._id ? String(user._id) : '';
+  const peerLastReadAt = useMemo(() => {
+    let latest = socketPeerReadAt;
+    if (isGroupChat || !myId) return latest;
+    const me = myId;
     for (const msg of historyMessages) {
-      if (String(msg.sender._id) !== String(user._id)) continue;
-      const readers = (msg.readBy ?? []).map(String);
-      if (readers.some((id) => id !== String(user._id))) {
-        if (!latest || dayjs(msg.createdAt).isAfter(dayjs(latest))) {
-          latest = msg.createdAt ?? null;
-        }
-      }
+      if (String(msg.sender._id) !== me) continue;
+      if (!msg.createdAt || !(msg.readBy ?? []).some((id) => String(id) !== me)) continue;
+      if (!latest || dayjs(msg.createdAt).isAfter(dayjs(latest))) latest = msg.createdAt;
     }
-    if (latest) {
-      setPeerLastReadAt((prev) =>
-        !prev || dayjs(latest).isAfter(dayjs(prev)) ? latest : prev,
-      );
-    }
-  }, [historyMessages, isGroupChat, user?._id]);
+    return latest;
+  }, [historyMessages, isGroupChat, socketPeerReadAt, myId]);
 
   // Socket listeners
   const newMessageListener = useCallback(
@@ -233,7 +221,7 @@ export function useChatMessages({
     (res: ChatReadPayload) => {
       if (res.chatId !== chatId) return;
       if (String(res.userId) === String(user?._id ?? '')) return;
-      setPeerLastReadAt((prev) =>
+      setSocketPeerReadAt((prev) =>
         !prev || dayjs(res.lastReadAt).isAfter(dayjs(prev)) ? res.lastReadAt : prev,
       );
       applyReadByUser(res.userId, res.lastReadAt);
@@ -322,9 +310,7 @@ export function useChatMessages({
     historyMessages,
     allMessages,
     timelineItems,
-    timelineRef,
     peerLastReadAt,
-    markCurrentChatRead,
     invalidateMessages,
     applyDeletedMessages,
     applyUpdatedMessage,

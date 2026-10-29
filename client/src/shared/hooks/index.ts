@@ -1,4 +1,5 @@
 export * from './useAsyncMutation';
+export * from './useAutoGrowTextarea';
 export * from './useContextMenu';
 export * from './useCopyToClipboard';
 export * from './useError';
@@ -7,3 +8,5 @@ export * from './useLongPress';
 export * from './useMediaQuery';
 export * from './useRetryableMediaSrc';
 export * from './useSocketEvent';
+export * from './useNowWhile';
+export * from './useFocusTrap';

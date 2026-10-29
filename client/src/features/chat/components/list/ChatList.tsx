@@ -3,13 +3,13 @@ import { useParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import AvatarSkeleton from '@/shared/components/ui/skeletons/AvatarSkeleton';
 import EmptyState from '@/shared/components/ui/EmptyState';
-import ChatListItem from '@/features/chat/components/list/ChatListItem';
+import ChatListItem from './ChatListItem';
 import { useAuthStore } from '@/features/auth';
-import { usePresenceStore } from '@/features/chat/stores/presence';
+import { usePresenceStore } from '../../stores/presence';
 import { normalizeMemberIds } from '@/shared/utils/helpers';
-import type { ChatListEntry } from '@/features/chat/types/chat';
+import type { ChatListEntry } from '../../types/chat';
 
-type ChatListProps = {
+type Props = {
   chats?: ChatListEntry[];
   type: string;
   isLoading?: boolean;
@@ -19,7 +19,7 @@ const ChatList = ({
   chats = [],
   type,
   isLoading,
-}: ChatListProps) => {
+}: Props) => {
   const user = useAuthStore((s) => s.user);
   const onlineUserIds = usePresenceStore((s) => s.onlineUserIds);
   const typingChatIds = usePresenceStore((s) => s.typingChatIds);
@@ -65,7 +65,7 @@ const ChatList = ({
         >
           {virtualizer.getVirtualItems().map((item) => {
             const data = chats[item.index];
-            const { avatar, name, _id, groupChat, members, lastMessage, unreadCount } = data;
+            const { avatar, name, _id, groupChat, members, lastMessage, unreadCount, origin } = data;
             const avatarUrls = (Array.isArray(avatar) ? avatar : avatar ? [avatar] : []).filter(
               (url): url is string => Boolean(url),
             );
@@ -91,6 +91,7 @@ const ChatList = ({
                   isActive={isActive}
                   unreadCount={unreadCount}
                   id={_id}
+                  origin={origin}
                   lastMessage={lastMessage}
                   currentUserId={selfId}
                 />

@@ -79,6 +79,3 @@ export const commitAttachmentsSchema = z.object({
     .min(1)
     .max(5),
 });
-
-export type SignUploadBody = z.infer<typeof signUploadSchema>;
-export type CommitAttachmentsBody = z.infer<typeof commitAttachmentsSchema>;

@@ -1,0 +1,42 @@
+/* ============================================================
+   LEGAL PROSE — Terms / Privacy / Report abuse readable column
+   ============================================================ */
+.lw-legal section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.lw-legal h2 {
+  font-family: var(--font-lw-display);
+  font-size: clamp(1.25rem, 2.2vw, 1.5rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--color-lw-text);
+}
+
+.lw-legal p {
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.lw-legal ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-left: 1.2rem;
+}
+
+.lw-legal li {
+  list-style: disc;
+  line-height: 1.65;
+}
+
+.lw-legal a {
+  color: var(--color-lw-teal-2);
+  text-decoration: none;
+}
+
+.lw-legal a:hover {
+  text-decoration: underline;
+}

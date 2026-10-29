@@ -6,7 +6,7 @@ import * as userRepo from '../../repositories/user.js';
 import type { AdminUserListItem, AdminUsersPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
 import { trimOptional } from '../../utils/normalize.js';
-import type { AdminUsersQuery } from '../../validators/admin.js';
+import type { AdminUsersQuery } from '../../types/adminInput.js';
 import { parseBeforeCursor } from './shared.js';
 
 export const listUsers = async (input: AdminUsersQuery): Promise<AdminUsersPage> => {

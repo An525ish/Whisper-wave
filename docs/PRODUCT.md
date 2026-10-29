@@ -1,7 +1,7 @@
 # Whisper Wave — Product Document
 
 > Living document. Update this whenever product direction changes.
-> Last updated: Aug 2026
+> Last updated: Oct 2026
 >
 > Tech + cost: [`TECH.md`](./TECH.md) — what we build with, why, and how we stay at $0.
 > Backend user journey: [`USER_JOURNEY.md`](./USER_JOURNEY.md) — what the user does and what the server does at every step.
@@ -11,6 +11,8 @@
 ## Vision
 
 Whisper Wave is an anonymous chat app for Gen Z built around serendipity — you connect with a random stranger, no profile, no algorithm. If you vibe, you connect for real. If you don't, they're gone forever. That tension is the product.
+
+The app is a **hub**: a home page with several ways to meet people (one stranger, a room, a joke), where the persistent chat app is one destination inside it. Guests get a persona and every meeting surface; accounts get persistence. Whisper, Rooms and Memes are built (Rooms and Memes ship dark behind server flags); Games is skipped by decision. Phase status lives in the table below; the design, decisions and rollout live in [`HUB_PLAN.md`](./HUB_PLAN.md).
 
 The name works on two levels: "Whisper" = anonymous, ephemeral, secret. "Wave" = reaching out, connection, social energy.
 
@@ -33,6 +35,27 @@ Omegle proved the demand. It failed on safety, UX, and monetization. We build th
 - **Secondary**: 25–30, elder millennials with same appetite
 - What they want: authenticity, spontaneity, privacy, speed, aesthetic
 - What they hate: fake profiles, cringe algorithms, commitment before chemistry
+
+---
+
+## Voice (user-facing copy)
+
+Whisper Wave talks like a sharp friend, not a brand deck and not a chatbot.
+
+**Do**
+- Short sentences. Say what happens next.
+- Concrete product facts: anonymous, one stranger, chats not stored, find someone.
+- One clear primary action on hub home: Whisper.
+
+**Don't**
+- Em dashes (`—`). They read as AI. Use a period, comma, colon, or rewrite.
+- Stacked water metaphors (shore / tide / ripple / void) on top of the Wave brand.
+- Fake profundity ("the night is open", "quiet water", "still water").
+- Corporate warmth ("seamless", "journey", "we're thrilled", "delve").
+
+Hub `/home` is a **launcher**, not a manifesto: Whisper CTA first, Rooms/Memes only when live, pending chats in plain language for members. Trust said once, plainly.
+
+Cursor/Claude mirrors: `.cursor/rules/product-voice.mdc`, `.cursorrules`, `client/CLAUDE.md` § Product Voice.
 
 ---
 
@@ -149,15 +172,32 @@ DMs stay sender-only for edit/delete. Clear-all in DMs remains available to eith
 
 ---
 
+## Storage & CDN
+
+Media is stored on **Cloudflare R2** (S3-compatible object storage) and delivered via **ImageKit** CDN.
+
+- Raw R2 object key is what gets stored in the database (`publicId` field on attachments, `avatar` field on User)
+- `buildDeliveryUrl(key, mimeType)` constructs the ImageKit delivery URL at read time — images get `?tr=f-auto,q-auto`, everything else is raw delivery
+- Image resizing for thumbnails uses ImageKit URL params: `?tr=w-{n},f-auto,q-80`
+- GIFs bypass transforms entirely (raw delivery) to preserve animation
+- Client-side: `transformImage(url, width)` in `shared/utils/fileFormat.ts` handles the `tr=` query string — skipped when `url` is already transformed or when `transformWidth` is `undefined`
+
+**Why R2 + ImageKit instead of Cloudinary:**
+- R2: 10GB free storage, 1M Class A ops/month (no credit model, no transformation quota)
+- ImageKit: 20GB free bandwidth/month, transform via URL params (no SDK upload needed)
+- Zero-migration DB design: swapping CDN = change `IMAGEKIT_URL_ENDPOINT`, no data migration
+
+---
+
 ## Technical Architecture
 
 Full stack, cost, and “why this tool” live in [`TECH.md`](./TECH.md).
-**Constraint: $0 until we have users.** Mongo stays. Redis is Phase 2 + free tier only. No paid APIs in Phase 1.
+**Constraint: $0 until we have users.** Mongo stays. Redis is Phase 2 (now shipped) + free tier only. No paid APIs in Phase 1.
 
 ### Two Layers
 
 ```
-Layer 1: Anonymous Layer (new — Phase 2 build)
+Layer 1: Anonymous Layer (Phase 2 — shipped, pending e2e verification)
   - No account required
   - Redis-backed matching queues
   - Ephemeral Socket.IO rooms (/anon namespace)
@@ -175,7 +215,7 @@ Layer 2: Connected Layer (existing Whisper Wave — Phase 1 refactor)
 ```
 [Ghost]
    │
-   ├── POST /api/match/join (no auth, gets anonId cookie)
+   ├── POST /api/match/join (no auth, gets anonId cookie; saves identity card)
    │
 [Wanderer — in Redis queue]
    │
@@ -189,9 +229,9 @@ Layer 2: Connected Layer (existing Whisper Wave — Phase 1 refactor)
    │
 [Spark — connect CTA shown]
    │
-   ├── ANON_CONNECT → server issues connectToken (JWT, 10 min TTL)
+   ├── MUTUAL_LIKE carries a connectToken (JWT, 10 min TTL, no anonIds)
    │
-   ├── POST /api/auth/signup (with connectToken in body)
+   ├── Sign up / sign in, then POST /api/connection/complete (with the token)
    │
 [Connected — account created]
    │
@@ -230,75 +270,66 @@ Layer 2: Connected Layer (existing Whisper Wave — Phase 1 refactor)
 }
 ```
 
-### Redis Key Structure (Phase 2)
+### Redis keys, API and socket events
 
-```
-match:queue:global          → Redis List (FIFO queue, no preference)
-match:queue:pref:male       → Redis List (wants male partner — premium only)
-match:queue:pref:female     → Redis List (wants female partner — premium only)
-match:session:{roomId}      → Redis Hash (session data)
-match:likes:{roomId}        → Redis Set (anonIds of who liked)
-presence:{userId}           → Redis Hash (socketId, lastSeen)
-```
-
-### New API Endpoints (Phase 2)
-
-```
-POST   /api/match/join          join queue (anonymous)
-DELETE /api/match/leave         leave queue
-POST   /api/match/like          like current match
-POST   /api/match/next          skip to next match
-POST   /api/match/connect       initiate connection (get connectToken)
-
-POST   /api/connection/complete complete connection after signup
-GET    /api/connection/:id      get connection details
-
-GET    /api/subscription/plans  available plans
-POST   /api/subscription/create create Stripe subscription
-POST   /api/subscription/webhook Stripe webhook handler
-DELETE /api/subscription/cancel cancel subscription
-```
-
-### New Socket Events (Phase 2)
-
-```
-// Client → Server (/anon namespace)
-ANON_JOIN_QUEUE      { displayName, vibeTags?, genderPref? }
-ANON_MESSAGE         { content, sessionId }
-ANON_TYPING_START    { sessionId }
-ANON_TYPING_STOP     { sessionId }
-ANON_LIKE            { sessionId }
-ANON_NEXT            { sessionId }
-
-// Server → Client
-MATCH_FOUND          { sessionId, partnerName, partnerVibeTags }
-MATCH_MESSAGE        { content, sentAt }
-MATCH_TYPING_START   {}
-MATCH_TYPING_STOP    {}
-MATCH_LIKED          {}  (only sent when MUTUAL — not when one-sided)
-MUTUAL_LIKE          { sessionId, connectToken }
-MATCH_DISCONNECTED   {}
-QUEUE_JOINED         {}
-```
+Implementation detail (Redis key schema, `/anon` events, HTTP endpoints, reveal
+flow) lives in [`TECH.md`](./TECH.md) and [`PHASE2.md`](./PHASE2.md) so it
+doesn't drift from the code. Product intent above is unchanged. Still planned
+and not built: `/api/subscription/*` (Stripe, Phase 3).
 
 ---
 
 ## Build Phases
 
-### Phase 1 — Foundation (Backend Refactor) — NOW — $0
-Refactor existing Whisper Wave server to production-grade TypeScript.
-This is the connected-layer foundation. All existing features cleaned up.
-See: `backend_prod_refactor_bcb4b8d9.plan.md` and [`TECH.md`](./TECH.md).
+### Phase 1 — Foundation — ✅ COMPLETE — $0
+Server refactored to production-grade TypeScript (services, repos, Zod, Helmet, rate limits, indexes, admin `adminToken`). Client on latest majors (React 19, Vite 8, RR7, TQ 5, Zustand 5, TW 4) with feature-sliced architecture.
 
-**Redis is not added.** Presence stays an in-memory `Map` (swappable later). Run locally. Atlas M0 + Cloudinary free only.
+**Also shipped in Phase 1 (beyond original scope):**
+- Marketing landing page with full design system (glass, grain, HoloMesh, clamp typography)
+- SparkPass pricing page (ticket card, feature table, tier comparison)
+- Legal pages (Terms, Privacy, Guidelines, Safety, Help, About, Cookies, Contact)
+- Notification system
+- Profile system (panel, sheet, shared media grid, edit + avatar upload)
+- Group roles enforced end-to-end (creator / admin / member matrix)
+- GIF support — animated GIFs bypass CDN transform across all surfaces
+- Find in Chat — media tab with image/video/audio thumbnails
+- Image loading shimmer (avatars)
 
-### Phase 2 — Anonymous Layer — still $0 if possible
+**Redis was not added in Phase 1.** Presence stayed an in-memory `Map` (Redis arrived in Phase 2). Atlas M0 + Cloudflare R2 + ImageKit (all free tiers).
+See: [`TECH.md`](./TECH.md) for decision log.
+
+### Phase 2 — Anonymous Layer — ✅ SHIPPED (pending end-to-end verification against live Redis + Mongo) — $0
 - Redis on **Upstash / Redis Cloud free tier** (queues + ephemeral rooms)
 - `/anon` Socket.IO namespace
 - AnonSession service (Redis only — not Mongo)
 - New models: Connection (Mongo), Subscription schema ready but unused until pay
 - New controllers: match, connection
 - **No live Stripe yet** unless we ship Spark Pass in the same phase
+
+### Hub Phases 0–1 — ✅ SHIPPED — $0
+- Hub shell (`HubShell` + `ChatsLayout`, rail + tab bar), `/home` launcher, `/chats` relocation with legacy redirect
+- Whisper session survives navigation (`WhisperSessionProvider` + live pill)
+- Mutual-like claims (tab-closing fix), pending ghost rows, client-visible quota, whisper-origin list markers
+- Stable guest identity (`gid` cookie + shared resolver); DM reports block rematching; pairing skips kept accounts
+- Measured Redis cost: ~154 cmds/session (see `HUB_PLAN.md` §10.3)
+
+### Hub Phase 2 — Laughs — ✅ SHIPPED (dark behind `FEATURE_MEMES`) — $0
+- JokeAPI v2 (no key; the default stream is safe-mode + full blacklist over Misc/Programming/Pun) rendered through Memegen URLs, proxied + cached server-side with provider blocklist and stale fallback. Source decision: [`HUB_PLAN.md`](./HUB_PLAN.md) §7.5 (D6)
+- Shuffle feed: shelf chips (Mix, Misc, Programming, Puns), virtualized infinite scroll to the server's last page, local reactions and hides, member-synced saves (guests save on-device with a sign-in nudge), report-a-joke (guests allowed; enough distinct reports auto-block it), find-someone interstitials. Home Memes preview + `/memes`; share-to-Chat for members via the GIF pipeline (`kind: 'meme'`, per-kind host allow-list)
+- **Unfiltered 18+ mode and the Dark shelf are kept** (D6 amended): a member opt-in with a stored 18+ declaration; never in the guest or default feed. Counsel sign-off is pending — see [`LEGAL_BRIEF.md`](./LEGAL_BRIEF.md)
+- Admin: memes blocklist panel (reports count, block, unblock)
+
+### Hub Phase 3a — Rooms — ✅ SHIPPED (dark until staffed hours + safety review) — $0
+- `/rooms` namespace (join/message/leave/react, acked, zero Redis per message), in-memory registry with soft/hard placement, alias disambiguation
+- Automod (slow mode, word list, link block, duplicate/flood suppression), per-gid rate limits, room/user/global bans (dual-key, TTL)
+- Mod tools: delete, mute, kick (+15-min ban), shadow-mute, lock/unlock, slow override; Wave bot prompts; mid-session hours enforcement
+- Reports with evidence snapshots + auto-hide at 3 reporters; self-harm resources card (never bans); moderation audit trail
+- 4 official rooms (seeded) + user creation: accounts with trust `trusted` (7+ days, no strikes) are listed in the lobby instantly, everyone else starts unlisted until an admin approves in one tap (D4 amended); the trust ladder (`new → standard → trusted`, link privileges) shipped early; unreviewed public listing for brand-new accounts stays out
+- Admin: rooms edit (mods, hours, rules), bans, panic card (Rooms/Memes, enforced + persisted), report queue with Hide / Ban / Mark reviewed (note required), audit; on-call runbook: [`RUNBOOK.md`](./RUNBOOK.md)
+- Still gated: stronger first-post challenge than the arithmetic one (Turnstile upgrade), lawyer pass, public user rooms for new accounts (3b)
+
+### Hub Phase 4 — Games — ⏭ SKIPPED by decision
+Not built, no route, no nav item. The `FEATURE_GAMES` flag and type still exist but nothing is surfaced. Rationale and the original design are kept in [`HUB_PLAN.md`](./HUB_PLAN.md) §7.4 in case it is revived.
 
 ### Phase 3 — Premium + Safety — first time we may spend
 - Stripe (free to integrate; we only pay % of real Spark Pass payments)
@@ -307,7 +338,7 @@ See: `backend_prod_refactor_bcb4b8d9.plan.md` and [`TECH.md`](./TECH.md).
 - Gender/vibe preference queue routing
 
 ### Phase 4 — Scale + Polish — pay only if load requires it
-- BullMQ workers (FFmpeg, Cloudinary off main thread)
+- BullMQ workers (FFmpeg, media off main thread)
 - Caching layer (Redis for chat lists, user profiles)
 - Analytics (PostHog has a free tier — prefer that over paid)
 - Push notifications (FCM — free)
@@ -330,6 +361,9 @@ See: `backend_prod_refactor_bcb4b8d9.plan.md` and [`TECH.md`](./TECH.md).
 
 ## Non-Goals (for now)
 - Video/audio calls in anonymous phase (Phase 3+ only)
-- Public group rooms / Whisper Stories
+- Whisper Stories
 - AI companion
 - Desktop app
+
+(Public group rooms were a non-goal until the hub plan: official, moderated,
+time-boxed Rooms are now planned — see [`HUB_PLAN.md`](./HUB_PLAN.md) §7.3.)

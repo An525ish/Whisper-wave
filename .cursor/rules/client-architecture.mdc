@@ -19,8 +19,8 @@ pages  ──▶  features  ──▶  shared
 src/
   app/            router, providers, queryClient, RouteError (wiring only)
   pages/          thin route entries — compose features + read route params only
-  layout/         AppWrapper, AdminWrapper (app-wide presence/alerts OK here)
-  features/<domain>/   auth · chat · admin · profile · notifications · landing
+  layout/         HubShell, ChatsLayout, AdminWrapper, hubNavSpecs (app-wide presence/alerts OK here)
+  features/<domain>/   auth · chat · whisper · hub · rooms · memes · admin · profile · notifications · landing
       api/        HTTP helpers via shared api client (no logic/UI)
       components/  hooks/  stores/  utils/
       hooks/queryKeys.ts   ALL TanStack query keys for this domain
@@ -38,6 +38,10 @@ src/
 - **`shared/` importing `@/features/...` is the #1 forbidden smell.**
 - Cross-feature: `@/features/<domain>` (`index.ts`) only — never deep subpaths.
 - **Inside a feature: relative imports only** (`./` / `../`). Never `@/features/<self>/…`.
+
+## Hub cards are feature-owned
+
+Each hub surface exports its own home card/preview from its `index.ts` (`WhisperHubCard`, `RoomsHubCard`, `MemesHubCard`, `MemesHubPreview`); `features/hub` only composes them. A card renders nothing when its flag is off and shows live counts only at 3+ people (`publicHeadcount`). Cards use the hub home's `hw-*` classes, which load wherever `HubHome` renders. Games is skipped — no card, no nav item.
 
 ## Thin pages
 
@@ -79,3 +83,4 @@ All backend calls go through `api` from `@/shared/lib/api/client` (fetch, cookie
 
 - **New feature** → needed folders + `types` + `hooks/queryKeys.ts` + `index.ts`; register route in `app/router.tsx` (lazy-load if heavy). New socket names → `shared/constants/socket.ts`.
 - **New shared component** → `shared/components/<category>/`; local `Props`; never imports a feature.
+- **Dialogs** → always the shared `shared/components/ui/modal/Dialog` (portal, focus trap + restore, scroll lock, Escape, aria-modal/labelledby). Feature dialogs wrap it; never hand-roll a `role="dialog"`.

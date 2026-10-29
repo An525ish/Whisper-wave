@@ -1,6 +1,10 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useReducer, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import type { ContextMenuOption, ContextMenuState } from '@/shared/types';
+import type {
+  ContextMenuOption,
+  ContextMenuPosition,
+  ContextMenuState,
+} from '@/shared/types';
 
 type ContextMenuProps = {
   menuState: ContextMenuState;
@@ -12,16 +16,25 @@ const VIEWPORT_PADDING = 8;
 const optionsShellClass =
   'w-fit min-w-44 overflow-hidden rounded-xl border border-border bg-primary py-0.5 shadow-lg';
 
+/**
+ * The measured position is the next one, computed by the layout effect below.
+ * A reducer (not `useState`) is what lets that effect depend on the whole
+ * `menuState` object: it only ever *replaces* the coords with a freshly
+ * computed value, it never merges against the previous one, so no dep on
+ * `menuState.position` is needed inside the effect body.
+ */
+const replaceCoords = (_prev: ContextMenuPosition, next: ContextMenuPosition) => next;
+
 const ContextMenu = ({ menuState, hideContextMenu }: ContextMenuProps) => {
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const [coords, setCoords] = useState(menuState.position);
+  const [coords, dispatch] = useReducer(replaceCoords, menuState.position);
 
   useLayoutEffect(() => {
     if (!menuState.visible) return;
 
     const menu = menuRef.current;
     if (!menu) {
-      setCoords(menuState.position);
+      dispatch(menuState.position);
       return;
     }
 
@@ -29,11 +42,15 @@ const ContextMenu = ({ menuState, hideContextMenu }: ContextMenuProps) => {
     const maxX = window.innerWidth - width - VIEWPORT_PADDING;
     const maxY = window.innerHeight - height - VIEWPORT_PADDING;
 
-    setCoords({
+    dispatch({
       x: Math.min(Math.max(VIEWPORT_PADDING, menuState.position.x), Math.max(VIEWPORT_PADDING, maxX)),
       y: Math.min(Math.max(VIEWPORT_PADDING, menuState.position.y), Math.max(VIEWPORT_PADDING, maxY)),
     });
-  }, [menuState.visible, menuState.position.x, menuState.position.y, menuState.options, menuState.header, menuState.hideOptions]);
+    // `menuState` identity changes on every open/close and on any header,
+    // options or hideOptions change — exactly the set of cases the previous
+    // field-by-field dep list covered, since useContextMenu always replaces
+    // the whole state object.
+  }, [menuState]);
 
   if (!menuState.visible) return null;
 

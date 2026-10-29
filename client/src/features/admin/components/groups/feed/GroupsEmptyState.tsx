@@ -1,10 +1,10 @@
-import { GROUPS_EMPTY_IMAGE } from '@/features/admin/constants/groups';
+import { GROUPS_EMPTY_IMAGE } from '../../../constants/groups';
 
-type GroupsEmptyStateProps = {
+type Props = {
   description: string;
 };
 
-const GroupsEmptyState = ({ description }: GroupsEmptyStateProps) => (
+const GroupsEmptyState = ({ description }: Props) => (
   <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
     <img src={GROUPS_EMPTY_IMAGE} alt="" className="h-24 w-24 opacity-40" aria-hidden />
     <div>

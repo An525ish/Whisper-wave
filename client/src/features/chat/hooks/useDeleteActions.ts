@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { isValidMessageId } from '@/shared/utils/helpers';
-import type { ChatMessage, ConfirmDeleteState } from '@/features/chat/types/chat';
+import type { ChatMessage, ConfirmDeleteState } from '../types/chat';
 import {
   useClearChatForMeMutation,
   useDeleteManyMessagesMutation,
   useDeleteMessageMutation,
-} from '@/features/chat/hooks/useMessageMutations';
+} from './useMessageMutations';
 
 interface Params {
   chatId: string | undefined;

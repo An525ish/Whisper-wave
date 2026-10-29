@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { useGifSearch } from '@/features/chat/hooks/useGifHooks';
-import type { GifItem, KlipyKind } from '@/features/chat/api/gif';
+import { useGifSearch } from '../../../../hooks/useGifHooks';
+import type { GifItem, KlipyKind } from '../../../../api/gif';
 import SearchIcon from '@/shared/components/ui/icons/Search';
 import EmptyState from '@/shared/components/ui/EmptyState';
 
-type GifPickerProps = {
+type Props = {
   kind: KlipyKind;
   onSelect: (gif: GifItem) => void;
 };
@@ -103,7 +103,7 @@ const RetryButton = ({ onClick }: { onClick: () => void }) => (
   </button>
 );
 
-const GifPicker = ({ kind, onSelect }: GifPickerProps) => {
+const GifPicker = ({ kind, onSelect }: Props) => {
   const [inputValue, setInputValue] = useState('');
   const query = useDebounce(inputValue, 400);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -122,10 +122,6 @@ const GifPicker = ({ kind, onSelect }: GifPickerProps) => {
   } = useGifSearch(query, kind);
 
   const items = data?.pages.flatMap((page) => page.data) ?? [];
-
-  useEffect(() => {
-    setInputValue('');
-  }, [kind]);
 
   useEffect(() => {
     inputRef.current?.focus();

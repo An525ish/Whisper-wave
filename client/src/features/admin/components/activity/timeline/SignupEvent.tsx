@@ -1,6 +1,6 @@
 import Image from '@/shared/components/ui/Image';
-import type { AdminActivitySignup } from '@/features/admin/types';
-import { activityRelativeTime } from '@/features/admin/utils/activity';
+import type { AdminActivitySignup } from '../../../types';
+import { activityRelativeTime } from '../../../utils/activity';
 
 const SignupEvent = ({ user }: { user: AdminActivitySignup }) => (
   <article className="group min-w-0 rounded-xl px-3 py-3 transition-colors hover:bg-primary/25 sm:px-4">

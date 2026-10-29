@@ -115,22 +115,28 @@ export function useRetryableMediaSrc({
     stopRetry,
   ]);
 
-  const reset = useCallback(() => {
-    stopRetry();
-    triedOriginalRef.current = false;
+  // Adopt a new source during render (React's documented "adjust state when a
+  // prop changes" pattern) so no effect has to setState synchronously.
+  const [trackedSource, setTrackedSource] = useState({ url, primarySrc });
+  if (trackedSource.url !== url || trackedSource.primarySrc !== primarySrc) {
+    setTrackedSource({ url, primarySrc });
     setSrc(primarySrc);
     setShowFallback(false);
     setIsLoading(true);
-  }, [primarySrc, stopRetry]);
+  }
 
+  // `trackedSource` is a new object exactly when `url`/`primarySrc` change, so
+  // this re-arms the probe guards for the new source. The pending retry timer is
+  // cleared by the cleanup, which React runs before this body — the same
+  // ordering the previous single effect had.
   useEffect(() => {
     mountedRef.current = true;
-    reset();
+    triedOriginalRef.current = false;
     return () => {
       mountedRef.current = false;
       stopRetry();
     };
-  }, [url, primarySrc, reset, stopRetry]);
+  }, [trackedSource, stopRetry]);
 
   const handleLoad = useCallback(() => {
     setIsLoading(false);

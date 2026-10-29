@@ -1,0 +1,101 @@
+/* ============================================================
+   COMPOSITE UTILITIES
+   Single-purpose treatments that would be unreadable inline.
+   ============================================================ */
+
+/* Iridescent violet→teal gradient text (brand accents). */
+@utility lw-iri {
+  background: linear-gradient(100deg, var(--color-lw-violet-2), var(--color-lw-teal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* NOTE: `lw-glass` moved out of `@utility` into `@layer components` below.
+   A content-detected `@utility` was getting tree-shaken from the production
+   build (the cards rendered with no fill), whereas a `@layer components` class
+   is always emitted — same as `.lw-rim`/`.lw-sheen`. It also now carries a
+   semi-opaque plum base so the panel reads as filled even if `backdrop-filter`
+   is inactive. */
+
+/* Fine-grain film to break up the gradients. */
+@utility lw-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   COMPOSITE COMPONENTS
+   Need a pseudo-element, so they can't be a flat utility.
+   ============================================================ */
+@layer components {
+  /* Frosted glass — violet liquid-glass chrome. A semi-opaque plum base sits
+     UNDER the white sheen so the panel is visibly filled even where
+     backdrop-filter can't run; the blur enriches it where supported. */
+  .lw-glass {
+    background:
+      linear-gradient(
+        158deg,
+        rgba(255, 255, 255, 0.12),
+        rgba(255, 255, 255, 0.03) 42%,
+        rgba(139, 107, 255, 0.06)
+      ),
+      linear-gradient(158deg, rgba(42, 33, 56, 0.9), rgba(26, 20, 36, 0.94));
+    backdrop-filter: blur(26px) saturate(155%);
+    -webkit-backdrop-filter: blur(26px) saturate(155%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+      0 40px 90px -30px rgba(6, 3, 16, 0.9),
+      0 12px 40px -14px rgba(90, 63, 214, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  /* Iridescent 1px rim drawn with the mask-composite border trick.
+     Host element must be `relative` and set its own border-radius. */
+  .lw-rim::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      150deg,
+      var(--color-lw-violet) 0%,
+      transparent 38%,
+      transparent 60%,
+      var(--color-lw-teal) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.75;
+    pointer-events: none;
+  }
+
+  /* Light "sheen" that sweeps across on hover — shared by the CTAs.
+     Host supplies its own radius; this manages clip + sweep. */
+  .lw-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+  .lw-sheen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      120deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.24) 50%,
+      transparent 70%
+    );
+    transform: translateX(-120%);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+  .lw-sheen:hover::after {
+    transform: translateX(120%);
+  }
+}

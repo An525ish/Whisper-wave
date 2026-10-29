@@ -1,16 +1,17 @@
-import { LegalPage } from '@/features/landing';
+import { Link } from 'react-router-dom';
+import { LegalPage, LEGAL_CONTACT, LEGAL_UPDATED } from '@/features/landing';
 
 const Terms = () => (
   <LegalPage
     title="Terms of Service"
-    updated="September 2026"
+    updated={LEGAL_UPDATED}
     intro="These terms cover how you use Whisper Wave. By creating a session or an account, you agree to them. We've kept the language plain — the goal is a safe, respectful place to talk to strangers."
   >
     <section>
       <h2>Who can use Whisper Wave</h2>
       <p>
-        You must be 18 or older to use Whisper Wave. By entering the queue you confirm that you meet this age
-        requirement. We may end access for anyone we believe is under 18 or is misusing the service.
+        You must be 18 or older to use Whisper Wave. By entering the queue or using rooms you confirm that you meet
+        this age requirement. We may end access for anyone we believe is under 18 or is misusing the service.
       </p>
     </section>
 
@@ -46,10 +47,27 @@ const Terms = () => (
     </section>
 
     <section>
+      <h2>Rooms</h2>
+      <p>
+        Live rooms are public, ephemeral group conversations. Messages vanish when the room empties or restarts. In
+        rooms you agree to follow the{' '}
+        <Link to="/guidelines">Community Guidelines</Link> and any rules the room sets. Room moderators and Whisper
+        Wave may mute, kick, or ban you. Creating a room makes you its host: you agree to enforce its rules, and
+        abusive rooms may be closed without warning. When someone reports a message, we keep a small snapshot around it
+        (alias, text, and time) so a human can review it.
+      </p>
+      <p>
+        Rooms created by new accounts stay unlisted until an admin approves them. Established accounts may list a
+        room instantly. We can unlist or remove any room at any time.
+      </p>
+    </section>
+
+    <section>
       <h2>Ending access</h2>
       <p>
-        You can stop using Whisper Wave at any time. We may suspend or remove access if these terms are broken, if
-        we&apos;re required to by law, or to protect people using the service.
+        You can stop using Whisper Wave at any time. We may suspend, ban, or remove access, by account and/or guest
+        id, if these terms are broken, if we&apos;re required to by law, or to protect people using the service.
+        Ban records expire.
       </p>
     </section>
 
@@ -57,7 +75,7 @@ const Terms = () => (
       <h2>Changes and contact</h2>
       <p>
         We may update these terms as the product evolves; we&apos;ll revise the date above when we do. Questions? Reach us
-        at <a href="mailto:hello@whisperwave.app">hello@whisperwave.app</a>.
+        at <a href={`mailto:${LEGAL_CONTACT.helloEmail}`}>{LEGAL_CONTACT.helloEmail}</a>.
       </p>
     </section>
   </LegalPage>

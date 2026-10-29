@@ -1,23 +1,23 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
-import { useLeaveGroupMutation } from '@/features/chat/hooks/useGroupMutations';
+import { useLeaveGroupMutation } from './useGroupMutations';
 import {
   useDeleteChatForMeMutation,
   useUnfriendMutation,
   useDeleteGroupMutation,
-} from '@/features/chat/hooks/useMessageMutations';
+} from './useMessageMutations';
+import { ROUTES } from '@/shared/constants/routes';
+import type { OtherMember } from '../types/local';
 
-type OtherMember = { _id: string; name: string; avatar?: string; isAdmin?: boolean };
-
-type Params = {
+interface Params {
   chatId?: string;
   groupChat?: boolean;
   myRole?: string | null;
   otherMembers: OtherMember[];
   /** Closes the header's dots menu when an action is triggered from it. */
   closeMenu: () => void;
-};
+}
 
 /**
  * Owns the conversation header's destructive account/group flows: leave group,
@@ -48,7 +48,7 @@ export function useConversationHeaderActions({
   const handleConfirmationModal = useCallback(async ({ accept }: { accept: boolean }) => {
     if (accept) {
       await leaveGroup(null, { chatId: chatId ?? '' });
-      navigate('/');
+      navigate(ROUTES.chats);
     }
     setIsConfirmLeave(false);
   }, [chatId, leaveGroup, navigate]);
@@ -65,13 +65,13 @@ export function useConversationHeaderActions({
   const handleCreatorLeaveConfirm = useCallback(async (newCreatorId?: string) => {
     await leaveGroup(null, { chatId: chatId ?? '', newCreatorId });
     setIsCreatorLeaveDialog(false);
-    navigate('/');
+    navigate(ROUTES.chats);
   }, [chatId, leaveGroup, navigate]);
 
   const handleDeleteChatConfirm = useCallback(async ({ accept }: { accept: boolean }) => {
     if (accept) {
       await deleteChatForMe(null, chatId ?? '');
-      navigate('/');
+      navigate(ROUTES.chats);
     }
     setIsConfirmDeleteChat(false);
   }, [chatId, deleteChatForMe, navigate]);
@@ -79,7 +79,7 @@ export function useConversationHeaderActions({
   const handleUnfriendConfirm = useCallback(async ({ accept }: { accept: boolean }) => {
     if (accept) {
       await unfriend(null, chatId ?? '');
-      navigate('/');
+      navigate(ROUTES.chats);
     }
     setIsConfirmUnfriend(false);
   }, [chatId, navigate, unfriend]);
@@ -87,7 +87,7 @@ export function useConversationHeaderActions({
   const handleDeleteGroupConfirm = useCallback(async ({ accept }: { accept: boolean }) => {
     if (accept) {
       await deleteGroup(null, chatId ?? '');
-      navigate('/');
+      navigate(ROUTES.chats);
     }
     setIsConfirmDeleteGroup(false);
   }, [chatId, deleteGroup, navigate]);

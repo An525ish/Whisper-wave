@@ -37,13 +37,25 @@ export type {
   IChatReadFields,
   ChatReadRecord,
   UpsertChatReadInput,
-  MarkChatReadResult,
-  MarkAllChatsReadResult,
   ChatUnreadCount,
   FindChatItem,
   ChatNotificationInput,
   RealtimeNotify,
   RealtimeNotificationsResult,
+  CreateChatInput,
+  ChatLean,
+  ChatMembersOnly,
+  DirectChatMembers,
+  FriendChatPopulated,
+  ChatWithMembersPopulated,
+  UpdateChatPatch,
+  UpdateGroupDetailsInput,
+  ChatSharedLink,
+  ChatSharedContent,
+} from './chat.js';
+export type {
+  MarkChatReadResult,
+  MarkAllChatsReadResult,
   ChatMutationMessageResult,
   CreateGroupChatInput,
   ChatMutationResult,
@@ -61,17 +73,7 @@ export type {
   MarkChatReadInput,
   MarkAllChatsReadInput,
   GetChatMediaInput,
-  CreateChatInput,
-  ChatLean,
-  ChatMembersOnly,
-  DirectChatMembers,
-  FriendChatPopulated,
-  ChatWithMembersPopulated,
-  UpdateChatPatch,
-  UpdateGroupDetailsInput,
-  ChatSharedLink,
-  ChatSharedContent,
-} from './chat.js';
+} from './chatService.js';
 export type {
   MessageAttachment,
   MessageReplyTo,
@@ -112,6 +114,7 @@ export type {
   CreateMessageInput,
   MessageRecord,
   UpdateMessagePatch,
+  ToggleMessageReactionInput,
 } from './message.js';
 export type {
   IRequestFields,
@@ -126,3 +129,197 @@ export type {
   GetMyFriendsInput,
 } from './friend-request.js';
 export type { LinkPreviewData } from './linkPreview.js';
+// `normalizeVibeTag` is a runtime value, so it needs a value re-export — the
+// `types/` barrel is the one place shared domain exports live.
+export { normalizeVibeTag } from './match.js';
+export type { AnonSocket, SocketRateLimiter } from './anonSocket.js';
+export type {
+  // Vibe
+  Gender,
+  VibeTag,
+  // Redis session state
+  SessionStatus,
+  AnonSession,
+  CreateSessionInput,
+  MatchIdentity,
+  // Reveal flow
+  ConnectTokenPayload,
+  VerifiedConnectToken,
+  // Mongo document shapes
+  IConnectionFields,
+  // Queue / pairing
+  WaitingCard,
+  MatchCandidate,
+  MatchAttempt,
+  PairResult,
+  IdentityCardInput,
+  IdentityCardResult,
+  WhisperQuota,
+  // Likes
+  LikeResult,
+  SessionMessageCounts,
+  // Vibe eligibility
+  VibeGateInput,
+  // Moderation
+  ModerationReason,
+  MessageVerdict,
+  // Connection origin story
+  ConnectionOrigin,
+} from './match.js';
+export type {
+  BufferedAnonMessage,
+  AnonMessageSide,
+  AcceptMessageResult,
+  AnonFailureCode,
+  AnonMessageAck,
+  SocketAck,
+  AnonLikeAck,
+  AnonLikeFailureCode,
+  LikeSocketAck,
+  AnonReactionAction,
+  AnonReactionAck,
+  AnonReactionEvent,
+  AnonMessageReactions,
+  AnonMessageReactionsBySide,
+  AnonSessionReactions,
+  ReactionSocketAck,
+} from './matchMessage.js';
+export type {
+  PendingConnectionSideDoc,
+  PendingConnectionStatusDoc,
+  IPendingConnectionDocFields,
+  IPendingConnection,
+  ConnectionLean,
+  CreateConnectionInput,
+  CompleteConnectionResult,
+  ConnectionAnnouncement,
+  CompleteConnectionOutcome,
+  PendingConnectionItem,
+  ConnectionClaim,
+} from './connection.js';
+export type {
+  SubmitReportInput,
+  CreateReportInput,
+  ReportQueuePage,
+  ReportLean,
+  IReportFields,
+  ReportReason,
+  RoomEvidenceItem,
+  RoomReportInput,
+  AutoRoomReportInput,
+} from './report.js';
+export type {
+  LobbyRoom,
+  CreateUserRoomInput,
+  RoomAcceptanceFields,
+  IRoomInviteFields,
+  ModAuditFields,
+  EvidenceTarget,
+  ReportActionResult,
+} from './roomAdmin.js';
+export type {
+  AdminLoginInput,
+  AdminIdParam,
+  AdminRemoveMemberParam,
+  AdminActivityEventsQuery,
+  AdminUsersQuery,
+  AdminGroupsQuery,
+  AdminMessagesQuery,
+  AdminAttachmentsQuery,
+  AdminImpersonationLogsQuery,
+  AdminDeleteAttachmentsBody,
+  AdminReportsQuery,
+  AdminReportReviewBody,
+} from './adminInput.js';
+export type {
+  GoogleSignInInput,
+  SignUpStartInput,
+  SignUpVerifyInput,
+  SignUpResendInput,
+  SignUpUpdateUsernameInput,
+  SignUpCompleteInput,
+  SignInInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+  UsernameCheckQuery,
+  GetChatDetailsQuery,
+  PageQuery,
+  LinkPreviewQuery,
+  JoinQueueBody,
+  SubmitReportBody,
+  CompleteConnectionBody,
+  GetMessagesQuery,
+  SearchMessagesQuery,
+  JumpToDateQuery,
+  ListActiveDatesQuery,
+  SearchUserQuery,
+  GetMyFriendsQuery,
+  UpdateProfileInput,
+  SocketNewMessagePayload,
+  SocketTypingPayload,
+  SocketReactionPayload,
+  SignUploadBody,
+  CommitAttachmentsBody,
+} from './input.js';
+export type { HubFeatures, HubSummary, FeatureOverrideFields, FeatureChangeListener } from './hub.js';
+export type { GuestIdentity, MemberIdentity, Identity } from './identity.js';
+export type { MemeCategory, MemeFeedSelector, JokeItem, MemeFeedPage } from './meme.js';
+export type {
+  MemeBlockSource,
+  MemeReportReason,
+  MemeBlockFields,
+  IMemeBlock,
+  MemeBlockItem,
+  MemeReportBody,
+  MemeReportResult,
+} from './memeBlock.js';
+export type {
+  RoomVisibility,
+  RoomRole,
+  RoomHours,
+  IRoomFields,
+  IRoomBanFields,
+  RoomMemberIdentity,
+  RoomMessageCheck,
+  RoomErrorCode,
+  RoomModVerdict,
+  RoomAckCode,
+  TrustLevel,
+  RoomChallenge,
+  RoomChallengeAnswer,
+  RoomChallengeVerdict,
+  LiveRoomMember,
+  LiveRoomMessage,
+  RoomEvidenceLine,
+  RoomEvidenceWindow,
+  WireRoomMessage,
+  RoomJoinInput,
+  RoomMessageInput,
+  RoomReactInput,
+  RoomModAction,
+  RoomModInput,
+  RoomModActor,
+  PostRoomMessageInput,
+  PostRoomMessageResult,
+  RoomSocket,
+} from './room.js';
+export type { StoredAnonMessage, AnonReaction } from './matchMessage.js';
+export type {
+  PushPlatform,
+  FcmServiceAccount,
+  PushEnvInput,
+  PushSettings,
+  PublicPushConfig,
+  PushPayload,
+  PushIntent,
+  FcmSendResult,
+  FcmSendDeps,
+  FcmSender,
+  PushThrottle,
+  PushChatInfo,
+  PushDispatchDeps,
+  RegisterPushDeviceInput,
+  IPushDeviceFields,
+  PushDeviceRecord,
+} from './push.js';
+export type { IRoomReminderFields, ReminderDispatchDeps } from './roomReminder.js';

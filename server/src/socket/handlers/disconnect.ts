@@ -6,7 +6,7 @@ import {
   removeUserSocket,
 } from '../../services/index.js';
 import { logger } from '../../utils/logger.js';
-import type { SocketRateLimiter } from '../rateLimiter.js';
+import type { SocketRateLimiter } from '../../types/anonSocket.js';
 import type { SocketSession } from '../types.js';
 
 export const registerDisconnectHandler = (

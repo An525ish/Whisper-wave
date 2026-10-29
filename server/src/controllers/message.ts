@@ -10,7 +10,7 @@ import type {
   JumpToDateQuery,
   ListActiveDatesQuery,
   SearchMessagesQuery,
-} from '../validators/message.js';
+} from '../types/input.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { param } from '../utils/http.js';
 

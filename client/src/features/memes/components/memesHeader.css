@@ -1,0 +1,259 @@
+/**
+ * Joke tap (`mm-*`) — viewport, header, mode switch, scroll panel.
+ * Motion contract: everything decorative freezes under `prefers-reduced-motion`,
+ * and entrance states end visible.
+ */
+
+/* ── Viewport: fixed glass header + inner scroll panel ─────────────── */
+
+.mm-viewport {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 44rem;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (min-width: 768px) {
+  .mm-viewport {
+    overflow: hidden;
+    border-radius: 1.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(20, 14, 32, 0.55);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow:
+      0 40px 90px -30px rgba(6, 3, 16, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Sticky top: title + mode switch, always in reach. */
+.mm-top {
+  position: relative;
+  z-index: 2;
+  padding: 1rem 1rem 0.8rem;
+  background: rgba(26, 20, 36, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid transparent;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mm-top__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.mm-top--scrolled {
+  background: rgba(26, 20, 36, 0.92);
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 32px -16px rgba(0, 0, 0, 0.8);
+}
+
+/* Safe / Unfiltered segmented switch: one button, a thumb slides under the active label. */
+.mm-seg {
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.18rem;
+  font-size: 0.74rem;
+  font-weight: 650;
+  isolation: isolate;
+}
+.mm-seg:disabled { cursor: wait; opacity: 0.6; }
+.mm-seg:focus-visible { outline: 2px solid var(--color-green); outline-offset: 2px; }
+
+.mm-seg__opt {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; padding: 0.38rem 0.85rem;
+  color: var(--color-body-300); transition: color 0.2s ease;
+}
+.mm-seg__thumb {
+  position: absolute; z-index: -1; top: 0.18rem; bottom: 0.18rem; left: 0.18rem; width: calc(50% - 0.18rem);
+  border-radius: 999px; background: rgba(1, 195, 109, 0.22); box-shadow: inset 0 0 0 1px rgba(1, 195, 109, 0.5);
+  transition: translate 0.25s cubic-bezier(0.22, 1, 0.36, 1), width 0.25s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s, box-shadow 0.2s;
+}
+.mm-seg:not(.mm-seg--on) .mm-seg__opt:first-of-type { color: var(--color-green); }
+.mm-seg--on .mm-seg__thumb { translate: 100% 0; background: rgba(255, 88, 99, 0.2); box-shadow: inset 0 0 0 1px rgba(255, 88, 99, 0.5); }
+.mm-seg--on .mm-seg__opt:last-of-type { color: #fff; }
+.mm-seg__badge {
+  border-radius: 999px; border: 1px solid rgba(255, 88, 99, 0.45); background: rgba(255, 88, 99, 0.12);
+  padding: 0.04rem 0.38rem; font-family: var(--font-hw-mono, ui-monospace, monospace); font-size: 0.58rem; letter-spacing: 0.06em; color: var(--color-red);
+}
+
+.mm-toptitle {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.mm-iri {
+  background: linear-gradient(100deg, #b6a4ff, #35e0c8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-style: italic;
+}
+
+/* Scroll progress hairline pinned to the header's bottom edge. */
+.mm-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: transparent;
+  pointer-events: none;
+}
+
+.mm-progress > span {
+  display: block;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: linear-gradient(90deg, #8b6bff, #01c36d);
+}
+
+/* The scrollable container: jokes live in here, header stays put. */
+.mm-feedscroll {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem 1rem 2rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(1, 195, 109, 0.35) transparent;
+}
+
+@media (min-width: 768px) {
+  .mm-feedscroll {
+    padding: 1.25rem 1.25rem 2.5rem;
+  }
+}
+
+.mm-feedscroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.mm-feedscroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mm-feedscroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background: rgba(1, 195, 109, 0.25);
+  background-clip: content-box;
+}
+
+.mm-feedscroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(1, 195, 109, 0.45);
+  background-clip: content-box;
+}
+
+.mm-list {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.mm-eyebrow {
+  margin-top: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 650;
+  color: var(--color-green);
+}
+
+.mm-eyebrow--raw { color: var(--color-red); }
+
+.mm-eyebrow__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+  animation: mm-blink 2.4s ease-in-out infinite;
+}
+
+@keyframes mm-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* Header wash + laugh-mark. */
+.mm-top__wash {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 120% at 8% 0%, rgba(139, 107, 255, 0.22), transparent 65%),
+    radial-gradient(40% 100% at 95% 100%, rgba(1, 195, 109, 0.08), transparent 60%);
+}
+
+.mm-top__title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+/* Laughing face in a glass disc: the memes mark. */
+.mm-badge {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background:
+    radial-gradient(80% 80% at 30% 15%, rgba(139, 107, 255, 0.4), transparent 70%),
+    rgba(26, 20, 36, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 8px 22px -10px rgba(139, 107, 255, 0.7);
+  color: #d9d0ff;
+}
+.mm-badge svg { width: 1.5rem; height: 1.5rem; }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-eyebrow__dot {
+    animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-seg__thumb { transition: none; }
+}
+
+/* Phones: one row. Title left, a compact Safe | 18+ switch right. */
+@media (max-width: 479px) {
+  .mm-top__head { flex-wrap: nowrap; gap: 0.6rem; }
+  .mm-top__title { min-width: 0; gap: 0.55rem; }
+  .mm-badge { width: 2.2rem; height: 2.2rem; border-radius: 0.8rem; }
+  .mm-badge svg { width: 1.25rem; height: 1.25rem; }
+  .mm-toptitle { font-size: 1.3rem; white-space: nowrap; }
+  .mm-seg { font-size: 0.7rem; }
+  .mm-seg__opt { padding: 0.32rem 0.65rem; }
+  .mm-seg__long {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+}

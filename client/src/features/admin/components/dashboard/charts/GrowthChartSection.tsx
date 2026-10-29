@@ -4,7 +4,7 @@ import type { AreaChartSeries } from '@/shared/components/ui/charts/AreaChart';
 import SectionHead from '../shared/SectionHead';
 import GrowthBadge from '../shared/GrowthBadge';
 
-type GrowthChartSectionProps = {
+type Props = {
   seriesLabels: string[];
   newUsersSeries: number[];
   googleUsersSeries: number[];
@@ -24,7 +24,7 @@ const GrowthChartSection = ({
   googleUsersSeries,
   emailUsersSeries,
   weekUsers,
-}: GrowthChartSectionProps) => {
+}: Props) => {
   const [hidden, setHidden] = useState<Set<string>>(() => new Set());
 
   const toggle = (label: string) => {

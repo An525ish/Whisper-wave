@@ -1,4 +1,4 @@
-import type { AdminActivityFilter } from '@/features/admin/types';
+import type { AdminActivityFilter } from '../types';
 
 export const ACTIVITY_FILTER_TABS: { id: AdminActivityFilter; label: string }[] = [
   { id: 'all', label: 'All' },

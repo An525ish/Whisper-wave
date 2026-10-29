@@ -1,0 +1,312 @@
+/**
+ * Hub home (`hw-*`) — status pill, sheen, signal stage.
+ * Motion contract: everything decorative freezes under `prefers-reduced-motion`,
+ * and entrance states end visible.
+ */
+
+/* ── Hero status pill ─────────────────────────────────────────────── */
+
+.hw-statuspill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(235, 236, 236, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  color: var(--color-body-300);
+}
+
+.hw-statuspill__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--color-green);
+  box-shadow: 0 0 0 0 rgba(1, 195, 109, 0.45);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+/* ── Sheen sweep for primary CTAs + door cards ────────────────────── */
+
+.hw-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.hw-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.18) 48%, transparent 62%);
+  transform: translateX(-120%);
+  transition: transform 0.55s ease;
+  pointer-events: none;
+}
+
+.hw-sheen:hover::after {
+  transform: translateX(120%);
+}
+
+/* ── Signal stage: two signals meet at a spark ───────────────────── */
+
+.hw-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+  isolation: isolate;
+}
+
+.hw-stage__glow {
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 107, 255, 0.24) 0%, rgba(1, 195, 109, 0.08) 45%, transparent 70%);
+  filter: blur(8px);
+  z-index: 0;
+}
+
+.hw-stage__rings,
+.hw-stage__signal {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hw-stage__rings { z-index: 1; }
+.hw-stage__signal { z-index: 2; overflow: visible; }
+
+.hw-stage__ring {
+  fill: none;
+  stroke: rgba(235, 236, 236, 0.08);
+  stroke-width: 1;
+}
+
+.hw-stage__ring--b {
+  stroke: rgba(139, 107, 255, 0.22);
+  stroke-dasharray: 4 10;
+  animation: hw-spin 28s linear infinite;
+  transform-origin: 180px 180px;
+}
+
+.hw-stage__ring--c {
+  stroke: rgba(53, 224, 200, 0.16);
+  stroke-dasharray: 2 14;
+  animation: hw-spin-rev 40s linear infinite;
+  transform-origin: 180px 180px;
+}
+
+/* Waves: one period is 120 units, so shifting by 120 loops without a seam. */
+.hw-sig-wave {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.hw-sig-wave--v {
+  stroke: #8b6bff;
+  filter: drop-shadow(0 0 6px rgba(139, 107, 255, 0.7));
+  animation: hw-sig-run 5s linear infinite;
+}
+
+.hw-sig-wave--t {
+  stroke: #35e0c8;
+  filter: drop-shadow(0 0 6px rgba(53, 224, 200, 0.6));
+  transform: translateX(-60px);
+  animation: hw-sig-run-rev 6.5s linear infinite;
+}
+
+.hw-sig-wave--g {
+  stroke: rgba(125, 255, 184, 0.55);
+  stroke-width: 1.2;
+  transform: scaleY(0.45);
+  transform-origin: 0 180px;
+  animation: hw-sig-run 9s linear infinite;
+}
+
+@keyframes hw-sig-run {
+  from { transform: translateX(0); }
+  to { transform: translateX(120px); }
+}
+
+@keyframes hw-sig-run-rev {
+  from { transform: translateX(-60px); }
+  to { transform: translateX(-180px); }
+}
+
+.hw-sig-halo { animation: hw-sig-breathe 3s ease-in-out infinite; transform-origin: 180px 180px; }
+
+.hw-sig-ping {
+  transform-origin: 180px 180px;
+  animation: hw-sig-ping 2.6s ease-out infinite;
+}
+
+@keyframes hw-sig-breathe {
+  0%, 100% { opacity: 0.55; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@keyframes hw-sig-ping {
+  0% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(5); }
+}
+
+.hw-sig-orb--l { animation: hw-sig-bob 6s ease-in-out infinite; }
+.hw-sig-orb--r { animation: hw-sig-bob 6s ease-in-out infinite reverse; }
+
+@keyframes hw-sig-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.hw-sig-glyph {
+  fill: #fff;
+  font-family: var(--font-hw-mono);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.hw-sig-glyph--sm { font-size: 13px; letter-spacing: 0.04em; }
+
+/* Chat bubbles floating over the signals */
+.hw-bubble {
+  position: absolute;
+  z-index: 4;
+  max-width: 62%;
+  padding: 0.5rem 0.85rem;
+  border-radius: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  color: #fff;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  animation: hw-bubble-in 9s ease-in-out infinite both;
+}
+
+.hw-bubble__who {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-family: var(--font-hw-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  color: #c9bcff;
+}
+
+.hw-bubble--them {
+  top: 15%;
+  left: 3%;
+  border-bottom-left-radius: 0.3rem;
+  border: 1px solid rgba(139, 107, 255, 0.4);
+  background: rgba(61, 43, 110, 0.62);
+}
+
+.hw-bubble--you {
+  bottom: 19%;
+  right: 3%;
+  border-bottom-right-radius: 0.3rem;
+  border: 1px solid rgba(53, 224, 200, 0.4);
+  background: rgba(15, 111, 99, 0.55);
+  animation-delay: 1.2s;
+}
+
+.hw-bubble--typing {
+  bottom: 31%;
+  left: 8%;
+  display: flex;
+  gap: 4px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(139, 107, 255, 0.3);
+  background: rgba(61, 43, 110, 0.5);
+  border-bottom-left-radius: 0.3rem;
+  animation-delay: 2.4s;
+}
+
+.hw-bubble--typing span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c9bcff;
+  animation: hw-typing 1.1s ease-in-out infinite;
+}
+
+.hw-bubble--typing span:nth-child(2) { animation-delay: 0.15s; }
+.hw-bubble--typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes hw-bubble-in {
+  0%, 4% { opacity: 0; transform: translateY(10px) scale(0.96); }
+  12%, 82% { opacity: 1; transform: translateY(0) scale(1); }
+  92%, 100% { opacity: 0; transform: translateY(-6px) scale(0.98); }
+}
+
+@keyframes hw-typing {
+  0%, 100% { opacity: 0.35; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+
+.hw-stage__chip {
+  position: absolute;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(235, 236, 236, 0.1);
+  background: rgba(42, 33, 54, 0.82);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-body-700);
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
+.hw-stage__chip--a { top: 4%; right: 2%; }
+
+.hw-stage__chip--b {
+  bottom: 4%;
+  left: 50%;
+  translate: -50% 0;
+  color: #7dffb8;
+  border-color: rgba(1, 195, 109, 0.35);
+}
+
+.hw-stage__chip-dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: var(--color-green);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+@media (max-width: 767px) {
+  .hw-stage { max-width: 22rem; }
+  .hw-stage__chip--a { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-stage__ring--b,
+  .hw-stage__ring--c,
+  .hw-sig-wave,
+  .hw-sig-halo,
+  .hw-sig-ping,
+  .hw-sig-orb--l,
+  .hw-sig-orb--r,
+  .hw-bubble,
+  .hw-bubble--typing span,
+  .hw-stage__chip-dot,
+  .hw-statuspill__dot {
+    animation: none !important;
+  }
+
+  .hw-bubble { opacity: 1; }
+  .hw-sig-ping { opacity: 0; }
+}

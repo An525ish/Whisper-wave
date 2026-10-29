@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { ADMIN_MIN_SEARCH_LEN } from '@/features/admin/constants/messages';
+import { ADMIN_MIN_SEARCH_LEN } from '../constants/messages';
 import { SEARCH_DEBOUNCE_MS } from '@/shared/constants/app';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import {
@@ -7,9 +7,9 @@ import {
   useAdminStatsQuery,
   useDeleteAdminMessageMutation,
   useRetryAdminMessageMutation,
-} from '@/features/admin/hooks';
-import type { AdminMessageRow, AdminMessageStatusFilter, UserFilterOption } from '@/features/admin/types';
-import { sumSeries } from '@/features/admin/utils/dashboard';
+} from '.';
+import type { AdminMessageRow, AdminMessageStatusFilter, UserFilterOption } from '../types';
+import { sumSeries } from '../utils/dashboard';
 
 export function useMessagesPage() {
   const scrollRef = useRef<HTMLDivElement>(null);

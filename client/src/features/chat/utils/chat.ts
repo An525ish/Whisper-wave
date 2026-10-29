@@ -1,7 +1,7 @@
 // ── from features/chat/utils/messageUtils.ts ──────────────────────────────
 import dayjs from 'dayjs';
-import type { ChatMessage } from '@/features/chat/types/chat';
-import type { MessageReplyTo } from '@/features/chat/types/chat';
+import type { ChatMessage } from '../types/chat';
+import type { MessageReplyTo } from '../types/chat';
 
 /** True when every member except the sender has read the message (group WhatsApp-style). */
 export const isMessageFullyRead = (
@@ -58,16 +58,10 @@ export const buildReplySnapshot = (msg: ChatMessage): MessageReplyTo => {
 export const getReplyPreviewText = (reply: MessageReplyTo): string =>
   reply.previewAttachment?.name || reply.content?.trim() || 'Message';
 
-export const isReplyImagePreview = (fileType?: string, url?: string): boolean => {
-  if (fileType?.startsWith('image/')) return true;
-  if (!url) return false;
-  return /\.(avif|gif|jpe?g|png|webp)(\?|$)/i.test(url);
-};
-
 
 // ── from features/chat/stores/chatClipboardUtils.ts ──────────────────────────────
-import type { ChatBoxData } from '@/features/chat/types/chat';
-import type { ChatCopyPayload } from '@/features/chat/types/chat';
+import type { ChatBoxData } from '../types/chat';
+import type { ChatCopyPayload } from '../types/chat';
 
 type CopyAttachment = NonNullable<ChatBoxData['attachments']>[number] & {
   fileType?: string;

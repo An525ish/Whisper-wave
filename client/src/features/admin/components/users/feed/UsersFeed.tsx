@@ -1,12 +1,12 @@
 import type { RefObject } from 'react';
-import InfiniteScrollSentinel from '@/features/admin/components/shared/InfiniteScrollSentinel';
-import type { AdminUserRow } from '@/features/admin/types';
+import InfiniteScrollSentinel from '../../shared/InfiniteScrollSentinel';
+import type { AdminUserRow } from '../../../types';
 import UserRow from './UserRow';
 import UsersEmptyState from './UsersEmptyState';
 import UsersErrorState from './UsersErrorState';
 import UsersFeedSkeleton from './UsersFeedSkeleton';
 
-type UsersFeedProps = {
+type Props = {
   scrollRef: RefObject<HTMLDivElement | null>;
   users: AdminUserRow[];
   isLoading: boolean;
@@ -34,7 +34,7 @@ const UsersFeed = ({
   onOpenUser,
   onLoadMore,
   onRetry,
-}: UsersFeedProps) => (
+}: Props) => (
   <div
     ref={scrollRef}
     className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-1 scrollbar-hide"

@@ -2,16 +2,6 @@
 /** Distance from bottom (px) below which the view is considered "near bottom". */
 export const NEAR_BOTTOM_PX = 120;
 
-// Re-exported from app.ts — single source of truth
-export { SEARCH_DEBOUNCE_MS, MAX_TEXTAREA_HEIGHT } from '@/shared/constants/app';
-
-/** Composer row + send button sizing (input pill border adds 2px to outer height). */
-export const COMPOSER_ROW_MIN_PX = 44;
-export const COMPOSER_ROW_MIN_PX_COMPACT = 36;
-export const COMPOSER_ROW_MIN_CLASS = 'min-h-11';
-export const COMPOSER_ROW_MIN_CLASS_COMPACT = 'min-h-9';
-export const COMPOSER_SEND_SIZE_CLASS = 'size-[calc(2.75rem+2px)]';
-export const COMPOSER_SEND_SIZE_CLASS_COMPACT = 'size-[calc(2.25rem+2px)]';
 
 /** Clearance for the floating conversation header (matches Chat.tsx fade). */
 export const CHAT_HEADER_OFFSET_CLASS =
@@ -28,9 +18,9 @@ export const LINK_PREVIEW_WIDTH_CLASS = 'w-[15rem] max-w-full';
 
 
 // ── from features/chat/constants/tabs.ts ──────────────────────────────
-import type { NewConnectTab } from '@/features/chat/types/chat';
+import type { NewConnectTab } from '../types/chat';
 
-export type NewConnectTabConfig = {
+type NewConnectTabConfig = {
   id: NewConnectTab;
   label: string;
   title: string;
@@ -54,7 +44,7 @@ export const NEW_CONNECT_TABS: NewConnectTabConfig[] = [
 
 
 // ── from features/chat/constants/searchConfig.ts ──────────────────────────────
-import type { SearchMode } from '@/features/chat/types/chat';
+import type { SearchMode } from '../types/chat';
 
 export type SearchModeConfig = {
   id: SearchMode;
@@ -83,3 +73,9 @@ export const DATE_PRESETS: readonly DatePreset[] = [
 ] as const;
 
 export const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as const;
+
+export const CONVERSATION_HEADER_SHELL_CLASS =
+  'absolute inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] z-30 w-auto md:left-2 md:right-2 md:top-0';
+
+export const CONVERSATION_HEADER_INNER_CLASS =
+  'rounded-xl border border-white/10 bg-[rgba(33,26,42,0.48)] px-2 py-1.5 pl-1.5 pr-3 shadow-[0_10px_28px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:pl-2.5 lg:pr-5';

@@ -1,16 +1,15 @@
 import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft'
-import { useChatSearch } from '@/features/chat/hooks/useChatSearch'
-import SearchFilters from '@/features/chat/components/conversation/search/SearchFilters'
-import SearchResultItem from '@/features/chat/components/conversation/search/SearchResultItem'
-import SearchDatePicker from '@/features/chat/components/conversation/search/SearchDatePicker'
+import { useChatSearch } from '../../../hooks/useChatSearch'
+import SearchFilters from './SearchFilters'
+import SearchResultItem from './SearchResultItem'
+import SearchDatePicker from './SearchDatePicker'
 import EmptyState from '@/shared/components/ui/EmptyState'
 import dayjs from 'dayjs'
-import type { ChatSearchHit, SearchMode } from '@/features/chat/types/chat'
-import { SEARCH_MODES as MODES, DATE_PRESETS } from '@/features/chat/constants/chat'
+import type { SearchMode } from '../../../types/chat'
+import { SEARCH_MODES as MODES, DATE_PRESETS } from '../../../constants/chat'
 
-export type { ChatSearchHit }
 
-type ChatSearchProps = {
+type Props = {
   chatId?: string
   open: boolean
   onClose: () => void
@@ -82,7 +81,7 @@ const ModeIcon = ({ mode, className = 'h-4 w-4' }: { mode: SearchMode; className
   )
 }
 
-const MessageSearch = ({ chatId, open, onClose, onJumpToMessage }: ChatSearchProps) => {
+const MessageSearch = ({ chatId, open, onClose, onJumpToMessage }: Props) => {
   const {
     inputRef,
     entered,

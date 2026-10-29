@@ -1,9 +1,9 @@
-import { useUsersPage } from '@/features/admin/hooks';
+import { useUsersPage } from '../../hooks';
 import {
   usersEmptyDescription,
   usersMatchesLabel,
   usersMatchesValue,
-} from '@/features/admin/utils/users';
+} from '../../utils/users';
 import UserDetailPanel from './detail/UserDetailPanel';
 import UsersDirectoryHeader from './feed/UsersDirectoryHeader';
 import UsersFeed from './feed/UsersFeed';

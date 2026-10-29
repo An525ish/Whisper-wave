@@ -13,3 +13,7 @@ export const ONLINE_USERS = 'ONLINE_USERS';
 export const USER_ONLINE = 'USER_ONLINE';
 export const USER_OFFLINE = 'USER_OFFLINE';
 export const MESSAGE_REACTION = 'MESSAGE_REACTION';
+// A Whisper anonymous match was upgraded to a real DM — sent to both users
+// on the authenticated namespace so a partner who already navigated away
+// (e.g. signed in from the mutual-vibe screen) still lands in the new chat.
+export const WHISPER_CONNECTION_READY = 'WHISPER_CONNECTION_READY';

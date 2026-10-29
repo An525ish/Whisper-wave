@@ -1,12 +1,13 @@
 import type { Dispatch, SetStateAction } from 'react';
+import RefreshButton from '../../shared/RefreshButton';
 import Searchbar from '@/shared/components/ui/Searchbar';
 
-type UsersHeaderProps = {
+type Props = {
   searchText: string;
   setSearchText: Dispatch<SetStateAction<string>>;
 };
 
-const UsersHeader = ({ searchText, setSearchText }: UsersHeaderProps) => (
+const UsersHeader = ({ searchText, setSearchText }: Props) => (
   <header className="flex shrink-0 flex-wrap items-end justify-between gap-4">
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue">Console</p>
@@ -15,12 +16,15 @@ const UsersHeader = ({ searchText, setSearchText }: UsersHeaderProps) => (
       </h1>
       <p className="mt-2 text-sm text-body-300">Browse accounts and open profiles for full details</p>
     </div>
-    <Searchbar
-      className="w-full sm:w-72"
-      searchText={searchText}
-      setSearchText={setSearchText}
-      expandable={false}
-    />
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+      <Searchbar
+        className="w-full sm:w-72"
+        searchText={searchText}
+        setSearchText={setSearchText}
+        expandable={false}
+      />
+      <RefreshButton />
+    </div>
   </header>
 );
 

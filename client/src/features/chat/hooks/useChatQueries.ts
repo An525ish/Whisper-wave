@@ -1,12 +1,13 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import * as chatApi from '@/features/chat/api/chat';
-import { queryKeys } from '@/features/chat/hooks';
+import * as chatApi from '../api/chat';
+import { queryKeys } from '.';
 import { isValidChatId } from '@/shared/utils/helpers';
 
-export function useMyChatsQuery() {
+export function useMyChatsQuery(options?: { skip?: boolean }) {
   return useQuery({
     queryKey: queryKeys.chats,
     queryFn: chatApi.getMyChats,
+    enabled: !options?.skip,
     // Updated via socket REFETCH_CHATS and mutation invalidations — no need to re-fetch on every focus/remount.
     staleTime: 30_000,
   });

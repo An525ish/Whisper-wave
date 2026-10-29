@@ -8,10 +8,12 @@ const r2ConnectOrigins = [
   `https://${env.R2_BUCKET}.${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
 ];
 
+const turnstileOrigin = 'https://challenges.cloudflare.com';
+
 const imageKitOrigin = new URL(env.IMAGEKIT_URL_ENDPOINT).origin;
 
 /**
- * Helmet options — CSP allows ImageKit CDN, Klipy, and Google Identity Services.
+ * Helmet options — CSP allows ImageKit CDN, Klipy, Google Identity Services and Cloudflare Turnstile.
  * COOP uses same-origin-allow-popups so the Google OAuth popup can talk to the opener.
  */
 export const helmetOptions: HelmetOptions = {
@@ -19,9 +21,10 @@ export const helmetOptions: HelmetOptions = {
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      'script-src': ["'self'", 'https://accounts.google.com'],
-      'script-src-elem': ["'self'", 'https://accounts.google.com'],
-      'frame-src': ["'self'", 'https://accounts.google.com'],
+      // challenges.cloudflare.com: Turnstile (guest first-post check in Rooms) loads its script + iframe from there.
+      'script-src': ["'self'", 'https://accounts.google.com', turnstileOrigin],
+      'script-src-elem': ["'self'", 'https://accounts.google.com', turnstileOrigin],
+      'frame-src': ["'self'", 'https://accounts.google.com', turnstileOrigin],
       'connect-src': [
         "'self'",
         ...r2ConnectOrigins,
@@ -29,6 +32,7 @@ export const helmetOptions: HelmetOptions = {
         imageKitOrigin,
         'https://ik.imagekit.io',
         'https://accounts.google.com',
+        turnstileOrigin,
         'https://oauth2.googleapis.com',
         'https://www.googleapis.com',
       ],

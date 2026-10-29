@@ -3,16 +3,16 @@ import { NavLink } from 'react-router-dom';
 import {
   ICON_SLOT,
   collapseLabelClass,
-} from '@/features/admin/components/sidebar/constants';
-import { useSidebar } from '@/features/admin/components/sidebar/context';
+} from './constants';
+import { useSidebar } from './context';
 import {
   navIconClass,
   navIconTileClass,
   navRowClass,
-} from '@/features/admin/components/sidebar/itemStyles';
+} from './itemStyles';
 import type { IconProps } from '@/shared/types';
 
-export type SidebarItemProps = {
+type Props = {
   to: string;
   label: string;
   icon: ComponentType<IconProps>;
@@ -24,7 +24,7 @@ const SidebarItem = ({
   label,
   icon: Icon,
   alert = false,
-}: SidebarItemProps) => {
+}: Props) => {
   const { expanded } = useSidebar();
 
   return (

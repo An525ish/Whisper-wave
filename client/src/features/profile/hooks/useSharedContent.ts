@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getMediaDisplayName, getMediaKindFromFile } from '@/shared/utils/fileFormat'
-import type { MediaFile, PhotoFilter, SharedLink, SharedContentTab } from '@/features/profile/components/shared-content/types'
+import type { MediaFile, PhotoFilter, SharedLink, SharedContentTab } from '../components/shared-content/types'
 
 type UseSharedContentProps = {
   mediaFiles: MediaFile[]
@@ -23,11 +23,13 @@ export const useSharedContent = ({
   const [photoFilter, setPhotoFilter] = useState<PhotoFilter>('all')
   const [entered, setEntered] = useState(false)
 
-  useEffect(() => {
+  const [syncedInitialTab, setSyncedInitialTab] = useState(initialTab)
+  if (syncedInitialTab !== initialTab) {
+    setSyncedInitialTab(initialTab)
     setActiveTab(initialTab)
     setQuery('')
     setPhotoFilter('all')
-  }, [initialTab])
+  }
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setEntered(true))

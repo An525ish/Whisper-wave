@@ -1,0 +1,177 @@
+/** Floating thread header: back, art tile + live dot, title, status, actions. */
+
+/* Header: absolute floating card over the thread, like the anon header. */
+.rm-cheadfloat {
+  position: absolute;
+  z-index: 30;
+  inset-inline: 0;
+  top: max(0.55rem, env(safe-area-inset-top));
+  padding-inline: var(--rm-gutter);
+  pointer-events: none;
+}
+
+.rm-cheadfloat > * {
+  pointer-events: auto;
+  width: 100%;
+  max-width: var(--rm-col);
+  margin-inline: auto;
+}
+
+/* Header: doorway back, art tile, title + live pill + alias, actions. */
+.rm-chead {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.15rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(33 26 42 / 0.48);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.24);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  padding: 0.4rem 0.55rem 0.4rem 0.3rem;
+}
+
+.rm-hbtn {
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  color: rgb(235 236 236 / 0.75);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.rm-hbtn:hover {
+  background: rgb(255 255 255 / 0.06);
+  color: #fff;
+}
+
+.rm-hbtn--active {
+  border-color: rgba(1, 195, 109, 0.45);
+  background: rgba(1, 195, 109, 0.12);
+  color: var(--color-green);
+}
+
+.rm-hbtn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.rm-chead__identity {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.rm-chead__art {
+  position: relative;
+  display: grid;
+  height: 2.75rem;
+  width: 2.75rem;
+  aspect-ratio: 1 / 1;
+  flex: none;
+  place-items: center;
+  overflow: visible;
+  border-radius: 999px;
+  border: 2px solid #141020;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 8px 20px -8px rgba(0, 0, 0, 0.7);
+  background-clip: padding-box;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+}
+
+.rm-chead__art > span:first-child {
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
+.rm-chead__art--0 {
+  background:
+    linear-gradient(150deg, #4b3680, #221639);
+}
+
+.rm-chead__art--1 {
+  background:
+    linear-gradient(150deg, #175048, #0d211d);
+}
+
+.rm-chead__art--2 {
+  background:
+    linear-gradient(150deg, #1a5c3a, #0e241b);
+}
+
+.rm-chead__art--3 {
+  background:
+    linear-gradient(150deg, #31487a, #141c30);
+}
+
+.rm-chead__dot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  height: 0.65rem;
+  width: 0.65rem;
+  border-radius: 999px;
+  border: 2px solid rgb(33 26 42);
+  background: var(--color-green);
+}
+
+.rm-chead__dot--warn {
+  background: rgb(236 195 71 / 0.95);
+}
+
+.rm-chead__title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-body, #ebecec);
+}
+
+.rm-chead__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The one place the void hue lives in the room: a quiet marker that this is
+   a live room, so nobody mistakes it for a normal DM. */
+.rm-livepill {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-void-bright) 35%, transparent);
+  background: color-mix(in srgb, var(--color-void) 18%, transparent);
+  padding: 0.08rem 0.45rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-void-bright) 60%, white);
+}
+
+.rm-chead__status {
+  margin: 0.15rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: var(--color-green);
+}
+
+.rm-chead__status--warn {
+  color: rgb(250 220 140 / 0.95);
+}
+

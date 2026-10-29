@@ -1,12 +1,12 @@
-import { ACTIVITY_FILTER_TABS } from '@/features/admin/constants/activity';
-import type { AdminActivityFilter } from '@/features/admin/types';
+import { ACTIVITY_FILTER_TABS } from '../../../constants/activity';
+import type { AdminActivityFilter } from '../../../types';
 
-type ActivityFilterTabsProps = {
+type Props = {
   filter: AdminActivityFilter;
   onChange: (filter: AdminActivityFilter) => void;
 };
 
-const ActivityFilterTabs = ({ filter, onChange }: ActivityFilterTabsProps) => (
+const ActivityFilterTabs = ({ filter, onChange }: Props) => (
   <div
     className="inline-flex rounded-full border border-border/50 bg-primary/30 p-1"
     role="tablist"

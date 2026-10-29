@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 
-type SectionHeadProps = {
+type Props = {
   title: string;
   subtitle?: string;
   badge?: ReactNode;
 };
 
-const SectionHead = ({ title, subtitle, badge }: SectionHeadProps) => (
+const SectionHead = ({ title, subtitle, badge }: Props) => (
   <div className="flex flex-wrap items-end justify-between gap-3">
     <div>
       <h2 className="font-semibold text-xl leading-none tracking-tight text-body">

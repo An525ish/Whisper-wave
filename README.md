@@ -13,12 +13,18 @@ Whisper Wave is a real-time chat application built with the MERN (MongoDB, Expre
 - File uploads
 - Real-time notifications for new messages and friend requests
 - Responsive design for mobile and desktop
+- Anonymous `/whisper` flow: no account, get matched with a stranger, chat ephemerally (nothing saved), and mutually like to turn it into a real DM
+- A **hub** home (`/home`) for guests and members: Whisper, live topic **Rooms** (ephemeral, moderated), a **Memes** joke shuffle, and **Chats**. Rooms and Memes ship dark behind feature flags (below)
+
+## Feature flags
+
+Rooms and Memes are off by default. Set `FEATURE_ROOMS=true` / `FEATURE_MEMES=true` in `server/.env` (Games is skipped; its flag does nothing). The client reads the resolved flags from `GET /api/hub/summary` and hides what is off. Admins can switch Rooms/Memes off (and on) at runtime from Admin → Rooms → Panic card; that override is saved and enforced by the server. See `docs/HUB_PLAN.md` and `docs/RUNBOOK.md`.
 
 ## Tech Stack
 
-- Frontend: React, Redux Toolkit, React Router
+- Frontend: React, TanStack Query, Zustand, React Router
 - Backend: Node.js, Express.js
-- Database: MongoDB
+- Database: MongoDB (permanent data), Redis (ephemeral anonymous matching)
 - Real-time Communication: Socket.IO
 - Authentication: JSON Web Tokens, bcrypt
 - File Processing: Jimp, FFmpeg
@@ -44,8 +50,9 @@ Whisper Wave is a real-time chat application built with the MERN (MongoDB, Expre
 
 - [Nodejs](https://nodejs.org/en/download)
 - [Mongodb](https://www.mongodb.com/docs/manual/administration/install-community/)
+- Redis — local, or the [Upstash](https://upstash.com) free tier (required for the anonymous `/whisper` flow)
 
-Both should be installed and make sure mongodb is running.
+Make sure MongoDB and Redis are running.
 
 ### Installation
 
@@ -55,7 +62,7 @@ cd Whisper-wave
 ```
 
 Set up environment variables:
-Create a `.env` file in the server directory and add necessary variables (MongoDB URI, JWT secret, etc.)
+Copy `server/.env.example` to `server/.env` and `client/.env.example` to `client/.env`, then fill them in. Beyond MongoDB and the JWT secrets, the anonymous flow needs `REDIS_URL`, `ANON_JWT_SECRET` and (optional) `ANON_TOKEN_TTL_MIN` on the server. The hub flags (`FEATURE_ROOMS`, `FEATURE_MEMES`) and `GID_COOKIE_TTL_DAYS` are documented in `server/.env.example`. To create the official rooms run `npx tsx --env-file=.env scripts/seed-rooms.ts` from `server/` (add `FORCE=true` for a hosted `mongodb+srv` cluster). `VITE_ANALYTICS_ENDPOINT` on the client is optional — leave it empty to disable funnel analytics.
 
 Now install the dependencies
 
@@ -87,4 +94,12 @@ npm run server
 
 ```
 Done! Now open localhost:5173 in your browser.
+```
+
+### Tests
+
+```shell
+cd server && npm test      # node:test, Redis integration tests skip without Redis
+cd client && npm test      # vitest, pure utils/stores only (no DOM rendering)
+cd client && npm run typecheck && npm run lint
 ```

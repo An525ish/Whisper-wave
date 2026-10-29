@@ -1,5 +1,5 @@
-import AnonScene from '@/features/landing/components/ui/AnonScene';
-import AnonCrowd from '@/features/landing/components/ui/AnonCrowd';
+import AnonScene from './AnonScene';
+import AnonCrowd from './AnonCrowd';
 
 /**
  * The hero stage — the auth page's beloved "quiet circle" treatment, retuned

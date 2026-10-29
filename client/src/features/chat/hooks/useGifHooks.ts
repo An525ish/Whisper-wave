@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as gifApi from '@/features/chat/api/gif';
-import type { KlipyKind } from '@/features/chat/api/gif';
-import * as chatApi from '@/features/chat/api/chat';
+import * as gifApi from '../api/gif';
+import type { KlipyKind } from '../api/gif';
+import * as chatApi from '../api/chat';
 import { queryKeys } from './queryKeys';
 
 export function useGifSearch(query: string, kind: KlipyKind = 'gif') {

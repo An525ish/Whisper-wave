@@ -8,7 +8,7 @@ import { LinkPreviewThumb } from '@/features/chat'
 import AudiosIcon from '@/shared/components/ui/icons/Audio'
 import { fileData, fileFormat, getMediaDisplayName, getMediaKindFromFile } from '@/shared/utils/fileFormat'
 import type { MouseEvent } from 'react'
-import type { MediaFile, SharedLink, SharedContentTab } from '@/features/profile/components/shared-content/types'
+import type { MediaFile, SharedLink, SharedContentTab } from './shared-content/types'
 
 type ProfileActionsProps = {
   mediaFiles: MediaFile[]

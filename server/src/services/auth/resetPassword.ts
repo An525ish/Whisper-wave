@@ -1,7 +1,7 @@
 import { hash } from 'bcrypt';
 import * as userRepo from '../../repositories/user.js';
 import { AppError } from '../../utils/AppError.js';
-import type { ResetPasswordInput } from '../../validators/auth.js';
+import type { ResetPasswordInput } from '../../types/input.js';
 import { sha256 } from './shared.js';
 
 export const resetPassword = async (

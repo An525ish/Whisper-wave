@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import AuthBrandArt from '@/features/auth/components/AuthBrandArt';
+import AuthBrandArt from './AuthBrandArt';
 
 type AuthShellProps = {
   headline: string;

@@ -1,56 +1,17 @@
-import { useState, type Dispatch, type MouseEvent, type SetStateAction } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth';
 import useContextMenu from '@/shared/hooks/useContextMenu';
-import type { ContextMenuOption, ContextMenuState } from '@/shared/types';
+import type { ContextMenuOption } from '@/shared/types';
 import {
   useAddMemberMutation,
   useChatDetailsQuery,
   useMyFriendsQuery,
   useRemoveMemberMutation,
   useSetMemberAdminMutation,
-} from '@/features/chat/hooks';
+} from '.';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
-import type { User } from '@/shared/types';
-
-export type GroupMember = {
-  _id: string;
-  name: string;
-  avatar?: string;
-  isCreator?: boolean;
-  isAdmin?: boolean;
-};
-
-type FriendsResponse = { data?: User[] };
-
-type ChatDetailsResponse = {
-  data?: {
-    members?: GroupMember[];
-    myRole?: 'creator' | 'admin' | 'member' | null;
-  };
-};
-
-export type UseAddMemberReturn = {
-  searchText: string;
-  setSearchText: Dispatch<SetStateAction<string>>;
-  selectedMembers: string[];
-  isAddMember: boolean;
-  contextTargetId: string | null;
-  menuState: ContextMenuState;
-  members: GroupMember[];
-  myRole: 'creator' | 'admin' | 'member' | null;
-  canManageMembers: boolean;
-  NonGroupMembersData: User[];
-  isAvailableMembersLoading: boolean;
-  isLoading: boolean;
-  filteredMembers: GroupMember[];
-  filteredNonGroupMembers: User[];
-  handleSelectMember: (id: string) => void;
-  addMemberHandler: () => void;
-  closeContextMenu: () => void;
-  handleContextMenu: (e: MouseEvent<HTMLElement>, member: GroupMember) => void;
-  onSubmit: () => Promise<void>;
-};
+import type { FriendsResponse, GroupMember, GroupMembersResponse, UseAddMemberReturn } from '../types/local';
 
 const useAddMember = (onClose: () => void): UseAddMemberReturn => {
   const [searchText, setSearchText] = useState('');
@@ -62,7 +23,7 @@ const useAddMember = (onClose: () => void): UseAddMemberReturn => {
   const { chatId } = useParams();
 
   const { data: chatDetails } = useChatDetailsQuery({ id: chatId, populate: true });
-  const chatData = (chatDetails as ChatDetailsResponse | undefined)?.data;
+  const chatData = (chatDetails as GroupMembersResponse | undefined)?.data;
   const members = chatData?.members ?? [];
   const myRole = chatData?.myRole ?? null;
   const canManageMembers = myRole === 'creator' || myRole === 'admin';

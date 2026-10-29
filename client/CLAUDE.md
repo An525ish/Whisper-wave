@@ -8,7 +8,26 @@ file and the Cursor mirrors in `.cursor/rules/client-architecture.mdc` +
 `client-code-quality.mdc` in the same change so docs and code never drift.
 
 Those `.mdc` files are the condensed Cursor mirrors of this doc (applied via
-`globs: client/**`). Keep them in sync with this file.
+`globs: client/**`). Keep them in sync with this file. Product voice is mirrored
+in `.cursor/rules/product-voice.mdc`, root `.cursorrules`, and `docs/PRODUCT.md`
+§ Voice — update those together when the voice standard changes.
+
+---
+
+## Product Voice (user-facing copy)
+
+UI strings, empty states, toasts, hub/landing copy, and product blurbs must
+sound human. Gen Z can smell AI prose.
+
+1. **No em dashes (`—`).** Period, comma, colon, or rewrite.
+2. **No stacked metaphors or fake profundity.** Wave is the brand; do not pile
+   shore/tide/ripple/void poetry into the same block.
+3. **Concrete > vibey.** "Find someone", "Chats aren't stored", "12 people online".
+4. **Hub `/home` is a launcher.** Primary CTA = Whisper. Rooms/Memes only when
+   flagged on. Returning members get pending + chats in plain language. Trust
+   once, plainly (no romanticizing anonymity).
+
+If it would sound weird said out loud, rewrite before shipping.
 
 ---
 
@@ -34,7 +53,10 @@ Those `.mdc` files are the condensed Cursor mirrors of this doc (applied via
    whether it already exists. Copy-paste of a shape, a value, or a behavior is a
    defect — extract it (see §12).
 9. **One HTTP client.** All API calls go through `@/shared/lib/api/client`. Never
-   add axios or a second client that skips cookies / 401 refresh.
+   add axios or a second client that skips cookies / 401 refresh. The one sanctioned
+   exception is `shared/lib/analytics.ts`, which posts to a third-party collector
+   (not our API) and therefore must not send our cookies — it uses `sendBeacon` so
+   events survive page unload.
 10. **Query keys live in `hooks/queryKeys.ts`**, owned by the domain that owns the
     resource — never inline `queryKey: ['…']`.
 
@@ -84,15 +106,17 @@ src/
 │   └── RouteError.tsx
 │
 ├── pages/                    # Route entries. THIN. Compose features + route params only.
-│   ├── Home.tsx  Chat.tsx  Auth.tsx  Landing.tsx  SparkPass.tsx  PageNotFound.tsx
+│   ├── Home.tsx  Whisper.tsx  Memes.tsx  Rooms.tsx  Room.tsx  NewRoom.tsx
+│   ├── Chats.tsx  Chat.tsx  Auth.tsx  Landing.tsx  SparkPass.tsx  PageNotFound.tsx
 │   ├── admin/AdminAuth.tsx
-│   └── legal/Privacy.tsx  Terms.tsx  ReportAbuse.tsx
+│   └── legal/Privacy.tsx  Terms.tsx  Guidelines.tsx  Safety.tsx  Cookies.tsx  ReportAbuse.tsx
 │
-├── layout/                   # App-shell layout wrappers (AppWrapper, AdminWrapper)
+├── layout/                   # App-shell layout wrappers (HubShell, ChatsLayout,
+│                             #   hubNav, useAppSocketEvents, AdminWrapper)
 │                             #   app-wide presence/alert sockets OK here; message cache in features
 │
 ├── features/                 # THE BUSINESS FUNCTIONALITY — one folder per domain
-│   └── <domain>/             #   auth · chat · admin · profile · notifications · landing
+│   └── <domain>/             #   auth · chat · whisper · hub · rooms · memes · admin · profile · notifications · landing
 │       ├── api/              #   HTTP helpers via shared api client — no logic, no UI
 │       ├── components/       #   this domain's React components (may nest by sub-area)
 │       ├── hooks/            #   useXxxQueries / useXxxMutations / useXxx / queryKeys.ts
@@ -129,6 +153,8 @@ or `layout/`. No domain code in `shared/`.
 - Is it generic and reusable by any area, knowing nothing about the domain?
   → `shared/…`
 - Is it a URL the user navigates to? → `pages/…` (and it just composes features).
+- Is it app chrome (nav, shell frame, app-wide sockets)? → `layout/…`
+  (`HubShell` for everyone incl. guests, `ChatsLayout` for the messages app).
 - Is it app wiring (router/providers/query client)? → `app/…`
 
 ---
@@ -247,6 +273,12 @@ All backend calls go through `api` from `@/shared/lib/api/client` (fetch, cookie
 non-API blobs/downloads. XHR only for upload progress (e.g. R2). **Never add axios
 or a second API client** — it will silently skip auth refresh.
 
+**Sanctioned exception — analytics.** `shared/lib/analytics.ts` posts funnel
+events to a third-party collector via `navigator.sendBeacon`, bypassing the API
+client on purpose: it targets a foreign origin (so our cookies must NOT be sent)
+and must survive page unload. It is a no-op when `VITE_ANALYTICS_ENDPOINT` is
+unset, and it never attaches PII.
+
 ### Query key ownership
 
 Every `queryKey` / factory lives in that feature's `hooks/queryKeys.ts`. Keys are
@@ -319,9 +351,12 @@ const { register, handleSubmit } = useForm<FormValues>({ mode: 'onChange' });
   same feature/folder (including no `@/features/<self>/…`).
 - **File size ≤ 350 lines.** Over → split: big component into sub-components in the
   same `components/` folder; big hook into focused hooks.
-- **Env allowlist:** only `VITE_BASE_URL` and `VITE_GOOGLE_CLIENT_ID` (public; may
-  be unset). Every `VITE_*` must appear on `ImportMetaEnv` in `vite-env.d.ts`.
-  Never put secrets in `VITE_*`. Cookies only — no access tokens in `localStorage`.
+- **Env allowlist:** only `VITE_BASE_URL`, `VITE_GOOGLE_CLIENT_ID` and
+  `VITE_ANALYTICS_ENDPOINT` (public; may be unset). Every `VITE_*` must appear on
+  `ImportMetaEnv` in `vite-env.d.ts`. Never put secrets in `VITE_*`. Cookies only —
+  no access tokens in `localStorage`. `VITE_ANALYTICS_ENDPOINT` is a **self-hosted /
+  free** collector approved in `docs/TECH.md` — not a paid vendor; leaving it unset
+  disables all analytics (see §0.9 for the transport rule that applies to it).
 - **CSS homes:** app tokens/`@theme` in the root entry CSS (`index.css` today) —
   do not keep appending large feature blobs; extract or colocate. Landing-only
   (`lw-*`) → `styles/landing.css`. One-off composites → colocated CSS. Don't grow
@@ -350,6 +385,21 @@ const { register, handleSubmit } = useForm<FormValues>({ mode: 'onChange' });
 5. New socket events → add name constants to `shared/constants/socket.ts`.
 6. New queries → add keys to that feature's `hooks/queryKeys.ts` (never inline).
 
+### Add a hub card
+
+Hub home cards are **feature-owned** (HUB_PLAN §7.1). The feature exports its card (and any
+preview) from its `index.ts`; `features/hub` only composes them in `HomeDoors` / `HomeSections`.
+A card takes `enabled` (the server flag) and renders nothing when off; it shows live counts only
+through `publicHeadcount` (3+ people). Cards reuse the hub home's `hw-*` classes (loaded by
+`HubHome`). Games is skipped — no card, no nav item.
+
+### Dialogs
+
+Use the shared `shared/components/ui/modal/Dialog` (portal, focus trap + restore, scroll lock,
+Escape, `aria-modal`/`aria-labelledby`) for every modal dialog; a feature's own dialog is a thin
+wrapper that supplies content and optional class overrides. Do not hand-roll `role="dialog"`.
+Sheets stay on `BottomSheet`, confirms on `ConfirmationModal`.
+
 ### Add a shared component
 1. Place it in the right `shared/components/<category>/` folder (create a kebab-case
    category folder if none fits).
@@ -359,7 +409,7 @@ const { register, handleSubmit } = useForm<FormValues>({ mode: 'onChange' });
 ### Before you consider a change done
 - No file exceeds 350 lines; no `console.*`; no `any`; no `shared → features` import.
 - No inline query keys; no second HTTP client; no new undeclared `VITE_*`.
-- Run **`npm run typecheck`** and **`npm run lint`** — both must pass.
+- Run **`npm run typecheck`**, **`npm run lint`** and **`npm test`** — all must pass.
 - New logic that isn't trivially obvious gets a test or a manual-verification note.
 
 ---

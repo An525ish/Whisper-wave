@@ -1,8 +1,8 @@
-import UserFilterChip from '@/features/admin/components/shared/UserFilterChip';
-import { MESSAGE_STATUS_TABS } from '@/features/admin/constants/messages';
-import type { AdminMessageStatusFilter, UserFilterOption } from '@/features/admin/types';
+import UserFilterChip from '../../shared/UserFilterChip';
+import { MESSAGE_STATUS_TABS } from '../../../constants/messages';
+import type { AdminMessageStatusFilter, UserFilterOption } from '../../../types';
 
-type StatusFilterTabsProps = {
+type Props = {
   statusFilter: AdminMessageStatusFilter;
   onStatusChange: (status: AdminMessageStatusFilter) => void;
   senderFilter: UserFilterOption | null;
@@ -16,7 +16,7 @@ const StatusFilterTabs = ({
   senderFilter,
   onSenderChange,
   tabCount,
-}: StatusFilterTabsProps) => (
+}: Props) => (
   <div className="mb-4 flex shrink-0 flex-wrap items-center gap-2">
     {MESSAGE_STATUS_TABS.map((tab) => (
       <button

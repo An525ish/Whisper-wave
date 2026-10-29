@@ -1,25 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
-import * as uploadApi from '@/features/chat/api/upload';
-import * as chatApi from '@/features/chat/api/chat';
-import { compressImages, type ImageQuality } from '@/features/chat/utils/imageCompression';
-import type { UploadFileProgress, CommitAttachment } from '@/features/chat/types/upload';
-
-type UploadInput = {
-  chatId: string;
-  files: File[];
-  content?: string;
-  replyToMessageId?: string;
-  imageQuality?: ImageQuality;
-};
-
-type UseAttachmentUploadReturn = {
-  /** Kick off the 3-step sign → upload → commit flow. Returns the server response or null on failure. */
-  upload: (input: UploadInput) => Promise<unknown>;
-  reset: () => void;
-  isUploading: boolean;
-  /** Per-file progress state. Useful for rendering progress bars. */
-  fileProgress: UploadFileProgress[];
-};
+import * as uploadApi from '../api/upload';
+import * as chatApi from '../api/chat';
+import { compressImages } from '../utils/imageCompression';
+import type { UploadFileProgress, CommitAttachment } from '../types/upload';
+import type { UploadInput, UseAttachmentUploadReturn } from '../types/local';
 
 /**
  * Orchestrates the full direct-upload lifecycle:

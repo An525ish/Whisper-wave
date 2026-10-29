@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { UseMutationResult } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
@@ -43,9 +43,12 @@ const useAsyncMutation = <
   const [data, setData] = useState<unknown>(null);
   const mutation = mutationHook();
 
-  // Keep mutation in a ref so execMutation can stay referentially stable
+  // Keep mutation in a ref so execMutation can stay referentially stable.
+  // Synced in an effect, never during render: a ref is not a render input.
   const mutationRef = useRef(mutation);
-  mutationRef.current = mutation;
+  useEffect(() => {
+    mutationRef.current = mutation;
+  }, [mutation]);
 
   const execMutation = useCallback(
     async (

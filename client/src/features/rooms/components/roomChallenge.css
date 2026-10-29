@@ -1,0 +1,300 @@
+/** First-post guest check modal (Turnstile / arithmetic fallback): glow ring, status line, success check. */
+
+.rm-chal__root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 0.75rem;
+}
+
+.rm-chal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 6, 16, 0.66);
+  backdrop-filter: blur(8px);
+  animation: rm-chal-fade 0.2s ease-out both;
+}
+
+/* Panel: gradient hairline border via a padding-box / border-box double background. */
+.rm-chal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(22rem, calc(100vw - 1.5rem));
+  padding: 1.6rem 1.1rem 1.1rem;
+  text-align: center;
+  border: 1px solid transparent;
+  border-radius: 1.6rem;
+  background:
+    linear-gradient(180deg, #2a2136, #1a1520) padding-box,
+    linear-gradient(160deg, rgba(139, 107, 255, 0.55), rgba(255, 255, 255, 0.06) 45%, rgba(1, 195, 109, 0.4)) border-box;
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.55),
+    0 0 60px rgba(139, 107, 255, 0.12);
+  animation: rm-chal-in 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+.rm-chal:focus {
+  outline: none;
+}
+
+/* ── Icon in a soft glowing ring ─────────────────────────────────── */
+
+.rm-chal__ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin-bottom: 0.9rem;
+  border-radius: 50%;
+  color: #b6a4ff;
+  background: radial-gradient(70% 70% at 35% 25%, rgba(139, 107, 255, 0.38), rgba(139, 107, 255, 0.08) 70%);
+  box-shadow:
+    0 0 0 1px rgba(139, 107, 255, 0.35),
+    0 0 26px rgba(139, 107, 255, 0.35);
+  animation: rm-chal-glow 3.2s ease-in-out infinite;
+  transition: color 0.3s, background 0.3s, box-shadow 0.3s;
+}
+
+.rm-chal__ring--ok {
+  color: #7dffb8;
+  background: radial-gradient(70% 70% at 35% 25%, rgba(1, 195, 109, 0.42), rgba(1, 195, 109, 0.08) 70%);
+  box-shadow:
+    0 0 0 1px rgba(1, 195, 109, 0.5),
+    0 0 32px rgba(1, 195, 109, 0.45);
+  animation: rm-chal-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.rm-chal__icon {
+  width: 1.55rem;
+  height: 1.55rem;
+  stroke: currentColor;
+}
+
+.rm-chal__tick {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  opacity: 0;
+}
+
+.rm-chal__ring--ok .rm-chal__tick {
+  opacity: 1;
+  animation: rm-chal-draw 0.45s 0.12s ease-out forwards;
+}
+
+/* ── Copy ────────────────────────────────────────────────────────── */
+
+.rm-chal__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.rm-chal__title--ok {
+  margin-bottom: 0.9rem;
+  color: #7dffb8;
+  animation: rm-chal-fade 0.3s ease-out both;
+}
+
+.rm-chal__sub {
+  max-width: 18rem;
+  margin-top: 0.3rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--color-body-300);
+}
+
+/* ── Turnstile body ──────────────────────────────────────────────── */
+
+.rm-chal__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 1.1rem;
+}
+
+/* Reserves the widget's 300 x 65 box so nothing jumps when it renders. */
+.rm-chal__widget {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 65px;
+  overflow: hidden;
+  border-radius: 0.8rem;
+}
+
+.rm-chal__widget--off {
+  display: none;
+}
+
+.rm-chal__mount {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.rm-chal__skeleton {
+  position: absolute;
+  inset: 0 auto 0 50%;
+  width: min(300px, 100%);
+  transform: translateX(-50%);
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0.04) 30%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.04) 70%);
+  background-size: 220% 100%;
+  animation: rm-chal-shimmer 1.4s linear infinite;
+}
+
+.rm-chal__status {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--color-body-300);
+}
+
+.rm-chal__status--err {
+  margin-top: 0;
+  line-height: 1.45;
+  color: #ff8f98;
+}
+
+.rm-chal__problem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.2rem 0.4rem;
+}
+
+.rm-chal__btn {
+  min-height: 2.25rem;
+  padding: 0.35rem 1.2rem;
+  border-radius: 999px;
+  background: var(--color-green);
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: #06130d;
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.rm-chal__btn:active {
+  transform: scale(0.96);
+}
+
+.rm-chal__btn:disabled {
+  opacity: 0.5;
+}
+
+.rm-chal__cancel {
+  min-height: 2.25rem;
+  margin-top: 0.7rem;
+  padding-inline: 0.9rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: var(--color-body-300);
+}
+
+.rm-chal__cancel:hover {
+  color: var(--color-body);
+}
+
+/* ── Arithmetic fallback ─────────────────────────────────────────── */
+
+.rm-chal__math {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+}
+
+.rm-chal__q {
+  font-size: 0.95rem;
+  color: var(--color-body);
+}
+
+.rm-chal__input {
+  width: 5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 16px;
+  color: var(--color-body);
+}
+
+.rm-chal__input:focus-visible {
+  border-color: rgba(1, 195, 109, 0.6);
+  outline: 2px solid rgba(1, 195, 109, 0.35);
+  outline-offset: 1px;
+}
+
+.rm-chal__math .rm-chal__status {
+  flex-basis: 100%;
+}
+
+/* Very narrow phones: shrink the fixed-width widget instead of clipping it. */
+@media (max-width: 340px) {
+  .rm-chal__mount {
+    transform: scale(0.85);
+    transform-origin: center;
+  }
+}
+
+/* ── Motion ──────────────────────────────────────────────────────── */
+
+@keyframes rm-chal-in {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes rm-chal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes rm-chal-glow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(139, 107, 255, 0.35), 0 0 22px rgba(139, 107, 255, 0.28); }
+  50% { box-shadow: 0 0 0 1px rgba(139, 107, 255, 0.5), 0 0 34px rgba(139, 107, 255, 0.45); }
+}
+
+@keyframes rm-chal-pop {
+  from { transform: scale(0.85); }
+  to { transform: scale(1); }
+}
+
+@keyframes rm-chal-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes rm-chal-shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-chal,
+  .rm-chal__backdrop,
+  .rm-chal__ring,
+  .rm-chal__ring--ok,
+  .rm-chal__title--ok,
+  .rm-chal__skeleton {
+    animation: none;
+  }
+
+  .rm-chal__ring--ok .rm-chal__tick {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .rm-chal__btn,
+  .rm-chal__ring {
+    transition: none;
+  }
+}

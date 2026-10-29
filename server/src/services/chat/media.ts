@@ -1,6 +1,7 @@
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
-import type { ChatSharedContent, GetChatMediaInput } from '../../types/chat.js';
+import type { ChatSharedContent } from '../../types/chat.js';
+import type { GetChatMediaInput } from '../../types/chatService.js';
 import { AppError } from '../../utils/AppError.js';
 import { extractUniqueLinks } from './shared.js';
 

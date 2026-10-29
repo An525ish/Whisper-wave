@@ -1,10 +1,10 @@
-import * as messageRepo from '../../repositories/message.js';
+import * as messageAdminRepo from '../../repositories/messageAdmin.js';
 import * as userRepo from '../../repositories/user.js';
 import type {
   AdminActivityEventsPage,
   AdminActivityPresence,
 } from '../../types/admin.js';
-import type { AdminActivityEventsQuery } from '../../validators/admin.js';
+import type { AdminActivityEventsQuery } from '../../types/adminInput.js';
 import {
   getOnlineUserIds,
   getPresenceSize,
@@ -38,7 +38,7 @@ export const getActivityEvents = async (
   const fetchLimit = limit + 1;
 
   if (input.type === 'messages') {
-    const rows = await messageRepo.listRecentForActivity({ limit: fetchLimit, before });
+    const rows = await messageAdminRepo.listRecentForActivity({ limit: fetchLimit, before });
     const events = rows.slice(0, limit).map(toMessageEvent);
     return {
       events,
@@ -63,7 +63,7 @@ export const getActivityEvents = async (
   // re-fetching, even when events cluster around the same timestamp.
   const bigFetch = limit * 2 + 1;
   const [messages, signups] = await Promise.all([
-    messageRepo.listRecentForActivity({ limit: bigFetch, before }),
+    messageAdminRepo.listRecentForActivity({ limit: bigFetch, before }),
     userRepo.listRecentSignupsForActivity({ limit: bigFetch, before }),
   ]);
 

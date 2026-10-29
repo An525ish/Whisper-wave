@@ -1,0 +1,63 @@
+/**
+ * Joke tap (`mm-*`) — page canvas + backdrop extras (floaters).
+ * Motion contract: everything decorative freezes under `prefers-reduced-motion`,
+ * and entrance states end visible.
+ */
+
+/* ── Page canvas + floaters ───────────────────────────────────────── */
+
+.mm-page {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--color-background);
+}
+
+@media (min-width: 768px) {
+  .mm-page {
+    padding: 1.5rem 1rem 2rem;
+  }
+}
+
+/* Floating emoji ghosts — slow rising laughter behind the viewport. */
+.mm-floaters {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mm-floater {
+  position: absolute;
+  bottom: -4rem;
+  filter: blur(1px);
+  opacity: 0.1;
+  animation: mm-float-up var(--mm-dur, 20s) linear infinite;
+  animation-delay: var(--mm-delay, 0s);
+  will-change: transform;
+}
+
+@keyframes mm-float-up {
+  from {
+    transform: translateY(0) rotate(-10deg);
+  }
+  to {
+    transform: translateY(-115vh) rotate(12deg);
+  }
+}
+
+@media (max-width: 767px) {
+  .mm-floater:nth-child(even) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-floater {
+    animation: none !important;
+    display: none;
+  }
+}

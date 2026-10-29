@@ -4,7 +4,7 @@ import { isAllowedEmail } from '../../utils/disposableEmail.js';
 import { getClientBaseUrl } from '../../utils/helper.js';
 import { sendMail } from '../../utils/mail.js';
 import { RESET_TOKEN_TTL_MS } from '../../constants/auth.js';
-import type { ForgotPasswordInput } from '../../validators/auth.js';
+import type { ForgotPasswordInput } from '../../types/input.js';
 import { normalizeEmail } from '../../utils/normalize.js';
 import { sha256 } from './shared.js';
 

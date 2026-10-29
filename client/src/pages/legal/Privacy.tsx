@@ -1,9 +1,9 @@
-import { LegalPage } from '@/features/landing';
+import { LegalPage, LEGAL_CONTACT, LEGAL_UPDATED } from '@/features/landing';
 
 const Privacy = () => (
   <LegalPage
     title="Privacy Policy"
-    updated="September 2026"
+    updated={LEGAL_UPDATED}
     intro="Whisper Wave is built to collect as little about you as possible. This policy explains what we handle, why, and the choices you have."
   >
     <section>
@@ -21,6 +21,11 @@ const Privacy = () => (
           <strong>Technical data</strong> — basic device and connection info needed to run the service and keep it
           secure.
         </li>
+        <li>
+          <strong>Guest identifiers</strong> — random, httpOnly cookies with no account attached: the anonymous
+          session id (24 hours) and a stable guest id, <code>gid</code> (30 days), used only for safety — abuse
+          control, rate-limit continuity, and restoring your persona on return visits.
+        </li>
       </ul>
     </section>
 
@@ -35,17 +40,66 @@ const Privacy = () => (
     <section>
       <h2>Ephemeral by design</h2>
       <p>
-        Anonymous chat sessions are not stored after they end. When you skip or leave, the conversation is gone.
+        Anonymous chat text is not stored after a session ends. Photos shared in anonymous chat are kept, without your name or account, until an admin deletes them, so they can be reviewed if reported. When a link is shared in any chat, our server fetches that page once to show a preview. Your name and IP address are not sent to the site. In rooms, signed-in members join with their account name and profile photo, which other people in the room can see. Choosing a different name hides the photo.
         Messages in a mutual-spark DM persist only while both accounts exist, and are removed when an account is
         deleted.
       </p>
     </section>
 
     <section>
+      <h2>Rooms</h2>
+      <p>
+        Live topic rooms are ephemeral. Room messages are not stored, except when a message is reported: we then keep
+        a snapshot of the reported message and the messages around it. A snapshot holds only the alias, the text, any photo, GIF or meme, and
+        the time, with no IP address. Photos in a room are deleted when the room closes or the message scrolls away,
+        unless the message was reported; then the photo is kept until an admin deletes it. Signed-in members can post
+        photos where a room allows it. Guests can't. Guests in rooms carry the <code>gid</code> cookie described above, for safety only.
+      </p>
+    </section>
+
+    <section>
+      <h2>Bot check (Cloudflare Turnstile)</h2>
+      <p>
+        When a guest posts in a room for the first time, we show a short bot check from Cloudflare Turnstile. Its
+        script loads from Cloudflare only at that moment, not on other pages. Cloudflare receives your IP address and
+        browser signals to tell humans from bots, and may set cookies to do so. Signed-in members skip the check.
+      </p>
+    </section>
+
+    <section>
+      <h2>Push notifications</h2>
+      <p>
+        If you enable push notifications, your browser&apos;s push token is stored with your account and notifications
+        are delivered through Google Firebase Cloud Messaging; these notifications never include message content.
+      </p>
+    </section>
+
+    <section>
+      <h2>Memes and jokes</h2>
+      <ul>
+        <li>The joke text comes from JokeAPI, fetched through our server.</li>
+        <li>
+          Meme images are rendered by api.memegen.link. Your browser contacts Memegen directly, which exposes your IP
+          address and user agent to that host.
+        </li>
+        <li>Members&apos; saved memes are stored on their account.</li>
+        <li>
+          The optional 18+ declaration for unfiltered jokes is stored on your account. Guests&apos; reactions and hidden
+          jokes stay on their device.
+        </li>
+      </ul>
+    </section>
+
+    <section>
       <h2>Safety and moderation</h2>
       <p>
-        When someone reports abuse, we may retain the relevant report details for a limited time so we can review it
-        and act. This is to protect people using Whisper Wave and to meet legal obligations.
+        When someone reports abuse, we retain the report evidence so we can review it and act. We delete it 90 days
+        after the report is resolved, or after 1 year for child-safety matters. This is to protect people using
+        Whisper Wave and to meet legal obligations.
+      </p>
+      <p>
+        Moderation actions such as mutes and bans are keyed to your <code>gid</code> and/or your account. Ban records
+        expire.
       </p>
     </section>
 
@@ -62,7 +116,7 @@ const Privacy = () => (
       <h2>Contact</h2>
       <p>
         For privacy questions or data requests, email{' '}
-        <a href="mailto:privacy@whisperwave.app">privacy@whisperwave.app</a>.
+        <a href={`mailto:${LEGAL_CONTACT.privacyEmail}`}>{LEGAL_CONTACT.privacyEmail}</a>.
       </p>
     </section>
   </LegalPage>

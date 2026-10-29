@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
-import HeroStage from '@/features/landing/components/ui/HeroStage';
-import HoloMesh from '@/features/landing/components/ui/HoloMesh';
-import FloatingStrangers from '@/features/landing/components/ui/FloatingStrangers';
-import SignalWave from '@/features/landing/components/ui/SignalWave';
+import HeroStage from './ui/HeroStage';
+import HoloMesh from './ui/HoloMesh';
+import FloatingStrangers from './ui/FloatingStrangers';
+import SignalWave from './ui/SignalWave';
 import { cn } from '@/shared/utils/cn';
+import { ROUTES } from '@/shared/constants/routes';
 
 /**
  * Section 1 — the hero, as a single illustrated scene rather than a copy block.
@@ -65,7 +66,7 @@ const TranscriptHero = () => (
         without stretching the centered stack above it. */}
     <div className="pointer-events-none absolute inset-x-0 bottom-[3%] z-[3] flex justify-center">
       <Link
-        to="/auth"
+        to={ROUTES.whisper}
         className={cn(
           'lw-sheen group pointer-events-auto inline-flex items-center gap-2.5 overflow-hidden rounded-full px-8 py-4 text-[1.05rem] font-semibold text-white-pure no-underline',
           'bg-[linear-gradient(135deg,var(--color-lw-violet),var(--color-lw-violet-deep)_58%,var(--color-lw-teal-deep)_150%)]',

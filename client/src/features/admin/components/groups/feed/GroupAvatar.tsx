@@ -1,10 +1,10 @@
 import { getInitial } from '@/shared/utils/helpers';
 
-type GroupAvatarProps = {
+type Props = {
   name?: string;
 };
 
-const GroupAvatar = ({ name }: GroupAvatarProps) => (
+const GroupAvatar = ({ name }: Props) => (
   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-gold/25 to-gold/5 ring-2 ring-gold/20">
     <span className="font-semibold text-sm font-bold text-gold">
       {getInitial(name ?? '', 'G')}

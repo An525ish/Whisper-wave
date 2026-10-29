@@ -1,8 +1,10 @@
-type DashboardHeaderProps = {
+import RefreshButton from '../../shared/RefreshButton';
+
+type Props = {
   lastUpdated: string | null;
 };
 
-const DashboardHeader = ({ lastUpdated }: DashboardHeaderProps) => (
+const DashboardHeader = ({ lastUpdated }: Props) => (
   <header className="flex flex-wrap items-end justify-between gap-4">
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue">
@@ -12,11 +14,14 @@ const DashboardHeader = ({ lastUpdated }: DashboardHeaderProps) => (
         Overview
       </h1>
     </div>
-    {lastUpdated && (
-      <p className="text-xs text-body-300/50">
-        Refreshes every 30s · updated {lastUpdated}
-      </p>
-    )}
+    <div className="flex flex-wrap items-center gap-3">
+      {lastUpdated && (
+        <p className="text-xs text-body-300/50">
+          Refreshes every 30s · updated {lastUpdated}
+        </p>
+      )}
+      <RefreshButton />
+    </div>
   </header>
 );
 

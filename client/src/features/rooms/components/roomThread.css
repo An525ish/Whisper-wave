@@ -1,0 +1,183 @@
+/** Live thread page: canvas, wash, scrolling log, empty state, jump pill. */
+
+/* ── Inside the room: live thread (anon grammar) ────────────────────── */
+
+.rm-threadpage {
+  --rm-gutter: 0.85rem;
+  --rm-col: 48rem;
+
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  /* The anon surface: the green glass glow under the same dark wash, so the
+     room reads as that chat rather than a flat panel. */
+  background:
+    linear-gradient(rgb(33 26 42 / 0.75), rgb(33 26 42 / 0.75)),
+    var(--background-image-glass-background),
+    var(--color-background);
+}
+
+.rm-threadpage > .rm-bg {
+  opacity: 0.7;
+}
+
+/* Glass wash constrained around the conversation column — soft and faded. */
+.rm-colbg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: 0;
+  width: 100%;
+  max-width: 56rem;
+  transform: translateX(-50%);
+  background: var(--background-image-glass-background);
+  opacity: 0.38;
+  filter: blur(24px);
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
+}
+/* Thread list: capped column, bottom-anchored, hidden scrollbar. */
+.rm-threadlist {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: calc(max(0.55rem, env(safe-area-inset-top)) + 4.9rem)
+    var(--rm-gutter)
+    0.5rem;
+  scrollbar-width: none;
+}
+
+.rm-threadlist::-webkit-scrollbar {
+  display: none;
+}
+
+.rm-threadlist > * {
+  width: 100%;
+  max-width: var(--rm-col);
+  margin-inline: auto;
+}
+
+/* Bottom-anchor the thread: a short conversation sits on the composer
+   instead of floating at the top with a void beneath it. */
+.rm-threadlist > :first-child {
+  margin-top: auto;
+}
+
+/* The room's one honest line: nothing here is kept. */
+.rm-ephemeral {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 1.25rem;
+}
+
+.rm-ephemeral > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  background: rgb(0 0 0 / 0.2);
+  backdrop-filter: blur(8px);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.68rem;
+  color: rgb(235 236 236 / 0.5);
+}
+
+.rm-ephemeral svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+/* Empty thread. */
+.rm-threadempty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.rm-threadempty__orb {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  border: 1px dashed rgba(1, 195, 109, 0.4);
+  background: rgba(1, 195, 109, 0.06);
+  color: var(--color-green);
+  font-size: 1.3rem;
+  animation: rm-float 4s ease-in-out infinite;
+}
+
+@keyframes rm-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.rm-threadempty__title {
+  margin-top: 0.9rem;
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.rm-threadempty__sub {
+  margin-top: 0.25rem;
+  max-width: 30ch;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--color-body-300);
+}
+
+.rm-threadwrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+/* "New messages" pill: floats over the log, just above the composer. */
+.rm-jump {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 50%;
+  z-index: 5;
+  display: inline-flex;
+  min-height: 2rem;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(1, 195, 109, 0.45);
+  background: rgba(20, 28, 24, 0.92);
+  padding: 0.35rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-green);
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.rm-jump:hover {
+  background: rgba(1, 195, 109, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-threadempty__orb {
+    animation: none !important;
+  }
+}

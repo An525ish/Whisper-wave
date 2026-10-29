@@ -1,10 +1,11 @@
 import { getFirstName } from '@/shared/utils/helpers'
 import dayjs from 'dayjs'
-import { highlightSnippet } from '@/features/chat/utils/highlight'
-import type { ChatSearchHit } from '@/features/chat/types/chat'
+import { highlightSnippet } from '../../../utils/highlight'
+import type { ChatSearchHit } from '../../../types/chat'
+import type { SearchAttachmentKind } from '../../../types/local'
 import { transformImage, isGifFile } from '@/shared/utils/fileFormat'
 
-type SearchResultItemProps = {
+type Props = {
   hit: ChatSearchHit
   isActive: boolean
   mine: boolean
@@ -14,9 +15,7 @@ type SearchResultItemProps = {
   onClick: () => void
 }
 
-type AttachmentKind = 'image' | 'video' | 'audio' | 'other'
-
-const getAttachmentKind = (att: { name?: string; fileType?: string; url?: string }): AttachmentKind => {
+const getAttachmentKind = (att: { name?: string; fileType?: string; url?: string }): SearchAttachmentKind => {
   const ft = att.fileType?.toLowerCase() ?? ''
   const name = att.name?.toLowerCase() ?? ''
   const url = att.url?.toLowerCase() ?? ''
@@ -89,7 +88,7 @@ const SenderAvatar = ({ hit, mine, isActive }: { hit: ChatSearchHit; mine: boole
   </div>
 )
 
-const SearchResultItem = ({ hit, isActive, mine, query, mode, draft, onClick }: SearchResultItemProps) => {
+const SearchResultItem = ({ hit, isActive, mine, query, mode, draft, onClick }: Props) => {
   const att = hit.attachments?.[0]
   const isMediaMode = mode === 'media'
   const showThumb = isMediaMode && Boolean(att?.url)

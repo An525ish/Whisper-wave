@@ -8,12 +8,12 @@ import CreateGroupIcon from '@/shared/components/ui/icons/CreateGroup';
 import {
   useMarkAllChatsReadMutation,
   useMyChatsQuery,
-} from '@/features/chat/hooks';
+} from '../../hooks';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import { useNotificationsStore } from '@/features/notifications';
-import type { NewConnectTab, ChatsResponse } from '@/features/chat/types/chat';
+import type { NewConnectTab } from '../../types/chat';
 
-type ChatListHeaderProps = {
+type Props = {
   searchText: string;
   setSearchText: Dispatch<SetStateAction<string>>;
   onOpenNew?: (tab: NewConnectTab) => void;
@@ -23,9 +23,9 @@ const ChatListHeader = ({
   searchText,
   setSearchText,
   onOpenNew,
-}: ChatListHeaderProps) => {
+}: Props) => {
   const { data: chats } = useMyChatsQuery();
-  const chatsData = (chats as ChatsResponse | undefined)?.data;
+  const chatsData = chats?.data;
   const unreadCount = useMemo(
     () => chatsData?.reduce((sum, chat) => sum + (chat.unreadCount ?? 0), 0) ?? 0,
     [chatsData],

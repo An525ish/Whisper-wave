@@ -1,6 +1,6 @@
 import { useGoogleLogin } from '@react-oauth/google';
 import GoogleIcon from '@/shared/components/ui/icons/Google';
-import { useGoogleSignInMutation } from '@/features/auth/hooks';
+import { useGoogleSignInMutation } from '../hooks';
 import { toErrorMessage } from '@/shared/utils/helpers';
 import toast from 'react-hot-toast';
 

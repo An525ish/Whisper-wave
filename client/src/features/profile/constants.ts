@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import type { IconProps } from '@/shared/types';
-import type { SharedContentTab, PhotoFilter } from '@/features/profile/components/shared-content/types';
+import type { SharedContentTab, PhotoFilter } from './components/shared-content/types';
 import ImagesIcon from '@/shared/components/ui/icons/Images';
 import FilesIcon from '@/shared/components/ui/icons/FilesIcon';
 import LinkIcon from '@/shared/components/ui/icons/Link';

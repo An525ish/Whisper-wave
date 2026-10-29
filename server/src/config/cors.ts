@@ -25,9 +25,57 @@ export const refreshCookieOptions: CookieOptions = {
   secure: isProd,
 };
 
+/**
+ * Anonymous session identity cookie (24 h).
+ * Set when a guest hits POST /api/match/join.
+ * httpOnly so the client can't read/forge the anonId.
+ * No path scope — socket auth middleware reads it on the /anon handshake.
+ */
+export const anonCookieOptions: CookieOptions = {
+  maxAge: 24 * 60 * 60 * 1000, // 24 h — matches session TTL
+  sameSite: isProd ? 'none' : 'lax',
+  httpOnly: true,
+  secure: isProd,
+};
+
+/**
+ * Stable guest identity cookie (30 days, see `GID_COOKIE_TTL_DAYS`).
+ * Minted by the `ensureGid` middleware on first API contact.
+ * httpOnly so the client can't read/forge the gid — same `sameSite`/`secure`
+ * posture as `anonId`, since it travels on the same requests.
+ */
+export const gidCookieOptions: CookieOptions = {
+  maxAge: env.GID_COOKIE_TTL_DAYS * 24 * 60 * 60 * 1000,
+  sameSite: isProd ? 'none' : 'lax',
+  httpOnly: true,
+  secure: isProd,
+};
+
+/** Browser origins allowed to talk to the API and the sockets. */
+export const allowedOrigins: string[] = env.CLIENT_URL ? [env.CLIENT_URL] : [];
+
 export const corsOptions: CorsOptions = {
-  origin: [
-    ...(env.CLIENT_URL ? [env.CLIENT_URL] : []),
-  ],
+  origin: allowedOrigins,
   credentials: true,
+};
+
+/**
+ * Socket.IO `allowRequest` gate — CORS headers do not stop a cross-site
+ * WebSocket upgrade (browsers send cookies regardless), so check `Origin`.
+ * No `Origin` = a non-browser client: allowed (it has no ambient cookies to
+ * abuse). Otherwise the origin must be on the CORS allowlist, or be this
+ * server's own host (same-origin deploys serving the built client).
+ */
+export const isOriginAllowed = (
+  origin: string | undefined,
+  host: string | undefined,
+  allowlist: readonly string[] = allowedOrigins
+): boolean => {
+  if (!origin) return true;
+  if (allowlist.includes(origin)) return true;
+  try {
+    return host !== undefined && new URL(origin).host === host;
+  } catch {
+    return false;
+  }
 };

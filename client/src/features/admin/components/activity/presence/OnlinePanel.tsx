@@ -2,7 +2,7 @@ import Image from '@/shared/components/ui/Image';
 import MembersIcon from '@/shared/components/ui/icons/Members';
 import { AVATAR_ONLINE_DOT_POSITION_CLASS } from '@/shared/constants/app';
 import LiveDot from './LiveDot';
-import type { AdminActivityUser } from '@/features/admin/types';
+import type { AdminActivityUser } from '../../../types';
 
 const OnlineAvatar = ({ user }: { user: AdminActivityUser }) => (
   <div
@@ -28,13 +28,13 @@ const OnlineAvatar = ({ user }: { user: AdminActivityUser }) => (
   </div>
 );
 
-type OnlinePanelProps = {
+type Props = {
   users: AdminActivityUser[];
   count: number;
   extra: number;
 };
 
-const OnlinePanel = ({ users, count, extra }: OnlinePanelProps) => (
+const OnlinePanel = ({ users, count, extra }: Props) => (
   <section className="relative flex h-full flex-col">
     <div className="flex items-end justify-between gap-3">
       <div>

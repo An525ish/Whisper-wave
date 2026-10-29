@@ -1,0 +1,239 @@
+/** One message row: avatar, bubble anatomy, role badge, system line, entrance. */
+
+/* ── Bubbles: main-chat row anatomy ─────────────────────────────────── */
+
+.rm-bubblerow {
+  display: flex;
+  justify-content: flex-start;
+  padding-inline: 1rem;
+  padding-bottom: 1rem;
+}
+
+.rm-bubblerow--mine {
+  justify-content: flex-end;
+}
+
+.rm-bubblewrap {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  width: fit-content;
+  max-width: min(100%, 22rem);
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.rm-bubblerow--mine .rm-bubblewrap {
+  align-items: flex-end;
+}
+
+.rm-bubbleavatarrow {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.rm-bubble {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  padding-left: 0.875rem;
+  padding-right: 0.875rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.rm-bubblerow--mine .rm-bubble {
+  padding-right: 0.5rem;
+}
+
+/* Photo bubbles: same numbers as the shared `bubblePadding` (p-1.5, pb-2 with text,
+   pr-3.5 incoming). Plain CSS here beats Tailwind utilities, so it is spelled out. */
+.rm-bubblerow .rm-bubble.rm-bubble--media {
+  padding: 0.375rem 0.875rem 0.375rem 0.375rem;
+}
+.rm-bubblerow--mine .rm-bubble.rm-bubble--media {
+  padding-right: 0.375rem;
+}
+.rm-bubblerow .rm-bubble.rm-bubble--mediatext {
+  padding-bottom: 0.5rem;
+}
+
+.rm-bubblename {
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+}
+
+.rm-rolebadge {
+  margin-left: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 107, 255, 0.4);
+  background: rgba(139, 107, 255, 0.1);
+  padding: 0.05rem 0.4rem;
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  color: #b6a4ff;
+  vertical-align: 1px;
+}
+
+.rm-bubbletext {
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  line-height: 19px;
+  white-space: pre-wrap;
+  color: var(--color-body);
+}
+
+.rm-bubbletime {
+  position: absolute;
+  bottom: 0.25rem;
+  right: 0.625rem;
+  display: inline-flex;
+  height: 19px;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  user-select: none;
+}
+
+.rm-bubblerow--mine .rm-bubbletime {
+  color: var(--color-body-700);
+}
+
+.rm-bubblerow:not(.rm-bubblerow--mine) .rm-bubbletime {
+  color: var(--color-body-300);
+}
+
+.rm-bubbletime--ghost {
+  position: static;
+  transform: none;
+  margin-left: 0.5rem;
+  opacity: 0;
+}
+/* System line: centered, glowing pill. */
+.rm-sys {
+  padding: 0.45rem 1.25rem;
+}
+
+.rm-sys p {
+  margin-inline: auto;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 107, 255, 0.25);
+  background: rgba(29, 21, 48, 0.6);
+  box-shadow: 0 0 24px -8px rgba(139, 107, 255, 0.5);
+  padding: 0.35rem 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--color-body-300);
+}
+/* Bubble entrance: slide in from the sending side. */
+.rm-new-r { animation: rm-pop-r 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
+.rm-new-l { animation: rm-pop-l 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes rm-pop-r {
+  from { opacity: 0; transform: translateX(10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes rm-pop-l {
+  from { opacity: 0; transform: translateX(-10px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Avatar beside the bubble — merged with the head-run styling. */
+.rm-avatar {
+  overflow: hidden;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: 0.1rem;
+  margin-bottom: 0.125rem;
+  border-radius: 999px;
+  border: 0;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* The focusable "Message actions" button beside each bubble. */
+.rm-actionsbtn {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  align-self: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: var(--color-body-300);
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.rm-actionsbtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-body);
+}
+
+/* Hover devices reveal it on row hover; keyboard focus always reveals it. */
+@media (hover: hover) {
+  .rm-actionsbtn {
+    opacity: 0;
+  }
+
+  .rm-bubblerow:hover .rm-actionsbtn,
+  .rm-actionsbtn:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* Mods see removed/auto-hidden messages greyed. */
+.rm-bubble--hidden {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.rm-hiddennote {
+  margin-bottom: 0.2rem;
+  font-size: 0.68rem;
+  font-style: italic;
+  color: var(--color-body-300);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-new-r,
+  .rm-new-l {
+    animation: none !important;
+  }
+}
+
+.rm-media {
+  display: block;
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  line-height: 0;
+}
+
+/* A real photo needs no colored ring. */
+.rm-avatar--photo {
+  border: 0;
+  background: none;
+  box-shadow: none;
+}

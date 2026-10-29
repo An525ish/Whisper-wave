@@ -9,7 +9,7 @@ import LeaveGroupIcon from '@/shared/components/ui/icons/LeaveGroup';
 import { getFirstName } from '@/shared/utils/helpers';
 import { useAuthStore } from '@/features/auth';
 import { useNotificationsStore, selectTotalNotificationCount } from '@/features/notifications';
-import { useProfileUiStore } from '@/features/profile/store';
+import { useProfileUiStore } from '../store';
 import { useLocation } from 'react-router-dom';
 
 type AccountBarProps = {
@@ -21,6 +21,10 @@ type AccountBarProps = {
   notificationButtonClassName?: string;
   /** Override bell glyph size — stroke icons often need a bump vs filled icons. */
   notificationIconClassName?: string;
+  /** Which way the account menu opens — footers need 'up'. */
+  menuPlacement?: 'down' | 'up';
+  /** Avatar-only trigger for tight chrome (nav rails). */
+  avatarOnly?: boolean;
 };
 
 const defaultNotificationButtonClass =
@@ -35,6 +39,8 @@ const AccountBar = ({
   overlayClassName = 'absolute inset-0 z-30',
   notificationButtonClassName,
   notificationIconClassName,
+  menuPlacement = 'down',
+  avatarOnly = false,
 }: AccountBarProps) => {
   const [notificationPath, setNotificationPath] = useState<string | null>(null);
   const notificationRef = useRef<HTMLDivElement | null>(null);
@@ -106,7 +112,7 @@ const AccountBar = ({
       Icon: PencilIcon,
       handler: handleEditProfile,
     },
-    { label: 'Logout', Icon: LeaveGroupIcon, handler: handleLogout },
+    { label: 'Logout', Icon: LeaveGroupIcon, handler: handleLogout, danger: true },
   ];
 
   const notificationButton = (
@@ -135,6 +141,8 @@ const AccountBar = ({
       name={userName}
       avatarUrl={avatarUrl}
       size={variant === 'full' ? 'md' : 'sm'}
+      placement={menuPlacement}
+      avatarOnly={avatarOnly}
     />
   );
 

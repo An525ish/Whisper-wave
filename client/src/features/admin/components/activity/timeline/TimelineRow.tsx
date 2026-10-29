@@ -2,14 +2,14 @@ import ChatIcon from '@/shared/components/ui/icons/Chat';
 import MembersIcon from '@/shared/components/ui/icons/Members';
 import MessageEvent from './MessageEvent';
 import SignupEvent from './SignupEvent';
-import type { AdminActivityEvent } from '@/features/admin/types';
+import type { AdminActivityEvent } from '../../../types';
 
-type TimelineRowProps = {
+type Props = {
   event: AdminActivityEvent;
   isLast: boolean;
 };
 
-const TimelineRow = ({ event, isLast }: TimelineRowProps) => (
+const TimelineRow = ({ event, isLast }: Props) => (
   <div className="relative flex gap-3 sm:gap-4">
     <div className="relative flex w-7 shrink-0 flex-col items-center pt-3">
       {!isLast && (

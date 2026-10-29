@@ -1,0 +1,58 @@
+/* ============================================================
+   WHISPER — AnonChatRoom: the composer (`.acr-composer*`, `.acr-send*`)
+   Colocated continuation of anonChatRoom.css. (The heart is in
+   anonVibeHeart.css.)
+
+   The logged-in composer's surface (`COMPOSER_SHELL_CLASS`: border-border,
+   bg-primary/40, green focus) with a spark menu on the left and a send
+   button on the right. Its edges are the same as the header and the thread:
+   `--acr-gutter` and `--acr-column` on `.acr-shell`.
+   ============================================================ */
+
+.acr-composer-wrap {
+  flex-shrink: 0;
+  padding: 0.35rem var(--acr-gutter, 0.85rem) max(0.65rem, env(safe-area-inset-bottom));
+}
+
+.acr-composer-wrap > * {
+  width: 100%;
+  max-width: var(--acr-column);
+  margin-inline: auto;
+}
+
+/* Over the 2000-char limit. The ring warns on the way up; this is the hard stop,
+   so it stays loud. */
+.acr-limit {
+  margin: 0 0 0.4rem;
+  padding: 0 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgb(255 138 146 / 0.95);
+}
+
+/* ── Photo in a bubble ─────────────────────────────────────────── */
+/* Photo in a bubble: the tile itself comes from the main chat's RenderAttachments. */
+.acr-img {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 1rem;
+  cursor: pointer;
+}
+
+.acr-img--hidden img,
+.acr-img--hidden video {
+  filter: blur(22px) brightness(0.8);
+  transform: scale(1.1);
+}
+
+.acr-img__veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+}
+

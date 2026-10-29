@@ -1,4 +1,4 @@
-import { LegalPage } from '@/features/landing';
+import { LegalPage, LEGAL_CONTACT, LEGAL_RESPONSE } from '@/features/landing';
 
 const ReportAbuse = () => (
   <LegalPage
@@ -39,10 +39,36 @@ const ReportAbuse = () => (
       <h2>Report to our team</h2>
       <p>
         For anything urgent or serious, email{' '}
-        <a href="mailto:safety@whisperwave.app">safety@whisperwave.app</a>. If you can, include the vibe name you were
+        <a href={`mailto:${LEGAL_CONTACT.safetyEmail}`}>{LEGAL_CONTACT.safetyEmail}</a>. If you can, include the vibe name you were
         talking to and roughly when it happened — it helps us act faster. You can report anonymously; you don&apos;t need
         an account.
       </p>
+    </section>
+
+    <section>
+      <h2>Grievance officer</h2>
+      <p>
+        Our grievance officer handles complaints about content on Whisper Wave — including requests to remove
+        intimate or sexual content.
+      </p>
+      <ul>
+        <li>
+          <strong>Officer</strong> — {LEGAL_CONTACT.grievanceOfficer}
+        </li>
+        <li>
+          <strong>Contact</strong> — <a href={`mailto:${LEGAL_CONTACT.email}`}>{LEGAL_CONTACT.email}</a>
+        </li>
+        <li>
+          <strong>Acknowledgement</strong> — within {LEGAL_RESPONSE.acknowledgeHours} hours of every complaint.
+        </li>
+        <li>
+          <strong>Nudity, sexual or impersonation content</strong> — actioned within {LEGAL_RESPONSE.urgentRemovalHours}{' '}
+          hours.
+        </li>
+        <li>
+          <strong>All other complaints</strong> — resolved within {LEGAL_RESPONSE.resolveDays} days.
+        </li>
+      </ul>
     </section>
 
     <section>

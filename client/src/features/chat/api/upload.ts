@@ -1,5 +1,5 @@
 import { api } from '@/shared/lib/api/client';
-import type { PresignedUploadParams } from '@/features/chat/types/upload';
+import type { PresignedUploadParams } from '../types/upload';
 
 type SignUploadFile = { name: string; mimeType: string; size: number };
 

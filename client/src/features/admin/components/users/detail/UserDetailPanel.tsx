@@ -8,11 +8,11 @@ import {
   useAdminUserDetailQuery,
   useDeleteAdminUserMutation,
   useImpersonateMutation,
-} from '@/features/admin/hooks';
-import { presenceMeta } from '@/features/admin/utils/users';
+} from '../../../hooks';
+import { presenceMeta } from '../../../utils/users';
 import UserProfileDetails from './UserProfileDetails';
 
-type UserDetailPanelProps = {
+type Props = {
   userId: string;
   onClose: () => void;
 };
@@ -21,7 +21,7 @@ const LiveDot = ({ className }: { className: string }) => (
   <span className={`inline-block h-2 w-2 rounded-full ${className}`} />
 );
 
-const UserDetailPanel = ({ userId, onClose }: UserDetailPanelProps) => {
+const UserDetailPanel = ({ userId, onClose }: Props) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmImpersonate, setConfirmImpersonate] = useState(false);
 

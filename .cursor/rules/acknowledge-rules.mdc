@@ -7,9 +7,10 @@ alwaysApply: true
 
 Before answering any user request (question, plan, or implementation):
 
-1. Read all relevant files under `.cursor/rules/`.
+1. Read all relevant files under `.cursor/rules/` (and root `.cursorrules` if present).
 2. Start the reply with a short line like: **Gone through rule files:** `rule-a.mdc`, `rule-b.mdc`.
 3. Then follow those rules for the rest of the response and any code changes.
+4. For UI/docs copy, also follow `product-voice.mdc` (no em dashes / AI-sounding prose).
 
 If no rule files exist yet, say so once, then proceed.
 
