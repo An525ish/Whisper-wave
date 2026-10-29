@@ -46,28 +46,21 @@ export const WHISPER_CONNECT_TOKEN_KEY = 'whisper:connectToken';
 /** `location.state.intent` carried to /auth so it can show the whisper-connect copy. */
 export const WHISPER_CONNECT_INTENT = 'whisper-connect';
 
-/**
- * Rolling daily whisper allowance for a signed-in account.
- *
- * Keep in sync with `DAILY_WHISPER_LIMIT` in `server/src/services/match/quota.ts`.
- *
- * The server is the only thing that enforces this — the client copy exists so the
- * picker can set an honest expectation rather than let someone discover the limit
- * by being refused. It is deliberately generous (the server test asserts
- * `>= 20`, calling anything tighter "too tight to be invisible to a real user"),
- * because guests are never capped and capping the top of the funnel would be the
- * wrong lever.
- */
-export const DAILY_WHISPER_LIMIT = 30;
-
 // ── Vibe gate + clocks ─────────────────────────────────────────────────────
 
 /** Keep in sync with server/src/services/match/vibeEligibility.ts */
 export const VIBE_UNLOCK = {
   /** Time spent actually going back and forth before vibes open. */
-  engagedMs: 5 * 60_000,
+  engagedMs: 30_000, // TEMP: testing, restore to 5 * 60_000
   /** A reply later than this does not count (the clock just pauses). */
   maxGapMs: 60_000,
+} as const;
+
+/** Keep in sync with EFFORT_UNLOCK in server/src/services/match/vibeEligibility.ts */
+export const EFFORT_UNLOCK = {
+  messages: 15,
+  minChars: 15,
+  spanMs: 2 * 60_000,
 } as const;
 
 /**

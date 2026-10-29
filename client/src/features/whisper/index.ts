@@ -9,7 +9,6 @@ export { useWhisperConnectResume } from './hooks/useWhisperConnectResume';
 export { useWhisperConnectionReady } from './hooks/useOpenWhisperDm';
 export { useWhisperAuthIntent } from './hooks/useWhisperAuthIntent';
 export { usePendingConnectionsQuery } from './hooks/usePendingConnections';
-export { useWhisperQuota } from './hooks/useWhisperQuota';
 
 // ── Persona (one alias per person across surfaces — HUB_PLAN §6.4) ──
 export { readStoredIdentity as readWhisperIdentity, renameStoredIdentity as renameWhisperIdentity } from './utils/anonIdentityStorage';

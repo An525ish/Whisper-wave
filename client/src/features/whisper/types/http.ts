@@ -62,12 +62,6 @@ export type PendingListResponse = {
   data: { items: PendingConnectionItem[] };
 };
 
-/** `GET /api/match/quota` — members only; guests are never capped. */
-export type WhisperQuotaResponse = {
-  success: boolean;
-  data: { limit: number; remaining: number };
-};
-
 /** The "how we met" story for a DM that began as an anonymous match. */
 export type ConnectionOrigin = {
   connectionId: string;

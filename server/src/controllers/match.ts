@@ -1,7 +1,6 @@
 import type { RequestHandler } from 'express';
 import { anonCookieOptions } from '../config/cors.js';
 import { leaveQueue, saveIdentityCard } from '../services/match/index.js';
-import { peekWhisperQuota } from '../services/match/quota.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { signAnonImage } from '../services/match/image.js';
 import { getActiveSessionId } from '../services/match/index.js';
@@ -63,21 +62,6 @@ export const joinQueueController: RequestHandler = catchAsync(async (req, res) =
 export const leaveQueueController: RequestHandler = catchAsync(async (req, res) => {
   await leaveQueue(anonIdFrom(req));
   res.status(200).json({ success: true, message: 'Left the queue' });
-});
-
-/**
- * GET /api/match/quota
- *
- * Auth required. How many whispers this account has left today, so the client
- * can show a real number instead of the static "30/day" copy. Guests are never
- * capped — this endpoint is members-only by design.
- */
-export const quotaController: RequestHandler = catchAsync(async (req, res) => {
-  const { used, limit } = await peekWhisperQuota(req.userId!);
-  res.status(200).json({
-    success: true,
-    data: { limit, remaining: Math.max(0, limit - used) },
-  });
 });
 
 /**

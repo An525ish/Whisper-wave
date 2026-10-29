@@ -120,6 +120,8 @@ export const META_FIELDS = {
   engaged: 'eg',
   lastAt: 'la',
   lastFrom: 'lf',
+  /** Prefix; the sender's anonId is appended. One-sided effort tally (JSON). */
+  effort: 'ef:',
 } as const;
 
 export const TTL = {

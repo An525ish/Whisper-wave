@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { REDIS_KEYS, TTL } from '../keys.js';
-import { meetsVibeGate, nextEngagement, VIBE_UNLOCK } from '../vibeEligibility.js';
+import { meetsEffortGate, meetsVibeGate, nextEffort, nextEngagement, VIBE_UNLOCK, type Effort } from '../vibeEligibility.js';
 import { vibePairScore } from '../queue.js';
 import { anonReactionSchema } from '../reaction.js';
 describe('redis keys', () => {
@@ -186,5 +186,23 @@ describe('vibe reaction validation', () => {
         messageId
       );
     }
+  });
+});
+
+describe('one-sided effort gate', () => {
+  const line = (i: number) => `this is a real message number ${i}`;
+  const run = (gapMs: number, n: number, content = line) => {
+    let e: Effort | null = null;
+    for (let i = 0; i < n; i++) e = nextEffort(e, content(i), false, 1_000 + i * gapMs);
+    return e;
+  };
+  it('unlocks after 15 distinct real messages spread over 2 minutes', () => {
+    assert.equal(meetsEffortGate(run(10_000, 15)), true);
+  });
+  it('ignores a flood, repeats, short lines and photos', () => {
+    assert.equal(meetsEffortGate(run(1_000, 15)), false);
+    assert.equal(meetsEffortGate(run(10_000, 30, () => 'the same long line again')), false);
+    assert.equal(meetsEffortGate(run(10_000, 30, () => 'hi')), false);
+    assert.equal(nextEffort(null, line(1), true, 1), null);
   });
 });

@@ -9,5 +9,4 @@ export const queryKeys = {
   /** Mutual-like claims + rows waiting on the partner. Members only. */
   pending: ['whisper', 'pending'] as const,
   /** Remaining whispers today. Members only. */
-  quota: ['whisper', 'quota'] as const,
 } as const;

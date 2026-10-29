@@ -2,7 +2,6 @@ import { AppError } from '../../utils/AppError.js';
 import { v4 as uuid } from 'uuid';
 import type { IdentityCardInput, IdentityCardResult, WaitingCard } from '../../types/match.js';
 import { dequeue, deleteWaitingCard, getWaitingCard, saveWaitingCard } from './queue.js';
-import { clearJoinCounted } from './quota.js';
 import { endOrphanedSession } from './presence.js';
 import { getActiveSessionId, getSession } from './session.js';
 import { trackJoin, trackUnique } from './stats.js';
@@ -58,10 +57,6 @@ export const saveIdentityCard = async (
   await saveWaitingCard(card);
   trackJoin(card.gender, card.vibeTags, Boolean(card.userId));
   trackUnique(card.userId ? 'anon_user' : 'anon_guest', anonId);
-
-  // Submitting the picker again is a NEW whisper, so the previous join's
-  // "already counted" marker must not swallow it. Only signed-in joins have one.
-  if (existing?.userId) await clearJoinCounted(anonId);
 
   return { anonId, isNewIdentity: !existingAnonId };
 };

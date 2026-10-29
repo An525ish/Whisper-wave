@@ -3,7 +3,7 @@ import { getRedis } from '../../config/redis.js';
 import { logger } from '../../utils/logger.js';
 import type { AnonSession, CreateSessionInput, SessionMessageCounts } from '../../types/match.js';
 import type { StoredAnonMessage } from '../../types/matchMessage.js';
-import { nextEngagement } from './vibeEligibility.js';
+import { nextEffort, nextEngagement, type Effort } from './vibeEligibility.js';
 import { META_FIELDS, REDIS_KEYS, TTL } from './keys.js';
 import { trackMatch, trackSessionEnd } from './stats.js';
 
@@ -299,6 +299,10 @@ export const recordMessage = async (
       message.from,
       message.sentAt
     );
+    const effortField = `${META_FIELDS.effort}${message.from}`;
+    const prevEffort = await getEffort(sessionId, message.from);
+    const effort = nextEffort(prevEffort, message.content, Boolean(message.image), message.sentAt);
+    if (effort !== prevEffort && effort) await getRedis().hset(meta, effortField, JSON.stringify(effort));
     await getRedis().hset(meta, {
       [META_FIELDS.engaged]: next.engagedMs,
       [META_FIELDS.lastAt]: next.lastAt,
@@ -306,6 +310,16 @@ export const recordMessage = async (
     });
   })().catch((err: unknown) => logger.warn({ err, sessionId }, 'Engagement update failed'));
   return true;
+};
+
+/** One sender's run of real messages (the one-sided vibe unlock's input). */
+export const getEffort = async (sessionId: string, anonId: string): Promise<Effort | null> => {
+  const raw = await getRedis().hget(REDIS_KEYS.meta(sessionId), `${META_FIELDS.effort}${anonId}`);
+  try {
+    return raw ? (JSON.parse(raw) as Effort) : null;
+  } catch {
+    return null;
+  }
 };
 
 /** Sustained back-and-forth time so far (the vibe gate's input). */

@@ -18,10 +18,6 @@ import HomeStage from './HomeStage';
 
 type Props = {
   userName: string | null;
-  /** e.g. "27 of 30 left today". Absent for guests and on failure. */
-  quotaText?: string;
-  /** Members at zero are beached honestly instead of linked to a refusal. */
-  quotaExhausted: boolean;
   /** People in open rooms right now; zero below the public threshold. */
   liveCount: number;
   /** Rooms surface enabled — shows the quiet secondary doorway. */
@@ -54,8 +50,6 @@ const STARS: Array<{ left: string; top: string; size: number; delay: string; dim
 
 const HomeHero = ({
   userName,
-  quotaText,
-  quotaExhausted,
   liveCount,
   roomsLive = false,
   onWhisperClick,
@@ -99,12 +93,6 @@ const HomeHero = ({
             ) : (
               <span>Pretty quiet right now</span>
             )}
-            {quotaText && (
-              <>
-                <span aria-hidden className="text-white/25">·</span>
-                <span className="text-green">{quotaText}</span>
-              </>
-            )}
           </p>
 
           <p className="mt-5 text-xs font-medium uppercase tracking-[0.28em] text-green">
@@ -119,20 +107,14 @@ const HomeHero = ({
           </p>
 
           <div className="mt-7 flex flex-row items-center justify-center gap-2.5 md:justify-start md:gap-3">
-            {quotaExhausted ? (
-              <p className="mx-auto max-w-xs rounded-full border border-border/60 px-6 py-3.5 text-sm font-medium text-body-300 md:mx-0">
-                You&apos;re out of whispers today. Come back tomorrow.
-              </p>
-            ) : (
-              <Link
-                to={ROUTES.whisper}
-                onClick={onWhisperClick}
-                className="hw-sheen inline-block whitespace-nowrap rounded-full bg-gradient-action-button-green px-5 py-2.5 text-sm sm:px-9 sm:py-3.5 sm:text-base font-semibold text-body shadow-[0_8px_32px_-8px_rgba(1,195,109,0.6)] transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green active:scale-[0.98]"
-              >
-                Find someone
-              </Link>
-            )}
-            {roomsLive && !quotaExhausted && (
+            <Link
+              to={ROUTES.whisper}
+              onClick={onWhisperClick}
+              className="hw-sheen inline-block whitespace-nowrap rounded-full bg-gradient-action-button-green px-5 py-2.5 text-sm sm:px-9 sm:py-3.5 sm:text-base font-semibold text-body shadow-[0_8px_32px_-8px_rgba(1,195,109,0.6)] transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green active:scale-[0.98]"
+            >
+              Find someone
+            </Link>
+            {roomsLive && (
               <Link
                 to={ROUTES.rooms}
                 onClick={onRoomsClick}

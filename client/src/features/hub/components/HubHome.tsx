@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAuthStore } from '@/features/auth';
 import { useRoomsList } from '@/features/rooms';
 import { publicHeadcount } from '@/shared/utils/format';
-import { useWhisperQuota, usePendingConnectionsQuery } from '@/features/whisper';
+import { usePendingConnectionsQuery } from '@/features/whisper';
 import { track } from '@/shared/lib/analytics';
 import { HUB_EVENTS } from '../constants';
 import { useHubSummary } from '../hooks/useHubSummary';
@@ -31,11 +31,8 @@ const HubHome = () => {
   const user = useAuthStore((s) => s.user);
   const { data: summary } = useHubSummary();
   const features = summary?.features;
-  // Real remaining count for members (never fires for guests). A failure
-  // hides the number — the home screen never breaks on a quota fetch.
-  const { data: quota } = useWhisperQuota();
   // In-flight whisper connections, so a returning guest-turned-member sees the
-  // one line that matters. Same failure rule as quota: hide, never break.
+  // one line that matters. A failure hides it, never breaks the page.
   const { data: pending } = usePendingConnectionsQuery();
   // Live headcount for the hero greeting. Gated on the flag — no stray
   // requests while the surface ships dark.
@@ -65,10 +62,6 @@ const HubHome = () => {
         <div className="hw-rise pb-1 md:pb-5" style={{ '--hw-d': '0ms' } as React.CSSProperties}>
           <HomeHero
             userName={user?.name ?? null}
-            quotaText={
-              user && quota ? `${quota.remaining}/${quota.limit} left today` : undefined
-            }
-            quotaExhausted={Boolean(user && quota && quota.remaining <= 0)}
             liveCount={liveCount}
             roomsLive={Boolean(features?.rooms)}
             onWhisperClick={() => handleCardClick('whisper')}

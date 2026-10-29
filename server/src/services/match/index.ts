@@ -66,11 +66,3 @@ export {
   getMessageReactions,
   getSessionReactions,
 } from './reaction.js';
-export {
-  DAILY_WHISPER_LIMIT,
-  checkWhisperQuota,
-  checkSkipQuota,
-  clearJoinCounted,
-  consumeWhisperQuota,
-  peekWhisperQuota,
-} from './quota.js';

@@ -5,7 +5,7 @@ import { anonMessageSchema, anonNoPayloadSchema, anonReadSchema } from '../../va
 import { identityCardSchema } from '../../validators/match.js';
 import { emitMatchFoundToSocket } from './emitMatchFound.js';
 import { registerReactionHandler } from './reactionHandler.js';
-import { getSession, getActiveSessionId, isParticipant, getPartner, recordLike, isVibeUnlocked, handleSocketDrop, endSessionNow, acceptAnonMessage, checkSkipQuota, relayMessage, notifyMatchEnded, requireActiveParticipant, updateIdentityCard } from '../../services/match/index.js';
+import { getSession, getActiveSessionId, isParticipant, getPartner, recordLike, isVibeUnlocked, handleSocketDrop, endSessionNow, acceptAnonMessage, relayMessage, notifyMatchEnded, requireActiveParticipant, updateIdentityCard } from '../../services/match/index.js';
 import { logger } from '../../utils/logger.js';
 import { AppError } from '../../utils/AppError.js';
 import { ackOf, clientMessage, emitError, failureCodeFor, likeFailureCodeFor } from './shared.js';
@@ -171,7 +171,7 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
         const session = await requireActiveParticipant(socket.sessionId, socket.anonId);
         const sessionId = session.sessionId;
 
-        if (!(await isVibeUnlocked(sessionId, session))) {
+        if (!(await isVibeUnlocked(sessionId, session, socket.anonId))) {
           const reason = 'Keep chatting a bit longer, then you can send a vibe.';
           emitError(socket, reason);
           ack?.({ ok: false, code: 'locked', reason });
@@ -265,15 +265,6 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
         });
       }
       ack?.({ ok: true, identity: identityApplied });
-
-      // A skip is a new whisper, so it counts against a signed-in account's cap —
-      // after the old session is already torn down, because the user clearly meant
-      // to leave it whether or not they may start another.
-      const quota = await checkSkipQuota(socket.userId);
-      if (quota instanceof AppError) {
-        emitError(socket, quota.message, 'quota_exceeded');
-        return;
-      }
 
       await requeueSelf(socket, nsp);
     },

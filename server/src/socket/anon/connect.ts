@@ -1,8 +1,7 @@
 import { QUEUE_JOINED, SESSION_EXPIRED } from '../../constants/anon-events.js';
 import { emitMatchFound, emitMatchFoundToSocket } from './emitMatchFound.js';
-import { getSession, getActiveSessionId, getUserActiveSessions, isParticipant, getWaitingCard, setWaitingCardUser, enqueue, queueSize, clearPresence, checkWhisperQuota, pairOrEnqueue } from '../../services/match/index.js';
+import { getSession, getActiveSessionId, getUserActiveSessions, isParticipant, getWaitingCard, setWaitingCardUser, enqueue, queueSize, clearPresence, pairOrEnqueue } from '../../services/match/index.js';
 import { logger } from '../../utils/logger.js';
-import { AppError } from '../../utils/AppError.js';
 import { emitError } from './shared.js';
 import type { AnonSocket } from '../../types/anonSocket.js';
 import type { Namespace } from 'socket.io';
@@ -79,15 +78,6 @@ export const handleAnonConnect = async (
   //    every gate above (account elsewhere, active match) has passed. POST
   //    /api/match/join just saves the identity card.
   //
-  //    Guests are never capped. Signed-in accounts are, and this is the first
-  //    point in the lifecycle where the account is known — the /anon handshake is
-  //    what reads the `accessToken` cookie. A refresh or reconnect inside the
-  //    marker window is the same whisper and is not counted again.
-  const quota = await checkWhisperQuota(socket.userId, anonId);
-  if (quota instanceof AppError) {
-    emitError(socket, quota.message, 'quota_exceeded');
-    return;
-  }
 
   await enterQueue(socket, nsp, card);
 };

@@ -3,10 +3,9 @@ import rateLimit from 'express-rate-limit';
 import {
   joinQueueController,
   leaveQueueController,
-  quotaController,
   signAnonImageController,
 } from '../controllers/match.js';
-import { auth, validate } from '../middlewares/index.js';
+import { validate } from '../middlewares/index.js';
 import { joinQueueSchema, signAnonImageSchema } from '../validators/match.js';
 
 /** 10 join attempts / minute per IP — prevents queue spam. */
@@ -46,7 +45,5 @@ matchRouter.post(
 );
 matchRouter.delete('/leave', matchLeaveLimiter, leaveQueueController);
 
-/** Members only — guests are never capped, so they have no quota to read. */
-matchRouter.get('/quota', auth, quotaController);
 
 matchRouter.post('/image/sign', matchImageLimiter, validate(signAnonImageSchema), signAnonImageController);
