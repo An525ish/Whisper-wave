@@ -208,7 +208,7 @@ const RoomsLobby = () => {
         )}
 
         {visible.length > 0 && (
-          <ul className="flex flex-col gap-3" aria-label="Rooms">
+          <ul className="rm-roomlist flex flex-col gap-3 max-md:gap-2" aria-label="Rooms">
             {visible.map((room, index) => {
               const reminder = reminderFor(room);
               return (

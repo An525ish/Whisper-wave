@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    WHISPER — AnonChatRoom (`.acr-*`)
 
    Colocated per the CSS-homes rule: one-off composites live next to
@@ -29,6 +29,12 @@
   display: flex;
   height: 100%;
   overflow: hidden;
+}
+
+@media (max-width: 374px) {
+  .acr-shell {
+    --acr-gutter: 0.6rem;
+  }
 }
 
 .acr-root {

@@ -38,11 +38,11 @@ export default function WaitingRoom({
   const emptyQueue = !resuming && queueSize !== null && queueSize <= 1;
 
   return (
-    <main className="auth-shell wr-shell relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background text-body">
+    <main className="auth-shell wr-shell relative flex min-h-dvh flex-col items-center justify-start overflow-x-clip overflow-y-auto bg-background text-body sm:justify-center">
       {/* Auth ambience */}
       <AuthAmbience />
 
-      <div className="relative z-10 flex w-full max-w-md flex-col items-center gap-7 px-4 text-center">
+      <div className="wr-frame relative z-10 flex w-full max-w-md flex-col items-center gap-5 px-3 py-6 text-center sm:gap-7 sm:px-4 sm:py-10">
 
         {/* Stage — decorative, so hidden from assistive tech */}
         <div className="auth-stage wr-stage relative" aria-hidden>
@@ -133,8 +133,8 @@ export default function WaitingRoom({
         </div>
 
         {/* Text */}
-        <div className="w-full text-center">
-          <h1 className="font-display text-[1.9rem] font-bold leading-none tracking-tight text-white">
+        <div className="wr-copy w-full text-center">
+          <h1 className="wr-title font-display text-[1.55rem] font-bold leading-none tracking-tight text-white sm:text-[1.9rem]">
             {resuming
               ? 'Reconnecting to your chat'
               : emptyQueue
@@ -144,7 +144,7 @@ export default function WaitingRoom({
               {resuming || emptyQueue ? '…' : '_'}
             </span>
           </h1>
-          <p className="mt-2 text-sm text-body-500">
+          <p className="wr-sub mt-1.5 text-[13px] leading-snug text-body-500 sm:mt-2 sm:text-sm">
             {resuming
               ? 'Hang tight — picking up right where you left off.'
               : emptyQueue
@@ -154,17 +154,9 @@ export default function WaitingRoom({
         </div>
 
         {/* Identity card */}
-        <div
-          className="w-full rounded-2xl px-5 py-4"
-          style={{
-            background: 'radial-gradient(120% 80% at 50% -10%, rgba(1,195,109,0.1) 0%, transparent 55%), linear-gradient(165deg, rgba(57,48,70,0.72) 0%, rgba(42,33,54,0.88) 100%)',
-            border: '1px solid rgba(235,236,236,0.09)',
-            boxShadow: '0 16px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(235,236,236,0.07)',
-            backdropFilter: 'blur(18px)',
-          }}
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-2.5">
+        <div className="wr-id w-full rounded-2xl px-3.5 py-3 sm:px-5 sm:py-4">
+          <div className="flex items-center justify-between gap-2.5 sm:gap-4">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
               <span
                 className="h-2 w-2 shrink-0 rounded-full"
                 aria-hidden
@@ -181,7 +173,7 @@ export default function WaitingRoom({
                 }}
               />
               <div className="min-w-0 text-left">
-                <span className="truncate text-sm text-body-400">
+                <span className="block truncate text-[13px] text-body-400 sm:text-sm">
                   {resuming ? (
                     'Restoring your thread'
                   ) : (
@@ -207,7 +199,7 @@ export default function WaitingRoom({
             <button
               type="button"
               onClick={onLeave}
-              className="shrink-0 flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-body-500 transition-all hover:border-red/20 hover:text-red"
+              className="shrink-0 flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-[11px] text-body-500 transition-all hover:border-red/20 hover:text-red sm:px-3 sm:text-xs"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

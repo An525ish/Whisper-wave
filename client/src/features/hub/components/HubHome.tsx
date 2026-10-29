@@ -60,8 +60,8 @@ const HubHome = () => {
   return (
     <div className="hw-page relative min-h-dvh">
       <HomeBackdrop />
-      <main className="relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 pb-2 pt-8 md:gap-8 md:px-8 md:pb-3 md:pt-28 lg:pt-32">
-        <div className="hw-rise pb-2 md:pb-5" style={{ '--hw-d': '0ms' } as React.CSSProperties}>
+      <main className="hw-main relative mx-auto flex w-full max-w-6xl flex-col gap-8 px-5 pb-2 pt-6 md:gap-8 md:px-8 md:pb-3 md:pt-28 lg:pt-32">
+        <div className="hw-rise pb-1 md:pb-5" style={{ '--hw-d': '0ms' } as React.CSSProperties}>
           <HomeHero
             userName={user?.name ?? null}
             quotaText={

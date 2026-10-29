@@ -86,7 +86,7 @@ const HomeHero = ({
         <div className="ab-grain" />
       </div>
 
-      <div className="relative grid grid-cols-[minmax(0,1fr)] items-center gap-8 px-6 py-10 md:grid-cols-[1.02fr_0.98fr] md:gap-6 md:px-10 md:py-14 lg:px-12">
+      <div className="hw-hero__frame relative grid grid-cols-[minmax(0,1fr)] items-center gap-6 px-4 py-7 md:grid-cols-[1.02fr_0.98fr] md:gap-6 md:px-10 md:py-14 lg:px-12">
         {/* ── copy ── */}
         <div className="text-center md:text-left">
           <p className="hw-statuspill mx-auto md:mx-0">

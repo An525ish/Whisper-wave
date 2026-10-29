@@ -43,6 +43,12 @@
   transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
+@media (max-width: 374px) {
+  .mm-top {
+    padding: 0.75rem 0.7rem 0.65rem;
+  }
+}
+
 .mm-top__head {
   display: flex;
   align-items: center;

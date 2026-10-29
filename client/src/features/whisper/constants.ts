@@ -222,6 +222,8 @@ export const WHISPER_EVENTS = {
   SESSION_END: 'whisper_session_end',
   /** The live-whisper pill was tapped to return to the thread. */
   PILL_CLICK: 'whisper_pill_click',
+  /** The live-whisper pill × ended the anonymous session from the hub. */
+  PILL_DISMISS: 'whisper_pill_dismiss',
 } as const;
 
 // ── Waiting-room radar ─────────────────────────────────────────────────────

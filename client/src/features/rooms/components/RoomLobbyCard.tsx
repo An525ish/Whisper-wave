@@ -46,10 +46,10 @@ const RoomLobbyCard = ({ room, index = 0, now }: Props) => {
         {initialOf(room.title)}
         {live && <span className="rm-roomart__pulse" />}
       </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-[15px] font-semibold text-white">{room.title}</span>
-        <span className="mt-0.5 block truncate text-[13px] text-body-300">{room.description}</span>
-        <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <span className="rm-roomcard__body min-w-0 flex-1">
+        <span className="rm-roomcard__title block truncate font-semibold text-white">{room.title}</span>
+        <span className="rm-roomcard__desc mt-0.5 block truncate text-body-300">{room.description}</span>
+        <span className="rm-roomcard__tags flex flex-wrap items-center">
           {live ? (
             <span className="rm-roomstatus rm-roomstatus--live">
               <span aria-hidden className="rm-roomstatus__dot" />

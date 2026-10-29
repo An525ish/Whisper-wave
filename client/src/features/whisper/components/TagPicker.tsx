@@ -98,7 +98,7 @@ export default function TagPicker({ tags, onChange }: Props) {
             placeholder={
               tags.length === 0 ? 'Type a vibe, or pick below…' : 'Add one more…'
             }
-            className="min-w-[150px] flex-1 bg-transparent text-sm text-white placeholder:text-body-300/50 outline-none"
+            className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-body-300/50 outline-none sm:min-w-[150px]"
           />
         )}
       </div>
@@ -117,7 +117,7 @@ export default function TagPicker({ tags, onChange }: Props) {
               className={[
                 // Slight vertical lift + saturation on hover so the row feels
                 // alive rather than being a static list of pills.
-                'group rounded-full px-3 py-[7px] text-[11.5px] font-medium leading-none tracking-[0.01em] transition-all duration-200 ease-out active:scale-[0.97]',
+                'group rounded-full px-2.5 py-1.5 text-[11px] font-medium leading-none tracking-[0.01em] transition-all duration-200 ease-out active:scale-[0.97] sm:px-3 sm:py-[7px] sm:text-[11.5px]',
                 active
                   ? 'border border-green/45 bg-green/[0.14] text-green shadow-[0_0_0_1px_rgba(1,195,109,0.12),0_2px_10px_-2px_rgba(1,195,109,0.3)]'
                   : disabled

@@ -44,7 +44,7 @@ export default function GenderPicker({ value, onChange }: Props) {
         ref={groupRef}
         role="radiogroup"
         aria-label="Gender"
-        className="grid grid-cols-3 gap-2"
+        className="grid grid-cols-3 gap-1.5 sm:gap-2"
         onKeyDown={handleKey}
       >
         {GENDER_OPTIONS.map((opt) => {
@@ -58,15 +58,13 @@ export default function GenderPicker({ value, onChange }: Props) {
               tabIndex={opt.value === tabStop ? 0 : -1}
               onClick={() => onChange(active ? null : opt.value)}
               className={[
-                'group flex min-w-0 items-center justify-center gap-1.5 rounded-full border px-2 py-2.5 sm:gap-2.5 sm:px-4.5 text-[13.5px] font-semibold leading-none transition-all duration-200 ease-out active:scale-[0.97]',
+                'group flex min-w-0 items-center justify-center gap-1 rounded-full border px-1.5 py-2 text-[12px] font-semibold leading-none transition-all duration-200 ease-out active:scale-[0.97] sm:gap-2.5 sm:px-4.5 sm:py-2.5 sm:text-[13.5px]',
                 active
                   ? 'border-green/50 bg-green/[0.15] text-green shadow-[0_0_0_1px_rgba(1,195,109,0.14),0_3px_14px_-3px_rgba(1,195,109,0.4)]'
                   : 'border-white/[0.09] bg-white/[0.035] text-body-300 hover:-translate-y-px hover:border-green/35 hover:bg-green/[0.08] hover:text-white hover:shadow-[0_4px_14px_-4px_rgba(1,195,109,0.3)]',
               ].join(' ')}
             >
               <svg
-                width="17"
-                height="17"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -76,7 +74,7 @@ export default function GenderPicker({ value, onChange }: Props) {
                 aria-hidden
                 focusable="false"
                 className={[
-                  'shrink-0 transition-colors',
+                  'h-3.5 w-3.5 shrink-0 transition-colors sm:h-[17px] sm:w-[17px]',
                   active
                     ? 'text-green'
                     : 'text-body-500 group-hover:text-green/80',

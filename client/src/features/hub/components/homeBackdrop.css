@@ -9,8 +9,28 @@
 /* Plain canvas: the washes live in the viewport-fixed backdrop below, so there is
    no pane-shaped gradient to leave a seam next to the dock. */
 .hw-page {
+  --hw-gutter: 1.25rem; /* matches main `px-5`; explore bleed uses the same value */
   overflow-x: clip; /* decorative glows/rings must never make the page scroll sideways */
   background: var(--color-background);
+}
+
+/* Sub-SE phones (~350–374px): same layout, less padding so content fits. */
+@media (max-width: 374px) {
+  .hw-page {
+    --hw-gutter: 0.75rem;
+  }
+
+  .hw-page .hw-main {
+    padding-inline: var(--hw-gutter);
+    padding-top: 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .hw-page .hw-hero__frame {
+    gap: 1.25rem;
+    padding-inline: 0.65rem;
+    padding-block: 1.25rem;
+  }
 }
 
 /* Same tuning as the Rooms backdrop (violet mesh, teal glow, soft vignette), so

@@ -25,19 +25,19 @@ export default function VibePicker({
   onDismissAlreadyChatting,
 }: Props) {
   return (
-    <main className="auth-shell relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background text-body">
+    <main className="auth-shell vp-shell relative flex min-h-dvh flex-col items-center justify-start overflow-x-clip overflow-y-auto bg-background text-body sm:justify-center">
       <AuthAmbience />
       {alreadyChatting && <AlreadyChattingModal onClose={onDismissAlreadyChatting} />}
 
       {/* A little wider than the auth panel (max-w-105) so the preset chip row
           fits on two lines instead of three ragged ones. Not much wider — the
           form is a single column, so extra width would just stretch the fields. */}
-      <div className="relative z-10 w-full max-w-120 px-4 py-10">
-        <div className="mb-7 flex justify-center">
+      <div className="vp-frame relative z-10 w-full max-w-120 px-3 py-6 sm:px-4 sm:py-10">
+        <div className="vp-wordmark mb-5 flex justify-center sm:mb-7">
           <div className="auth-wordmark">
             <div
               className="auth-wordmark__lockup"
-              style={{ fontSize: 'clamp(2.2rem,7vw,3rem)' }}
+              style={{ fontSize: 'clamp(1.85rem,6.5vw,3rem)' }}
             >
               <span className="auth-wordmark__glyph auth-wordmark__glyph--sm" aria-hidden>
                 <img src="/logo-4.png" alt="" />
@@ -63,10 +63,10 @@ export default function VibePicker({
           <div className="auth-panel relative overflow-hidden">
             <div className="auth-panel__sheen hidden md:block" aria-hidden />
             <div
-              className="auth-panel__body relative z-1 px-5 pt-6 pb-6 sm:px-9 sm:pt-8 sm:pb-7"
+              className="auth-panel__body vp-panel-body relative z-1 px-3.5 pt-4 pb-4 sm:px-9 sm:pt-8 sm:pb-7"
               style={{ minHeight: 0 }}
             >
-              <header className="auth-panel__mode mb-6">
+              <header className="auth-panel__mode vp-mode mb-4 sm:mb-6">
                 <p className="auth-panel__mode-label">Enter the void</p>
               </header>
 

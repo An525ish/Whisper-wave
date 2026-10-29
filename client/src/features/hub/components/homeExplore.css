@@ -41,10 +41,24 @@
 /* Phones: let the colour washes bleed to the screen edge instead of
    ending in a hard line at the page gutter. */
 @media (max-width: 767px) {
-  .hw-explore { margin-inline: -1.25rem; }
-  .hw-explore .hw-show { grid-template-columns: minmax(0, 1fr); padding-inline: 1.25rem; }
+  .hw-explore { margin-inline: calc(var(--hw-gutter, 1.25rem) * -1); }
+  .hw-explore .hw-show { grid-template-columns: minmax(0, 1fr); padding-inline: var(--hw-gutter, 1.25rem); }
   .hw-show > * { min-width: 0; }
-  .hw-explore .hw-explore__head { padding-inline: 1.25rem; }
+  .hw-explore .hw-explore__head { padding-inline: var(--hw-gutter, 1.25rem); }
+}
+
+@media (max-width: 767px) {
+  .hw-show--rooms {
+    padding-block: 2rem;
+    gap: 1.35rem;
+  }
+}
+
+@media (max-width: 374px) {
+  .hw-explore__head { padding-block: 1.35rem 1.75rem; }
+  .hw-show { padding-block: 2rem; }
+  .hw-show--rooms { padding-block: 1.5rem; gap: 1.1rem; }
+  .hw-closing { padding-block: 2.5rem 2rem; }
 }
 
 .hw-explore__head { padding: 2rem 0 3rem; text-align: center; }

@@ -49,6 +49,17 @@
   transform: none;
 }
 
+@media (max-width: 767px) {
+  .hw-roomlist {
+    gap: 0.5rem;
+  }
+
+  .hw-roomcard {
+    gap: 0.65rem;
+    padding: 0.65rem 0.7rem 0.65rem 0.65rem;
+  }
+}
+
 /** Art tile: deterministic gradient + initial letter per room. */
 .hw-roomart {
   position: relative;

@@ -116,3 +116,21 @@
     transition: none;
   }
 }
+
+@media (max-width: 767px) {
+  .apn-spark {
+    min-height: 2.65rem;
+    gap: 0.5rem;
+    padding: 0.4rem 0.55rem;
+  }
+
+  .apn-spark__emoji {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.95rem;
+  }
+
+  .apn-spark__text {
+    font-size: 0.75rem;
+  }
+}

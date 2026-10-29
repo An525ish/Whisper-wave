@@ -72,7 +72,7 @@ export default function VibePickerForm({ onJoin, loading }: Props) {
   };
 
   return (
-    <form onSubmit={onFormSubmit(submit)} className="flex flex-col gap-5">
+    <form onSubmit={onFormSubmit(submit)} className="vp-form flex flex-col gap-3.5 sm:gap-5">
       <div className="auth-field w-full text-left">
         <div className="mb-2 flex items-center justify-between">
           <label
@@ -109,7 +109,7 @@ export default function VibePickerForm({ onJoin, loading }: Props) {
       <label
         htmlFor="vp-age"
         className={[
-          'group flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-200',
+          'group flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-3 sm:gap-3 sm:px-4 sm:py-3.5 transition-all duration-200',
           ageField.value
             ? 'border-green/40 bg-green/[0.07]'
             : 'border-white/10 bg-black-dark/60 hover:border-white/20',
@@ -163,7 +163,7 @@ export default function VibePickerForm({ onJoin, loading }: Props) {
         <button
           type="submit"
           disabled={loading || !displayName.trim() || !ageField.value}
-          className="whisper-cta relative w-full overflow-hidden rounded-xl px-4 py-3.5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-45"
+          className="whisper-cta relative w-full overflow-hidden rounded-xl px-4 py-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-45 sm:py-3.5"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">

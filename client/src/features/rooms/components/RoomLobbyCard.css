@@ -59,6 +59,19 @@
   transform: none;
 }
 
+.rm-roomcard__title {
+  font-size: 0.9375rem;
+}
+
+.rm-roomcard__desc {
+  font-size: 0.8125rem;
+}
+
+.rm-roomcard__tags {
+  margin-top: 0.4rem;
+  gap: 0.4rem;
+}
+
 .rm-roomart {
   position: relative;
   display: grid;
@@ -204,6 +217,72 @@
     background: transparent;
     color: var(--color-green);
     box-shadow: none;
+  }
+}
+
+/* Phones: smaller art tile + tighter padding so title/tags have room. */
+@media (max-width: 767px) {
+  .rm-roomcard {
+    gap: 0.7rem;
+    padding: 0.7rem 0.75rem;
+    border-radius: 1.15rem;
+  }
+
+  .rm-roomart {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.85rem;
+    font-size: 1.3rem;
+  }
+
+  .rm-roomart__pulse {
+    right: 0.3rem;
+    top: 0.3rem;
+    width: 0.4rem;
+    height: 0.4rem;
+  }
+
+  .rm-roomcard__title {
+    font-size: 0.9rem;
+  }
+
+  .rm-roomcard__desc {
+    font-size: 0.75rem;
+  }
+
+  .rm-roomcard__tags {
+    margin-top: 0.4rem;
+    gap: 0.35rem;
+  }
+
+  .rm-roomstatus {
+    gap: 0.28rem;
+    padding: 0.14rem 0.5rem;
+    font-size: 0.66rem;
+  }
+
+  .rm-roomhours {
+    padding: 0.14rem 0.45rem;
+    font-size: 0.58rem;
+  }
+
+  .rm-roomcard__go {
+    padding: 0.32rem 0.7rem;
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 374px) {
+  .rm-roomcard {
+    gap: 0.55rem;
+    padding: 0.55rem 0.6rem;
+  }
+
+  .rm-roomart {
+    width: 2.65rem;
+    height: 2.65rem;
+    border-radius: 0.75rem;
+    font-size: 1.15rem;
   }
 }
 

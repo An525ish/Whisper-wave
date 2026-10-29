@@ -9,6 +9,13 @@
   padding-bottom: 1rem;
 }
 
+@media (max-width: 374px) {
+  .rm-bubblerow {
+    padding-inline: 0.6rem;
+    padding-bottom: 0.85rem;
+  }
+}
+
 .rm-bubblerow--mine {
   justify-content: flex-end;
 }

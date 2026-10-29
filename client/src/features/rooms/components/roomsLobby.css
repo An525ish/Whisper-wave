@@ -199,6 +199,84 @@
   }
 }
 
+/* Phones: tighter header, search, and chips so the list gets more room. */
+@media (max-width: 767px) {
+  .rm-title {
+    margin-top: 0.15rem;
+    font-size: clamp(1.85rem, 8vw, 2.35rem);
+  }
+
+  .rm-live {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+  }
+
+  .rm-toolbar {
+    gap: 0.45rem;
+  }
+
+  .rm-search {
+    gap: 0.4rem;
+    padding: 0.4rem 0.4rem 0.4rem 0.8rem;
+  }
+
+  .rm-search input {
+    font-size: 0.82rem;
+  }
+
+  .rm-search__clear {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .rm-iconbtn {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .rm-iconbtn svg {
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+
+  .rm-new {
+    padding: 0.5rem 0.95rem;
+    font-size: 0.78rem;
+  }
+
+  .rm-chips {
+    gap: 0.35rem;
+  }
+
+  .rm-chip {
+    gap: 0.3rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.74rem;
+  }
+
+  .rm-chip__count {
+    font-size: 0.62rem;
+  }
+}
+
+@media (max-width: 374px) {
+  .rm-title {
+    font-size: clamp(1.7rem, 8.5vw, 2.1rem);
+  }
+
+  .rm-search {
+    padding: 0.35rem 0.35rem 0.35rem 0.7rem;
+  }
+
+  .rm-new {
+    padding: 0.45rem 0.8rem;
+  }
+
+  .rm-chip {
+    padding: 0.3rem 0.65rem;
+  }
+}
+
 /* ── "Remind me when it opens" — sits under a closed card ── */
 .rm-remind {
   margin: 0.45rem 0 0 1rem;
@@ -232,4 +310,13 @@
 .rm-remind:disabled {
   cursor: default;
   opacity: 0.6;
+}
+
+@media (max-width: 767px) {
+  .rm-remind {
+    margin-left: 0.65rem;
+    height: 1.75rem;
+    padding: 0 0.7rem;
+    font-size: 0.72rem;
+  }
 }
