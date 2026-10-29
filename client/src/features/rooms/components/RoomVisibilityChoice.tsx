@@ -44,9 +44,14 @@ const RoomVisibilityChoice = ({ register, capability }: Props) => {
         <span>
           <span className="rm-vis__title">{ROOM_VISIBILITY_COPY.private.title}</span>
           <span className="rm-vis__sub">{ROOM_VISIBILITY_COPY.private.sub}</span>
-          {blocked && <span className="rm-vis__note">{blocked}</span>}
         </span>
       </label>
+      {blocked && <p className="rm-vis__note">{blocked}</p>}
+      {(['public', 'private'] as const).map((k) => (
+        <ul key={k} className={`rm-vis__facts rm-vis__facts--${k}`}>
+          {ROOM_VISIBILITY_COPY[k].facts.map((f) => <li key={f}>{f}</li>)}
+        </ul>
+      ))}
     </fieldset>
   );
 };

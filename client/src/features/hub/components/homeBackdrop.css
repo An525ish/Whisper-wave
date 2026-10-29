@@ -9,6 +9,7 @@
 /* Plain canvas: the washes live in the viewport-fixed backdrop below, so there is
    no pane-shaped gradient to leave a seam next to the dock. */
 .hw-page {
+  overflow-x: clip; /* decorative glows/rings must never make the page scroll sideways */
   background: var(--color-background);
 }
 

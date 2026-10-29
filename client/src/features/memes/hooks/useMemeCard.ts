@@ -15,6 +15,7 @@ export function useMemeCard(item: MemeItem) {
   const toggleSave = useToggleMemeSave();
   const [shareOpen, setShareOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [hideOpen, setHideOpen] = useState(false);
 
   const react = useCallback(
     (glyph: string) => {
@@ -29,7 +30,7 @@ export function useMemeCard(item: MemeItem) {
   const hideIt = useCallback(() => {
     hide(item.id);
     track(MEME_EVENTS.HIDE, {});
-    toast.success('Hidden — you won’t see this again.');
+    toast.success('Hidden. You won’t see this one again.');
   }, [hide, item.id]);
 
   const save = useCallback(() => toggleSave(item.id), [toggleSave, item.id]);
@@ -46,5 +47,8 @@ export function useMemeCard(item: MemeItem) {
     reportOpen,
     openReport: () => setReportOpen(true),
     closeReport: () => setReportOpen(false),
+    hideOpen,
+    openHide: () => setHideOpen(true),
+    closeHide: () => setHideOpen(false),
   };
 }

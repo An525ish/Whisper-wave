@@ -6,7 +6,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import useAsyncMutation from '@/shared/hooks/useAsyncMutation';
 import { useCopyToClipboard } from '@/shared/hooks/useCopyToClipboard';
 import { useAuthStore } from '@/features/auth';
-import { useMyChatsQuery, useSendGifMutation } from '@/features/chat';
+import { useSendGifMutation } from '@/features/chat';
 import { MEME_EVENTS } from '../constants';
 import { memeText } from '../utils/memeText';
 import type { MemeItem } from '../types';
@@ -20,25 +20,28 @@ import type { MemeItem } from '../types';
 export function useMemeShare(onDone: () => void) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const { data: chats } = useMyChatsQuery({ skip: !user });
   const [send] = useAsyncMutation(useSendGifMutation);
   const { copy } = useCopyToClipboard();
 
-  const shareToChat = useCallback(
-    (item: MemeItem, chatId: string) => {
-      void send('Sharing…', {
-        chatId,
-        gifId: `meme-${item.id}`,
-        gifUrl: item.imageUrl,
-        gifTitle: memeText(item).slice(0, 200),
-        mimeType: 'image/jpeg',
-        kind: 'meme',
-      }).then((res) => {
-        if (!res) return;
-        track(MEME_EVENTS.SHARE, { to: 'chat' });
-        onDone();
-        navigate(ROUTES.chat(chatId));
-      });
+  const shareToChats = useCallback(
+    async (item: MemeItem, chatIds: string[]) => {
+      let sent = 0;
+      for (const chatId of chatIds) {
+        const res = await send('Sharing…', {
+          chatId,
+          gifId: `meme-${item.id}`,
+          gifUrl: item.imageUrl,
+          gifTitle: memeText(item).slice(0, 200),
+          mimeType: 'image/jpeg',
+          kind: 'meme',
+        });
+        if (res) sent += 1;
+      }
+      if (sent === 0) return;
+      track(MEME_EVENTS.SHARE, { to: 'chat', count: sent });
+      onDone();
+      // One target: take them there. Several: stay on the feed.
+      if (chatIds.length === 1) navigate(ROUTES.chat(chatIds[0]));
     },
     [send, onDone, navigate]
   );
@@ -53,5 +56,5 @@ export function useMemeShare(onDone: () => void) {
     [copy, onDone]
   );
 
-  return { isMember: Boolean(user), chats: chats?.data ?? [], shareToChat, copyText };
+  return { isMember: Boolean(user), shareToChats, copyText };
 }

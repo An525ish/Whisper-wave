@@ -27,7 +27,7 @@ const MemeModeSwitch = () => {
         <span aria-hidden className="mm-seg__thumb" />
         <span className="mm-seg__opt">Safe</span>
         <span className="mm-seg__opt">
-          Unfiltered
+          <span className="mm-seg__long">Unfiltered</span>
           <span className="mm-seg__badge">18+</span>
         </span>
       </button>

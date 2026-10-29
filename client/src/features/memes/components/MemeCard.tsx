@@ -2,6 +2,7 @@ import { RetryableMediaImage } from '@/shared/components/ui/media/RetryableMedia
 import { MEME_REACTIONS } from '../constants';
 import { useMemeCard } from '../hooks/useMemeCard';
 import { memeText } from '../utils/memeText';
+import MemeHideDialog from './MemeHideDialog';
 import MemeReportDialog from './MemeReportDialog';
 import ShareMemeSheet from './ShareMemeSheet';
 import type { MemeItem } from '../types';
@@ -95,7 +96,7 @@ const MemeCard = ({ item, index = 0 }: Props) => {
               <path d="M5 21V4 M5 4h11l-2 4 2 4H5" />
             </svg>
           </button>
-          <button type="button" onClick={card.hideIt} aria-label="Hide this one" title="Hide this one" className="mm-iconbtn">
+          <button type="button" onClick={card.openHide} aria-label="Hide this one" title="Hide this one" className="mm-iconbtn">
             <svg viewBox="0 0 24 24" aria-hidden {...ICON}>
               <path d="M10.6 5.1A9.8 9.8 0 0 1 12 5c7 0 11 8 11 8a18.6 18.6 0 0 1-2.2 3.1M6.6 6.6C3.8 8.3 2 13 2 13s4 8 10 8a9.6 9.6 0 0 0 4.4-1.1" />
               <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
@@ -106,6 +107,7 @@ const MemeCard = ({ item, index = 0 }: Props) => {
       </div>
       <ShareMemeSheet item={item} open={card.shareOpen} onClose={card.closeShare} />
       <MemeReportDialog item={item} open={card.reportOpen} onClose={card.closeReport} />
+      <MemeHideDialog open={card.hideOpen} onClose={card.closeHide} onConfirm={card.hideIt} />
     </article>
   );
 };

@@ -47,7 +47,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 0.75rem;
 }
 
@@ -93,7 +92,6 @@
 }
 
 .mm-toptitle {
-  margin-top: 0.25rem;
   font-family: var(--font-display);
   font-size: 1.55rem;
   line-height: 1.1;
@@ -175,6 +173,7 @@
 }
 
 .mm-eyebrow {
+  margin-top: 0.25rem;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -243,4 +242,18 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mm-seg__thumb { transition: none; }
+}
+
+/* Phones: one row. Title left, a compact Safe | 18+ switch right. */
+@media (max-width: 479px) {
+  .mm-top__head { flex-wrap: nowrap; gap: 0.6rem; }
+  .mm-top__title { min-width: 0; gap: 0.55rem; }
+  .mm-badge { width: 2.2rem; height: 2.2rem; border-radius: 0.8rem; }
+  .mm-badge svg { width: 1.25rem; height: 1.25rem; }
+  .mm-toptitle { font-size: 1.3rem; white-space: nowrap; }
+  .mm-seg { font-size: 0.7rem; }
+  .mm-seg__opt { padding: 0.32rem 0.65rem; }
+  .mm-seg__long {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
 }

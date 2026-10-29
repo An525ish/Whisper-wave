@@ -44,7 +44,7 @@ export default function GenderPicker({ value, onChange }: Props) {
         ref={groupRef}
         role="radiogroup"
         aria-label="Gender"
-        className="flex flex-wrap gap-2"
+        className="grid grid-cols-3 gap-2"
         onKeyDown={handleKey}
       >
         {GENDER_OPTIONS.map((opt) => {
@@ -58,7 +58,7 @@ export default function GenderPicker({ value, onChange }: Props) {
               tabIndex={opt.value === tabStop ? 0 : -1}
               onClick={() => onChange(active ? null : opt.value)}
               className={[
-                'group flex items-center gap-2.5 rounded-full border px-4.5 py-2.5 text-[13.5px] font-semibold leading-none transition-all duration-200 ease-out active:scale-[0.97]',
+                'group flex min-w-0 items-center justify-center gap-1.5 rounded-full border px-2 py-2.5 sm:gap-2.5 sm:px-4.5 text-[13.5px] font-semibold leading-none transition-all duration-200 ease-out active:scale-[0.97]',
                 active
                   ? 'border-green/50 bg-green/[0.15] text-green shadow-[0_0_0_1px_rgba(1,195,109,0.14),0_3px_14px_-3px_rgba(1,195,109,0.4)]'
                   : 'border-white/[0.09] bg-white/[0.035] text-body-300 hover:-translate-y-px hover:border-green/35 hover:bg-green/[0.08] hover:text-white hover:shadow-[0_4px_14px_-4px_rgba(1,195,109,0.3)]',

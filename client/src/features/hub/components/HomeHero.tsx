@@ -86,7 +86,7 @@ const HomeHero = ({
         <div className="ab-grain" />
       </div>
 
-      <div className="relative grid items-center gap-8 px-6 py-10 md:grid-cols-[1.02fr_0.98fr] md:gap-6 md:px-10 md:py-14 lg:px-12">
+      <div className="relative grid grid-cols-[minmax(0,1fr)] items-center gap-8 px-6 py-10 md:grid-cols-[1.02fr_0.98fr] md:gap-6 md:px-10 md:py-14 lg:px-12">
         {/* ── copy ── */}
         <div className="text-center md:text-left">
           <p className="hw-statuspill mx-auto md:mx-0">
@@ -98,6 +98,12 @@ const HomeHero = ({
               </span>
             ) : (
               <span>Pretty quiet right now</span>
+            )}
+            {quotaText && (
+              <>
+                <span aria-hidden className="text-white/25">·</span>
+                <span className="text-green">{quotaText}</span>
+              </>
             )}
           </p>
 
@@ -112,7 +118,7 @@ const HomeHero = ({
             fun, and keep them if it clicks.
           </p>
 
-          <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center md:justify-start">
+          <div className="mt-7 flex flex-row items-center justify-center gap-2.5 md:justify-start md:gap-3">
             {quotaExhausted ? (
               <p className="mx-auto max-w-xs rounded-full border border-border/60 px-6 py-3.5 text-sm font-medium text-body-300 md:mx-0">
                 You&apos;re out of whispers today. Come back tomorrow.
@@ -121,7 +127,7 @@ const HomeHero = ({
               <Link
                 to={ROUTES.whisper}
                 onClick={onWhisperClick}
-                className="hw-sheen inline-block rounded-full bg-gradient-action-button-green px-9 py-3.5 text-base font-semibold text-body shadow-[0_8px_32px_-8px_rgba(1,195,109,0.6)] transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green active:scale-[0.98]"
+                className="hw-sheen inline-block whitespace-nowrap rounded-full bg-gradient-action-button-green px-5 py-2.5 text-sm sm:px-9 sm:py-3.5 sm:text-base font-semibold text-body shadow-[0_8px_32px_-8px_rgba(1,195,109,0.6)] transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green active:scale-[0.98]"
               >
                 Find someone
               </Link>
@@ -130,15 +136,12 @@ const HomeHero = ({
               <Link
                 to={ROUTES.rooms}
                 onClick={onRoomsClick}
-                className="inline-block rounded-full border border-white/15 bg-white/[0.04] px-7 py-3.5 text-sm font-semibold text-white transition hover:border-green/40 hover:bg-green/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green active:scale-[0.98]"
+                className="inline-block whitespace-nowrap rounded-full border border-white/15 bg-white/[0.04] px-4 py-2.5 text-[13px] sm:px-7 sm:py-3.5 sm:text-sm font-semibold text-white transition hover:border-green/40 hover:bg-green/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green active:scale-[0.98]"
               >
                 Browse rooms
               </Link>
             )}
           </div>
-          {quotaText && (
-            <p className="mt-2.5 text-xs font-medium text-green">{quotaText}</p>
-          )}
 
           <ol className="hw-steps mt-8 text-left" aria-label="How it works">
             {HERO_STEPS.map((step, i) => (

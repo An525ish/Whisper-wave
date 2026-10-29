@@ -51,3 +51,16 @@
   0%, 80%, 100% { opacity: 0.25; transform: scaleY(0.6); }
   40% { opacity: 1; transform: scaleY(1); }
 }
+
+/* Phones: the backdrop's static ring set, dashed sine and signal bars compete with the
+   scene and read as off-centre. Hide them here only (the picker keeps them). */
+@media (max-width: 639px) {
+  .wr-shell .auth-ambience__ripples,
+  .wr-shell .auth-ambience__signal { display: none; }
+}
+
+/* The shared auth shell drops to `min-height: auto` on phones. This screen is a single
+   centred scene, so fill the scroll area and centre it vertically. */
+@media (max-width: 767px) {
+  main.wr-shell.auth-shell { min-height: 100% !important; }
+}

@@ -17,16 +17,13 @@ describe('buildHubNavSpecs', () => {
     ]);
   });
 
-  it('lists Games on the rail only, as a coming-soon page', () => {
-    const games = buildHubNavSpecs({ unread: 0 }).find((s) => s.id === 'games');
-    expect(games?.railOnly).toBe(true);
-  });
-
-  it('keeps Memes off the phone tab bar', () => {
-    const memes = buildHubNavSpecs({ unread: 0, features: { rooms: false, games: false, memes: true, privateRooms: false } }).find(
-      (s) => s.id === 'memes'
-    );
-    expect(memes?.railOnly).toBe(true);
+  it('keeps Whisper centred: Memes takes the slot after it when live, else Games', () => {
+    const tabs = (memes: boolean) =>
+      buildHubNavSpecs({ unread: 0, features: { rooms: true, games: false, memes, privateRooms: false } })
+        .filter((s) => !s.railOnly)
+        .map((s) => s.id);
+    expect(tabs(true)).toEqual(['home', 'rooms', 'whisper', 'memes', 'chats']);
+    expect(tabs(false)).toEqual(['home', 'rooms', 'whisper', 'games', 'chats']);
   });
 
   it('shows the unread badge only when there is something unread', () => {

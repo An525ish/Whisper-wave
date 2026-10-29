@@ -65,7 +65,7 @@ const HubHome = () => {
           <HomeHero
             userName={user?.name ?? null}
             quotaText={
-              user && quota ? `${quota.remaining} of ${quota.limit} left today` : undefined
+              user && quota ? `${quota.remaining}/${quota.limit} left today` : undefined
             }
             quotaExhausted={Boolean(user && quota && quota.remaining <= 0)}
             liveCount={liveCount}

@@ -40,7 +40,6 @@ export const ROOM_ALIAS_SWATCHES = [
   { hex: '#b87dff', name: 'Violet' },
   { hex: '#7dffe3', name: 'Aqua' },
   { hex: '#ff9d7d', name: 'Coral' },
-  { hex: '#d4ff7d', name: 'Lime' },
 ] as const;
 
 export const ROOM_ALIAS_COLORS: readonly string[] = ROOM_ALIAS_SWATCHES.map((s) => s.hex);
@@ -108,11 +107,18 @@ export const ROOM_PRIVATE = {
 export const ROOM_VISIBILITY_COPY = {
   public: {
     title: 'Public',
-    sub: 'Anyone with the link can join, guests included. Lobby listing needs approval.',
+    sub: 'Open to anyone with the link.',
+    facts: ['Guests can join', 'No sign-in needed', 'Lobby listing needs approval'],
   },
   private: {
     title: 'Private',
-    sub: `Invite-only, up to ${ROOM_PRIVATE.MAX_PEOPLE} signed-in people. Never in the lobby or search. Deleted after 30 quiet days.`,
+    sub: 'Invite-only, just for your people.',
+    facts: [
+      `Up to ${ROOM_PRIVATE.MAX_PEOPLE} people`,
+      'Signed-in members only',
+      'Not in lobby or search',
+      'Deleted after 30 quiet days',
+    ],
   },
   flag_off: 'Private rooms are switched off right now.',
   not_entitled: 'Private rooms open up once your account has been around for a week with a clean record.',

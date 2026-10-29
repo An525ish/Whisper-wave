@@ -58,7 +58,7 @@ const MemeFeed = () => {
 
           {feed.isError && (
             <div className="mm-error">
-              <p className="mm-error__title">The joke tap is dry.</p>
+              <p className="mm-error__title">No jokes right now.</p>
               <p className="mm-error__sub">Give it a moment, then try again.</p>
               <button type="button" onClick={feed.retry} className="mm-error__btn">
                 Try again

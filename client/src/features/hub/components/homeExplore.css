@@ -38,6 +38,15 @@
 
 .hw-explore { display: flex; flex-direction: column; overflow-x: clip; }
 
+/* Phones: let the colour washes bleed to the screen edge instead of
+   ending in a hard line at the page gutter. */
+@media (max-width: 767px) {
+  .hw-explore { margin-inline: -1.25rem; }
+  .hw-explore .hw-show { grid-template-columns: minmax(0, 1fr); padding-inline: 1.25rem; }
+  .hw-show > * { min-width: 0; }
+  .hw-explore .hw-explore__head { padding-inline: 1.25rem; }
+}
+
 .hw-explore__head { padding: 2rem 0 3rem; text-align: center; }
 .hw-explore__head .hw-hud { justify-content: center; }
 
@@ -82,7 +91,7 @@
 
 .hw-show--rooms::before { background: radial-gradient(ellipse 45% 60% at 82% 50%, rgba(139, 107, 255, 0.2), transparent 100%); }
 .hw-show--memes::before { background: radial-gradient(ellipse 45% 60% at 18% 50%, rgba(53, 224, 200, 0.16), transparent 100%); }
-.hw-show--games::before { background: radial-gradient(ellipse 40% 90% at 85% 50%, rgba(255, 190, 90, 0.13), transparent 100%); }
+.hw-show--games::before { background: radial-gradient(ellipse 40% 55% at 85% 50%, rgba(255, 190, 90, 0.13), transparent 100%); }
 
 /* Oversized outline word behind the copy. Decoration only. */
 .hw-show__ghost {

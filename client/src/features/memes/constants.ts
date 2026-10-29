@@ -44,12 +44,12 @@ export const MEME_CATEGORY_CHIPS: MemeCategoryChip[] = [
 /** Shown only to members with the unfiltered 18+ mode on. */
 export const MEME_DARK_CHIP: MemeCategoryChip = { id: 'dark', label: 'Dark' };
 
-export const MEME_REPORT_REASONS: Array<{ id: MemeReportReason; label: string }> = [
-  { id: 'offensive', label: 'Offensive' },
-  { id: 'sexual', label: 'Sexual content' },
-  { id: 'hateful', label: 'Hateful' },
-  { id: 'broken', label: 'Broken or unreadable' },
-  { id: 'other', label: 'Something else' },
+export const MEME_REPORT_REASONS: Array<{ id: MemeReportReason; label: string; hint: string; icon: string }> = [
+  { id: 'offensive', label: 'Offensive', hint: 'Crude or mean-spirited', icon: '😬' },
+  { id: 'sexual', label: 'Sexual content', hint: 'Explicit or suggestive', icon: '🔞' },
+  { id: 'hateful', label: 'Hateful', hint: 'Targets a group of people', icon: '🚫' },
+  { id: 'broken', label: 'Broken or unreadable', hint: 'Image missing or text cut off', icon: '🧩' },
+  { id: 'other', label: 'Something else', hint: 'Anything not listed here', icon: '💬' },
 ];
 
 /** Slow-rising laughter behind the viewport. */

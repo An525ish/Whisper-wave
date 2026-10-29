@@ -15,8 +15,8 @@ export function useReportMeme() {
     onSuccess: (_result, { id, reason }) => {
       hide(id);
       track(MEME_EVENTS.REPORT, { reason });
-      toast.success('Thanks — hidden, and flagged for review.');
+      toast.success('Thanks. It’s hidden and flagged for review.');
     },
-    onError: () => toast.error('Couldn’t send that report — try again.'),
+    onError: () => toast.error('Couldn’t send that report. Try again.'),
   });
 }

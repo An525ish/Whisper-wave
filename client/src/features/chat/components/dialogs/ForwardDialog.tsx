@@ -14,8 +14,15 @@ import { useDragToClose } from '@/shared/hooks';
 
 type Props = {
   open: boolean;
-  sourceChatId: string;
-  messageIds: string[];
+  /** Chat to leave out of the list (the one the messages come from). Omit when sharing from outside a chat. */
+  sourceChatId?: string;
+  /** Selected messages, shown as a count badge. Omit when the thing being sent is not a message. */
+  messageIds?: string[];
+  /** Header and button wording; defaults to forwarding messages. */
+  title?: string;
+  actionLabel?: string;
+  /** Optional quiet action under the main button (for example "Copy text"). */
+  secondary?: { label: string; onClick: () => void };
   onClose: () => void;
   onForward: (targetChatIds: string[]) => void | Promise<void>;
   isForwarding?: boolean;
@@ -32,6 +39,9 @@ const ForwardDialog = ({
   open,
   sourceChatId,
   messageIds,
+  title = 'Forward',
+  actionLabel = 'Forward',
+  secondary,
   onClose,
   onForward,
   isForwarding = false,
@@ -85,8 +95,8 @@ const ForwardDialog = ({
     : selectedCount === 0
       ? 'Select a chat'
       : selectedCount === 1
-        ? 'Forward'
-        : `Forward to ${selectedCount}`;
+        ? actionLabel
+        : `${actionLabel} to ${selectedCount}`;
 
   return createPortal(
     <div
@@ -131,9 +141,9 @@ const ForwardDialog = ({
                   id="forward-title"
                   className="truncate text-lg font-semibold tracking-tight text-white sm:text-xl"
                 >
-                  Forward
+                  {title}
                 </h2>
-                <CountBadge count={messageIds.length} />
+                {messageIds && <CountBadge count={messageIds.length} />}
               </div>
               <p className="mt-0.5 truncate text-xs text-body-300 sm:text-sm">
                 {selectedCount > 0
@@ -179,7 +189,7 @@ const ForwardDialog = ({
               imageAlt="no chats"
               imageClassName="mx-auto w-36 opacity-40 sm:w-44"
               titleClassName="mt-4 max-w-64 text-center text-base font-medium text-body-300"
-              title="No other chats to forward to"
+              title={sourceChatId ? 'No other chats to forward to' : 'No chats yet'}
             />
           ) : filtered.length === 0 ? (
             <EmptyState
@@ -247,6 +257,15 @@ const ForwardDialog = ({
             <ForwardIcon className="h-4 w-4" />
             {forwardLabel}
           </button>
+          {secondary && (
+            <button
+              type="button"
+              onClick={secondary.onClick}
+              className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-2xl text-sm font-medium text-body-300 transition hover:bg-white/5 hover:text-white"
+            >
+              {secondary.label}
+            </button>
+          )}
         </div>
       </div>
     </div>,

@@ -3,9 +3,10 @@ import type { BuildNavParams, NavSpec } from './types';
 
 /**
  * The hub's primary destinations, as data. Order matters: Whisper sits in the
- * middle as the emphasized action. Memes lives inside Home on phones
- * (`railOnly`), Games is a coming-soon page (D7), also `railOnly`, and Chats is always listed —
- * a guest lands on an empty state that points at Whisper, never a wall.
+ * middle as the emphasized action. On phones the bar holds five slots so Whisper
+ * stays centred: Memes takes the slot after Whisper when live, otherwise the
+ * coming-soon Games page (D7) does; the other stays `railOnly`. Chats is always
+ * listed: a guest lands on an empty state that points at Whisper, never a wall.
  */
 export function buildHubNavSpecs({ features, unread }: BuildNavParams): NavSpec[] {
   const specs: NavSpec[] = [{ id: 'home', label: 'Home', to: ROUTES.home }];
@@ -17,10 +18,10 @@ export function buildHubNavSpecs({ features, unread }: BuildNavParams): NavSpec[
   specs.push({ id: 'whisper', label: 'Whisper', to: ROUTES.whisper, emphasis: true });
 
   if (features?.memes) {
-    specs.push({ id: 'memes', label: 'Memes', to: ROUTES.memes, railOnly: true });
+    specs.push({ id: 'memes', label: 'Memes', to: ROUTES.memes });
   }
 
-  specs.push({ id: 'games', label: 'Games', to: ROUTES.games, railOnly: true });
+  specs.push({ id: 'games', label: 'Games', to: ROUTES.games, railOnly: Boolean(features?.memes) });
 
   specs.push({ id: 'chats', label: 'Chats', to: ROUTES.chats, badge: unread || undefined });
 

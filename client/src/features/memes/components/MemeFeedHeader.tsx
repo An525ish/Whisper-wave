@@ -24,13 +24,13 @@ const MemeFeedHeader = ({ unfiltered, chips, category, onSelect, topRef, barRef 
           <MemesIcon />
         </span>
         <div>
+          <h1 className="mm-toptitle">
+            Jokes on <span className="mm-iri">shuffle.</span>
+          </h1>
           <p className={`mm-eyebrow${unfiltered ? ' mm-eyebrow--raw' : ''}`}>
             <span aria-hidden className="mm-eyebrow__dot" />
             {unfiltered ? 'Unfiltered' : 'Safe mode'}
           </p>
-          <h1 className="mm-toptitle">
-            The joke <span className="mm-iri">tap.</span>
-          </h1>
         </div>
       </div>
       <MemeModeSwitch />
