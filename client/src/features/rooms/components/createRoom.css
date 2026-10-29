@@ -1,0 +1,207 @@
+/** Create-room page (`cr-*`): a neon sign that lights up as you type, over a three-step panel. Motion freezes under `prefers-reduced-motion`. */
+
+.cr-page { height: 100%; min-height: 0; overflow: hidden; }
+
+/* One screen, never a scroll: the wrap fills the viewport and only the step body may scroll inside the panel. */
+.cr-wrap {
+  position: relative; display: flex; height: 100%; flex-direction: column; margin-inline: auto;
+  width: 100%; max-width: 64rem; padding: 0.9rem 1.1rem 1rem;
+}
+@media (min-width: 1024px) { .cr-wrap { padding: 1.5rem 2rem 1.75rem; } }
+
+/* One shell, two halves: the form on the left, its live result on the right. */
+.cr-grid {
+  display: flex; min-height: 0; flex: 1; flex-direction: column; margin-top: 0.7rem; overflow: hidden;
+  border-radius: 1.6rem; border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+@media (min-width: 1024px) {
+  .cr-grid { display: grid; flex: none; height: min(36rem, 100%); margin: auto 0; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); grid-template-rows: minmax(0, 1fr); border-radius: 2rem; }
+}
+
+/* ── Preview: the lobby card and the rules board ─────────────────── */
+
+.cr-wall {
+  --tone: 1 195 109;
+  position: relative; display: flex; flex-direction: column; justify-content: center; gap: 0.8rem; overflow: hidden;
+  padding: 1rem 1.1rem 1.1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(90% 60% at 100% 0%, rgb(var(--tone) / 0.16), transparent 65%),
+    radial-gradient(70% 50% at 0% 100%, rgba(139, 107, 255, 0.12), transparent 70%),
+    rgba(14, 10, 22, 0.55);
+  transition: background 0.5s;
+}
+.cr-wall--private { --tone: 150 118 255; }
+@media (min-width: 1024px) {
+  .cr-wall { padding: 2rem 1.9rem; gap: 1.1rem; border-bottom: 0; border-left: 1px solid rgba(255, 255, 255, 0.08); }
+}
+@media (max-width: 1023px) { .cr-wall { order: -1; } .cr-board, .cr-wall__hint { display: none; } }
+
+.cr-wall__label { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-body-300); }
+.cr-wall__label i { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: rgb(var(--tone)); box-shadow: 0 0 8px rgb(var(--tone)); animation: cr-pulse 2s ease-in-out infinite; }
+@keyframes cr-pulse { 50% { opacity: 0.35; } }
+.cr-wall__hint { margin-top: -0.6rem; font-size: 0.8rem; color: var(--color-body-700); }
+
+/* The real lobby card, made inert. */
+.cr-roomcard { pointer-events: none; transition: border-color 0.3s, box-shadow 0.3s; border-color: rgb(var(--tone) / 0.35); }
+.cr-roomcard .rm-roomart { transition: background 0.4s; }
+.cr-dim { opacity: 0.4; }
+.cr-kind--private { border-color: rgba(150, 118, 255, 0.5); background: rgba(150, 118, 255, 0.14); color: #c9b8ff; }
+.cr-kind--private .rm-roomstatus__dot { background: #c9b8ff; }
+.cr-wall.is-step-0 .cr-kind { box-shadow: 0 0 0 3px rgb(var(--tone) / 0.22); }
+.cr-wall.is-step-1 .cr-roomcard { box-shadow: 0 0 0 3px rgb(var(--tone) / 0.16), 0 28px 60px -28px rgba(0, 0, 0, 0.85); }
+
+.cr-board {
+  border-radius: 1.2rem; border: 1px solid rgba(255, 255, 255, 0.09); background: rgba(255, 255, 255, 0.035);
+  padding: 0.9rem 1rem 1rem; transition: border-color 0.3s, box-shadow 0.3s;
+}
+.cr-board h3 { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-body-300); }
+.cr-board ol { margin-top: 0.7rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.cr-board li { display: flex; height: 2.1rem; align-items: center; gap: 0.65rem; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.05); padding: 0 0.7rem; font-size: 0.8rem; color: var(--color-body); }
+.cr-board li span:first-child { display: grid; width: 1.3rem; height: 1.3rem; flex-shrink: 0; place-items: center; border-radius: 50%; background: rgb(var(--tone) / 0.18); font-size: 0.66rem; font-weight: 700; color: rgb(var(--tone)); }
+.cr-board li span:last-child { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-board li.is-empty { background: rgba(255, 255, 255, 0.025); }
+.cr-board li.is-empty span:first-child { background: rgba(255, 255, 255, 0.06); color: transparent; }
+.cr-board li.is-empty span:last-child { height: 0.45rem; flex: none; width: 55%; border-radius: 999px; background: rgba(255, 255, 255, 0.07); }
+.cr-wall.is-step-2 .cr-board { border-color: rgb(var(--tone) / 0.45); box-shadow: 0 0 0 3px rgb(var(--tone) / 0.12); }
+
+/* ── Panel: segmented stepper, heading, form ──────────────────────── */
+
+.cr-panel {
+  display: flex; min-height: 0; flex: 1; flex-direction: column; padding: 1.1rem 1.1rem 1.15rem;
+  background: radial-gradient(80% 40% at 0% 0%, rgba(1, 195, 109, 0.1), transparent 70%);
+}
+@media (min-width: 1024px) { .cr-panel { flex: none; padding: 1.9rem 2.1rem; } }
+
+.cr-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.cr-steps li {
+  font-size: 0.74rem; font-weight: 600; color: var(--color-body-700);
+}
+.cr-steps li::before { content: ''; display: block; margin-bottom: 0.55rem; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); transition: background 0.3s; }
+.cr-steps li.is-now::before, .cr-steps li.is-done::before { background: var(--color-green); }
+.cr-steps li.is-now, .cr-steps li.is-done { color: #fff; }
+.cr-steps__dot {
+  display: inline-grid; width: 1.35rem; height: 1.35rem; place-items: center; margin-right: 0.45rem; vertical-align: middle;
+  border-radius: 50%; background: rgba(255, 255, 255, 0.08); font-size: 0.66rem;
+}
+.cr-steps__dot svg { width: 0.8rem; height: 0.8rem; }
+.is-now .cr-steps__dot { background: var(--color-green); color: #fff; }
+.is-done .cr-steps__dot { background: rgba(1, 195, 109, 0.2); color: var(--color-green); }
+
+.cr-eyebrow { margin-top: 1.1rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-green); }
+.cr-title { margin-top: 0.3rem; font-family: var(--font-display); font-size: clamp(1.4rem, 4vw, 2rem); line-height: 1.1; color: #fff; }
+.cr-lead { margin-top: 0.35rem; font-size: 0.88rem; color: var(--color-body-300); }
+.cr-form { margin-top: 1rem; display: flex; min-height: 0; flex: 1; flex-direction: column; gap: 1rem; }
+.cr-body { min-height: 0; flex: 1; overflow-y: auto; padding: 0.2rem; margin: -0.2rem; scrollbar-width: thin; }
+
+/* Access choice: two full-width rows, icon left, radio ring right. Green for public, violet for private. */
+.cr-form .rm-vis { grid-template-columns: 1fr; gap: 0.8rem; }
+.cr-form .rm-vis legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.cr-form .rm-vis__opt {
+  --acc: 1 195 109;
+  position: relative; align-items: center; gap: 1rem; padding: 1rem 3.2rem 1rem 1rem; border-radius: 1.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03);
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.cr-form .rm-vis__opt:has(input[value='private']) { --acc: 150 118 255; }
+.cr-form .rm-vis__opt:not(.rm-vis__opt--off):hover { transform: translateY(-2px); border-color: rgb(var(--acc) / 0.5); }
+.cr-form .rm-vis__opt:has(input:checked) {
+  border-color: rgb(var(--acc) / 0.7);
+  background: linear-gradient(120deg, rgb(var(--acc) / 0.16), rgb(var(--acc) / 0.04) 70%);
+  box-shadow: 0 0 0 3px rgb(var(--acc) / 0.12), 0 18px 40px -22px rgb(var(--acc) / 0.8);
+}
+.cr-form .rm-vis__radio { position: absolute; inset: 0; opacity: 0; cursor: inherit; }
+.cr-form .rm-vis__opt:has(.rm-vis__radio:focus-visible) { outline: 2px solid rgb(var(--acc)); outline-offset: 2px; }
+.cr-form .rm-vis__icon {
+  display: grid; width: 3.1rem; height: 3.1rem; flex-shrink: 0; place-items: center; border-radius: 1rem;
+  background: rgb(var(--acc) / 0.12); color: rgb(var(--acc)); box-shadow: inset 0 0 0 1px rgb(var(--acc) / 0.25);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.cr-form .rm-vis__icon svg { width: 1.45rem; height: 1.45rem; }
+.cr-form .rm-vis__opt:has(input:checked) .rm-vis__icon { background: rgb(var(--acc)); color: #fff; box-shadow: 0 10px 22px -8px rgb(var(--acc) / 0.9); }
+.cr-form .rm-vis__opt::after {
+  content: ''; position: absolute; top: 50%; right: 1rem; width: 1.3rem; height: 1.3rem; translate: 0 -50%;
+  border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.22); transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.cr-form .rm-vis__opt:has(input:checked)::after { border-color: rgb(var(--acc)); background: rgb(var(--acc)); box-shadow: inset 0 0 0 3px #1b1427; }
+.cr-form .rm-vis__title { font-size: 1.02rem; }
+.cr-form .rm-vis__sub { font-size: 0.8rem; }
+.cr-form .rm-vis__note { margin-top: 0.45rem; width: fit-content; border-radius: 999px; background: rgba(255, 212, 125, 0.1); padding: 0.15rem 0.6rem; font-size: 0.72rem; }
+
+/* Details step: compact labelled boxes with the counter and actions inside the field. */
+.cr-fields { display: flex; flex-direction: column; gap: 1rem; }
+.cr-field label { display: block; margin-bottom: 0.4rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-body-300); }
+.cr-box {
+  position: relative; display: flex; align-items: center; gap: 0.5rem; border-radius: 0.95rem; padding: 0 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.cr-box:focus-within { border-color: rgba(1, 195, 109, 0.6); background: rgba(255, 255, 255, 0.06); box-shadow: 0 0 0 4px rgba(1, 195, 109, 0.12); }
+.cr-box:not(.cr-box--area) { height: 2.6rem; }
+.cr-box__input { min-width: 0; flex: 1; background: transparent; padding: 0; font-size: 0.92rem; color: var(--color-body); outline: none; }
+.cr-box__input::placeholder { color: var(--color-body-700); }
+.cr-box__input--lg { font-family: var(--font-display); font-size: 1rem; }
+.cr-box__prefix { font-size: 0.88rem; color: var(--color-body-700); }
+.cr-box__count { flex-shrink: 0; font-size: 0.68rem; color: var(--color-body-700); }
+.cr-box__act {
+  flex-shrink: 0; border-radius: 999px; background: rgba(1, 195, 109, 0.14); padding: 0.28rem 0.7rem;
+  font-size: 0.72rem; font-weight: 700; color: var(--color-green); transition: background 0.2s, color 0.2s;
+}
+.cr-box__act:hover { background: var(--color-green); color: #fff; }
+.cr-box__act:focus-visible { outline: 2px solid var(--color-green); outline-offset: 2px; }
+.cr-box--area { align-items: stretch; padding-bottom: 1.4rem; }
+.cr-box--area .cr-box__input { resize: none; padding-top: 0.65rem; }
+.cr-box--area .cr-box__count { position: absolute; right: 0.9rem; bottom: 0.45rem; }
+
+.cr-ghost {
+  flex-shrink: 0; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.14); padding: 0.65rem 1.1rem;
+  font-size: 0.85rem; font-weight: 600; color: var(--color-body-300); transition: color 0.2s, border-color 0.2s;
+}
+.cr-ghost:hover { color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+
+/* Rules as a numbered list of inline inputs. */
+.cr-rules { display: flex; flex-direction: column; gap: 0.5rem; }
+.cr-rules li {
+  position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.09); background: rgba(255, 255, 255, 0.035); padding: 0.35rem 0.5rem 0.35rem 0.6rem;
+  transition: border-color 0.2s;
+}
+.cr-rules li:focus-within { border-color: rgba(1, 195, 109, 0.55); }
+.cr-rules__n { display: grid; width: 1.4rem; height: 1.4rem; flex-shrink: 0; place-items: center; border-radius: 50%; background: rgba(1, 195, 109, 0.16); font-size: 0.68rem; font-weight: 700; color: var(--color-green); }
+.cr-rules__input { min-width: 0; flex: 1; background: transparent; padding: 0.5rem 0; font-size: 0.9rem; color: var(--color-body); outline: none; }
+.cr-rules__x { display: grid; width: 1.7rem; height: 1.7rem; place-items: center; border-radius: 50%; font-size: 0.75rem; color: var(--color-body-700); transition: background 0.2s, color 0.2s; }
+.cr-rules__x:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.cr-rules__err { width: 100%; padding-left: 2rem; }
+.cr-quick { margin-top: 0.7rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.cr-chip { border-radius: 999px; border: 1px dashed rgba(255, 255, 255, 0.2); padding: 0.25rem 0.7rem; font-size: 0.75rem; color: var(--color-body-300); transition: color 0.2s, border-color 0.2s, background 0.2s; }
+.cr-chip:hover { border-style: solid; border-color: rgba(1, 195, 109, 0.5); background: rgba(1, 195, 109, 0.08); color: #fff; }
+.cr-chip:focus-visible { outline: 2px solid var(--color-green); outline-offset: 2px; }
+.cr-add { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--color-green); }
+.cr-add:hover { text-decoration: underline; }
+
+.cr-accept {
+  display: flex; cursor: pointer; align-items: flex-start; gap: 0.7rem; border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); padding: 0.85rem 0.95rem;
+  font-size: 0.84rem; line-height: 1.55; color: var(--color-body-300); transition: border-color 0.2s, background 0.2s;
+}
+.cr-accept:has(input:checked) { border-color: rgba(1, 195, 109, 0.5); background: rgba(1, 195, 109, 0.06); }
+
+.cr-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.cr-next {
+  display: inline-flex; align-items: center; gap: 0.6rem; border-radius: 999px; padding: 0.8rem 1.7rem;
+  font-size: 0.92rem; font-weight: 650; color: #fff; background-image: linear-gradient(135deg, #1ddd88, #01a85e);
+  box-shadow: 0 14px 34px -12px rgba(1, 195, 109, 0.85); transition: transform 0.2s, opacity 0.2s;
+}
+.cr-next:hover:not(:disabled) { transform: translateY(-2px); }
+.cr-next:hover:not(:disabled) span { transform: translateX(3px); }
+.cr-next span { transition: transform 0.2s; }
+.cr-next:disabled { opacity: 0.5; }
+.cr-next:focus-visible, .cr-ghost:focus-visible, .cr-add:focus-visible { outline: 2px solid var(--color-green); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cr-wall__label i { animation: none !important; }
+  .cr-next, .cr-next span, .cr-wall, .cr-roomcard, .cr-board, .cr-steps li::before, .cr-form .rm-vis__opt { transition: none; }
+  .cr-next:hover:not(:disabled), .cr-next:hover:not(:disabled) span, .cr-form .rm-vis__opt:hover { transform: none !important; }
+}

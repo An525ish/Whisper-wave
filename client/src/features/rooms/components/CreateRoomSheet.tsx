@@ -1,33 +1,44 @@
-import { useFieldArray, useForm, useWatch } from 'react-hook-form';
+import { useState, type FormEvent } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { useAuthStore } from '@/features/auth';
-import { ROOM_DEFAULT_LANG, ROOM_LIMITS, ROOM_RULE_SUGGESTIONS } from '../constants';
+import AmbientBackdrop from '@/shared/components/ui/backdrop/AmbientBackdrop';
+import BokehCrowd from '@/shared/components/ui/backdrop/BokehCrowd';
+import ChevronLeftIcon from '@/shared/components/ui/icons/ChevronLeft';
+import CheckStrokeIcon from '@/shared/components/ui/icons/CheckStroke';
+import { ROOM_DEFAULT_LANG, ROOM_RULE_SUGGESTIONS } from '../constants';
 import { useCreateRoomMutation } from '../hooks/useRoomMutations';
 import { useMyRoomsQuery } from '../hooks/useRoomsQueries';
 import { suggestSlug } from '../utils/persona';
 import { createRoomSchema } from '../utils/roomValidators';
 import type { CreateRoomForm } from '../types';
+import CreateRoomPreview from './CreateRoomPreview';
+import { DetailsStep, RulesStep } from './CreateRoomSteps';
 import RoomVisibilityChoice from './RoomVisibilityChoice';
+import './roomsBackdrop.css';
+import './createRoom.css';
+
+const STEPS = [
+  { label: 'Access', title: 'Who can come in?', sub: 'Pick how people find your room.', fields: [] },
+  { label: 'Details', title: 'Give it a name', sub: 'A title, a link and a line about it.', fields: ['title', 'slug', 'description'] },
+  { label: 'Rules', title: 'Set the rules', sub: 'People see these before they join.', fields: ['rules'] },
+] as const;
 
 /**
- * Create a user room: public (unlisted until approved — creation never
- * publishes) or private (invite-only, members only; entitlement-gated). The rules checkbox is the logged accept: the rules
- * array is stored on the template plus a creation analytics event.
+ * Create a user room in three steps with the gate building itself beside the
+ * form. Public rooms are unlisted until approved (creation never publishes);
+ * private rooms are invite-only and entitlement-gated. The host checkbox is the
+ * logged accept: the rules are stored on the template plus an analytics event.
  */
 const CreateRoomSheet = () => {
   const user = useAuthStore((s) => s.user);
   const create = useCreateRoomMutation();
   const mine = useMyRoomsQuery(Boolean(user));
+  const [step, setStep] = useState(0);
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    setValue,
-    formState: { errors },
-  } = useForm<CreateRoomForm>({
+  const form = useForm<CreateRoomForm>({
     resolver: zodResolver(createRoomSchema),
     defaultValues: {
       title: '',
@@ -37,16 +48,19 @@ const CreateRoomSheet = () => {
       rules: ROOM_RULE_SUGGESTIONS.map((value) => ({ value })),
     },
   });
-  const { fields, append, remove } = useFieldArray({ control, name: 'rules' });
+  const { control, register, handleSubmit, trigger, getValues, setValue } = form;
   const title = useWatch({ control, name: 'title' });
+  const slug = useWatch({ control, name: 'slug' });
+  const description = useWatch({ control, name: 'description' });
   const visibility = useWatch({ control, name: 'visibility' });
+  const rules = useWatch({ control, name: 'rules' });
 
   if (!user) {
     return (
       <main className="mx-auto w-full max-w-xl px-5 py-10 text-center">
         <h1 className="font-display text-2xl text-white">Creating a room needs an account</h1>
         <p className="mt-2 text-sm text-body-300">
-          Guests can join every room — but a public voice needs a name behind it.
+          Guests can join every room. Hosting needs an account.
         </p>
         <Link
           to={ROUTES.authLogin}
@@ -70,108 +84,82 @@ const CreateRoomSheet = () => {
     });
   };
 
-  const inputClass =
-    'mt-1.5 w-full rounded-xl border border-border/60 bg-white/[0.03] px-4 py-2.5 text-body outline-none placeholder:text-body-700 focus:border-green/50';
-  const labelClass = 'text-sm font-medium text-body';
-  const errorClass = 'mt-1 text-xs text-red';
+  const last = step === STEPS.length - 1;
+  const next = async () => {
+    // Leaving the details step with no link name yet: fill one in from the title.
+    if (step === 1 && !getValues('slug').trim()) setValue('slug', suggestSlug(getValues('title')));
+    if (await trigger([...STEPS[step].fields])) setStep((s) => s + 1);
+  };
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    // Enter inside a field moves on; only the last step creates the room.
+    if (last) void handleSubmit(submit)(e);
+    else void next();
+  };
+
+  const current = STEPS[step];
 
   return (
-    <main className="mx-auto w-full max-w-xl px-5 py-8">
-      <h1 className="font-display text-3xl text-white">New room</h1>
-      <p className="mt-1 text-sm text-body-300">
-        {visibility === 'private'
-          ? 'Live instantly, visible only to people you invite. It never appears in the lobby.'
-          : 'Live instantly, unlisted by default. Lobby listing needs approval — nothing you make goes public unseen.'}
-      </p>
+    <div className="rm-page cr-page">
+      <AmbientBackdrop className="rm-bg" green={false}>
+        <BokehCrowd />
+      </AmbientBackdrop>
 
-      <form onSubmit={handleSubmit(submit)} className="mt-5 flex flex-col gap-4">
-        <RoomVisibilityChoice register={register} capability={mine.data?.privateRooms} />
+      <main className="cr-wrap">
+        <Link to={ROUTES.rooms} className="rm-backlink">
+          <ChevronLeftIcon /> Rooms
+        </Link>
 
-        <div>
-          <label htmlFor="room-title" className={labelClass}>Title</label>
-          <input id="room-title" {...register('title')} maxLength={ROOM_LIMITS.TITLE_MAX} placeholder="e.g. Midnight Coding" className={inputClass} />
-          {errors.title && <p role="alert" className={errorClass}>{errors.title.message}</p>}
-        </div>
+        <div className="cr-grid">
 
-        <div>
-          <label htmlFor="room-slug" className={labelClass}>URL name</label>
-          <div className="flex gap-2">
-            <input id="room-slug" {...register('slug')} maxLength={ROOM_LIMITS.SLUG_MAX} placeholder="midnight-coding-x7k2" className={`${inputClass} min-w-0 flex-1`} />
-            <button
-              type="button"
-              onClick={() => setValue('slug', suggestSlug(title), { shouldValidate: true })}
-              className="shrink-0 rounded-xl border border-border/60 px-3 text-sm text-body-300 hover:text-body"
-            >
-              Suggest
-            </button>
-          </div>
-          {errors.slug && <p role="alert" className={errorClass}>{errors.slug.message}</p>}
-        </div>
+          <section className="cr-panel" aria-label="New room">
+            <ol className="cr-steps">
+              {STEPS.map((s, i) => (
+                <li key={s.label} className={i === step ? 'is-now' : i < step ? 'is-done' : ''} aria-current={i === step ? 'step' : undefined}>
+                  <span className="cr-steps__dot">{i < step ? <CheckStrokeIcon /> : i + 1}</span>
+                  {s.label}
+                </li>
+              ))}
+            </ol>
 
-        <div>
-          <label htmlFor="room-desc" className={labelClass}>What is it about?</label>
-          <textarea id="room-desc" {...register('description')} maxLength={ROOM_LIMITS.DESCRIPTION_MAX} rows={2} placeholder="Who is it for, what happens here" className={inputClass} />
-          {errors.description && <p role="alert" className={errorClass}>{errors.description.message}</p>}
-        </div>
+            <p className="cr-eyebrow">Step {step + 1} of {STEPS.length}</p>
+            <h1 className="cr-title">{current.title}</h1>
+            <p className="cr-lead">{current.sub}</p>
 
-        <div>
-          <span className={labelClass}>House rules</span>
-          <div className="mt-1.5 flex flex-col gap-2">
-            {fields.map((field, i) => (
-              <div key={field.id}>
-                <div className="flex gap-2">
-                  <input
-                    {...register(`rules.${i}.value`)}
-                    maxLength={ROOM_LIMITS.RULE_MAX}
-                    aria-label={`Rule ${i + 1}`}
-                    className={`${inputClass} mt-0 min-w-0 flex-1`}
-                  />
-                  {fields.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => remove(i)}
-                      aria-label={`Remove rule ${i + 1}`}
-                      className="shrink-0 px-2 text-body-300 hover:text-body"
-                    >
-                      <span aria-hidden>✕</span>
-                    </button>
-                  )}
-                </div>
-                {errors.rules?.[i]?.value && (
-                  <p role="alert" className={errorClass}>{errors.rules[i].value.message}</p>
-                )}
+            <form onSubmit={onSubmit} className="cr-form" noValidate>
+              <div className="cr-body">
+                {step === 0 && <RoomVisibilityChoice register={register} capability={mine.data?.privateRooms} />}
+                {step === 1 && <DetailsStep form={form} />}
+                {step === 2 && <RulesStep form={form} />}
               </div>
-            ))}
-          </div>
-          {errors.rules?.message && <p role="alert" className={errorClass}>{errors.rules.message}</p>}
-          {errors.rules?.root?.message && <p role="alert" className={errorClass}>{errors.rules.root.message}</p>}
-          {fields.length < ROOM_LIMITS.CREATE_RULES_MAX && (
-            <button
-              type="button"
-              onClick={() => append({ value: '' })}
-              className="mt-2 text-sm font-medium text-green hover:underline"
-            >
-              + Add a rule
-            </button>
-          )}
+
+              <div className="cr-actions">
+                {step > 0 ? (
+                  <button type="button" onClick={() => setStep((s) => s - 1)} className="cr-ghost">
+                    Back
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <button type="submit" disabled={create.isPending} className="cr-next">
+                  {last ? (create.isPending ? 'Creating…' : 'Create room') : 'Continue'}
+                  <span aria-hidden>→</span>
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <CreateRoomPreview
+            title={title}
+            slug={slug}
+            description={description}
+            rules={rules.map((r) => r.value)}
+            visibility={visibility}
+            step={step}
+          />
         </div>
-
-        <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border/60 bg-white/[0.03] p-4 text-sm leading-relaxed text-body-300">
-          <input type="checkbox" {...register('accept')} className="mt-1 accent-green" />
-          I’ll host this room — enforce these rules, act on reports fast, and I understand
-          abusive rooms get closed and banned without warning.
-        </label>
-        {errors.accept && <p role="alert" className={errorClass}>{errors.accept.message}</p>}
-
-        <button
-          type="submit"
-          disabled={create.isPending}
-          className="rounded-3xl bg-gradient-action-button-green px-5 py-3 text-sm font-semibold text-body transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {create.isPending ? 'Creating…' : 'Create room'}
-        </button>
-      </form>
-    </main>
+      </main>
+    </div>
   );
 };
 

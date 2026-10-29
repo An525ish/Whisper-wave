@@ -79,10 +79,11 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
         <button
           key={index}
           type="button"
-          className={`group flex w-full items-center gap-2 whitespace-nowrap rounded-xl text-left text-[13px] transition focus-visible:outline-2 focus-visible:outline-green ${
-            up ? 'px-2 py-1.5' : 'px-2.5 py-2 text-sm'
+          className={`group flex w-full items-center whitespace-nowrap rounded-xl text-left text-[13px] transition focus-visible:outline-2 focus-visible:outline-green ${
+            up ? 'gap-2 px-2 py-1.5' : 'gap-2.5 px-2.5 py-2 text-sm'
           } ${
-            danger ? 'text-red hover:bg-red/10 hover:text-red' : 'text-body-300 hover:bg-white/[0.06] hover:text-body'
+            // Rail (up) menus tint destructive actions; the top-bar menu stays calm and muted.
+            danger && up ? 'text-red hover:bg-red/10 hover:text-red' : 'text-body-300 hover:bg-white/[0.06] hover:text-body'
           }`}
           role="menuitem"
           tabIndex={-1}
@@ -92,17 +93,17 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
           }}
         >
           {Icon ? (
-            <span
-              className={`grid shrink-0 place-items-center rounded-lg transition ${
-                up ? 'h-6 w-6' : 'h-7 w-7'
-              } ${
-                danger
-                  ? 'bg-red/10 text-red'
-                  : 'bg-white/[0.06] text-body-300 group-hover:text-body'
-              }`}
-            >
-              <Icon className={up ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-            </span>
+            up ? (
+              <span
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg transition ${
+                  danger ? 'bg-red/10 text-red' : 'bg-white/[0.06] text-body-300 group-hover:text-body'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </span>
+            ) : (
+              <Icon className="h-[18px] w-[18px] shrink-0" />
+            )
           ) : null}
           <span className="truncate">{label}</span>
         </button>
@@ -206,9 +207,7 @@ const Dropdown = ({ options, name, avatarUrl, size = 'md', placement = 'down', a
             ref={menuRef}
             id={menuId}
             onKeyDown={handleMenuKeyDown}
-            className={`absolute top-full z-60 mt-1 min-w-48 origin-top overflow-hidden rounded-2xl border border-white/10 bg-primary/90 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl focus:outline-none ${
-              compact ? 'right-0 w-max min-w-full' : 'left-0 w-full'
-            }`}
+            className="absolute right-0 top-full z-60 mt-1 w-max min-w-full max-w-[calc(100vw-1rem)] origin-top overflow-hidden rounded-2xl border border-white/10 bg-primary/90 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)] backdrop-blur-xl focus:outline-none"
             role="menu"
             aria-orientation="vertical"
             aria-labelledby={buttonId}

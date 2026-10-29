@@ -220,6 +220,15 @@
   color: #fff;
 }
 
+.hw-closing__faces { display: flex; padding-left: 1rem; }
+.hw-closing__faces > span {
+  width: 3.4rem; height: 3.4rem; margin-left: -1rem; overflow: hidden; border-radius: 50%;
+  border: 3px solid #1a1424; background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 26px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.hw-closing__faces > span > span { display: block; width: 100%; height: 100%; }
+
 .hw-closing__desc { max-width: 30rem; font-size: 1.05rem; line-height: 1.5; color: var(--color-body-300); }
 
 .hw-closing__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin-top: 0.6rem; }

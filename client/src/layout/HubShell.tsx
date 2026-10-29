@@ -1,9 +1,9 @@
-import { useCallback, useMemo, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Link, Outlet, useMatch, useParams } from 'react-router-dom';
 import { SocketProvider } from '@/shared/lib/socket/SocketProvider';
 import { ROUTES, ROUTE_PATTERNS } from '@/shared/constants/routes';
 import type { NavItem } from '@/shared/types/ui';
-import NavRail from '@/shared/components/nav/NavRail';
+import NavRail, { type NavRailMode } from '@/shared/components/nav/NavRail';
 import SignInIcon from '@/shared/components/ui/icons/SignIn';
 import BottomTabBar from '@/shared/components/nav/BottomTabBar';
 import { track } from '@/shared/lib/analytics';
@@ -28,8 +28,19 @@ type ShellChromeProps = {
  * Section-independent only — auth bootstrap, sockets, presence, notifications
  * and whisper resume live in the authed shell below, never here.
  */
+const RAIL_KEY = 'ww-rail-mode';
+const RAIL_MODES: NavRailMode[] = ['full', 'pill', 'strip'];
+
 const ShellChrome = ({ items, footer, hideTabBar, hidePill }: ShellChromeProps) => {
   const isImpersonated = useAuthStore((s) => s.isImpersonated);
+  const [mode, setModeState] = useState<NavRailMode>(() => {
+    const saved = localStorage.getItem(RAIL_KEY) as NavRailMode | null;
+    return saved && RAIL_MODES.includes(saved) ? saved : 'full';
+  });
+  const setMode = useCallback((next: NavRailMode) => {
+    localStorage.setItem(RAIL_KEY, next);
+    setModeState(next);
+  }, []);
 
   const handleNavigate = useCallback((id: string) => {
     track(HUB_EVENTS.NAV_CLICK, { dest: id });
@@ -45,13 +56,15 @@ const ShellChrome = ({ items, footer, hideTabBar, hidePill }: ShellChromeProps) 
           items={items}
           ariaLabel="Primary"
           onNavigate={handleNavigate}
+          mode={mode}
+          onModeChange={setMode}
           className="hidden lg:flex"
           header={
             <div className="flex w-full flex-col items-center">
               <Link
                 to={ROUTES.home}
                 aria-label="Whisper Wave home"
-                className="grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] transition hover:bg-white/[0.09] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green"
+                className={`grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] transition hover:bg-white/[0.09] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green`}
               >
                 <img
                   src="/logo-4.png"

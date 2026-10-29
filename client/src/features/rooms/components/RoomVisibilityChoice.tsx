@@ -24,8 +24,9 @@ const RoomVisibilityChoice = ({ register, capability }: Props) => {
   return (
     <fieldset className="rm-vis">
       <legend className="text-sm font-medium text-body">Who can find it?</legend>
-      <label className="rm-vis__opt mt-1.5">
-        <input type="radio" value="public" {...register('visibility')} className="mt-1 accent-green" />
+      <label className="rm-vis__opt">
+        <input type="radio" value="public" {...register('visibility')} className="rm-vis__radio" />
+        <span className="rm-vis__icon"><svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.6 2.7 3.9 5.7 3.9 9s-1.3 6.3-3.9 9c-2.6-2.7-3.9-5.7-3.9-9S9.4 5.7 12 3Z" /></svg></span>
         <span>
           <span className="rm-vis__title">{ROOM_VISIBILITY_COPY.public.title}</span>
           <span className="rm-vis__sub">{ROOM_VISIBILITY_COPY.public.sub}</span>
@@ -37,8 +38,9 @@ const RoomVisibilityChoice = ({ register, capability }: Props) => {
           value="private"
           disabled={blocked !== null}
           {...register('visibility')}
-          className="mt-1 accent-green"
+          className="rm-vis__radio"
         />
+        <span className="rm-vis__icon"><svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2.5" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg></span>
         <span>
           <span className="rm-vis__title">{ROOM_VISIBILITY_COPY.private.title}</span>
           <span className="rm-vis__sub">{ROOM_VISIBILITY_COPY.private.sub}</span>

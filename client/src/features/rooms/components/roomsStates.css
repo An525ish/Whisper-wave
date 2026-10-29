@@ -120,10 +120,6 @@
   opacity: 0.92;
 }
 
-.rm-create {
-  text-align: center;
-}
-
 /* Full-state cards (kicked / closed / error). */
 .rm-statepage {
   position: relative;

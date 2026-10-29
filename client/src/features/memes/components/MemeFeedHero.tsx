@@ -16,7 +16,7 @@ const MemeFeedHero = ({ unfiltered }: Props) => (
       </p>
       <h2 className="mm-hero__title">Scroll. Snort. Repeat.</h2>
       <p className="mm-hero__sub">
-        No algorithm, no feed studying you — just jokes, shuffled for the quiet hours.
+        No algorithm and no feed studying you. Just jokes, shuffled.
       </p>
     </div>
     <div className="mm-hero__art">

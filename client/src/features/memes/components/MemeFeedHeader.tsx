@@ -1,4 +1,5 @@
 import type { Ref } from 'react';
+import MemesIcon from '@/shared/components/ui/icons/Memes';
 import MemeModeSwitch from './MemeModeSwitch';
 import type { MemeCategory, MemeCategoryChip } from '../types';
 import './memesHeader.css';
@@ -19,20 +20,13 @@ const MemeFeedHeader = ({ unfiltered, chips, category, onSelect, topRef, barRef 
     <div aria-hidden className="mm-top__wash" />
     <div className="mm-top__head">
       <div className="mm-top__title">
-        <span aria-hidden className="mm-mark">
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
+        <span aria-hidden className="mm-badge">
+          <MemesIcon />
         </span>
         <div>
-          <p className="mm-eyebrow">
+          <p className={`mm-eyebrow${unfiltered ? ' mm-eyebrow--raw' : ''}`}>
             <span aria-hidden className="mm-eyebrow__dot" />
-            quiet hours ·{' '}
-            <span className={unfiltered ? 'mm-eyebrow__raw' : 'mm-eyebrow__pour'}>
-              {unfiltered ? 'unfiltered' : 'pouring'}
-            </span>
+            {unfiltered ? 'Unfiltered' : 'Safe mode'}
           </p>
           <h1 className="mm-toptitle">
             The joke <span className="mm-iri">tap.</span>

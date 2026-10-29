@@ -15,30 +15,29 @@ const MemeModeSwitch = () => {
 
   return (
     <>
-      <div className="mm-mode">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={on}
-          aria-label="Unfiltered jokes, 18 and over"
-          onClick={flip}
-          disabled={busy}
-          className={`mm-switch${on ? ' mm-switch--on' : ''}`}
-        >
-          <span aria-hidden className="mm-switch__knob" />
-        </button>
-        <span className="mm-mode__label">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="Unfiltered jokes, 18 and over"
+        onClick={flip}
+        disabled={busy}
+        className={`mm-seg${on ? ' mm-seg--on' : ''}`}
+      >
+        <span aria-hidden className="mm-seg__thumb" />
+        <span className="mm-seg__opt">Safe</span>
+        <span className="mm-seg__opt">
           Unfiltered
-          <span className="mm-mode__badge">18+</span>
+          <span className="mm-seg__badge">18+</span>
         </span>
-      </div>
+      </button>
 
       <Dialog open={adultOpen} onClose={closeAdult} labelledBy={ADULT_TITLE_ID}>
         <h2 id={ADULT_TITLE_ID} className="font-display text-xl text-white">
           Turn on unfiltered?
         </h2>
         <p className="mt-1.5 text-sm leading-relaxed text-body-300">
-          No filters — jokes may be explicit, sexual, or offensive, and the Dark shelf
+          No filters. Jokes may be explicit, sexual or offensive, and the Dark shelf
           opens up. Confirm you&apos;re 18 or older.
         </p>
         <button
@@ -61,7 +60,7 @@ const MemeModeSwitch = () => {
         open={guestOpen}
         onClose={closeGuest}
         title="Sign in for unfiltered"
-        body="Unfiltered jokes live behind an account — and an 18+ check."
+        body="Unfiltered jokes need an account and an 18+ check."
       />
     </>
   );

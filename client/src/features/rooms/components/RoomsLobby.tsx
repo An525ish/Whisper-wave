@@ -240,16 +240,7 @@ const RoomsLobby = () => {
           </div>
         )}
 
-        {user ? (
-          <p className="rm-create">
-            <Link
-              to={ROUTES.newRoom}
-              className="text-sm font-medium text-body-300 transition hover:text-green focus-visible:outline-2 focus-visible:outline-green"
-            >
-              Can’t find your crowd? Start your own →
-            </Link>
-          </p>
-        ) : (
+        {!user && (
           <div className="rm-guest">
             <p className="rm-guest__title">Guests can join every room.</p>
             <p className="rm-guest__sub">Make an account to start your own.</p>

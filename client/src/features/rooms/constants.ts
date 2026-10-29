@@ -52,7 +52,7 @@ export const ROOM_PERSONA_KEY = 'rooms:persona';
 
 /** Suggested starter rules for the creation sheet (editable). */
 export const ROOM_RULE_SUGGESTIONS = [
-  'Be kind — no harassment or hate.',
+  'Be kind. No harassment or hate.',
   'No links.',
   '18+ only.',
 ] as const;
@@ -107,16 +107,16 @@ export const ROOM_PRIVATE = {
 /** Create-sheet copy for the two-way choice and its unavailable states. */
 export const ROOM_VISIBILITY_COPY = {
   public: {
-    title: 'Public (request listing)',
-    sub: 'Anyone with the link can join, guests included. Ask the Wave team to list it in the lobby.',
+    title: 'Public',
+    sub: 'Anyone with the link can join, guests included. Lobby listing needs approval.',
   },
   private: {
-    title: `Private — invite-only, up to ${ROOM_PRIVATE.MAX_PEOPLE} people, members only`,
-    sub: 'Only signed-in people holding your invite link get in. Never in the lobby, never searchable. Deleted after 30 quiet days.',
+    title: 'Private',
+    sub: `Invite-only, up to ${ROOM_PRIVATE.MAX_PEOPLE} signed-in people. Never in the lobby or search. Deleted after 30 quiet days.`,
   },
   flag_off: 'Private rooms are switched off right now.',
   not_entitled: 'Private rooms open up once your account has been around for a week with a clean record.',
-  limit: `You already host ${ROOM_PRIVATE.MAX_PER_USER} private rooms — delete one to make another.`,
+  limit: `You already host ${ROOM_PRIVATE.MAX_PER_USER} private rooms. Delete one to make another.`,
 } as const;
 
 /** Lobby poll + freshness windows. */

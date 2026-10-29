@@ -64,9 +64,13 @@
 
 /* Create sheet: two-way visibility choice. */
 .rm-vis {
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 0.6rem;
+}
+
+@media (min-width: 640px) {
+  .rm-vis { grid-template-columns: 1fr 1fr; }
+  .rm-vis legend { grid-column: 1 / -1; }
 }
 
 .rm-vis__opt {
