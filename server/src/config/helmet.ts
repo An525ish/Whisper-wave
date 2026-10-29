@@ -12,6 +12,19 @@ const turnstileOrigin = 'https://challenges.cloudflare.com';
 
 const imageKitOrigin = new URL(env.IMAGEKIT_URL_ENDPOINT).origin;
 
+/** Origins `/apps` may iframe — from FRAME_SRC_ORIGINS (comma-separated full origins). */
+const appFrameOrigins = env.FRAME_SRC_ORIGINS.split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+  .map((raw) => {
+    try {
+      return new URL(raw).origin;
+    } catch {
+      return '';
+    }
+  })
+  .filter(Boolean);
+
 /**
  * Helmet options — CSP allows ImageKit CDN, Klipy, Google Identity Services and Cloudflare Turnstile.
  * COOP uses same-origin-allow-popups so the Google OAuth popup can talk to the opener.
@@ -24,7 +37,9 @@ export const helmetOptions: HelmetOptions = {
       // challenges.cloudflare.com: Turnstile (guest first-post check in Rooms) loads its script + iframe from there.
       'script-src': ["'self'", 'https://accounts.google.com', turnstileOrigin],
       'script-src-elem': ["'self'", 'https://accounts.google.com', turnstileOrigin],
-      'frame-src': ["'self'", 'https://accounts.google.com', turnstileOrigin],
+      // `/apps` embeds maker apps (e.g. Whispr). Those origins must be listed — `'self'`
+      // only covers this server's own origin, not a sibling site on another host.
+      'frame-src': ["'self'", 'https://accounts.google.com', turnstileOrigin, ...appFrameOrigins],
       'connect-src': [
         "'self'",
         ...r2ConnectOrigins,

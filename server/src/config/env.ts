@@ -45,6 +45,12 @@ const envSchema = z.object({
   REDIS_KEY_PREFIX: z.string().default(''),
   // Separate JWT secret for short-lived anonymous connectTokens
   ANON_JWT_SECRET: z.string().min(32, 'ANON_JWT_SECRET must be at least 32 characters'),
+  /**
+   * Extra origins allowed in CSP `frame-src` (comma-separated).
+   * `/apps` embeds other maker apps in an iframe; each app origin must be listed
+   * here (or be same-origin as this server). Example: https://whisprit.an525ish.site
+   */
+  FRAME_SRC_ORIGINS: z.string().optional().default(''),
   // How long a connectToken stays valid after mutual like (minutes)
   ANON_TOKEN_TTL_MIN: z.coerce.number().int().positive().default(10),
   // Hub surfaces ship dark: each is off until its flag is 'true', and flipping it
@@ -147,6 +153,7 @@ const testFallback = {
   REDIS_KEY_PREFIX: 'test:',
   REDIS_TLS_INSECURE: false,
   ANON_JWT_SECRET: 'test-anon-secret-long-enough-00000000',
+  FRAME_SRC_ORIGINS: '',
   ANON_TOKEN_TTL_MIN: 10,
   FEATURE_ROOMS: false,
   FEATURE_GAMES: false,
