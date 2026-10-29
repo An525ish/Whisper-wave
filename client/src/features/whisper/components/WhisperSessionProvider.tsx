@@ -3,7 +3,8 @@ import { useAuthStore } from '@/features/auth';
 import { RESUME_DEADLINE_MS, RESUME_ENDED_NOTICE } from '../constants';
 import { useAnonStore } from '../stores/anonStore';
 import { readStoredIdentity } from '../utils/anonIdentityStorage';
-import { hasResumeFlag } from '../utils/resumeFlag';
+import { hasResumeFlag, readLiveIdentity } from '../utils/resumeFlag';
+import type { Gender, VibeTag } from '../types';
 import { useAccountBinding } from '../hooks/useAccountBinding';
 import { useAnonSocketLifecycle } from '../hooks/useAnonSocketLifecycle';
 import { useWhisperDmHandoff } from '../hooks/useWhisperDmHandoff';
@@ -48,8 +49,18 @@ export default function WhisperSessionProvider({ children }: Props) {
     const state = useAnonStore.getState();
     if (state.status !== 'idle' || state.sessionId || !hasResumeFlag()) return;
     // Alias for "me" in the thread; the server only replays the partner's side.
+    const live = readLiveIdentity();
+    if (live && !state.displayName) {
+      useAnonStore.setState({
+        displayName: typeof live.displayName === 'string' ? live.displayName : '',
+        vibeTags: Array.isArray(live.vibeTags) ? (live.vibeTags as VibeTag[]) : [],
+        gender: (live.gender as Gender) ?? 'prefer_not_to_say',
+        sessionAlias: typeof live.sessionAlias === 'string' ? live.sessionAlias : null,
+        sessionTags: Array.isArray(live.sessionTags) ? (live.sessionTags as VibeTag[]) : null,
+      });
+    }
     const stored = readStoredIdentity(accountId);
-    if (stored && !state.displayName) {
+    if (stored && !useAnonStore.getState().displayName) {
       state.setIdentityFields(stored.displayName, stored.vibeTags, stored.gender);
     }
     state.setStatus('resuming');

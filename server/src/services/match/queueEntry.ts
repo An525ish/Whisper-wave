@@ -67,6 +67,18 @@ export const saveIdentityCard = async (
 };
 
 /**
+ * Replace the identity fields on an EXISTING card, keeping everything else
+ * (account link, join time). Used when a skip carries edits from the profile panel.
+ * Returns false when there is no card (nothing to update).
+ */
+export const updateIdentityCard = async (anonId: string, input: IdentityCardInput): Promise<boolean> => {
+  const existing = await getWaitingCard(anonId);
+  if (!existing) return false;
+  await saveWaitingCard({ ...existing, ...input });
+  return true;
+};
+
+/**
  * Graceful queue exit when the user navigates away before being matched.
  * Does NOT end an active session — use the `ANON_NEXT` socket event for that.
  */

@@ -167,31 +167,16 @@
   color: rgb(250 220 140 / 0.95);
 }
 
-/* Their vibes scroll sideways rather than clipping: on a phone a long list used
-   to cut the last tag off with no way to see it. */
+/* Their vibes as one quiet line ("Night owl · Gamer · Coffee"). Pills made the
+   header busy; the full list is in their profile. */
 .acr-tags {
-  display: flex;
-  margin-top: 0.2rem;
-  gap: 0.35rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-  mask-image: linear-gradient(90deg, #000 88%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
-}
-
-.acr-tags::-webkit-scrollbar {
-  display: none;
-}
-
-.acr-tag {
-  flex-shrink: 0;
-  border-radius: 999px;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background: rgb(255 255 255 / 0.05);
-  padding: 0.1rem 0.5rem;
-  font-size: 0.62rem;
-  font-weight: 500;
-  color: rgb(235 236 236 / 0.7);
+  margin: 0.15rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: rgb(235 236 236 / 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {

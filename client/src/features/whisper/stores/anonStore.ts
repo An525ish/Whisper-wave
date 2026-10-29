@@ -1,7 +1,7 @@
 import { useRevealedPhotos } from './revealedPhotosStore';
 import { create } from 'zustand';
 import { sessionFields } from './sessionFields';
-import { clearResumeFlag, setResumeFlag } from '../utils/resumeFlag';
+import { clearResumeFlag, setResumeFlag, writeLiveIdentity } from '../utils/resumeFlag';
 import type { AnonMatchStatus, AnonMessage, AnonReaction, Gender, VibeTag } from '../types';
 
 type AnonState = {
@@ -133,6 +133,14 @@ const setSide = (
   return { ...message, reactions };
 };
 
+const pickLive = (s: AnonState) => ({
+  displayName: s.displayName,
+  vibeTags: s.vibeTags,
+  gender: s.gender,
+  sessionAlias: s.sessionAlias,
+  sessionTags: s.sessionTags,
+});
+
 export const useAnonStore = create<AnonState>((set, get) => ({
   displayName: '',
   vibeTags: [],
@@ -149,8 +157,10 @@ export const useAnonStore = create<AnonState>((set, get) => ({
   setIdentityFields: (displayName, vibeTags, gender) =>
     set({ displayName, vibeTags, gender, error: null }),
 
-  editIdentity: (displayName, vibeTags, gender) =>
-    set({ displayName, vibeTags, gender, identityDirty: true }),
+  editIdentity: (displayName, vibeTags, gender) => {
+    set({ displayName, vibeTags, gender, identityDirty: true });
+    if (get().sessionId) writeLiveIdentity(pickLive(get()));
+  },
 
   markIdentitySynced: () => set({ identityDirty: false }),
 
@@ -184,6 +194,8 @@ export const useAnonStore = create<AnonState>((set, get) => ({
     setResumeFlag();
     set((s) => {
       const same = s.sessionId === sessionId;
+      // A refresh-restore has no sessionId yet but already holds the frozen alias/vibes.
+      const keep = same || s.status === 'resuming';
       return {
         ...(same ? {} : sessionFields),
         sessionId,
@@ -191,8 +203,8 @@ export const useAnonStore = create<AnonState>((set, get) => ({
         partnerTags,
         // Freeze the alias this match started with. The partner already has it,
         // so renaming mid-thread must not change what the thread calls you.
-        sessionAlias: same ? (s.sessionAlias ?? s.displayName) : s.displayName,
-        sessionTags: same ? (s.sessionTags ?? s.vibeTags) : s.vibeTags,
+        sessionAlias: keep ? (s.sessionAlias ?? s.displayName) : s.displayName,
+        sessionTags: keep ? (s.sessionTags ?? s.vibeTags) : s.vibeTags,
         status: 'matched' as const,
         reconnecting: false,
         error: null,
@@ -201,6 +213,7 @@ export const useAnonStore = create<AnonState>((set, get) => ({
         matchedAt: startedAt || (same ? s.matchedAt : null) || Date.now(),
       };
     });
+    writeLiveIdentity(pickLive(get()));
   },
 
   clearSession: () => {

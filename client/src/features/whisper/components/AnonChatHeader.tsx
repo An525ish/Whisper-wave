@@ -1,3 +1,4 @@
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import VibeHeart from './VibeHeart';
 import { useProfileViewStore } from '../stores/profileViewStore';
 import { vibeTagLabel, avatarGradient } from '../utils/vibeTag';
@@ -51,6 +52,8 @@ export default function AnonChatHeader({
   onReport,
 }: Props) {
   const openProfile = useProfileViewStore((s) => s.openSheet);
+  // At lg the profile is already open in the side rail, so the name is not a button.
+  const rail = useMediaQuery('(min-width: 1024px)');
 
   return (
     <header className="acr-header">
@@ -88,11 +91,9 @@ export default function AnonChatHeader({
                   typing…
                 </p>
               ) : partnerTags.length > 0 ? (
-                <div className="acr-tags">
-                  {partnerTags.map((t) => (
-                    <span key={t} className="acr-tag">{vibeTagLabel(t)}</span>
-                  ))}
-                </div>
+                <p className="acr-tags" title={partnerTags.map(vibeTagLabel).join(', ')}>
+                  {partnerTags.map(vibeTagLabel).join(' · ')}
+                </p>
               ) : (
                 <p className="acr-status">in the void with you</p>
               )}
@@ -100,12 +101,14 @@ export default function AnonChatHeader({
 
             {/* Stretched over the avatar + name so the whole identity block is the
                 target, without nesting block content inside a <button>. */}
-            <button
-              type="button"
-              className="acr-identity__hit"
-              onClick={() => openProfile('them')}
-              aria-label={`View ${partnerName}'s profile`}
-            />
+            {!rail && (
+              <button
+                type="button"
+                className="acr-identity__hit"
+                onClick={() => openProfile('them')}
+                aria-label={`View ${partnerName}'s profile`}
+              />
+            )}
           </div>
 
           <VibeHeart

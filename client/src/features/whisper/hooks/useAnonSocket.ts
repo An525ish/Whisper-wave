@@ -15,7 +15,7 @@ import {
   LIKE_FAIL_FALLBACK,
   WHISPER_EVENTS,
 } from '../constants';
-import { ANON_IMAGE_MAX_BYTES, ANON_IMAGE_TYPES, joinQueue, uploadAnonImage } from '../api/match';
+import { ANON_IMAGE_MAX_BYTES, ANON_IMAGE_TYPES, uploadAnonImage } from '../api/match';
 import { useAnonStore } from '../stores/anonStore';
 import { trackSessionEnd } from '../stores/trackSessionEnd';
 import { isVibeUnlocked } from '../utils/isVibeUnlocked';
@@ -195,25 +195,22 @@ export function useAnonSocket(socketRef: AnonSocketRef, onError: (msg: string) =
   /**
    * Skip the current match and queue for the next one.
    *
-   * If the identity was edited since the server last saved it, the card is
-   * rewritten (`POST /match/join`) BEFORE `ANON_NEXT`, because the server re-queues
-   * us from the stored card. A failed rewrite falls back to the old card.
+   * Edits made in the You panel travel WITH the skip (`ANON_NEXT { identity }`) and
+   * the server applies them to the stored card before it re-queues us. They used to
+   * go through `POST /match/join` first, which the server refuses while the old
+   * match is still live, so the partner kept seeing the old vibes. The dirty flag
+   * clears only when the server acks that it applied them.
    */
   const sendNext = useCallback(
-    async (from: NextSource) => {
+    (from: NextSource) => {
       const socket = socketRef.current;
       const state = useAnonStore.getState();
       track(WHISPER_EVENTS.NEXT, { from });
       trackSessionEnd('skip');
 
-      const refresh =
+      const identity =
         state.identityDirty && state.displayName.trim()
-          ? {
-              displayName: state.displayName.trim(),
-              vibeTags: state.vibeTags,
-              gender: state.gender,
-              ageConfirmed: true,
-            }
+          ? { displayName: state.displayName.trim(), vibeTags: state.vibeTags, gender: state.gender }
           : null;
 
       state.clearSession();
@@ -222,15 +219,9 @@ export function useAnonSocket(socketRef: AnonSocketRef, onError: (msg: string) =
         onError('Not connected. Reconnecting…');
         return;
       }
-      if (refresh) {
-        try {
-          await joinQueue(refresh);
-          useAnonStore.getState().markIdentitySynced();
-        } catch {
-          onError('Couldn’t save your new alias — this match uses the old one.');
-        }
-      }
-      socket.emit(ANON_NEXT, {});
+      socket.emit(ANON_NEXT, identity ? { identity } : {}, (res?: { identity?: boolean }) => {
+        if (res?.identity) useAnonStore.getState().markIdentitySynced();
+      });
     },
     [socketRef, onError]
   );

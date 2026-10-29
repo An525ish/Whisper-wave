@@ -32,6 +32,9 @@ export const joinQueueSchema = z.object({
   }),
 });
 
+/** Just the identity fields: what a skip may carry to update the stored card. */
+export const identityCardSchema = joinQueueSchema.pick({ displayName: true, vibeTags: true, gender: true });
+
 export const reportReason = z.enum([
   'inappropriate_content',
   'harassment',

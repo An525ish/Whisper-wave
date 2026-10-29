@@ -2,9 +2,10 @@ import { onSocketEvent } from '../../middlewares/validateSocket.js';
 import { makeRedisSocketRateLimiter, makeSocketRateLimiter } from '../rateLimiter.js';
 import { ANON_MESSAGE, ANON_TYPING_START, ANON_TYPING_STOP, ANON_LIKE, ANON_NEXT, ANON_REQUEUE, MATCH_TYPING_START, MATCH_TYPING_STOP, SOMEONE_VIBING, MUTUAL_LIKE, MATCH_MESSAGE_REJECTED, MATCH_PARTNER_VIBED, ANON_READ, MATCH_READ } from '../../constants/anon-events.js';
 import { anonMessageSchema, anonNoPayloadSchema, anonReadSchema } from '../../validators/anon.js';
+import { identityCardSchema } from '../../validators/match.js';
 import { emitMatchFoundToSocket } from './emitMatchFound.js';
 import { registerReactionHandler } from './reactionHandler.js';
-import { getSession, getActiveSessionId, isParticipant, getPartner, recordLike, isVibeUnlocked, handleSocketDrop, endSessionNow, acceptAnonMessage, checkSkipQuota, relayMessage, notifyMatchEnded, requireActiveParticipant } from '../../services/match/index.js';
+import { getSession, getActiveSessionId, isParticipant, getPartner, recordLike, isVibeUnlocked, handleSocketDrop, endSessionNow, acceptAnonMessage, checkSkipQuota, relayMessage, notifyMatchEnded, requireActiveParticipant, updateIdentityCard } from '../../services/match/index.js';
 import { logger } from '../../utils/logger.js';
 import { AppError } from '../../utils/AppError.js';
 import { ackOf, clientMessage, emitError, failureCodeFor, likeFailureCodeFor } from './shared.js';
@@ -221,7 +222,8 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
     socket,
     ANON_NEXT,
     anonNoPayloadSchema,
-    async () => {
+    async (data, ...rest: unknown[]) => {
+      const ack = ackOf<(res: { ok: true; identity: boolean }) => void>(rest);
       const socketSessionId = socket.sessionId;
       socket.sessionId = undefined;
 
@@ -249,6 +251,20 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
           notifyMatchEnded(nsp, partnerAnonId, 'skipped', session.sessionId);
         }
       }
+
+      // Edits from the profile panel ride along with the skip. They cannot go through
+      // POST /match/join: while the old match is still live that call is refused (409,
+      // "already chatting in another tab"), so the new vibes never reached the next
+      // round. Validated like a join; a bad payload is ignored and never blocks the skip.
+      let identityApplied = false;
+      const identity = identityCardSchema.safeParse(data?.identity);
+      if (identity.success) {
+        identityApplied = await updateIdentityCard(socket.anonId, identity.data).catch((err: unknown) => {
+          logger.warn({ err, anonId: socket.anonId }, 'Identity update on skip failed');
+          return false;
+        });
+      }
+      ack?.({ ok: true, identity: identityApplied });
 
       // A skip is a new whisper, so it counts against a signed-in account's cap —
       // after the old session is already torn down, because the user clearly meant
