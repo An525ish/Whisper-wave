@@ -12,6 +12,7 @@ import type { AnonSocket } from '../../types/anonSocket.js';
 import type { Namespace } from 'socket.io';
 import type { LikeSocketAck } from '../../types/matchMessage.js';
 import { requeueSelf } from './connect.js';
+import { bumpWhisperStats } from '../../services/match/stats.js';
 /**
  * The abuse-relevant /anon caps live on Redis.
  *
@@ -179,6 +180,7 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
         const result = await recordLike(sessionId, socket.anonId);
         const partnerAnonId = getPartner(session, socket.anonId);
 
+        bumpWhisperStats({ like: 1 });
         if (result.type === 'one_sided') {
           // Vague signal (no identity), plus a durable flag. The client gates the
           // nudge on ITS OWN unlock state, so a like landing during the warm-up

@@ -1,6 +1,6 @@
 import { api } from '@/shared/lib/api/client';
 import type { ApiSuccess } from '@/shared/types';
-import type { AdminStats } from '../types';
+import type { AdminStats, AdminWhisperStats } from '../types';
 import type {
   AdminActivityEventsPage,
   ModAuditEntry,
@@ -221,6 +221,9 @@ export const getAdminAnonImages = (before?: string) =>
 
 export const deleteAdminAnonImages = (ids: string[]) =>
   api.delete<ApiSuccess>('/admin/anon-images', { ids });
+
+export const getWhisperStats = (days: number) =>
+  api.get<AdminApiEnvelope<AdminWhisperStats>>('/admin/whisper/stats', { days });
 
 export const getWordFilter = () =>
   api.get<AdminApiEnvelope<AdminWordFilter>>('/admin/moderation/words');

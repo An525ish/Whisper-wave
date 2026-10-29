@@ -5,6 +5,7 @@ import type { AnonSession, CreateSessionInput, SessionMessageCounts } from '../.
 import type { StoredAnonMessage } from '../../types/matchMessage.js';
 import { nextEngagement } from './vibeEligibility.js';
 import { META_FIELDS, REDIS_KEYS, TTL } from './keys.js';
+import { trackMatch, trackSessionEnd } from './stats.js';
 
 /**
  * Create a new anon session in Redis.
@@ -53,6 +54,7 @@ export const createSession = async (input: CreateSessionInput): Promise<AnonSess
     { anonId: anon2, userId: userId2 },
   ]);
   await pipe.exec();
+  trackMatch();
 
   return session;
 };
@@ -181,6 +183,10 @@ export const endSession = async (sessionId: string): Promise<void> => {
   session.status = 'ending';
 
   const messageIds = await bufferedMessageIds(sessionId);
+
+  // Counts only (never content) for the admin stats, read before the meta hash is deleted.
+  const [c1, c2] = await getRedis().hmget(REDIS_KEYS.meta(sessionId), META_FIELDS.count1, META_FIELDS.count2);
+  trackSessionEnd(session, Number(c1 ?? 0), Number(c2 ?? 0));
 
   const pipe = getRedis().pipeline();
   pipe.set(REDIS_KEYS.session(sessionId), JSON.stringify(session), 'EX', 60 * 60);

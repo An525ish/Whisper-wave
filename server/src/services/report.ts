@@ -3,6 +3,7 @@ import { logger } from '../utils/logger.js';
 import * as reportRepo from '../repositories/report.js';
 import * as chatRepo from '../repositories/chat.js';
 import { getSession, getPartner, isParticipant, blockAnonId, blockUsers } from './match/index.js';
+import { bumpWhisperStats } from './match/stats.js';
 import type { SubmitReportInput } from '../types/report.js';
 
 /** A repeat report of the same user in the same chat inside this window is a no-op. */
@@ -52,6 +53,7 @@ export const submitReport = async (input: SubmitReportInput): Promise<void> => {
       throw new AppError(403, 'You are not part of that session');
     }
     targetAnonId = getPartner(session, reporterAnonId);
+    bumpWhisperStats({ report: 1 });
 
     await Promise.all([
       blockAnonId(reporterAnonId, targetAnonId),

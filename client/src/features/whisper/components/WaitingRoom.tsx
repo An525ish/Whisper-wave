@@ -38,11 +38,11 @@ export default function WaitingRoom({
   const emptyQueue = !resuming && queueSize !== null && queueSize <= 1;
 
   return (
-    <main className="auth-shell wr-shell relative flex min-h-dvh flex-col items-center justify-start overflow-x-clip overflow-y-auto bg-background text-body sm:justify-center">
+    <main className="auth-shell wr-shell relative flex min-h-full flex-col items-center overflow-x-clip bg-background text-body">
       {/* Auth ambience */}
       <AuthAmbience />
 
-      <div className="wr-frame relative z-10 flex w-full max-w-md flex-col items-center gap-5 px-3 py-6 text-center sm:gap-7 sm:px-4 sm:py-10">
+      <div className="wr-frame relative z-10 my-auto flex w-full max-w-md flex-col items-center gap-5 px-3 py-6 text-center sm:gap-7 sm:px-4 sm:py-10">
 
         {/* Stage — decorative, so hidden from assistive tech */}
         <div className="auth-stage wr-stage relative" aria-hidden>

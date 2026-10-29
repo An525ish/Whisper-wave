@@ -1,5 +1,6 @@
 export { login, me } from './auth.js';
 export { getStats } from './stats.js';
+export { getWhisperStats } from './whisper.js';
 export { listUsers, getUser, deleteUser } from './users.js';
 export { listMessages, deleteMessage, retryMessage, deleteAttachments } from './messages.js';
 export { listGroups, deleteGroup, removeGroupMember } from './groups.js';

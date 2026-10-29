@@ -5,6 +5,7 @@ import type { AnonSession } from '../../types/match.js';
 import { MATCH_DISCONNECTED } from '../../constants/anon-events.js';
 import { PRESENCE_SWEEP, REDIS_KEYS, TTL } from './keys.js';
 import { dequeue } from './queue.js';
+import { bumpWhisperStats } from './stats.js';
 import { endSession, getActiveSessionId, getPartner, getSession } from './session.js';
 
 /**
@@ -127,6 +128,7 @@ const finalizeDrop = async (
       return null;
     });
 
+  bumpWhisperStats({ end_drop: 1 });
   await endSession(sessionId).catch((err: unknown) =>
     logger.warn({ err, sessionId }, 'Failed to end dropped session')
   );
@@ -326,6 +328,7 @@ export const endSessionNow = async (
 ): Promise<string> => {
   const partnerAnonId = getPartner(session, skippedAnonId);
   await clearPresence(skippedAnonId);
+  bumpWhisperStats({ end_skip: 1 });
   await endSession(session.sessionId).catch((err: unknown) =>
     logger.warn({ err, sessionId: session.sessionId }, 'Failed to end skipped session')
   );

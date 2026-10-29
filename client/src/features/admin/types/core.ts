@@ -252,3 +252,10 @@ export type AdminNavItem = {
   label: string;
   icon: ComponentType<IconProps>;
 };
+
+export type AdminWhisperStats = {
+  live: { queue: number; chats: number };
+  rooms: { members: number; guests: number; instances: number };
+  uniques: Record<string, { d1: number; d7: number; d30: number }>;
+  days: { date: string; counters: Record<string, number> }[];
+};

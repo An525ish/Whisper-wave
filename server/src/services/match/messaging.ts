@@ -6,6 +6,7 @@ import { verifyAnonImage } from './image.js';
 import { requireActiveParticipant } from './pairing.js';
 import { getPartner, recordMessage } from './session.js';
 import { inspectMessage, rejectionMessage } from './moderation.js';
+import { bumpWhisperStats, trackBlocked } from './stats.js';
 import { fileAutoReport } from '../moderation/autoReport.js';
 
 /**
@@ -59,6 +60,7 @@ export const acceptAnonMessage = async (
       { sessionId: activeSessionId, anonId, reason: verdict.reason, severe: verdict.severe },
       'Blocked anon message'
     );
+    trackBlocked(verdict.reason, Boolean(verdict.severe));
     // Only the severe set files a report + mutually blocks the pair. Contact and
     // scam solicitation is blocked but never auto-reported, or one spammer could
     // flood the review queue.
@@ -94,6 +96,11 @@ export const acceptAnonMessage = async (
     };
   }
 
+  bumpWhisperStats({
+    sent: 1,
+    ...(imageKey ? { photo: 1 } : gifUrl ? { gif: 1 } : {}),
+    ...(content ? { text: 1 } : {}),
+  });
   return { accepted: true, message, partnerAnonId };
 };
 

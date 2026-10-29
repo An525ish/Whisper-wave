@@ -11,6 +11,7 @@ import { isMuted, isShadowMuted } from './mods.js';
 import { roomMessageLimiter } from './rateLimit.js';
 import { reportSevereHit } from './severe.js';
 import { assertMediaAllowed, resolveRoomMedia } from './media.js';
+import { bumpWhisperStats } from '../match/stats.js';
 import type { PostRoomMessageInput, PostRoomMessageResult } from '../../types/room.js';
 
 /**
@@ -58,7 +59,10 @@ export const postRoomMessage = async (input: PostRoomMessageInput): Promise<Post
     isMember: input.identity.kind === 'member',
     ...(input.challenge ? { answer: input.challenge } : {}),
   });
-  if (!gate.ok) return gate;
+  if (!gate.ok) {
+    bumpWhisperStats({ [`rgate:${gate.code}`]: 1 });
+    return gate;
+  }
 
   if (!roomMessageLimiter.allow(key)) return { ok: false, code: 'rate_limited' };
 
@@ -109,6 +113,7 @@ export const postRoomMessage = async (input: PostRoomMessageInput): Promise<Post
   });
 
   if (!verdict.allowed) {
+    bumpWhisperStats({ [`rblock_${input.identity.kind}`]: 1, [`rblock:${verdict.code}`]: 1 });
     if (verdict.severe) {
       reportSevereHit({
         instanceId,
@@ -150,5 +155,6 @@ export const postRoomMessage = async (input: PostRoomMessageInput): Promise<Post
   }
   const message = appendMessage(instanceId, body);
   if (!message) throw new AppError(410, 'Room restarted — rejoin to continue');
+  bumpWhisperStats({ [`rm_${input.identity.kind}`]: 1, [`rmsg:${slug}`]: 1, ...(media ? { rmedia: 1 } : {}) });
   return { message, ...(support ? { support: true as const } : {}) };
 };

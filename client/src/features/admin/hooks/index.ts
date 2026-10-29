@@ -10,7 +10,7 @@ export {
 } from './useAdminAuth';
 
 // Dashboard stats
-export { useAdminStatsQuery } from './useAdminStats';
+export { useAdminStatsQuery, useWhisperStatsQuery } from './useAdminStats';
 
 // Users (+ impersonation)
 export {

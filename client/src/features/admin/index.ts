@@ -15,6 +15,8 @@ export { useAdminLoginMutation, useAdminMeQuery } from './hooks';
 export const adminRouteLoaders = {
   dashboard: () =>
     import('./components/dashboard/Dashboard').then((m) => ({ Component: m.default })),
+  whisper: () =>
+    import('./components/whisper/Whisper').then((m) => ({ Component: m.default })),
   users: () =>
     import('./components/users/Users').then((m) => ({ Component: m.default })),
   messages: () =>

@@ -291,6 +291,7 @@ const appRoutes = [
         element: <AdminAuthed />,
         children: [
           { path: 'dashboard', lazy: adminRouteLoaders.dashboard },
+          { path: 'whisper', lazy: adminRouteLoaders.whisper },
           { path: 'users', lazy: adminRouteLoaders.users },
           { path: 'messages', lazy: adminRouteLoaders.messages },
           { path: 'rooms', lazy: adminRouteLoaders.rooms },

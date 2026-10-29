@@ -6,6 +6,7 @@ import type { AnonMessageReactions, AnonMessageReactionsBySide, AnonReaction, An
 import { REDIS_KEYS, TTL } from './keys.js';
 import { requireActiveParticipant } from './pairing.js';
 import { getPartner } from './session.js';
+import { bumpWhisperStats } from './stats.js';
 
 /**
  * Vibe reactions on individual anon messages.
@@ -153,6 +154,7 @@ export const applyAnonReaction = async (
   pipe.expire(key, TTL.reactions);
   await pipe.exec();
 
+  if (!alreadyReacted) bumpWhisperStats({ reaction: 1, [`react:${String(reaction).slice(0, 12)}`]: 1 });
   return {
     messageId,
     reaction,

@@ -108,8 +108,8 @@
 .hw-show--games::before {
   /* Quarter circle: centred on the band's bottom-right corner, so the base is a flat line
      just under the watermark and the glow fades out along the arc. */
-  bottom: -1.5rem;
-  background: radial-gradient(circle 27rem at 100% 100%, rgba(255, 190, 90, 0.16), transparent 100%);
+  bottom: 0;
+  background: radial-gradient(circle 27rem at 100% 100%, rgba(88, 170, 255, 0.16), transparent 100%);
 }
 
 /* Oversized outline word behind the copy. Decoration only. */

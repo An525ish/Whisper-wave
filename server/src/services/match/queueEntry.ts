@@ -5,6 +5,7 @@ import { dequeue, deleteWaitingCard, getWaitingCard, saveWaitingCard } from './q
 import { clearJoinCounted } from './quota.js';
 import { endOrphanedSession } from './presence.js';
 import { getActiveSessionId, getSession } from './session.js';
+import { trackJoin, trackUnique } from './stats.js';
 
 /** Shown to the second tab/window of a browser that already holds a live chat. */
 export const ALREADY_CHATTING_MESSAGE =
@@ -55,6 +56,8 @@ export const saveIdentityCard = async (
     joinedAt: Date.now(),
   };
   await saveWaitingCard(card);
+  trackJoin(card.gender, card.vibeTags, Boolean(card.userId));
+  trackUnique(card.userId ? 'anon_user' : 'anon_guest', anonId);
 
   // Submitting the picker again is a NEW whisper, so the previous join's
   // "already counted" marker must not swallow it. Only signed-in joins have one.

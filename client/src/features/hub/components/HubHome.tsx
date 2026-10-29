@@ -17,6 +17,7 @@ import './homeStage.css';
 import './homeExplore.css';
 import './homeRooms.css';
 import './homeGames.css';
+import './homeApps.css';
 
 /**
  * The hub home: a hero (Whisper first), one screen of explore panels (Rooms,

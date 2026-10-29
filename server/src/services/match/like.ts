@@ -1,6 +1,7 @@
 import { getRedis } from '../../config/redis.js';
 import { META_FIELDS, REDIS_KEYS, TTL } from './keys.js';
 import { getSession } from './session.js';
+import { bumpWhisperStats } from './stats.js';
 import { saveClaim } from './claim.js';
 import { issueConnectToken } from './connectToken.js';
 import { AppError } from '../../utils/AppError.js';
@@ -104,6 +105,7 @@ export const recordLike = async (
     partnerTags: tags[myIndex],
   };
 
+  bumpWhisperStats({ mutual: 1 });
   return {
     type: 'mutual',
     tokenA: issueConnectToken(payloadA),

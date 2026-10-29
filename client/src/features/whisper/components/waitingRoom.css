@@ -72,6 +72,8 @@
 
 /* Phones: smaller stage + safer vertical fit (same idea as Enter the void). */
 @media (max-width: 767px) {
+  /* Beats `.auth-shell { min-height: auto !important }` so the screen fills the
+     visible area (above the tab bar) and `my-auto` on the frame can centre it. */
   main.wr-shell.auth-shell {
     min-height: 100% !important;
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));

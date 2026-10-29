@@ -11,3 +11,12 @@ export function useAdminStatsQuery(enabled = true) {
     staleTime: 29_000, // prevent double-fetch from window-focus + interval
   });
 }
+
+export function useWhisperStatsQuery(days: number) {
+  return useQuery({
+    queryKey: queryKeys.whisper(days),
+    queryFn: () => adminApi.getWhisperStats(days).then((res) => res.data),
+    refetchInterval: 15_000,
+    staleTime: 14_000,
+  });
+}

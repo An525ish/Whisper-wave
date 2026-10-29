@@ -13,6 +13,7 @@ import type { AdminNavItem } from '../../types';
 export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = Object.freeze([
   { id: 'dashboard', to: '/admin/dashboard', label: 'Dashboard', icon: DashboardIcon },
   { id: 'activity', to: '/admin/activity', label: 'Activity', icon: ActivityIcon },
+  { id: 'whisper', to: '/admin/whisper', label: 'Whisper', icon: ChatIcon },
   { id: 'users', to: '/admin/users', label: 'Users', icon: MembersIcon },
   { id: 'groups', to: '/admin/groups', label: 'Groups', icon: CreateGroupIcon },
   { id: 'messages', to: '/admin/messages', label: 'Messages', icon: ChatIcon },

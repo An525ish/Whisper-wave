@@ -52,6 +52,11 @@ export const me: RequestHandler = catchAsync(async (req, res) => {
   res.status(200).json({ success: true, isAdmin: result.isAdmin });
 });
 
+export const getWhisperStats: RequestHandler = catchAsync(async (req, res) => {
+  const days = Math.min(Math.max(Number(req.query.days) || 7, 1), 90);
+  res.json({ success: true, data: await adminService.getWhisperStats(days) });
+});
+
 export const getStats: RequestHandler = catchAsync(async (_req, res) => {
   const stats = await adminService.getStats();
   res.status(200).json({ success: true, stats });

@@ -1,0 +1,143 @@
+/** Hub home (`hw-*`) — Apps band. The envelope is pure CSS. Motion freezes under `prefers-reduced-motion`. */
+
+/* Layout comes from the shared .hw-show--flip (art left, copy and watermark right), like Memes. */
+.hw-show--apps { gap: 1.75rem; padding: 3.5rem 0 4.5rem; }
+/* Lift the watermark by about the depth of the p tails, so they stay inside the band
+   and the letters sit on the same line as the Games and Memes watermarks. */
+.hw-show--apps .hw-show__ghost { bottom: 0.16em; }
+
+/* Same soft quarter-circle as Games, from the bottom-left corner (the envelope side). */
+.hw-show--apps::before { bottom: 0; background: radial-gradient(circle 27rem at 0% 100%, color-mix(in oklab, var(--g) 14%, transparent), transparent 100%); }
+
+@media (min-width: 768px) {
+  .hw-show--apps { gap: 3rem; padding: 4.5rem 0; }
+  .hw-show--apps .hw-show__title { font-size: clamp(2.6rem, 4.6vw, 4rem); }
+  .hw-show--apps .hw-show__desc { font-size: 1.05rem; }
+}
+
+.hw-apps__tag {
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--g) 45%, transparent);
+  background: color-mix(in oklab, var(--g) 12%, transparent);
+  padding: 0.15rem 0.6rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--g);
+}
+
+/*
+ * Envelope: back panel, the letter sliding out, a front pocket
+ * and a seal. Painted in that z-order. The whole thing floats; the letter nudges up.
+ */
+.hw-env {
+  --ew: 15rem;
+  --eh: 9.5rem;
+  position: relative;
+  width: var(--ew);
+  height: var(--eh);
+  margin: 3.5rem auto 0;
+  animation: hw-env-float 6s ease-in-out infinite;
+}
+
+@media (min-width: 768px) {
+  .hw-env { --ew: 21rem; --eh: 13rem; margin: 2rem auto 0; }
+}
+
+.hw-env__back,
+.hw-env__front { position: absolute; inset: 0; }
+
+.hw-env__back {
+  border-radius: 1.1rem;
+  background: linear-gradient(160deg, color-mix(in oklab, var(--g) 30%, #1d1628), #17121f);
+  border: 1px solid color-mix(in oklab, var(--g) 45%, transparent);
+  box-shadow: 0 30px 50px -24px rgba(0, 0, 0, 0.9), 0 0 50px -16px var(--g);
+}
+
+.hw-env__letter {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 14%;
+  height: 82%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.7rem;
+  background: linear-gradient(180deg, #f6f1e4, #e7dfcb);
+  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.7);
+  transform: translateY(-18%) rotate(-2deg);
+  animation: hw-env-letter 6s ease-in-out infinite;
+}
+
+.hw-env__to { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6b6150; }
+.hw-env__line { height: 0.4rem; border-radius: 99px; background: rgba(60, 50, 30, 0.2); }
+.hw-env__line--m { width: 80%; }
+.hw-env__line--s { width: 55%; }
+.hw-env__from { margin-top: auto; font-size: 0.62rem; font-style: italic; color: #8a7f68; filter: blur(0.6px); }
+
+/* Pocket hides the lower part of the letter. */
+.hw-env__front {
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(to bottom right, transparent 49.5%, rgba(255, 255, 255, 0.07) 50%) left / 50% 100% no-repeat,
+    linear-gradient(to bottom left, transparent 49.5%, rgba(255, 255, 255, 0.07) 50%) right / 50% 100% no-repeat,
+    linear-gradient(170deg, color-mix(in oklab, var(--g) 22%, #241b30), #1a1424);
+  clip-path: polygon(0 38%, 50% 72%, 100% 38%, 100% 100%, 0 100%);
+}
+
+.hw-env__seal {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin: -1.7rem 0 0 -1.7rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid color-mix(in oklab, var(--g) 70%, #fff);
+  background: #17121f;
+  box-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.8), 0 0 22px -4px var(--g);
+}
+
+@media (min-width: 768px) {
+  .hw-env__seal { width: 4.6rem; height: 4.6rem; margin: -2.3rem 0 0 -2.3rem; }
+  .hw-env__to { font-size: 0.7rem; }
+  .hw-env__from { font-size: 0.72rem; }
+}
+
+/* Selling points as floating tags around the envelope. */
+.hw-env__chip {
+  position: absolute;
+  z-index: 3;
+  white-space: nowrap;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--g) 45%, transparent);
+  background: rgba(23, 18, 31, 0.92);
+  padding: 0.28rem 0.7rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 18px -10px rgba(0, 0, 0, 0.9);
+  animation: hw-env-chip 5s ease-in-out infinite;
+}
+.hw-env__chip--a { top: -1.6rem; left: -0.6rem; }
+.hw-env__chip--b { top: 38%; right: -1.2rem; animation-delay: -1.6s; }
+.hw-env__chip--c { bottom: -1.5rem; left: 12%; animation-delay: -3.2s; }
+
+@media (min-width: 768px) {
+  .hw-env__chip { font-size: 0.72rem; padding: 0.35rem 0.85rem; }
+  .hw-env__chip--b { right: -2.4rem; }
+  .hw-env__chip--a { left: -1.4rem; }
+}
+
+@keyframes hw-env-float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-8px) rotate(1deg); } }
+@keyframes hw-env-letter { 0%, 100% { transform: translateY(-18%) rotate(-2deg); } 50% { transform: translateY(-30%) rotate(-1deg); } }
+@keyframes hw-env-chip { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-env, .hw-env__letter, .hw-env__chip { animation: none; }
+}

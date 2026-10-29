@@ -1,17 +1,17 @@
 /** Hub home (`hw-*`) — Games band. Decorative motion freezes under `prefers-reduced-motion`. */
 
-.hw-show--games { gap: 1.75rem; padding: 3.5rem 0 4.5rem; }
+.hw-show--games { gap: 1.75rem; padding: 3.5rem 0 6.5rem; }
 
 @media (min-width: 768px) {
-  .hw-show--games { min-height: 26rem; grid-template-columns: 1fr auto; align-items: center; padding: 4rem 0 5.5rem; }
+  .hw-show--games { min-height: 26rem; grid-template-columns: 1fr auto; align-items: center; padding: 4rem 0 9rem; }
   .hw-show--games .hw-show__title { font-size: clamp(2.6rem, 4.6vw, 4rem); }
   .hw-show--games .hw-show__desc { font-size: 1.05rem; }
 }
 
 .hw-games__copy { order: 1; }
 
-/* Watermark and card arc sit a little lower than the copy. */
-.hw-show--games .hw-show__ghost { bottom: -3.5rem; }
+/* Watermark stays inside the band so it never crosses the divider below. */
+.hw-show--games .hw-show__ghost { bottom: 0.5rem; }
 
 
 /*
@@ -77,10 +77,10 @@
 
 .hw-games__soon {
   border-radius: 999px;
-  border: 1px solid rgba(255, 190, 90, 0.4);
-  background: rgba(255, 190, 90, 0.1);
+  border: 1px solid rgba(88, 170, 255, 0.4);
+  background: rgba(88, 170, 255, 0.1);
   padding: 0.2rem 0.65rem;
-  color: #ffd592;
+  color: #a9d3ff;
 }
 
 @keyframes hw-games-float {

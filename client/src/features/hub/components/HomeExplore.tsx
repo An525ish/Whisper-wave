@@ -1,5 +1,6 @@
 import { MemesHubCard } from '@/features/memes';
 import { RoomsHubCard } from '@/features/rooms';
+import HomeAppsBand from './HomeAppsBand';
 import HomeGamesSoon from './HomeGamesSoon';
 
 type Props = {
@@ -32,6 +33,7 @@ const HomeExplore = ({ roomsLive, memesLive, onCardClick }: Props) => {
       <RoomsHubCard enabled={roomsLive} onClick={() => onCardClick('rooms-door')} />
       <MemesHubCard enabled={memesLive} onClick={() => onCardClick('memes-door')} />
       <HomeGamesSoon />
+      <HomeAppsBand />
     </section>
   );
 };

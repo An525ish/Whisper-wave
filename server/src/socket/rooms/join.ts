@@ -11,6 +11,7 @@ import { findByIdNameAvatar } from '../../repositories/user.js';
 import { logger } from '../../utils/logger.js';
 import { emitPresence, releaseSeat, seatKeyOf, trackSeat } from './seats.js';
 import { toWireMessage } from './wire.js';
+import { bumpWhisperStats, trackUnique } from '../../services/match/stats.js';
 import type { RoomJoinInput, RoomSocket } from '../../types/room.js';
 
 /**
@@ -60,6 +61,9 @@ export const handleJoin = async (
     ...(trust ? { trust } : {}),
   });
   if (previous && previous !== instanceId) releaseSeat(nsp, socket, previous);
+  const who = socket.userId ? 'member' : 'guest';
+  bumpWhisperStats({ [`rj_${who}`]: 1, [`rjoin:${template.slug}`]: 1 });
+  trackUnique(`rooms_${who}`, key);
 
   await socket.join(instanceId);
   socket.roomInstanceId = instanceId;

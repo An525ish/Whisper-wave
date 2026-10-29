@@ -8,6 +8,7 @@ import {
   getActivityPresence,
   getImpersonationLogs,
   getStats,
+  getWhisperStats,
   getUser,
   impersonateUser,
   listAttachments,
@@ -75,6 +76,7 @@ adminRouter.post('/logout', logout);
 // Soft session probe — returns { isAdmin } without 401 when no admin cookie.
 adminRouter.get('/me', me);
 adminRouter.get('/stats', requireAdmin, getStats);
+adminRouter.get('/whisper/stats', requireAdmin, getWhisperStats);
 adminRouter.get(
   '/users',
   requireAdmin,

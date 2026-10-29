@@ -212,6 +212,19 @@ export const clearInstance = (instanceId: string): string[] => {
   return keys;
 };
 
+/** Everyone in a room right now, split by account vs guest. */
+export const livePeople = (): { members: number; guests: number; instances: number } => {
+  let members = 0;
+  let guests = 0;
+  for (const i of instances.values()) {
+    for (const m of i.members.values()) {
+      if (m.userId) members += 1;
+      else guests += 1;
+    }
+  }
+  return { members, guests, instances: instances.size };
+};
+
 /** Every live instance id — the Wave bot sweep and admin close iterate this. */
 export const allInstanceIds = (): string[] => [...instances.keys()];
 
