@@ -283,18 +283,22 @@ export const recordMessage = async (
   if (Number(accepted) !== 1) return false;
   // ponytail: read-modify-write, not atomic. Two sends in the same millisecond can
   // drop one gap; harmless for a 5-minute threshold. Upgrade: fold into the Lua script.
+  // Not awaited: the vibe-gate bookkeeping is two more Redis round trips, and the
+  // partner must not wait on them. A failure only loses one engagement tick.
   const meta = REDIS_KEYS.meta(sessionId);
-  const [eg, la, lf] = await getRedis().hmget(meta, META_FIELDS.engaged, META_FIELDS.lastAt, META_FIELDS.lastFrom);
-  const next = nextEngagement(
-    la && lf ? { engagedMs: Number(eg ?? 0), lastAt: Number(la), lastFrom: lf } : null,
-    message.from,
-    message.sentAt
-  );
-  await getRedis().hset(meta, {
-    [META_FIELDS.engaged]: next.engagedMs,
-    [META_FIELDS.lastAt]: next.lastAt,
-    [META_FIELDS.lastFrom]: next.lastFrom,
-  });
+  void (async () => {
+    const [eg, la, lf] = await getRedis().hmget(meta, META_FIELDS.engaged, META_FIELDS.lastAt, META_FIELDS.lastFrom);
+    const next = nextEngagement(
+      la && lf ? { engagedMs: Number(eg ?? 0), lastAt: Number(la), lastFrom: lf } : null,
+      message.from,
+      message.sentAt
+    );
+    await getRedis().hset(meta, {
+      [META_FIELDS.engaged]: next.engagedMs,
+      [META_FIELDS.lastAt]: next.lastAt,
+      [META_FIELDS.lastFrom]: next.lastFrom,
+    });
+  })().catch((err: unknown) => logger.warn({ err, sessionId }, 'Engagement update failed'));
   return true;
 };
 
