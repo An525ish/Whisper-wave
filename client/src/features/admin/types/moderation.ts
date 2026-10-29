@@ -225,3 +225,24 @@ export type AdminApiEnvelope<T> = {
   message?: string;
   data: T;
 };
+
+/** Blocked-word settings as the admin API returns and accepts them. */
+export type AdminWordCategory = {
+  id: string;
+  label: string;
+  /** Child-safety and threat categories also auto-report the sender. */
+  severe: boolean;
+  enabled: boolean;
+  terms: string[];
+  defaultTerms: string[];
+};
+
+export type AdminWordFilter = {
+  enabled: boolean;
+  categories: AdminWordCategory[];
+};
+
+export type AdminWordFilterInput = {
+  enabled: boolean;
+  categories: Record<string, { enabled: boolean; terms: string[] }>;
+};

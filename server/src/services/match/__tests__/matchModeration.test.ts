@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { inspectMessage } from '../moderation.js';
+import { defaultWordFilter, inspectMessage, setWordFilter } from '../moderation.js';
 import { toWireMessage } from '../messaging.js';
 
 describe('anon message moderation', () => {
@@ -116,5 +116,33 @@ describe('per-recipient message sides', () => {
 
   it('omits id when the stored message has none', () => {
     assert.equal('id' in toWireMessage({ from: 'x', content: 'c', sentAt: 1 }, 'x'), false);
+  });
+});
+
+describe('editable word filter', () => {
+  it('honours the master switch, category switches and custom terms', () => {
+    try {
+      const cfg = defaultWordFilter();
+      assert.equal(inspectMessage('send me your crypto').allowed, false);
+
+      cfg.categories.solicitation!.enabled = false;
+      setWordFilter(cfg);
+      assert.equal(inspectMessage('send me your crypto').allowed, true);
+
+      cfg.categories.solicitation!.terms = ['c++ (dev)'];
+      cfg.categories.solicitation!.enabled = true;
+      setWordFilter(cfg); // regex characters in a term are literal, not a pattern
+      assert.equal(inspectMessage('i like crypto').allowed, true);
+      assert.equal(inspectMessage('learning c++ (dev) tools').allowed, false);
+
+      cfg.categories.solicitation!.terms = [];
+      setWordFilter(cfg); // an empty list must block nothing, not everything
+      assert.equal(inspectMessage('hello there').allowed, true);
+
+      setWordFilter({ ...defaultWordFilter(), enabled: false });
+      assert.equal(inspectMessage('send nudes').allowed, true);
+    } finally {
+      setWordFilter(defaultWordFilter());
+    }
   });
 });

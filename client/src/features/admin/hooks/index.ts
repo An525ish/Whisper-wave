@@ -72,6 +72,9 @@ export {
   useUnblockMemeMutation,
 } from './useAdminMemes';
 
+// Blocked words
+export { useWordFilterQuery, useSaveWordFilterMutation } from './useAdminWordFilter';
+
 // Moderation audit trail
 export { useModAuditQuery } from './useAdminAudit';
 

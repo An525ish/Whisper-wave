@@ -7,6 +7,8 @@ import type {
   AdminApiEnvelope,
   AdminFeatureFlag,
   AdminMemeBlocklist,
+  AdminWordFilter,
+  AdminWordFilterInput,
   AdminReportActionInput,
   AdminReportActionResult,
   AdminReportRow,
@@ -219,3 +221,9 @@ export const getAdminAnonImages = (before?: string) =>
 
 export const deleteAdminAnonImages = (ids: string[]) =>
   api.delete<ApiSuccess>('/admin/anon-images', { ids });
+
+export const getWordFilter = () =>
+  api.get<AdminApiEnvelope<AdminWordFilter>>('/admin/moderation/words');
+
+export const saveWordFilter = (input: AdminWordFilterInput) =>
+  api.put<AdminApiEnvelope<AdminWordFilter>>('/admin/moderation/words', input);

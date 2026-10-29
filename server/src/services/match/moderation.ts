@@ -29,15 +29,20 @@ import type { MessageVerdict, ModerationReason } from '../../types/match.js';
  *    Every term in a severe category is by construction also blocked.
  */
 
-type Category = {
+export type WordCategory = {
+  /** Stable key the admin panel and the stored settings use. */
+  id: string;
+  label: string;
   reason: ModerationReason;
   /** Auto-report the sender and mutually block the pair. */
   severe: boolean;
   terms: readonly string[];
 };
 
-const CATEGORIES: readonly Category[] = [
+export const DEFAULT_CATEGORIES: readonly WordCategory[] = [
   {
+    id: 'sexual',
+    label: 'Sexual content',
     reason: 'sexual',
     severe: false,
     terms: [
@@ -48,6 +53,8 @@ const CATEGORIES: readonly Category[] = [
   },
   {
     // CSAM-adjacent: blocked AND reported.
+    id: 'child-safety',
+    label: 'Child safety',
     reason: 'sexual',
     severe: true,
     terms: [
@@ -56,6 +63,8 @@ const CATEGORIES: readonly Category[] = [
     ],
   },
   {
+    id: 'solicitation',
+    label: 'Solicitation and scams',
     reason: 'solicitation',
     severe: false,
     terms: [
@@ -69,27 +78,74 @@ const CATEGORIES: readonly Category[] = [
     // Telling someone to harm themselves, or self-harm statements. Blocked, but
     // not auto-reported: "i want to die" is a person who needs support, not a
     // case for a moderation queue.
+    id: 'self-harm',
+    label: 'Self-harm and abuse',
     reason: 'violence',
     severe: false,
     terms: ['kill yourself', 'kys', 'i want to die', 'end my life', 'raped', 'rapist'],
   },
   {
+    id: 'threats',
+    label: 'Violence and threats',
     reason: 'violence',
     severe: true,
     terms: ['how to make a bomb', 'rape', 'raping'],
   },
 ];
 
-/** One boundary-anchored regex per category, built once. */
-const MATCHERS = CATEGORIES.map(({ reason, severe, terms }) => ({
-  reason,
-  severe,
-  // Not preceded or followed by a letter/digit, so a term only matches as a whole
-  // word / phrase. Spaces inside a phrase match any run of whitespace.
-  pattern: new RegExp(
-    `(?<![a-z0-9])(?:${terms.map((t) => t.replace(/ /g, '\\s+')).join('|')})(?![a-z0-9])`
-  ),
-}));
+/**
+ * What the filter runs on right now. Starts as the built-in lists, all on; the admin
+ * panel replaces it (`setWordFilter`) and `loadWordFilter` restores it at boot.
+ * ponytail: held per process. One server today; with several, add a refresh poll.
+ */
+export type WordFilterConfig = {
+  /** Master switch: off means no word is blocked anywhere. */
+  enabled: boolean;
+  categories: Record<string, { enabled: boolean; terms: string[] }>;
+};
+
+export const defaultWordFilter = (): WordFilterConfig => ({
+  enabled: true,
+  categories: Object.fromEntries(DEFAULT_CATEGORIES.map((c) => [c.id, { enabled: true, terms: [...c.terms] }])),
+});
+
+/** A term goes through the same normalisation as messages, so what an admin types is what gets matched. */
+export const cleanTerm = (term: string): string => normalize(term).trim();
+
+const escapeRe = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+type Matcher = { reason: ModerationReason; severe: boolean; pattern: RegExp };
+let current: WordFilterConfig = defaultWordFilter();
+let MATCHERS: Matcher[] = [];
+
+/** One boundary-anchored regex per category. A category with no terms gets none (an empty list would match everything). */
+const buildMatchers = (config: WordFilterConfig): Matcher[] =>
+  config.enabled
+    ? DEFAULT_CATEGORIES.flatMap(({ id, reason, severe }) => {
+        const cat = config.categories[id];
+        const terms = (cat?.enabled ? cat.terms : []).map(cleanTerm).filter(Boolean);
+        if (terms.length === 0) return [];
+        // Not preceded or followed by a letter/digit, so a term only matches as a whole
+        // word / phrase. Spaces inside a phrase match any run of whitespace.
+        return [
+          {
+            reason,
+            severe,
+            pattern: new RegExp(
+              `(?<![a-z0-9])(?:${terms.map((t) => escapeRe(t).replace(/ /g, '\\s+')).join('|')})(?![a-z0-9])`
+            ),
+          },
+        ];
+      })
+    : [];
+
+export const setWordFilter = (config: WordFilterConfig): void => {
+  current = config;
+  MATCHERS = buildMatchers(config);
+};
+
+export const getWordFilter = (): WordFilterConfig => current;
+
 
 const LEET: Record<string, string> = {
   '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', $: 's',
@@ -152,3 +208,5 @@ export const inspectMessage = (content: string): MessageVerdict => {
 /** Client-facing copy. Intentionally vague and non-accusatory. */
 export const rejectionMessage = (): string =>
   "That message can't be sent in a Whisper chat. Keep it respectful.";
+
+setWordFilter(current);

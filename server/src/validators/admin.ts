@@ -98,3 +98,15 @@ export const adminAnonImagesQuerySchema = z.object({
 export const adminDeleteAnonImagesSchema = z.object({
   ids: z.array(z.string().regex(/^[a-f\d]{24}$/i)).min(1).max(100),
 });
+
+/** `PUT /admin/moderation/words`. Unknown category ids are ignored by the service. */
+export const adminWordFilterSchema = z.object({
+  enabled: z.boolean(),
+  categories: z.record(
+    z.string().max(40),
+    z.object({
+      enabled: z.boolean(),
+      terms: z.array(z.string().trim().min(1).max(60)).max(500),
+    })
+  ),
+});

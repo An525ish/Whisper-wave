@@ -48,7 +48,8 @@ import {
   adminRoomUpsertSchema,
 } from '../validators/rooms.js';
 import { deleteAnonImagesController, listAnonImagesController } from '../controllers/admin/anonImages.js';
-import { adminAnonImagesQuerySchema, adminDeleteAnonImagesSchema } from '../validators/admin.js';
+import { adminAnonImagesQuerySchema, adminDeleteAnonImagesSchema, adminWordFilterSchema } from '../validators/admin.js';
+import { getWordFilterController, putWordFilterController } from '../controllers/admin/wordFilter.js';
 import { memeBlockParamsSchema, memeBlockSchema } from '../validators/memes.js';
 import {
   adminActivityEventsQuerySchema,
@@ -168,6 +169,10 @@ adminRouter.post(
   setFeatureController
 );
 adminRouter.get('/mod-audit', requireAdmin, listAuditController);
+
+// Blocked words: one shared list for Whisper and Rooms, every part switchable.
+adminRouter.get('/moderation/words', requireAdmin, getWordFilterController);
+adminRouter.put('/moderation/words', requireAdmin, validate(adminWordFilterSchema), putWordFilterController);
 
 // Memes blocklist — provider joke ids hidden from every batch. Admin only.
 adminRouter.get('/memes/blocklist', requireAdmin, listBlockedController);

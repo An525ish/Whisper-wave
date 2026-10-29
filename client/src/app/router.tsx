@@ -295,6 +295,7 @@ const appRoutes = [
           { path: 'messages', lazy: adminRouteLoaders.messages },
           { path: 'rooms', lazy: adminRouteLoaders.rooms },
           { path: 'memes', lazy: adminRouteLoaders.memes },
+          { path: 'words', lazy: adminRouteLoaders.words },
           { path: 'anon-media', lazy: adminRouteLoaders.anonMedia },
           { path: 'reports', lazy: adminRouteLoaders.reports },
           { path: 'audit', lazy: adminRouteLoaders.audit },

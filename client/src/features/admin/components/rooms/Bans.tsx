@@ -65,7 +65,10 @@ const Bans = () => {
 
   return (
     <section aria-label="Room bans" className="rounded-2xl border border-border/60 bg-white/[0.03] p-5">
-      <h2 className="text-base font-semibold text-white">Bans</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-base font-semibold text-white">Bans</h2>
+        <p className="text-xs text-body-300">{bans ? `${bans.length} active · ` : ''}blank room slug bans from every room</p>
+      </div>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <input
@@ -110,9 +113,9 @@ const Bans = () => {
         <p role="alert" className="mt-2 text-xs text-red">Identity must be a guest uuid or a 24-character user id.</p>
       )}
 
-      <ul className="mt-4 flex flex-col gap-2">
+      <ul className="mt-5 flex flex-col gap-2 border-t border-border/50 pt-4">
         {bans?.map((ban) => (
-          <li key={ban._id} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.02] px-3 py-2">
+          <li key={ban._id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-black-light/30 px-4 py-3">
             <span className="min-w-0 text-sm text-body-300">
               <span className="font-medium text-body">{ban.roomSlug ?? 'all rooms'}</span>
               {' · '}
@@ -124,7 +127,7 @@ const Bans = () => {
               type="button"
               onClick={() => void liftBan(ban._id)}
               disabled={liftingId === ban._id}
-              className="shrink-0 text-xs font-medium text-green hover:underline disabled:opacity-50"
+              className="shrink-0 rounded-full border border-green/30 px-3 py-1 text-xs font-medium text-green hover:bg-green/10 disabled:opacity-50"
             >
               Lift
             </button>

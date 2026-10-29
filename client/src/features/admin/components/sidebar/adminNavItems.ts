@@ -20,6 +20,7 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = Object.freeze([
   { id: 'audit', to: '/admin/audit', label: 'Audit', icon: EyeIcon },
   { id: 'rooms', to: '/admin/rooms', label: 'Rooms', icon: GridAllIcon },
   { id: 'memes', to: '/admin/memes', label: 'Memes', icon: MemesIcon },
+  { id: 'words', to: '/admin/words', label: 'Blocked words', icon: NotificationIcon },
   { id: 'media', to: '/admin/media', label: 'Media & Files', icon: ImagesIcon },
   { id: 'anon-media', to: '/admin/anon-media', label: 'Anon photos', icon: ImagesIcon },
 ]);

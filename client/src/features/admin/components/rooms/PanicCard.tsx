@@ -1,26 +1,27 @@
 import { usePanicCard } from '../../hooks/usePanicCard';
+import Switch from '../shared/Switch';
 
 /**
  * The incident switch: one surface off or back on immediately, no deploy.
- * A restart resets to env — flags stay the durable state, this is the panic
- * button. Logged server-side as such.
+ * A restart resets to env, so flags stay the durable state and this is the
+ * panic button. Logged server-side as such.
  */
 const PanicCard = () => {
   const { toggles, isLoading, isError, refetch, flipping, toggle, ready } = usePanicCard();
 
   return (
-    <section aria-label="Feature kill switches" className="rounded-2xl border border-red/30 bg-red/5 p-5">
-      <h2 className="text-base font-semibold text-white">Panic card</h2>
-      <p className="mt-1 text-sm text-body-300">
-        Disable a surface instantly. A restart resets to deploy flags.
-      </p>
+    <section aria-label="Feature kill switches" className="rounded-2xl border border-red/25 bg-red/[0.04] p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-base font-semibold text-white">Kill switches</h2>
+        <p className="text-xs text-body-300">Takes effect at once. A restart goes back to the deploy flags.</p>
+      </div>
 
       {isLoading && (
-        <div aria-label="Loading feature flags" className="mt-3 h-10 animate-pulse rounded-full bg-white/5 motion-reduce:animate-none" />
+        <div aria-label="Loading feature flags" className="mt-4 h-14 animate-pulse rounded-xl bg-white/5 motion-reduce:animate-none" />
       )}
 
       {isError && (
-        <div role="alert" className="mt-3 flex items-center gap-3 text-sm text-red">
+        <div role="alert" className="mt-4 flex items-center gap-3 text-sm text-red">
           Couldn&apos;t load the current flags.
           <button
             type="button"
@@ -33,24 +34,28 @@ const PanicCard = () => {
       )}
 
       {ready && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <ul className="mt-4 grid gap-2 sm:grid-cols-3">
           {toggles.map((item) => (
-            <button
+            <li
               key={item.id}
-              type="button"
-              onClick={() => void toggle(item.id, !item.on)}
-              disabled={flipping}
-              aria-pressed={item.on}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red ${
-                item.on
-                  ? 'bg-red/20 text-red hover:bg-red/30'
-                  : 'border border-border bg-white/5 text-body-300 hover:text-body'
-              }`}
+              className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-black-light/30 px-4 py-3"
             >
-              {item.label}: {item.on ? 'ON — disable' : 'off — enable'}
-            </button>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-body">{item.label}</p>
+                <p className={`mt-0.5 flex items-center gap-1.5 text-xs ${item.on ? 'text-green' : 'text-red'}`}>
+                  <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${item.on ? 'bg-green' : 'bg-red'}`} />
+                  {item.on ? 'Live' : 'Switched off'}
+                </p>
+              </div>
+              <Switch
+                on={item.on}
+                onChange={(next) => void toggle(item.id, next)}
+                disabled={flipping}
+                label={`${item.label}: ${item.on ? 'switch off' : 'switch on'}`}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </section>
   );

@@ -8,13 +8,20 @@ import { inputClass } from './styles';
 
 type Props = {
   room: AdminRoomRow;
-  saving: boolean;
+  /** Lets a submit button outside the form (the panel footer) trigger it. */
+  formId: string;
   onSave: (values: RoomEditValues) => void;
-  onCancel: () => void;
 };
 
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <section className="flex flex-col gap-3 rounded-2xl border border-border/40 bg-white/[0.02] p-4">
+    <h3 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-body-300">{title}</h3>
+    {children}
+  </section>
+);
+
 /** Edits one template. Rules, hours and mods are always sent in full — the server overwrites them. */
-const RoomEditForm = ({ room, saving, onSave, onCancel }: Props) => {
+const RoomEditForm = ({ room, formId, onSave }: Props) => {
   const {
     register,
     handleSubmit,
@@ -29,8 +36,9 @@ const RoomEditForm = ({ room, saving, onSave, onCancel }: Props) => {
   const field = (name: string) => `${id}-${name}`;
 
   return (
-    <form onSubmit={handleSubmit(onSave)} className="mt-3 flex flex-col gap-3" aria-label={`Edit ${room.title}`}>
-      <div className="grid gap-3 sm:grid-cols-2">
+    <form id={formId} onSubmit={handleSubmit(onSave)} className="flex flex-col gap-4" aria-label={`Edit ${room.title}`}>
+      <Section title="Basics">
+      <div className="grid grid-cols-[1fr_6rem] gap-3">
         <div>
           <label htmlFor={field('title')} className="text-xs font-medium text-body-300">Title</label>
           <input id={field('title')} {...register('title')} maxLength={60} className={inputClass} />
@@ -48,6 +56,9 @@ const RoomEditForm = ({ room, saving, onSave, onCancel }: Props) => {
         <textarea id={field('desc')} {...register('description')} rows={2} maxLength={280} className={inputClass} />
         {errors.description && <p role="alert" className="mt-1 text-xs text-red">{errors.description.message}</p>}
       </div>
+      </Section>
+
+      <Section title="Rules and media">
 
       <div>
         <label htmlFor={field('rules')} className="text-xs font-medium text-body-300">
@@ -62,14 +73,16 @@ const RoomEditForm = ({ room, saving, onSave, onCancel }: Props) => {
         <div className="mt-1 flex gap-4">
           {ROOM_MEDIA_KINDS.map((kind) => (
             <label key={kind} className="flex items-center gap-2 text-sm text-body">
-              <input type="checkbox" value={kind} {...register('media')} />
+              <input type="checkbox" className="h-4 w-4 accent-green" value={kind} {...register('media')} />
               {kind === 'image' ? 'Photos' : kind === 'gif' ? 'GIFs' : 'Memes'}
             </label>
           ))}
         </div>
       </fieldset>
 
-      <div className="flex flex-wrap items-end gap-4">
+      </Section>
+
+      <Section title="Access">
         <div>
           <label htmlFor={field('visibility')} className="text-xs font-medium text-body-300">Visibility</label>
           <select id={field('visibility')} {...register('visibility')} className={inputClass}>
@@ -78,18 +91,19 @@ const RoomEditForm = ({ room, saving, onSave, onCancel }: Props) => {
             ))}
           </select>
         </div>
-        <label className="flex items-center gap-2 pb-2 text-sm text-body">
-          <input type="checkbox" {...register('official')} />
+        <label className="flex items-center gap-2 text-sm text-body">
+          <input type="checkbox" className="h-4 w-4 accent-green" {...register('official')} />
           Official room
         </label>
-        <label className="flex items-center gap-2 pb-2 text-sm text-body">
-          <input type="checkbox" {...register('requiresModPresence')} />
+        <label className="flex items-center gap-2 text-sm text-body">
+          <input type="checkbox" className="h-4 w-4 accent-green" {...register('requiresModPresence')} />
           Listening room (mod must be present)
         </label>
-      </div>
+      </Section>
 
       <RoomHoursFields register={register} errors={errors} enabled={hoursEnabled} />
 
+      <Section title="Moderators">
       <div>
         <label htmlFor={field('mods')} className="text-xs font-medium text-body-300">
           Mod user ids (comma separated)
@@ -102,19 +116,7 @@ const RoomEditForm = ({ room, saving, onSave, onCancel }: Props) => {
         )}
         {errors.modsText && <p role="alert" className="mt-1 text-xs text-red">{errors.modsText.message}</p>}
       </div>
-
-      <div className="flex justify-end gap-2">
-        <button type="button" onClick={onCancel} className="rounded-full px-3 py-1.5 text-xs text-body-300 hover:text-body">
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-green/15 px-4 py-1.5 text-xs font-medium text-green hover:bg-green/25 disabled:opacity-50"
-        >
-          {saving ? 'Saving…' : 'Save room'}
-        </button>
-      </div>
+      </Section>
     </form>
   );
 };

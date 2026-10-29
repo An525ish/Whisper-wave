@@ -1,3 +1,4 @@
+import { loadWordFilter } from './services/moderation/wordFilter.js';
 import { createServer } from 'http';
 import mongoose from 'mongoose';
 import { createApp } from './app.js';
@@ -76,6 +77,8 @@ const start = async (): Promise<void> => {
     // traffic, and refuse to boot if they cannot be read (a silent fall-back
     // to env could re-enable a surface an admin shut off).
     await hydrateFeatureOverrides();
+    // Saved blocked-word settings (falls back to the built-in list, filter on).
+    await loadWordFilter();
 
     // Redis is a hard dependency for /whisper. Booting without it produced a
     // server that looked healthy on /health while every anon route failed
