@@ -1,6 +1,6 @@
-import { GamesSoon } from '@/features/hub';
+import { GamesPage } from '@/features/hub';
 
-/** Games coming-soon page. Thin entry. */
-const Games = () => <GamesSoon />;
+/** Games page. Thin entry. */
+const Games = () => <GamesPage />;
 
 export default Games;

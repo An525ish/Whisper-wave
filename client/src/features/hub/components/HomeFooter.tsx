@@ -45,7 +45,7 @@ const HomeFooter = ({ signedIn, pendingCount, onNavigate }: Props) => {
           Find someone
         </Link>
         <Link
-          to={ROUTES.authLogin}
+          to={ROUTES.authRegister}
           onClick={() => onNavigate('signup-prompt')}
           className="hw-closing__ghost"
         >

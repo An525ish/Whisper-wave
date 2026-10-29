@@ -91,7 +91,12 @@
 
 .hw-show--rooms::before { background: radial-gradient(ellipse 45% 60% at 82% 50%, rgba(139, 107, 255, 0.2), transparent 100%); }
 .hw-show--memes::before { background: radial-gradient(ellipse 45% 60% at 18% 50%, rgba(53, 224, 200, 0.16), transparent 100%); }
-.hw-show--games::before { background: radial-gradient(ellipse 40% 55% at 85% 50%, rgba(255, 190, 90, 0.13), transparent 100%); }
+.hw-show--games::before {
+  /* Quarter circle: centred on the band's bottom-right corner, so the base is a flat line
+     just under the watermark and the glow fades out along the arc. */
+  bottom: -1.5rem;
+  background: radial-gradient(circle 27rem at 100% 100%, rgba(255, 190, 90, 0.16), transparent 100%);
+}
 
 /* Oversized outline word behind the copy. Decoration only. */
 .hw-show__ghost {

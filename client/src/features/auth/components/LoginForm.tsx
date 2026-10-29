@@ -40,7 +40,7 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
     <div className="auth-face-body flex h-full flex-col text-left">
       <AuthLoginFaces />
 
-      <h2 className="mt-5 font-display text-[1.7rem] leading-none tracking-tight text-white">
+      <h2 className="mt-3 font-display text-[1.7rem] leading-none tracking-tight text-white">
         Welcome back
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-body-300">
@@ -74,7 +74,7 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
         <div className="-mt-0.5 flex justify-end">
           <button
             type="button"
-            className="inline-flex items-center py-2.5 text-xs text-body-300 underline-offset-4 transition hover:text-green hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
+            className="inline-flex items-center py-1.5 text-xs text-body-300 underline-offset-4 transition hover:text-green hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green/40"
             onClick={() => setIsForget(true)}
           >
             Forgot password?
@@ -84,7 +84,7 @@ const Login = ({ setIsLogin, setIsForget }: LoginProps) => {
         <div className="mt-auto flex flex-col gap-3 pt-3">
           <AuthSubmit pending={signIn.isPending}>Sign in</AuthSubmit>
           <GoogleSignInButton disabled={signIn.isPending} />
-          <p className="mt-2 pb-0.5 text-center text-sm text-body-300">
+          <p className="text-center text-sm text-body-300">
             New here?{' '}
             <button
               type="button"

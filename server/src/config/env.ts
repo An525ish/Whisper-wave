@@ -76,6 +76,8 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   SMTP_FROM: z.string().optional().default(''),
+  // Inbox for POST /api/feedback. Falls back to SMTP_USER when empty.
+  FEEDBACK_TO: z.string().optional().default(''),
   GMAIL_CLIENT_SECRET: z.string().optional().default(''),
   GMAIL_REFRESH_TOKEN: z.string().optional().default(''),
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
@@ -156,6 +158,7 @@ const testFallback = {
   SMTP_USER: '',
   SMTP_PASS: '',
   SMTP_FROM: '',
+  FEEDBACK_TO: '',
   GMAIL_CLIENT_SECRET: '',
   GMAIL_REFRESH_TOKEN: '',
   GOOGLE_CLIENT_ID: '',

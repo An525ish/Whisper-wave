@@ -15,6 +15,10 @@ export function buildHubNavSpecs({ features, unread }: BuildNavParams): NavSpec[
     specs.push({ id: 'rooms', label: 'Rooms', to: ROUTES.rooms });
   }
 
+  // Rail order: Chats sits right under Rooms. The phone bar moves it back to the
+  // end so Whisper stays centred (see `toTabOrder` in hubNav.tsx).
+  specs.push({ id: 'chats', label: 'Chats', to: ROUTES.chats, badge: unread || undefined });
+
   specs.push({ id: 'whisper', label: 'Whisper', to: ROUTES.whisper, emphasis: true });
 
   if (features?.memes) {
@@ -23,7 +27,7 @@ export function buildHubNavSpecs({ features, unread }: BuildNavParams): NavSpec[
 
   specs.push({ id: 'games', label: 'Games', to: ROUTES.games, railOnly: Boolean(features?.memes) });
 
-  specs.push({ id: 'chats', label: 'Chats', to: ROUTES.chats, badge: unread || undefined });
+  specs.push({ id: 'apps', label: 'Apps', to: ROUTES.apps, railOnly: true });
 
   return specs;
 }

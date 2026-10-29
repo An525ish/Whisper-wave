@@ -139,24 +139,6 @@
   color: #fff;
 }
 
-.gc-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.8rem 1.6rem;
-  border-radius: 999px;
-  background: var(--color-green, #01c36d);
-  background-image: linear-gradient(135deg, #1ddd88, #01a85e);
-  box-shadow: 0 12px 30px -10px rgba(1, 195, 109, 0.8);
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #fff;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.gc-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -10px rgba(1, 195, 109, 0.95); }
-.gc-cta:hover span { transform: translateX(3px); }
-.gc-cta span { transition: transform 0.2s; }
-
 .gc-signin { margin-top: 1rem; font-size: 0.8rem; color: var(--color-body-300, #b8c0cc); }
 .gc-signin span { font-weight: 600; color: var(--color-green, #01c36d); }
 .gc-signin:hover span { text-decoration: underline; }

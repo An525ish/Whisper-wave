@@ -5,6 +5,7 @@ import WaveIcon from '@/shared/components/ui/icons/Wave';
 import MembersIcon from '@/shared/components/ui/icons/Members';
 import MemesIcon from '@/shared/components/ui/icons/Memes';
 import GamepadIcon from '@/shared/components/ui/icons/Gamepad';
+import GridAllIcon from '@/shared/components/ui/icons/GridAll';
 import ChatIcon from '@/shared/components/ui/icons/Chat';
 import { buildHubNavSpecs } from './hubNavSpecs';
 import type { BuildNavParams } from './types';
@@ -16,9 +17,16 @@ const ICONS: Record<string, ReactNode> = {
   memes: <MemesIcon />,
   games: <GamepadIcon />,
   chats: <ChatIcon />,
+  apps: <GridAllIcon />,
 };
 
 /** Nav destinations with their icons, shared by the desktop rail and the mobile tab bar. */
 export function buildHubNavItems(params: BuildNavParams): NavItem[] {
   return buildHubNavSpecs(params).map((spec) => ({ ...spec, icon: ICONS[spec.id] }));
+}
+
+/** Phone tab order: the rail order with Chats moved last, so Whisper stays in the middle. */
+export function toTabOrder(items: NavItem[]): NavItem[] {
+  const tabs = items.filter((i) => !i.railOnly);
+  return [...tabs.filter((i) => i.id !== 'chats'), ...tabs.filter((i) => i.id === 'chats')];
 }

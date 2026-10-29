@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AuthShell,
   ForgotPasswordForm as ForgotPassword,
@@ -16,7 +16,9 @@ import { ROUTES } from '@/shared/constants/routes';
  * copy) lives in the feature, not here.
  */
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // URL is the source of truth: bare /auth = login, ?mode=register = sign up.
+  const isLogin = searchParams.get('mode') !== 'register';
   const [isForget, setIsForget] = useState(false);
   const navigate = useNavigate();
   const { active: isWhisperConnect, copy, names } = useWhisperAuthIntent();
@@ -37,7 +39,7 @@ export default function Auth() {
 
   const switchMode = (nextLogin: boolean) => {
     setIsForget(false);
-    setIsLogin(nextLogin);
+    setSearchParams(nextLogin ? {} : { mode: 'register' }, { replace: true });
   };
 
   return (
@@ -55,16 +57,18 @@ export default function Auth() {
       {isForget ? (
         <ForgotPassword setIsForget={setIsForget} />
       ) : (
-        <div className={`auth-flip ${isLogin ? '' : 'auth-flip--back'}`}>
-          <div className="auth-flip__card">
-            <div className="auth-flip__face auth-flip__face--front">
-              <Login setIsLogin={switchMode} setIsForget={setIsForget} />
-            </div>
-            <div className="auth-flip__face auth-flip__face--back">
-              <Register setIsLogin={switchMode} />
+        <>
+          <div className={`auth-flip ${isLogin ? '' : 'auth-flip--back'}`}>
+            <div className="auth-flip__card">
+              <div className="auth-flip__face auth-flip__face--front">
+                <Login setIsForget={setIsForget} setIsLogin={switchMode} />
+              </div>
+              <div className="auth-flip__face auth-flip__face--back">
+                <Register setIsLogin={switchMode} />
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </AuthShell>
   );

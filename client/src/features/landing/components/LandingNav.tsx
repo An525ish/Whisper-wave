@@ -49,20 +49,6 @@ const LandingNav = () => {
 
         {/* Right CTAs */}
         <div className="flex shrink-0 items-center gap-2.5">
-          {/* Ghost — Enter the hub (no account needed) */}
-          <Link
-            to={ROUTES.home}
-            className={cn(
-              'inline-flex items-center rounded-full px-[14px] py-[8px]',
-              'text-[0.88rem] font-medium text-lw-text-dim no-underline',
-              'transition-colors duration-200 hover:text-lw-text',
-              'max-[520px]:hidden',
-              focusRing,
-            )}
-          >
-            Enter
-          </Link>
-
           {/* Ghost — Log in */}
           <Link
             to={ROUTES.authLogin}

@@ -24,6 +24,12 @@ const MemeSignInDialog = ({ open, onClose, title, body }: Props) => (
     >
       Sign in
     </Link>
+    <Link
+      to={ROUTES.authRegister}
+      className="mt-2 block text-center text-sm text-body-300 underline-offset-4 transition hover:text-green hover:underline focus-visible:outline-2 focus-visible:outline-green"
+    >
+      Create an account
+    </Link>
     <button
       type="button"
       onClick={onClose}

@@ -134,6 +134,21 @@ const appRoutes = [
         },
       },
       {
+        // Other apps by the same maker, shown in an iframe.
+        path: ROUTES.apps,
+        lazy: async () => {
+          const module = await import('@/pages/Apps');
+          return { Component: module.default };
+        },
+      },
+      {
+        path: ROUTES.feedback,
+        lazy: async () => {
+          const module = await import('@/pages/Feedback');
+          return { Component: module.default };
+        },
+      },
+      {
         path: ROUTES.games,
         lazy: async () => {
           const module = await import('@/pages/Games');

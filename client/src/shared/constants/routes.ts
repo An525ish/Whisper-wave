@@ -6,7 +6,7 @@
  * Admin paths live with the admin feature and are not listed here.
  *
  * A persona page (`/me`) is intentionally absent: the persona editor has no
- * route yet. `/games` is a coming-soon page until Games ships (D7).
+ * route yet. `/games` lists free games on other sites (links out, no embeds).
  */
 export const ROUTES = {
   landing: '/',
@@ -21,8 +21,11 @@ export const ROUTES = {
   chat: (chatId: string) => `/chats/${chatId}`,
   auth: '/auth',
   /** Login entry with the mode preselected — the only sanctioned query-variant. */
-  authLogin: '/auth?mode=login',
+  authLogin: '/auth', // default face; only register needs a param
+  authRegister: '/auth?mode=register',
   sparkPass: '/spark-pass',
+  apps: '/apps',
+  feedback: '/feedback',
 } as const;
 
 /** Route patterns for `useMatch` and router definitions that need the param. */

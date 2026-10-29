@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { runBeforeSignOut } from '@/shared/lib/api/authBridge';
 import * as authApi from '../api/auth';
+import type { ProfileResponse } from '../types';
 import { useAuthStore } from '../store';
 import { authKeys } from './queryKeys';
 
@@ -12,7 +13,7 @@ export function useSignInMutation() {
     mutationFn: authApi.signIn,
     onSuccess: (res) => {
       setUser(res.data);
-      queryClient.setQueryData(authKeys.profile, res.data);
+      queryClient.setQueryData<ProfileResponse>(authKeys.profile, { success: true, user: res.data });
     },
   });
 }
@@ -49,7 +50,7 @@ export function useCompleteSignUpMutation() {
     mutationFn: authApi.completeSignUp,
     onSuccess: (res) => {
       setUser(res.data);
-      queryClient.setQueryData(authKeys.profile, res.data);
+      queryClient.setQueryData<ProfileResponse>(authKeys.profile, { success: true, user: res.data });
     },
   });
 }
@@ -78,7 +79,7 @@ export function useGoogleSignInMutation() {
     mutationFn: authApi.googleSignIn,
     onSuccess: (res) => {
       setUser(res.data);
-      queryClient.setQueryData(authKeys.profile, res.data);
+      queryClient.setQueryData<ProfileResponse>(authKeys.profile, { success: true, user: res.data });
     },
   });
 }
@@ -108,7 +109,7 @@ export function useUpdateProfileMutation(onUpdated?: () => void) {
     onSuccess: (res) => {
       if (res.user) {
         setUser(res.user);
-        queryClient.setQueryData(authKeys.profile, res.user);
+        queryClient.setQueryData<ProfileResponse>(authKeys.profile, { success: true, user: res.user });
       }
       onUpdated?.();
     },

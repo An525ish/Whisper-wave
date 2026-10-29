@@ -42,9 +42,12 @@ const GuestChatsEmpty = () => (
         ))}
       </ol>
 
-      <Link to={ROUTES.whisper} className="gc-cta">
+      <Link
+        to={ROUTES.whisper}
+        className="gc-cta group inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-gradient-action-button-green px-7 py-3 text-sm font-semibold text-body transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green active:scale-[0.98]"
+      >
         Find someone with Whisper
-        <span aria-hidden>→</span>
+        <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
       </Link>
       <Link to={ROUTES.authLogin} className="gc-signin">
         Already have an account? <span>Sign in</span>

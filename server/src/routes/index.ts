@@ -4,6 +4,7 @@ import { adminRouter } from './admin.js';
 import { authRouter } from './auth.js';
 import { chatRouter } from './chat.js';
 import { connectionRouter } from './connection.js';
+import { feedbackRouter } from './feedback.js';
 import { gifRouter } from './gif.js';
 import { hubRouter } from './hub.js';
 import { linkPreviewRouter } from './linkPreview.js';
@@ -38,6 +39,7 @@ export const registerRoutes = (app: Express): void => {
   app.use('/api/match', matchRouter);
   app.use('/api/connection', connectionRouter);
   app.use('/api/report', reportRouter);
+  app.use('/api/feedback', feedbackRouter);
   // Hub Phase 2 — laughs feed (provider jokes + generated images)
   app.use('/api/memes', requireFeature('memes'), memesRouter);
   // Hub Phase 3 — topic rooms (behind FEATURE_ROOMS on the client)

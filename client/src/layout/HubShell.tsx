@@ -14,7 +14,7 @@ import { AccountBar } from '@/features/profile';
 import { useMyChatsQuery } from '@/features/chat';
 import { LiveWhisperPill, WhisperSessionProvider, useWhisperConnectResume } from '@/features/whisper';
 import { useAppSocketEvents } from './useAppSocketEvents';
-import { buildHubNavItems } from './hubNav';
+import { buildHubNavItems, toTabOrder } from './hubNav';
 
 type ShellChromeProps = {
   items: NavItem[];
@@ -62,8 +62,8 @@ const ShellChrome = ({ items, footer, hideTabBar, hidePill }: ShellChromeProps) 
           header={
             <div className="flex w-full flex-col items-center">
               <Link
-                to={ROUTES.home}
-                aria-label="Whisper Wave home"
+                to={ROUTES.landing}
+                aria-label="Whisper Wave landing page"
                 className={`grid h-12 w-12 place-items-center rounded-2xl bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] transition hover:bg-white/[0.09] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green`}
               >
                 <img
@@ -90,7 +90,7 @@ const ShellChrome = ({ items, footer, hideTabBar, hidePill }: ShellChromeProps) 
           {!hidePill && <LiveWhisperPill />}
           {!hideTabBar && (
             <BottomTabBar
-              items={items}
+              items={toTabOrder(items)}
               ariaLabel="Primary"
               onNavigate={handleNavigate}
               className="lg:hidden"
