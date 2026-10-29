@@ -9,8 +9,6 @@ import { useAnonIdentity } from '../hooks/useAnonIdentity';
 import { usePartnerProfile } from '../hooks/usePartnerProfile';
 import { useAnonStore } from '../stores/anonStore';
 import { useProfileViewStore } from '../stores/profileViewStore';
-import { avatarGradient } from '../utils/vibeTag';
-
 type Props = {
   partnerTyping: boolean;
   partnerLeft: boolean;
@@ -26,8 +24,8 @@ type Props = {
  * - **Rail** (≥ 1024px): one right column laid out like the logged-in app's profile
  *   pane — a small You / Them switch in the header slot, then the panel. The chat
  *   takes two parts of the width and the rail one, as in the main app.
- * - **Sheet** (below): a bottom sheet, opened from the header (them) or the corner
- *   orb (you) — the same split the logged-in app uses for `ProfileSheet`.
+ * - **Sheet** (below): a bottom sheet opened from the header avatar (them / you
+ *   via the sheet tabs) — same idea as the logged-in app's `ProfileSheet`.
  *
  * Wrapping the chat (rather than sitting beside it) keeps DOM order equal to visual
  * order, so keyboard and screen-reader order match what's on screen.
@@ -42,7 +40,6 @@ export default function AnonProfileShell({
   const tab = useProfileViewStore((s) => s.tab);
   const sheetOpen = useProfileViewStore((s) => s.sheetOpen);
   const setTab = useProfileViewStore((s) => s.setTab);
-  const openSheet = useProfileViewStore((s) => s.openSheet);
   const closeSheet = useProfileViewStore((s) => s.closeSheet);
 
   const identity = useAnonIdentity();
@@ -124,20 +121,6 @@ export default function AnonProfileShell({
   return (
     <div className="acr-shell">
       {children}
-      <button
-        type="button"
-        className="acr-profile-fab"
-        onClick={() => openSheet('you')}
-        aria-label="Edit your anonymous profile"
-      >
-        <span
-          className="acr-profile-fab__orb"
-          style={{ background: avatarGradient(identity.displayName) }}
-          aria-hidden
-        >
-          {identity.displayName.trim().charAt(0).toUpperCase() || '?'}
-        </span>
-      </button>
 
       <BottomSheet open={sheetOpen} onClose={closeSheet} labelledBy="acp-sheet-title">
         <h2 id="acp-sheet-title" className="sr-only">
