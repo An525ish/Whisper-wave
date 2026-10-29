@@ -1,3 +1,4 @@
+import { deleteManyFromR2 } from '../../utils/storage.js';
 import type { RoomInstance } from '../../types/room.js';
 
 /**
@@ -37,6 +38,10 @@ export const onInstanceClosed = (listener: (instanceId: string) => void): void =
 };
 
 export const dropInstance = (instanceId: string): void => {
+  const inst = instances.get(instanceId);
+  // Room photos are as ephemeral as the room: every key signed here goes with it
+  // (reported ones were copied to `ww/kept/` when the report was filed).
+  if (inst && inst.uploads.size > 0) void deleteManyFromR2([...inst.uploads]);
   instances.delete(instanceId);
   for (const listener of closedListeners) listener(instanceId);
 };

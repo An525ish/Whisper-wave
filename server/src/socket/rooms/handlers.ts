@@ -9,6 +9,7 @@ import {
   ROOM_ERROR_CODES,
   ROOM_JOIN,
   ROOM_LEAVE,
+  ROOM_MEDIA_SIGN,
   ROOM_MESSAGE,
   ROOM_MOD,
   ROOM_REACT,
@@ -16,12 +17,13 @@ import {
 import {
   roomJoinSchema,
   roomLeaveSchema,
+  roomMediaSignSchema,
   roomMessageSchema,
   roomModSchema,
   roomReactSchema,
 } from '../../validators/rooms.js';
 import { handleJoin } from './join.js';
-import { handleMessage, handleReact } from './messaging.js';
+import { handleMediaSign, handleMessage, handleReact } from './messaging.js';
 import { handleMod } from './mod.js';
 import { releaseSeat, seatKeyOf } from './seats.js';
 import { ackCodeOf, ROOM_REJECTIONS } from './wire.js';
@@ -95,6 +97,7 @@ export const handleRoomConnection = (nsp: Namespace, socket: RoomSocket): void =
   );
 
   on(ROOM_MESSAGE, roomMessageSchema, (data) => handleMessage(nsp, socket, data));
+  on(ROOM_MEDIA_SIGN, roomMediaSignSchema, (data) => handleMediaSign(socket, data));
   on(ROOM_REACT, roomReactSchema, (data) => handleReact(nsp, socket, data));
   on(ROOM_MOD, roomModSchema, (data) => handleMod(nsp, socket, data));
 

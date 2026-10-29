@@ -6,6 +6,7 @@ import type {
   RoomJoinAck,
   RoomJoinParams,
   RoomMessageAck,
+  RoomMediaSignAck,
   RoomMessageInput,
   RoomModAction,
   RoomReactionKey,
@@ -40,3 +41,7 @@ export const emitMod = (socket: Socket, action: RoomModAction): Promise<RoomActi
 export const emitLeave = (socket: Socket): void => {
   socket.emit(ROOM_SOCKET.LEAVE, {});
 };
+
+/** Ask the server for a presigned PUT for one room photo. */
+export const emitMediaSign = (socket: Socket, file: { type: string; size: number }): Promise<RoomMediaSignAck> =>
+  emitAcked<RoomMediaSignAck>(socket, ROOM_SOCKET.MEDIA_SIGN, { mimeType: file.type, size: file.size }, NO_ANSWER);

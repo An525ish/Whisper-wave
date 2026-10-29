@@ -97,7 +97,7 @@ export function bindRoomEvents(socket: Socket, slug: string): void {
   socket.on(ROOM_SOCKET.STATE, (state: RoomStatePayload) => store().applyState(state));
   socket.on(ROOM_SOCKET.MESSAGE, (message: RoomMessage) => store().appendMessage(message));
   socket.on(ROOM_SOCKET.PRESENCE, (payload: { online?: number }) => store().setPresence(payload.online ?? 0));
-  socket.on(ROOM_SOCKET.REACTION, (p: RoomReactionPayload) => store().applyReaction(p.messageId, p.reaction, p.count));
+  socket.on(ROOM_SOCKET.REACTION, (p: RoomReactionPayload) => store().applyReaction(p.messageId, p.counts));
   socket.on(ROOM_SOCKET.MOD_ACTION, applyModNotice);
   socket.on(ROOM_SOCKET.PAUSED, () => store().setPaused(true));
   socket.on(ROOM_SOCKET.RESUMED, () => store().setPaused(false));

@@ -1,5 +1,5 @@
 import { useAnonStore } from '../stores/anonStore';
-import { extractThreadLinks } from '../utils/threadLinks';
+import { extractThreadLinks, extractThreadPhotos } from '../utils/threadLinks';
 import { reactionTally } from '../utils/reactionTally';
 import { buildSparks } from '../utils/sparks';
 import { vibeOverlap } from '../utils/vibeOverlap';
@@ -40,6 +40,7 @@ export function usePartnerProfile() {
     overlap,
     sparks: buildSparks(overlap),
     links: extractThreadLinks(messages),
+    photos: extractThreadPhotos(messages),
     reactions: reactionTally(messages),
   };
 }

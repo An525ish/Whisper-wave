@@ -9,8 +9,10 @@ import type { LiveRoomMessage, RoomAckCode, WireRoomMessage } from '../../types/
  */
 export const toWireMessage = (m: LiveRoomMessage, opts: { forMod?: boolean } = {}): WireRoomMessage => ({
   id: m.id,
-  from: { alias: m.alias, color: m.color, role: m.role },
+  from: { alias: m.alias, color: m.color, role: m.role, ...(m.avatar ? { avatar: m.avatar } : {}) },
   text: m.text,
+  // `key` stays server-side; clients only ever get the kind and the URL.
+  ...(m.media ? { media: { kind: m.media.kind, url: m.media.url } } : {}),
   ts: m.ts,
   ...(m.replyTo ? { replyTo: m.replyTo } : {}),
   ...(m.system ? { system: true as const } : {}),

@@ -89,3 +89,12 @@ export const adminImpersonationLogsQuerySchema = z.object({
 export const adminDeleteAttachmentsSchema = z.object({
   messageIds: z.array(z.string().min(1)).min(1).max(100),
 });
+
+export const adminAnonImagesQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(60).default(30),
+  before: z.string().optional(),
+});
+
+export const adminDeleteAnonImagesSchema = z.object({
+  ids: z.array(z.string().regex(/^[a-f\d]{24}$/i)).min(1).max(100),
+});

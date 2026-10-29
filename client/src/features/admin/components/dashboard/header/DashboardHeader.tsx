@@ -1,3 +1,5 @@
+import RefreshButton from '../../shared/RefreshButton';
+
 type Props = {
   lastUpdated: string | null;
 };
@@ -12,11 +14,14 @@ const DashboardHeader = ({ lastUpdated }: Props) => (
         Overview
       </h1>
     </div>
-    {lastUpdated && (
-      <p className="text-xs text-body-300/50">
-        Refreshes every 30s · updated {lastUpdated}
-      </p>
-    )}
+    <div className="flex flex-wrap items-center gap-3">
+      {lastUpdated && (
+        <p className="text-xs text-body-300/50">
+          Refreshes every 30s · updated {lastUpdated}
+        </p>
+      )}
+      <RefreshButton />
+    </div>
   </header>
 );
 

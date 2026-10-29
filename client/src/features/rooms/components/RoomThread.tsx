@@ -37,7 +37,7 @@ const RoomThread = ({ messages, you, myReactions, onReact, onReply, onContextMen
                 <rect x="3" y="11" width="18" height="11" rx="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              Live only — nothing is kept
+              Live only. Reported messages are kept.
             </span>
           </div>
           {messages.length === 0 ? (

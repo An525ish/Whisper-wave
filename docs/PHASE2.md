@@ -49,7 +49,7 @@ during implementation. This section is the accurate one.
 
 A like is not available immediately. It unlocks when **all** hold:
 
-- ≥ 90 s since the match started
+- 5 minutes of sustained back-and-forth (replies to the other side within 60 s; pauses, never resets)
 - ≥ 2 messages from **each** side
 - ≥ 5 messages total (so at least one person carried more than the bare minimum)
 
@@ -558,7 +558,7 @@ Spark Pass pricing (from `PRODUCT.md`):
 | Anonymous matchmaking (queue + session + relay) | P0 | Core product — nothing works without this |
 | Vibe name + tag picker (client) | P0 | Identity layer for anon sessions |
 | Waiting room animation (client) | P0 | UX — blank screen is a dead end |
-| Anon chat room (text only) | P0 | Core interaction surface |
+| Anon chat room (text + photos, see TECH.md D17) | P0 | Core interaction surface |
 | Like + mutual like + `connectToken` | P0 | Conversion funnel |
 | "It's a Vibe" screen (client) | P0 | Emotional payoff — most important UX moment |
 | Connect → signup with origin story | P0 | Drives account creation |
@@ -577,7 +577,6 @@ Spark Pass pricing (from `PRODUCT.md`):
 | Re-find mechanic | Requires archived session data; Redis TTL expires it now |
 | Location-based matching | City-level = geolocation permission + IP lookup service = added cost |
 | Automatic text moderation | Paid (Perspective API); add after revenue |
-| Image attachments in anon chat | Storage costs + moderation risk; text-only first |
 
 ### In Phase 2 but after core anon loop (P1)
 

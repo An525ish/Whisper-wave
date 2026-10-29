@@ -1,3 +1,4 @@
+import RefreshButton from '../shared/RefreshButton';
 import { useMemesPage } from '../../hooks/useMemesPage';
 import MemeBlockForm from './MemeBlockForm';
 import MemeBlockList from './MemeBlockList';
@@ -29,12 +30,15 @@ const Memes = () => {
           <h1 className="mt-1 font-semibold text-3xl leading-none tracking-tight text-body sm:text-4xl">Memes</h1>
           <p className="mt-2 text-sm text-body-300">Blocklist and report counts for provider jokes</p>
         </div>
-        {!isLoading && !isError && (
-          <p className="text-sm text-body-300" aria-live="polite">
-            <span className="font-semibold tabular-nums text-red">{blockedCount}</span> blocked ·{' '}
-            <span className="font-semibold tabular-nums text-body">{reportedCount}</span> watching
-          </p>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {!isLoading && !isError && (
+            <p className="text-sm text-body-300" aria-live="polite">
+              <span className="font-semibold tabular-nums text-red">{blockedCount}</span> blocked ·{' '}
+              <span className="font-semibold tabular-nums text-body">{reportedCount}</span> watching
+            </p>
+          )}
+          <RefreshButton />
+        </div>
       </header>
 
       <MemeBlockForm busy={blocking} onBlock={blockId} />

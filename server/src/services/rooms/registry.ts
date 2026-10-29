@@ -7,6 +7,7 @@ import type {
   IRoomFields,
   LiveRoomMember,
   RoomInstance,
+  RoomMediaKind,
   RoomMemberIdentity,
   RoomRole,
 } from '../../types/room.js';
@@ -43,14 +44,15 @@ const instancesOf = (slug: string): RoomInstance[] =>
  * defeat the lock). Mods, hosts and admins always pass.
  */
 export const joinInstance = (params: {
-  template: Pick<IRoomFields, 'slug' | 'title' | 'capSoft' | 'capHard' | 'requiresModPresence'>;
+  template: Pick<IRoomFields, 'slug' | 'title' | 'capSoft' | 'capHard' | 'requiresModPresence' | 'media'>;
   identity: RoomMemberIdentity;
   alias: string;
   color: string;
   role?: RoomRole;
+  avatar?: string;
   trust?: LiveRoomMember['trust'];
 }): { instanceId: string; member: LiveRoomMember; online: number } => {
-  const { template, identity, alias, color, role = 'member', trust } = params;
+  const { template, identity, alias, color, role = 'member', trust, avatar } = params;
   const key = keyFor(identity);
 
   // Rejoin is idempotent: same identity, same instance, fresh alias claim.
@@ -58,7 +60,10 @@ export const joinInstance = (params: {
     const existing = inst.members.get(key);
     if (existing) {
       existing.role = role;
+      if (avatar) existing.avatar = avatar;
+      else delete existing.avatar;
       inst.requiresModPresence = template.requiresModPresence === true;
+      inst.media = template.media ?? [];
       if (aliasKey(existing.alias) !== aliasKey(alias)) {
         const others = new Map(inst.members);
         others.delete(key);
@@ -92,17 +97,20 @@ export const joinInstance = (params: {
       locked: false,
       members: new Map(),
       ring: [],
+      uploads: new Set(),
       createdAt: Date.now(),
     };
     instances.set(target.id, target);
   }
   target.requiresModPresence = template.requiresModPresence === true;
+  target.media = template.media ?? [];
 
   const member: LiveRoomMember = {
     key,
     alias: uniqueAlias(target.members, alias),
     color,
     role,
+    ...(avatar ? { avatar } : {}),
     ...(identity.userId ? { userId: identity.userId } : {}),
     ...(identity.gid ? { gid: identity.gid } : {}),
     ...(trust ? { trust } : {}),
@@ -159,11 +167,12 @@ export const setSlowOverride = (instanceId: string, ms: number | undefined): boo
 
 export const instanceSettings = (
   instanceId: string
-): { locked: boolean; slowOverrideMs?: number; requiresModPresence?: boolean } | null => {
+): { locked: boolean; slowOverrideMs?: number; requiresModPresence?: boolean; media: RoomMediaKind[] } | null => {
   const inst = instances.get(instanceId);
   if (!inst) return null;
   return {
     locked: inst.locked,
+    media: inst.media ?? [],
     ...(inst.slowOverrideMs !== undefined ? { slowOverrideMs: inst.slowOverrideMs } : {}),
     ...(inst.requiresModPresence ? { requiresModPresence: true } : {}),
   };

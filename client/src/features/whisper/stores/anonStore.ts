@@ -1,3 +1,4 @@
+import { useRevealedPhotos } from './revealedPhotosStore';
 import { create } from 'zustand';
 import { sessionFields } from './sessionFields';
 import { clearResumeFlag, setResumeFlag } from '../utils/resumeFlag';
@@ -22,6 +23,7 @@ type AnonState = {
   partnerTags: VibeTag[];
   /** Approximate number of people waiting — honest empty-queue copy. */
   queueSize: number | null;
+  readUpTo: number;
 
   // Transport
   socketConnected: boolean;
@@ -103,6 +105,8 @@ type AnonState = {
   applyBuffered: (buffered: AnonMessage[]) => void;
   /** Settle an optimistic bubble once the server acks (or rejects) it. */
   settleMessage: (id: string, delivery: 'sent' | 'failed', reason?: string) => void;
+  /** The partner has seen our messages up to this id. */
+  markRead: (id: string) => void;
   retryMessage: (id: string) => AnonMessage | null;
   applyReaction: (messageId: string, side: 'me' | 'them', reaction: AnonReaction) => void;
   setReaction: (
@@ -277,6 +281,12 @@ export const useAnonStore = create<AnonState>((set, get) => ({
       return { messages: [...buffered, ...pending] };
     }),
 
+  markRead: (id) =>
+    set((s) => {
+      const at = s.messages.find((m) => m.id === id && m.from === 'me')?.sentAt;
+      return at && at > s.readUpTo ? { readUpTo: at } : s;
+    }),
+
   settleMessage: (id, delivery, reason) =>
     set((s) => ({
       messages: s.messages.map((m) =>
@@ -335,7 +345,8 @@ export const useAnonStore = create<AnonState>((set, get) => ({
 
   markDmOpened: (openedChatId) => set({ openedChatId }),
 
-  reset: () =>
+  reset: () => {
+    useRevealedPhotos.getState().clear();
     set({
       status: 'idle',
       socketConnected: false,
@@ -344,5 +355,6 @@ export const useAnonStore = create<AnonState>((set, get) => ({
       // Identity (alias / vibes / gender) deliberately survives a reset — a user
       // who backs out of a chat should rejoin with the same alias.
       ...sessionFields,
-    }),
+    });
+  },
 }));

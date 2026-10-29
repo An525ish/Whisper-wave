@@ -82,3 +82,12 @@ export const pendingIdParamSchema = z.object({
     .string()
     .regex(/^(claim|pending):[A-Za-z0-9_-]+$/, 'Unknown pending connection'),
 });
+
+/** Photos only. 5 MB keeps a phone shot sendable and the bucket inside the free tier. */
+export const ANON_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export const ANON_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+export const signAnonImageSchema = z.object({
+  mimeType: z.enum(ANON_IMAGE_MIME),
+  size: z.number().int().positive().max(ANON_IMAGE_MAX_BYTES, 'Photo is over 5 MB'),
+});

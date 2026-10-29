@@ -48,9 +48,14 @@ export function useAnonSocketLifecycle({ onPartnerTyping, onSocketError }: Param
     let outageNotified = false;
 
     const socket = createNamespaceSocket(ANON_NAMESPACE, {
-      // Evaluated on every (re)connect attempt: only a refresh-restore asks the
-      // server to replay without queueing; normal connects send nothing.
-      auth: (cb) => cb(store().status === 'resuming' ? { resume: true } : {}),
+      // Evaluated on every (re)connect attempt. A refresh-restore, or a reconnect
+      // while a thread is on screen, asks the server to replay WITHOUT queueing:
+      // if the match ended while we were away the server says so (SESSION_EXPIRED)
+      // instead of silently putting us back in the queue behind a dead thread.
+      auth: (cb) => {
+        const { status, sessionId } = store();
+        cb(status === 'resuming' || (status === 'matched' && sessionId) ? { resume: true } : {});
+      },
     });
     socketRef.current = socket;
 

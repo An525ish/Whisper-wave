@@ -1,6 +1,5 @@
 /** Core whisper models: vibe tags, gender, match status, thread messages. Types only. */
 
-import type { ANON_REACTIONS } from '../constants';
 
 export type VibeTag = string;
 
@@ -28,7 +27,8 @@ export type AnonMatchStatus =
  */
 type DeliveryState = 'sending' | 'sent' | 'failed';
 
-export type AnonReaction = (typeof ANON_REACTIONS)[number];
+/** One emoji glyph. */
+export type AnonReaction = string;
 
 export type AnonMessage = {
   /** Client-generated idempotency key; matches the server ack. */
@@ -36,6 +36,8 @@ export type AnonMessage = {
   from: 'me' | 'them';
   content: string;
   sentAt: number;
+  /** A photo. While sending it is a local blob URL, afterwards the delivery URL. */
+  image?: { url: string };
   /** Only meaningful for `from: 'me'`. */
   delivery?: DeliveryState;
   /** Populated when `delivery === 'failed'` so the UI can explain itself. */

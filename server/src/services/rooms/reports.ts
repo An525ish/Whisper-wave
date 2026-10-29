@@ -2,6 +2,7 @@ import * as reportRepo from '../../repositories/report.js';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
 import { getEvidenceWindow } from './registry.js';
+import { keepRoomImage } from './keepMedia.js';
 import type { AutoRoomReportInput, ReportReason, RoomEvidenceItem, RoomReportInput } from '../../types/report.js';
 
 /** HUB_PLAN §9.4: the reported message plus 30 around it (15 each side). */
@@ -21,15 +22,23 @@ const CHILD_SAFETY_CATEGORIES = new Set(['csam', 'child_safety', 'minor', 'under
  * Null target (message aged out or the instance closed) is an error, never a
  * fallback to "the last 15 lines" — that would be evidence of the wrong thing.
  */
-const resolveEvidence = (instanceId: string, messageId: string) => {
+const resolveEvidence = async (instanceId: string, messageId: string) => {
   const { items, target } = getEvidenceWindow(instanceId, messageId, EVIDENCE_RADIUS);
   if (!target) return null;
-  const evidence: RoomEvidenceItem[] = items.map(({ alias, text, ts, hidden }) => ({
-    alias,
-    text,
-    ts,
-    hidden: hidden === true,
-  }));
+  const slug = instanceId.split('#')[0] ?? instanceId;
+  const evidence: RoomEvidenceItem[] = await Promise.all(
+    items.map(async ({ alias, text, media, ts, hidden }) => {
+      // Live photos die with the room, so evidence points at a kept copy.
+      const url = media?.kind === 'image' && media.key ? await keepRoomImage(media.key, slug, instanceId) : media?.url;
+      return {
+        alias,
+        text,
+        ...(media && url ? { media: { kind: media.kind, url } } : {}),
+        ts,
+        hidden: hidden === true,
+      };
+    })
+  );
   return { evidence, target };
 };
 
@@ -49,7 +58,7 @@ export const fileRoomReport = async (input: RoomReportInput): Promise<boolean> =
     since
   );
   if (duplicate) return false;
-  const resolved = resolveEvidence(input.instanceId, input.messageId);
+  const resolved = await resolveEvidence(input.instanceId, input.messageId);
   if (!resolved) throw new AppError(410, 'That message is no longer available to report');
   await reportRepo.create({
     reporter: input.reporterUserId ?? null,
@@ -74,7 +83,7 @@ export const fileRoomReport = async (input: RoomReportInput): Promise<boolean> =
  * (the hit already blocked it); logs and returns false instead.
  */
 export const fileAutoRoomReport = async (input: AutoRoomReportInput): Promise<boolean> => {
-  const resolved = resolveEvidence(input.instanceId, input.messageId);
+  const resolved = await resolveEvidence(input.instanceId, input.messageId);
   if (!resolved) {
     logger.warn({ instanceId: input.instanceId, category: input.category }, 'Auto room report: message not in ring');
     return false;

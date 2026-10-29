@@ -3,7 +3,7 @@ import { ROOM_FAIL_COPY } from '../../constants';
 import type { RoomHours, RoomMessage } from '../../types';
 import { parseChallengeAnswer } from '../challenge';
 import { formatHour, hoursSummary, nextOpensLabel } from '../hours';
-import { isReactionKey, ROOM_REACTION_KEYS, usedReactions } from '../reactions';
+import { usedReactions } from '../reactions';
 import { endKindOf, failCopy, handshakeCode } from '../roomErrors';
 import { isJoinedAbove, previewText, quoteOf } from '../thread';
 
@@ -31,18 +31,12 @@ describe('parseChallengeAnswer', () => {
   });
 });
 
-describe('reaction keys', () => {
-  it('mirrors the server whitelist, keys not glyphs', () => {
-    expect(ROOM_REACTION_KEYS).toEqual(['heart', 'laugh', 'wow', 'sad', 'fire', 'clap']);
-    expect(isReactionKey('fire')).toBe(true);
-    expect(isReactionKey('🔥')).toBe(false);
-  });
-
-  it('lists used reactions in picker order and ignores unknown keys', () => {
-    const msg = message({ id: 'a', reactions: { clap: 2, heart: 1, nope: 9, wow: 0 } });
+describe('reactions', () => {
+  it('lists used emoji, most used first, skipping zero counts', () => {
+    const msg = message({ id: 'a', reactions: { '❤️': 1, '👏': 2, '😮': 0 } });
     expect(usedReactions(msg)).toEqual([
-      { key: 'heart', count: 1 },
-      { key: 'clap', count: 2 },
+      { key: '👏', count: 2 },
+      { key: '❤️', count: 1 },
     ]);
   });
 });

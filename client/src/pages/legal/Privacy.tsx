@@ -40,7 +40,7 @@ const Privacy = () => (
     <section>
       <h2>Ephemeral by design</h2>
       <p>
-        Anonymous chat sessions are not stored after they end. When you skip or leave, the conversation is gone.
+        Anonymous chat text is not stored after a session ends. Photos shared in anonymous chat are kept, without your name or account, until an admin deletes them, so they can be reviewed if reported. When a link is shared in any chat, our server fetches that page once to show a preview. Your name and IP address are not sent to the site. In rooms, signed-in members join with their account name and profile photo, which other people in the room can see. Choosing a different name hides the photo.
         Messages in a mutual-spark DM persist only while both accounts exist, and are removed when an account is
         deleted.
       </p>
@@ -50,8 +50,10 @@ const Privacy = () => (
       <h2>Rooms</h2>
       <p>
         Live topic rooms are ephemeral. Room messages are not stored, except when a message is reported: we then keep
-        a snapshot of the reported message and the messages around it. A snapshot holds only the alias, the text and
-        the time — no IP address. Guests in rooms carry the <code>gid</code> cookie described above, for safety only.
+        a snapshot of the reported message and the messages around it. A snapshot holds only the alias, the text, any photo, GIF or meme, and
+        the time, with no IP address. Photos in a room are deleted when the room closes or the message scrolls away,
+        unless the message was reported; then the photo is kept until an admin deletes it. Signed-in members can post
+        photos where a room allows it. Guests can't. Guests in rooms carry the <code>gid</code> cookie described above, for safety only.
       </p>
     </section>
 

@@ -64,9 +64,10 @@ export const DAILY_WHISPER_LIMIT = 30;
 
 /** Keep in sync with server/src/services/match/vibeEligibility.ts */
 export const VIBE_UNLOCK = {
-  minSessionMs: 90_000,
-  minMessagesPerSide: 2,
-  minTotalMessages: 5,
+  /** Time spent actually going back and forth before vibes open. */
+  engagedMs: 5 * 60_000,
+  /** A reply later than this does not count (the clock just pauses). */
+  maxGapMs: 60_000,
 } as const;
 
 /**
@@ -77,8 +78,6 @@ export const THREAD_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
 /** How often the elapsed-time stat in the identity panel refreshes. */
 export const THREAD_STATS_TICK_MS = 30_000;
-/** How often the time-based part of the vibe gate is re-evaluated. */
-export const VIBE_GATE_TICK_MS = 5_000;
 /** How often the "vanishes in …" line refreshes. */
 export const THREAD_EXPIRY_TICK_MS = 60_000;
 
@@ -167,6 +166,8 @@ export const GENDER_OPTIONS = [
 
 // Client → server
 export const ANON_MESSAGE = 'ANON_MESSAGE';
+export const ANON_READ = 'ANON_READ';
+export const MATCH_READ = 'MATCH_READ';
 export const ANON_TYPING_START = 'ANON_TYPING_START';
 export const ANON_TYPING_STOP = 'ANON_TYPING_STOP';
 export const ANON_LIKE = 'ANON_LIKE';
@@ -191,25 +192,7 @@ export const CONNECTION_READY = 'CONNECTION_READY'; // both sides completed — 
 /** Emitted to BOTH participants; `action: 'removed'` means the same reaction was resent. */
 export const MATCH_REACTION = 'MATCH_REACTION';
 
-/**
- * The curated reaction set — a whitelist, not an emoji keyboard. The server
- * validates against its own copy (`ANON_REACTIONS` in `server/src/types/match.ts`)
- * and rejects anything else, so this list is presentation, not policy.
- */
-export const ANON_REACTIONS = ['fire', 'slay', 'dead', 'fr', 'peak', 'lit'] as const;
-
-/** Display metadata for the curated set. The key is what goes on the wire. */
-export const ANON_REACTION_LABELS: Record<
-  (typeof ANON_REACTIONS)[number],
-  { glyph: string; label: string }
-> = {
-  fire: { glyph: '🔥', label: 'fire' },
-  slay: { glyph: '💅', label: 'slay' },
-  dead: { glyph: '💀', label: 'dead' },
-  fr: { glyph: '🫶', label: 'fr' },
-  peak: { glyph: '🏔️', label: 'peak' },
-  lit: { glyph: '💡', label: 'lit' },
-};
+// A reaction is one emoji glyph, sent as-is. The server validates it (`isReactionEmoji`).
 
 // ── Analytics event names (emitted via `shared/lib/analytics` `track`) ─────
 

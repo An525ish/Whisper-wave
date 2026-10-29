@@ -15,14 +15,18 @@ const FilePreview = ({ file, onRemove }: Props) => {
   const isVideo = file.type.startsWith('video/');
   const isAudio = file.type.startsWith('audio/');
   const fileExtension = fileFormat(file.name);
-  const [previewSrc] = useState(() =>
-    isImage || isVideo || isAudio ? URL.createObjectURL(file) : null,
-  );
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
+  // Create AND revoke inside the effect. Creating in a useState initializer breaks
+  // under StrictMode: the dev double-mount runs the cleanup (revoke) and then reuses
+  // the same, now dead, URL.
   useEffect(() => {
-    if (!previewSrc) return;
-    return () => URL.revokeObjectURL(previewSrc);
-  }, [previewSrc]);
+    if (!(isImage || isVideo || isAudio)) return;
+    const url = URL.createObjectURL(file);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the URL only exists after mount
+    setPreviewSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file, isImage, isVideo, isAudio]);
 
   return (
     <div className={`relative ${thumbBox} shrink-0 overflow-visible`}>

@@ -46,6 +46,8 @@ export type IRoomFields = {
   expireAt?: Date | null;
   /** Listening room (Venting): strict automod, and posting only while a mod is seated. Default false. */
   requiresModPresence?: boolean;
+  /** Media members may post here. Empty = text only. Admin-set. */
+  media?: RoomMediaKind[];
   createdAt: Date;
   updatedAt: Date;
 };
@@ -99,6 +101,12 @@ export type StrictRoomProfile = {
   blockMentions: boolean;
 };
 
+/** What a room can be set to allow (see `ROOM_MEDIA_KINDS`). */
+export type RoomMediaKind = 'image' | 'gif' | 'meme';
+
+/** Media on a live message. `key` (images only) is server-only: it never reaches a client. */
+export type RoomMedia = { kind: RoomMediaKind; url: string; key?: string };
+
 export type RoomErrorCode =
   | 'blocked_content'
   | 'blocked_link'
@@ -106,7 +114,9 @@ export type RoomErrorCode =
   | 'duplicate'
   | 'spam'
   | 'muted'
-  | 'mod_absent';
+  | 'mod_absent'
+  | 'media_not_allowed'
+  | 'media_failed';
 
 /**
  * Every `code` a `/rooms` ack or `ROOM_ERROR` can carry. The client mirrors
@@ -177,6 +187,8 @@ export type LiveRoomMember = {
   alias: string;
   color: string;
   role: RoomRole;
+  /** The account's profile photo URL, set only when a signed-in member chose to use it. */
+  avatar?: string;
   userId?: string;
   gid?: string;
   /** Resolved once at join — rooms stay Mongo-free on the hot path. */
@@ -192,7 +204,11 @@ export type LiveRoomMessage = {
   alias: string;
   color: string;
   role: RoomRole;
+  /** Same as the member's photo at send time. */
+  avatar?: string;
   text: string;
+  /** At most one attachment per message. */
+  media?: RoomMedia;
   ts: number;
   /**
    * Offender identity, SERVER-ONLY: resolves a report to a ban target. Never
@@ -220,6 +236,10 @@ export type RoomInstance = {
   locked: boolean;
   /** Mirrors the template flag (refreshed on every join) — the post gate stays Mongo-free. */
   requiresModPresence?: boolean;
+  /** Mirrors the template's allowed media (refreshed on every join). */
+  media?: RoomMediaKind[];
+  /** Every R2 key signed in this instance. All are deleted when it closes. */
+  uploads: Set<string>;
   /** Per-instance slow-mode override (ms). Falls back to role defaults. */
   slowOverrideMs?: number;
   members: Map<string, LiveRoomMember>;
@@ -232,6 +252,7 @@ export type RoomEvidenceLine = {
   id: string;
   alias: string;
   text: string;
+  media?: RoomMedia;
   ts: number;
   hidden?: boolean;
 };
@@ -246,8 +267,9 @@ export type RoomEvidenceWindow = {
 /** Client-bound message shape. Carries no sender identity. */
 export type WireRoomMessage = {
   id: string;
-  from: { alias: string; color: string; role: RoomRole };
+  from: { alias: string; color: string; role: RoomRole; avatar?: string };
   text: string;
+  media?: { kind: RoomMediaKind; url: string };
   ts: number;
   replyTo?: string;
   system?: boolean;
@@ -256,12 +278,14 @@ export type WireRoomMessage = {
 };
 
 /** `ROOM_JOIN` payload (after Zod). */
-export type RoomJoinInput = { slug: string; alias: string; color?: string; invite?: string };
+export type RoomJoinInput = { slug: string; alias: string; color?: string; invite?: string; useAvatar?: boolean };
 
 /** `ROOM_MESSAGE` payload. `id` is the sender's optimistic id, echoed as `clientId`. */
 export type RoomMessageInput = {
   id?: string;
+  /** May be empty when `media` is set. */
   text: string;
+  media?: { kind: 'image'; key: string } | { kind: 'gif' | 'meme'; url: string };
   replyTo?: string;
   challenge?: RoomChallengeAnswer;
 };
@@ -295,6 +319,7 @@ export type PostRoomMessageInput = {
   instanceId: string;
   identity: RoomMemberIdentity;
   text: string;
+  media?: RoomMessageInput['media'];
   replyTo?: string;
   challenge?: RoomChallengeAnswer;
 };

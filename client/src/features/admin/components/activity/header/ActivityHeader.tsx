@@ -1,4 +1,4 @@
-import RefreshIcon from '@/shared/components/ui/icons/Refresh';
+import RefreshButton from '../../shared/RefreshButton';
 import LiveDot from '../presence/LiveDot';
 import { formatPresenceUpdated } from '../../../utils/activity';
 
@@ -24,21 +24,7 @@ const ActivityHeader = ({ presenceUpdatedAt, isRefetching, onRefresh }: Props) =
           <span>Presence · {formatPresenceUpdated(presenceUpdatedAt)}</span>
         </div>
       )}
-      <button
-        type="button"
-        onClick={onRefresh}
-        disabled={isRefetching}
-        aria-busy={isRefetching}
-        className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-body-300/55 transition hover:bg-primary/25 hover:text-body-300 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        <span
-          className={`inline-flex origin-center ${isRefetching ? 'animate-refresh-spin' : ''} motion-reduce:animate-none`}
-          aria-hidden
-        >
-          <RefreshIcon className="h-3.5 w-3.5 shrink-0" />
-        </span>
-        Refresh
-      </button>
+      <RefreshButton onRefresh={onRefresh} isRefreshing={isRefetching} />
     </div>
   </header>
 );

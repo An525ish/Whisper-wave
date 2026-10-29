@@ -11,7 +11,12 @@ export type IReport = IReportFields & Document;
 const evidenceItemSchema = new Schema(
   {
     alias: { type: String, required: true },
-    text: { type: String, required: true },
+    // Empty for a photo/GIF-only message.
+    text: { type: String, default: '' },
+    media: {
+      type: new Schema({ kind: { type: String, enum: ['image', 'gif', 'meme'] }, url: String }, { _id: false }),
+      default: undefined,
+    },
     ts: { type: Number, required: true },
     hidden: { type: Boolean, default: false },
   },

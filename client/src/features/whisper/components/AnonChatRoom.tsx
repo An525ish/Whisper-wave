@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import AnonChatHeader from './AnonChatHeader';
 import AnonMessageList from './AnonMessageList';
@@ -11,13 +11,14 @@ import MutualVibeModal from './MutualVibeModal';
 import ReportSheet from './ReportSheet';
 import ThreadEndedBar from './ThreadEndedBar';
 import ThreadSummaryCard from './ThreadSummaryCard';
+import VibeLockedNote from './VibeLockedNote';
 import VibeNudge from './VibeNudge';
 import VibePrompt from './VibePrompt';
 import VibeWaiting from './VibeWaiting';
 import { useChannelSignals } from '../hooks/useChannelSignals';
 import { useThreadEnd } from '../hooks/useThreadEnd';
 import { useVibeUnlock } from '../hooks/useVibeUnlock';
-import { ANON_COMPOSER_ID, FRESH_THREAD_MESSAGES, MAX_MESSAGE_LENGTH } from '../constants';
+import { ANON_COMPOSER_ID, MAX_MESSAGE_LENGTH } from '../constants';
 import type {
   AnonMessage,
   AnonReaction,
@@ -60,8 +61,12 @@ type Props = {
   onFindSomeoneNew: () => void;
   onStayOnEndedThread: () => void;
   onReact: (messageId: string, reaction: AnonReaction) => void;
+  /** Tell the partner we've seen their messages up to this id. */
+  onRead: (messageId: string) => void;
   onDraftChange: (value: string) => void;
   onSend: (content: string) => void;
+  onSendImage: (file: File, caption: string) => void;
+  onSendGif: (url: string) => void;
   onLike: () => void;
   /** A report succeeded — end this match and move on. */
   onReported: () => void;
@@ -84,7 +89,9 @@ const likeTitle = (
   if (likeSent) return 'Vibe sent — waiting for them';
   return vibeUnlocked
     ? 'Send a vibe'
-    : `Vibes unlock as you chat — ${Math.round(progress * 100)}%`;
+    : progress > 0.5
+      ? 'Almost ready to send a vibe'
+      : 'Keep chatting to unlock vibes';
 };
 
 /**
@@ -119,8 +126,11 @@ export default function AnonChatRoom({
   onFindSomeoneNew,
   onStayOnEndedThread,
   onReact,
+  onRead,
   onDraftChange,
   onSend,
+  onSendImage,
+  onSendGif,
   onLike,
   onReported,
   onLeaveAfterExpiry,
@@ -130,7 +140,7 @@ export default function AnonChatRoom({
   onOpenMutualModal,
   onDismissError,
 }: Props) {
-  const { vibeUnlocked, vibeProgress, showVibePrompt } = useVibeUnlock(messages, matchedAt, {
+  const { vibeUnlocked, vibeProgress, showVibePrompt } = useVibeUnlock(messages, {
     likeSent,
     mutualLike,
     partnerVibed,
@@ -147,6 +157,7 @@ export default function AnonChatRoom({
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const [promptDismissed, setPromptDismissed] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [lockedOpen, setLockedOpen] = useState(false);
 
   // Reset per match via the render-time comparison pattern — a new match must
   // clear the previous one's dismissals without a cascading render.
@@ -155,7 +166,29 @@ export default function AnonChatRoom({
     setDismissedFor(partnerName);
     setNudgeDismissed(false);
     setPromptDismissed(false);
+    setLockedOpen(false);
   }
+
+  // Seen ticks: report the newest partner message once it is actually in front of
+  // them (tab visible and focused), and again when they come back to the tab.
+  const lastTheirsId = [...messages].reverse().find((m) => m.from === 'them')?.id;
+  const reportedRead = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!lastTheirsId || partnerLeft) return;
+    const report = () => {
+      if (document.visibilityState !== 'visible' || !document.hasFocus()) return;
+      if (reportedRead.current === lastTheirsId) return;
+      reportedRead.current = lastTheirsId;
+      onRead(lastTheirsId);
+    };
+    report();
+    window.addEventListener('focus', report);
+    document.addEventListener('visibilitychange', report);
+    return () => {
+      window.removeEventListener('focus', report);
+      document.removeEventListener('visibilitychange', report);
+    };
+  }, [lastTheirsId, partnerLeft, onRead]);
 
   const scrollRef = useRef<HTMLElement>(null);
   const socketDegraded = reconnecting || !socketConnected;
@@ -164,10 +197,27 @@ export default function AnonChatRoom({
   // enabled pre-unlock — a control that explains itself beats one that refuses.
   const likeDisabled = likeSent || mutualLike || partnerLeft;
 
+  // Before the gate opens, the heart explains what is left instead of firing an
+  // error from the server.
+  const handleLike = () => {
+    if (!vibeUnlocked && !likeSent && !mutualLike) {
+      setLockedOpen(true);
+      return;
+    }
+    setLockedOpen(false);
+    onLike();
+  };
+
   const handleSend = () => {
     const text = draft.trim();
     if (!text || overLimit || socketDegraded) return;
     onSend(text);
+    onClearDraft();
+  };
+
+  const handleSendImages = (files: File[]) => {
+    if (overLimit || socketDegraded) return;
+    files.forEach((file, i) => onSendImage(file, i === 0 ? draft.trim() : ''));
     onClearDraft();
   };
 
@@ -203,7 +253,7 @@ export default function AnonChatRoom({
           vibeUnlocked={vibeUnlocked}
           vibeProgress={vibeProgress}
           likeTitle={likeTitle(vibeUnlocked, likeSent, mutualLike, vibeProgress)}
-          onLike={onLike}
+          onLike={handleLike}
           onSkip={onRequestSkip}
           onReport={() => setReportOpen(true)}
         />
@@ -245,6 +295,14 @@ export default function AnonChatRoom({
           />
         )}
 
+        {lockedOpen && !vibeUnlocked && !partnerLeft && (
+          <VibeLockedNote
+            partnerName={partnerName}
+            progress={vibeProgress}
+            onDismiss={() => setLockedOpen(false)}
+          />
+        )}
+
         {likeSent && !mutualLike && !partnerLeft && <VibeWaiting />}
 
         {mutualLike && !showMutualModal && connectToken && (
@@ -273,12 +331,11 @@ export default function AnonChatRoom({
           <AnonComposer
             draft={draft}
             overLimit={overLimit}
-            sparks={sparks}
-            fresh={messages.length < FRESH_THREAD_MESSAGES}
             disabled={socketDegraded}
             onDraftChange={onDraftChange}
             onSend={handleSend}
-            onPickSpark={handlePickSpark}
+            onSendImages={handleSendImages}
+            onSendGif={onSendGif}
           />
         )}
 

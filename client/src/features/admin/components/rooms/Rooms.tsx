@@ -1,3 +1,4 @@
+import RefreshButton from '../shared/RefreshButton';
 import { useRoomsPage } from '../../hooks/useRoomsPage';
 import Bans from './Bans';
 import PanicCard from './PanicCard';
@@ -31,7 +32,10 @@ const RoomsAdmin = () => {
 
   return (
     <div className="flex flex-col gap-5 p-5">
-      <h1 className="font-display text-2xl text-white">Rooms</h1>
+      <div className="flex items-end justify-between gap-3">
+        <h1 className="font-display text-2xl text-white">Rooms</h1>
+        <RefreshButton />
+      </div>
 
       <PanicCard />
 

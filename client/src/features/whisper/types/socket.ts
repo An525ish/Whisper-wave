@@ -50,6 +50,7 @@ export type BufferedAnonMessage = {
   from: 'me' | 'them';
   content: string;
   sentAt: number;
+  image?: { url: string };
 };
 
 /** `MATCH_REACTION` payload — sent to BOTH participants; `by` is relative to the recipient. */

@@ -1,6 +1,6 @@
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { selectableVisibilities } from '../../../constants/rooms';
+import { ROOM_MEDIA_KINDS, selectableVisibilities } from '../../../constants/rooms';
 import { roomEditSchema, roomToForm } from '../../../utils/rooms';
 import type { AdminRoomRow, RoomEditForm as RoomEditValues } from '../../../types';
 import RoomHoursFields from './RoomHoursFields';
@@ -56,6 +56,18 @@ const RoomEditForm = ({ room, saving, onSave, onCancel }: Props) => {
         <textarea id={field('rules')} {...register('rulesText')} rows={4} className={inputClass} />
         {errors.rulesText && <p role="alert" className="mt-1 text-xs text-red">{errors.rulesText.message}</p>}
       </div>
+
+      <fieldset>
+        <legend className="text-xs font-medium text-body-300">Media members can post (guests are text only)</legend>
+        <div className="mt-1 flex gap-4">
+          {ROOM_MEDIA_KINDS.map((kind) => (
+            <label key={kind} className="flex items-center gap-2 text-sm text-body">
+              <input type="checkbox" value={kind} {...register('media')} />
+              {kind === 'image' ? 'Photos' : kind === 'gif' ? 'GIFs' : 'Memes'}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       <div className="flex flex-wrap items-end gap-4">
         <div>

@@ -1,3 +1,4 @@
+import RefreshButton from '../shared/RefreshButton';
 import { useReportsPage } from '../../hooks/useReportsPage';
 import InfiniteScrollSentinel from '../shared/InfiniteScrollSentinel';
 import ReportCard from './card/ReportCard';
@@ -31,11 +32,14 @@ const Reports = () => {
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue">Console</p>
           <h1 className="mt-1 font-semibold text-3xl leading-none tracking-tight text-body sm:text-4xl">Reports</h1>
         </div>
-        {!isLoading && !isError && (
-          <p className="text-sm text-body-300" aria-live="polite">
-            {total} unreviewed
-          </p>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {!isLoading && !isError && (
+            <p className="text-sm text-body-300" aria-live="polite">
+              {total} unreviewed
+            </p>
+          )}
+          <RefreshButton />
+        </div>
       </header>
 
       <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-1 scrollbar-hide">

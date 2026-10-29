@@ -18,19 +18,6 @@ export const ROOM_EVENTS = {
   CHALLENGE_FAILED: 'room_challenge_failed',
 } as const;
 
-/**
- * Curated reactions: KEY → glyph. The server accepts only these keys
- * (`server/src/constants/room-reactions.ts`), so the wire always carries the key.
- */
-export const ROOM_REACTION_GLYPHS = {
-  heart: '❤️',
-  laugh: '😂',
-  wow: '😮',
-  sad: '😢',
-  fire: '🔥',
-  clap: '👏',
-} as const;
-
 /** Persona color choices for the pre-join sheet (server accepts any hex). */
 export const ROOM_ALIAS_SWATCHES = [
   { hex: '#7dffb8', name: 'Mint' },
@@ -168,6 +155,8 @@ export const ROOM_FAIL_COPY: Record<RoomAckCode, string> = {
   spam: 'That looks like spam — try again.',
   muted: 'You are muted in this room for now.',
   mod_absent: 'A moderator isn’t here right now. Posting resumes when one arrives.',
+  media_not_allowed: 'This room doesn’t allow that kind of media.',
+  media_failed: 'That photo didn’t go through. Try again.',
   feature_off: 'Rooms are switched off right now.',
   identity_required: 'Open Whisper Wave once, then come back to join rooms.',
   members_only: 'This private room is for signed-in members — sign in to join.',
@@ -227,3 +216,10 @@ export const ROOM_EMOJI_VIEWPORT_PAD_PX = 16;
 
 /** The lobby re-reads the clock this often so "Opens …" labels stay right. */
 export const ROOM_LOBBY_CLOCK_MS = 60_000;
+
+/** Photo limits for room uploads. Mirrors the server (`ROOM_IMAGE_*`). */
+export const ROOM_IMAGE = {
+  ACCEPT: 'image/jpeg, image/png, image/webp',
+  TYPES: ['image/jpeg', 'image/png', 'image/webp'],
+  MAX_BYTES: 5 * 1024 * 1024,
+} as const;

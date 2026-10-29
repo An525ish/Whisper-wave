@@ -34,6 +34,7 @@ export const listRoomsAdmin = async (now: Date = new Date()) => {
     ),
     visibility: t.visibility,
     requiresModPresence: t.requiresModPresence === true,
+    media: t.media ?? [],
     listingRequestedAt: t.listingRequestedAt ?? null,
     createdAt: t.createdAt,
     open: isRoomOpen(t.hours, now),
@@ -57,6 +58,7 @@ export const upsertRoom = async (input: AdminRoomUpsertBody) => {
     // Editing a private room must not reset its caps to the public defaults.
     ...(input.visibility === 'private' ? clampRoomCaps('private', existing ?? {}) : {}),
     ...(input.mods !== undefined ? { mods: input.mods } : {}),
+    ...(input.media !== undefined ? { media: input.media } : {}),
     ...(input.requiresModPresence !== undefined ? { requiresModPresence: input.requiresModPresence } : {}),
   });
   // Approving to public consumes the listing request — the queue empties itself.

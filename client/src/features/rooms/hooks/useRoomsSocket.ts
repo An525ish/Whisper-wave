@@ -8,8 +8,9 @@ import { ROOM_EVENTS } from '../constants';
 import { useRoomStore } from '../stores/roomStore';
 import { failCopy } from '../utils/roomErrors';
 import { bindRoomEvents } from './bindRoomEvents';
-import { emitJoin, emitLeave, emitMessage, emitMod, emitReaction } from './roomEmitters';
+import { emitJoin, emitLeave, emitMediaSign, emitMessage, emitMod, emitReaction } from './roomEmitters';
 import type {
+  RoomAckCode,
   RoomJoinParams,
   RoomMessageAck,
   RoomMessageInput,
@@ -89,6 +90,21 @@ export function useRoomsSocket(slug: string | undefined) {
     return res;
   }, []);
 
+  /** Sign, then PUT one photo to R2. Resolves to the key the message carries, or a failure code. */
+  const uploadImage = useCallback(async (file: File): Promise<{ key: string } | { code: RoomAckCode }> => {
+    const socket = socketRef.current;
+    if (!socket?.connected) return { code: 'unknown' };
+    const signed = await emitMediaSign(socket, file);
+    if (!signed.ok) return { code: signed.code };
+    try {
+      // Content-Type must match what was signed or R2 answers 403.
+      const put = await fetch(signed.presignedUrl, { method: 'PUT', headers: { 'Content-Type': signed.mimeType }, body: file });
+      return put.ok ? { key: signed.key } : { code: 'media_failed' };
+    } catch {
+      return { code: 'media_failed' };
+    }
+  }, []);
+
   const sendReaction = useCallback(async (messageId: string, reaction: RoomReactionKey) => {
     const socket = socketRef.current;
     if (!socket?.connected) return;
@@ -105,5 +121,5 @@ export function useRoomsSocket(slug: string | undefined) {
     else toast(failCopy(res.code));
   }, []);
 
-  return { join, rejoin, leave, sendMessage, sendReaction, sendMod };
+  return { join, rejoin, leave, sendMessage, uploadImage, sendReaction, sendMod };
 }

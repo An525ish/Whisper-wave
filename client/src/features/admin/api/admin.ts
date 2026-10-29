@@ -201,3 +201,21 @@ export const blockMeme = (id: number) =>
 
 export const unblockMeme = (id: number) =>
   api.delete<AdminApiEnvelope<AdminMemeBlocklist>>(`/admin/memes/blocklist/${id}`);
+
+export type AdminAnonImage = {
+  _id: string;
+  url: string;
+  sessionId: string;
+  source?: 'anon' | 'room';
+  roomSlug?: string;
+  createdAt: string;
+};
+
+export const getAdminAnonImages = (before?: string) =>
+  api.get<{ success: boolean; items: AdminAnonImage[]; hasMore: boolean; nextCursor: string | null }>(
+    '/admin/anon-images',
+    { limit: 30, before }
+  );
+
+export const deleteAdminAnonImages = (ids: string[]) =>
+  api.delete<ApiSuccess>('/admin/anon-images', { ids });

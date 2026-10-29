@@ -3,11 +3,11 @@ import toast from 'react-hot-toast';
 import { useNowWhile } from '@/shared/hooks/useNowWhile';
 import { track } from '@/shared/lib/analytics';
 import { newClientId } from '@/shared/utils/id';
-import { ROOM_COUNTDOWN_TICK_MS, ROOM_EVENTS } from '../constants';
+import { ROOM_COUNTDOWN_TICK_MS, ROOM_EVENTS, ROOM_IMAGE } from '../constants';
 import { useRoomStore } from '../stores/roomStore';
 import { parseChallengeAnswer } from '../utils/challenge';
 import { failCopy } from '../utils/roomErrors';
-import type { RoomMessageAck, RoomMessageInput, RoomReplyPreview } from '../types';
+import type { RoomAckCode, RoomMessageAck, RoomMessageInput, RoomReplyPreview } from '../types';
 import type { RoomChallengeAnswer, RoomChallengeCode, RoomPendingChallenge } from '../types/challenge';
 
 const CHALLENGE_CODES = new Set<string>(['challenge_required', 'challenge_failed', 'challenge_unavailable']);
@@ -16,6 +16,7 @@ interface Params {
   replyTo: RoomReplyPreview | null;
   onClearReply: () => void;
   onSend: (input: RoomMessageInput) => Promise<RoomMessageAck>;
+  onUploadImage: (file: File) => Promise<{ key: string } | { code: RoomAckCode }>;
 }
 
 /**
@@ -24,8 +25,13 @@ interface Params {
  * (Turnstile modal) re-sends the SAME message (same id) with the answer attached.
  * Cancelling the modal leaves the draft in the composer; nothing is lost.
  */
-export function useRoomComposer({ replyTo, onClearReply, onSend }: Params) {
+export function useRoomComposer({ replyTo, onClearReply, onSend, onUploadImage }: Params) {
   const [draft, setDraft] = useState('');
+  // One staged photo at a time: slow mode would reject a second one anyway.
+  const [files, setFilesState] = useState<File[]>([]);
+  const setFiles = useCallback((next: File[] | ((prev: File[]) => File[])) => {
+    setFilesState((prev) => (typeof next === 'function' ? next(prev) : next).slice(-1));
+  }, []);
   const [sending, setSending] = useState(false);
   const [pending, setPending] = useState<RoomPendingChallenge | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
@@ -41,7 +47,7 @@ export function useRoomComposer({ replyTo, onClearReply, onSend }: Params) {
 
   const ready = joined && online;
   const locked = !ready || paused || mutedMs > 0 || pending !== null;
-  const canSend = ready && !locked && !sending && cooldownMs === 0 && draft.trim().length > 0;
+  const canSend = ready && !locked && !sending && cooldownMs === 0 && (draft.trim().length > 0 || files.length > 0);
 
   const deliver = useCallback(
     async (input: RoomMessageInput, retry = false) => {
@@ -49,7 +55,9 @@ export function useRoomComposer({ replyTo, onClearReply, onSend }: Params) {
       const res = await onSend(input);
       setSending(false);
       if (res.ok) {
-        setDraft('');
+        // A GIF sent while typing must not eat the draft.
+        if (input.text) setDraft('');
+        if (input.media?.kind === 'image') setFilesState([]);
         // Keep the modal for its success beat (unless the guest already cancelled it).
         setPending((prev) => (prev ? { ...prev, passed: true } : null));
         setAnswerError(null);
@@ -85,14 +93,36 @@ export function useRoomComposer({ replyTo, onClearReply, onSend }: Params) {
     [onClearReply, onSend, replyTo]
   );
 
-  const submit = useCallback(() => {
+  const submit = useCallback(async () => {
     if (!canSend) return;
-    void deliver({
-      id: newClientId(),
-      text: draft.trim(),
-      ...(replyTo ? { replyTo: replyTo.id } : {}),
-    });
-  }, [canSend, deliver, draft, replyTo]);
+    const base = { id: newClientId(), text: draft.trim(), ...(replyTo ? { replyTo: replyTo.id } : {}) };
+    const file = files[0];
+    if (!file) {
+      await deliver(base);
+      return;
+    }
+    if (!(ROOM_IMAGE.TYPES as readonly string[]).includes(file.type) || file.size > ROOM_IMAGE.MAX_BYTES) {
+      toast('Photos only: JPG, PNG or WebP, up to 5 MB.');
+      return;
+    }
+    setSending(true);
+    const uploaded = await onUploadImage(file);
+    setSending(false);
+    if ('code' in uploaded) {
+      toast(failCopy(uploaded.code));
+      return;
+    }
+    await deliver({ ...base, media: { kind: 'image', key: uploaded.key } });
+  }, [canSend, deliver, draft, files, onUploadImage, replyTo]);
+
+  /** A GIF or meme from the picker sends straight away, like the main chat. */
+  const sendLink = useCallback(
+    (kind: 'gif' | 'meme', url: string) => {
+      if (!ready || locked || sending || cooldownMs > 0) return;
+      void deliver({ id: newClientId(), text: '', media: { kind, url }, ...(replyTo ? { replyTo: replyTo.id } : {}) });
+    },
+    [cooldownMs, deliver, locked, ready, replyTo, sending]
+  );
 
   const sendAnswer = useCallback(
     (challenge: RoomChallengeAnswer) => {
@@ -131,6 +161,9 @@ export function useRoomComposer({ replyTo, onClearReply, onSend }: Params) {
   return {
     draft,
     setDraft,
+    files,
+    setFiles,
+    sendLink,
     submit,
     answer,
     answerToken,

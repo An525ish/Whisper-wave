@@ -7,6 +7,8 @@ import { nudgeModsIfWaiting } from '../../services/rooms/modNudge.js';
 import { normalizeAlias } from '../../services/rooms/automod.js';
 import { assertAliasAllowed, colorForAlias } from '../../services/rooms/membership.js';
 import { joinInstance, recentMessages, seatInstanceOf } from '../../services/rooms/registry.js';
+import { findByIdNameAvatar } from '../../repositories/user.js';
+import { logger } from '../../utils/logger.js';
 import { emitPresence, releaseSeat, seatKeyOf, trackSeat } from './seats.js';
 import { toWireMessage } from './wire.js';
 import type { RoomJoinInput, RoomSocket } from '../../types/room.js';
@@ -36,6 +38,15 @@ export const handleJoin = async (
     seated: seatInstanceOf(input.slug, key) !== null,
   });
 
+  // The photo comes from the account, never from the client, and only when they opted in.
+  const avatar =
+    input.useAvatar && socket.userId
+      ? (await findByIdNameAvatar(socket.userId).catch((err: unknown) => {
+          logger.warn({ err }, 'Avatar lookup failed, joining without a photo');
+          return null;
+        }))?.avatar?.url
+      : undefined;
+
   const previous = socket.roomInstanceId;
   const { instanceId, member, online } = joinInstance({
     template,
@@ -45,6 +56,7 @@ export const handleJoin = async (
     alias,
     color: input.color ?? colorForAlias(alias),
     role,
+    ...(avatar ? { avatar } : {}),
     ...(trust ? { trust } : {}),
   });
   if (previous && previous !== instanceId) releaseSeat(nsp, socket, previous);
@@ -61,6 +73,8 @@ export const handleJoin = async (
     slug,
     title: template.title,
     rules: template.rules,
+    // What this room lets members post (UI hint; the server re-checks every message).
+    media: template.media ?? [],
     // Mods see hidden messages (flagged) so they can `unhide`; nobody else does.
     recent: recentMessages(instanceId, ROOM_MSG_RING, forMod).map((m) => toWireMessage(m, { forMod })),
     online,
@@ -68,7 +82,7 @@ export const handleJoin = async (
     ...(template.requiresModPresence
       ? { requiresModPresence: true, paused: !isStaffed(template.slug) }
       : {}),
-    you: { alias: member.alias, color: member.color, role: member.role },
+    you: { alias: member.alias, color: member.color, role: member.role, ...(member.avatar ? { avatar: member.avatar } : {}) },
   });
   emitPresence(nsp, instanceId);
   if (!forMod) nudgeModsIfWaiting(template);

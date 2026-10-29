@@ -302,7 +302,7 @@ job — the end-of-thread summary and the archive — so it was renamed `useThre
 rather than left named for a feature that no longer exists.
 
 The original justification was that starters raise the conversation-start rate and
-so feed the `VIBE_UNLOCK` gate (90 s + ≥2 messages each side + ≥5 total). That
+so feed the `VIBE_UNLOCK` gate (5 min of sustained back-and-forth, replies within 60 s). That
 gate is unchanged and still governs the like button; only the nudge is gone. Worth
 watching real conversation-start rates before concluding the cost was nil.
 
@@ -411,6 +411,9 @@ rebuild it. The paid upsell is *preference* on top of it.
   ways to force it are fabricating placeholder `User` docs (breaks the
   "not stored in MongoDB" privacy promise) or threading `chat.kind: 'anon'`
   through `MessageBubble` (307 lines) and every read/reaction/forward/delete path.
+- ✅ **Photos in anon (D17).** Done via R2. Still open: tell users in Privacy that
+  photos are kept until an admin deletes them, add a retention limit, and add
+  image moderation if abuse shows up.
 - ❌ **Voice notes in anon.** Moderation is text-only today
   (`services/match/moderation.ts`, 3 categories, no audio). Charging for the
   least-protected surface is the wrong order.

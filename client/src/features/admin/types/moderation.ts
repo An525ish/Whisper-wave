@@ -11,6 +11,8 @@ export type AdminReportReason =
 export type AdminReportEvidenceItem = {
   alias: string;
   text: string;
+  /** Kept copy of a photo, GIF or meme (photos live until an admin deletes them). */
+  media?: { kind: string; url: string };
   ts: number;
   /** The message was hidden when the snapshot was taken. */
   hidden?: boolean;
@@ -107,6 +109,8 @@ export type AdminRoomHours = {
   tz: string;
 };
 
+export type AdminRoomMedia = 'image' | 'gif' | 'meme';
+
 export type AdminRoomMod = { id: string; username: string | null };
 
 export type AdminRoomRow = {
@@ -121,6 +125,8 @@ export type AdminRoomRow = {
   capHard: number;
   mods: AdminRoomMod[];
   visibility: AdminRoomVisibility;
+  /** Media members may post (guests are always text only). */
+  media: AdminRoomMedia[];
   /** Listening room: strict automod, posting only while a mod is seated. */
   requiresModPresence: boolean;
   listingRequestedAt: string | null;
@@ -139,6 +145,8 @@ export type AdminRoomUpsert = {
   official: boolean;
   hours: AdminRoomHours | null;
   visibility: AdminRoomVisibility;
+  /** Omitted leaves the template's allowed media untouched. */
+  media?: AdminRoomMedia[];
   /** Omitted leaves the template's mods untouched. */
   mods?: string[];
   /** Omitted leaves the template's flag untouched. */
@@ -154,6 +162,8 @@ export type RoomEditForm = {
   lang: string;
   official: boolean;
   requiresModPresence: boolean;
+  /** Allowed media kinds (checkbox group values). */
+  media: string[];
   visibility: AdminRoomVisibility;
   hoursEnabled: boolean;
   /** Weekday numbers 0-6 as strings (checkbox group values). */

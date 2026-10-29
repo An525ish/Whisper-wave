@@ -12,6 +12,8 @@ export const ROOM_LEAVE = 'ROOM_LEAVE';
 export const ROOM_MESSAGE = 'ROOM_MESSAGE';
 export const ROOM_REACT = 'ROOM_REACT';
 export const ROOM_MOD = 'ROOM_MOD';
+/** Acked: asks for a presigned R2 PUT for one room photo. */
+export const ROOM_MEDIA_SIGN = 'ROOM_MEDIA_SIGN';
 
 /** Server → client (`ROOM_MESSAGE` is also the server → client fan-out name). */
 export const ROOM_STATE = 'ROOM_STATE';
@@ -47,6 +49,8 @@ export const ROOM_ERROR_CODES = {
   ALIAS_INVALID: 'alias_invalid',
   JOIN_IN_PROGRESS: 'join_in_progress',
   MOD_ABSENT: 'mod_absent',
+  MEDIA_NOT_ALLOWED: 'media_not_allowed',
+  MEDIA_FAILED: 'media_failed',
   CHALLENGE_UNAVAILABLE: 'challenge_unavailable',
   UNKNOWN: 'unknown',
 } as const satisfies Record<string, RoomAckCode>;

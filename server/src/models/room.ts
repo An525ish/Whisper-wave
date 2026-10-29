@@ -1,4 +1,5 @@
 import mongoose, { Schema, model, type Document } from 'mongoose';
+import { ROOM_MEDIA_KINDS } from '../constants/rooms.js';
 import type { IRoomFields } from '../types/room.js';
 import type { RoomAcceptanceFields } from '../types/roomAdmin.js';
 
@@ -46,6 +47,8 @@ const roomSchema = new Schema<IRoom>(
     rulesVersion: { type: Number, default: null },
     /** Listening room (Venting): strict automod; posting pauses with no mod seated. */
     requiresModPresence: { type: Boolean, default: false },
+    /** Media members may post (admin-set). Empty = text only. */
+    media: { type: [String], enum: ROOM_MEDIA_KINDS, default: () => [...ROOM_MEDIA_KINDS] },
     visibility: {
       type: String,
       enum: ['official', 'public', 'unlisted', 'private'],

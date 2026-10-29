@@ -51,3 +51,14 @@ export const ROOM_MAX_LINES = 6;
 export const ROOM_MOD_GRACE_MS = 3 * 60_000;
 /** Listening rooms: at most one "mod needed" push per mod per room inside this window. */
 export const ROOM_MOD_NUDGE_THROTTLE_MS = 10 * 60_000;
+
+/**
+ * Media a room may allow (admin-set per room, members only). `image` is an R2
+ * upload; `gif` is a KLIPY link; `meme` is a Memegen link. Video, audio and
+ * documents are not offered in rooms.
+ */
+export const ROOM_MEDIA_KINDS = ['image', 'gif', 'meme'] as const;
+export const ROOM_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export const ROOM_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+/** Photos one person may sign per minute in a room. */
+export const ROOM_IMAGE_SIGNS_PER_MIN = 6;

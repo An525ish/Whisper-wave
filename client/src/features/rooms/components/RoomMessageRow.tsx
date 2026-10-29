@@ -1,4 +1,7 @@
-import type { MouseEvent as ReactMouseEvent } from 'react';
+import { useState, type MouseEvent as ReactMouseEvent } from 'react';
+import { MEDIA_TIME_CLASS, RenderAttachments } from '@/features/chat';
+import Image from '@/shared/components/ui/Image';
+import ImageViewer from '@/shared/components/ui/image-viewer/ImageViewer';
 import SwipeToReply from '@/shared/components/ui/SwipeToReply';
 import ReplyQuote from '@/shared/components/ui/reply/ReplyQuote';
 import ThreeDotsIcon from '@/shared/components/ui/icons/ThreeDots';
@@ -48,6 +51,7 @@ const RoomMessageRow = ({
   onOpenMenu,
   bindLongPress,
 }: Props) => {
+  const [viewing, setViewing] = useState(false);
   if (message.system) {
     return (
       <div className="rm-sys">
@@ -57,6 +61,8 @@ const RoomMessageRow = ({
   }
 
   const showHead = !mine && !joinedAbove;
+  const mediaOnly = Boolean(message.media) && !message.text.trim();
+  const mediaClass = message.media ? (mediaOnly ? 'rm-bubble--media' : 'rm-bubble--media rm-bubble--mediatext') : '';
   const actions = (
     <button
       type="button"
@@ -76,14 +82,21 @@ const RoomMessageRow = ({
           {!mine && !joinedAbove && (
             <span
               aria-hidden
-              className="rm-avatar"
-              style={{
-                color: message.from.color,
-                backgroundColor: `${message.from.color}1f`,
-                boxShadow: `0 0 0 1.5px ${message.from.color}`,
-              }}
+              className={`rm-avatar${message.from.avatar ? ' rm-avatar--photo' : ''}`}
+              style={
+                message.from.avatar
+                  ? undefined
+                  : {
+                      color: '#fff',
+                      backgroundImage: `linear-gradient(145deg, ${message.from.color}, color-mix(in srgb, ${message.from.color} 50%, #000))`,
+                    }
+              }
             >
-              {initialOf(message.from.alias)}
+              {message.from.avatar ? (
+                <Image src={message.from.avatar} alt="" className="h-full w-full rounded-full object-cover" displayWidth={64} showLoading={false} />
+              ) : (
+                initialOf(message.from.alias)
+              )}
             </span>
           )}
           {mine && actions}
@@ -93,7 +106,7 @@ const RoomMessageRow = ({
             onReply={() => onReply(message.id)}
           >
             <div
-              className={`rm-bubble ${mine ? 'bubble-out border border-green/35 bg-green-dark/55 rm-new-r' : 'bubble-in border border-border bg-primary/90 rm-new-l'}${message.hidden ? ' rm-bubble--hidden' : ''}`}
+              className={`rm-bubble ${mediaClass ? `${mediaClass} ` : ''}${mine ? 'bubble-out border border-green/35 bg-green-dark/55 rm-new-r' : 'bubble-in border border-border bg-primary/90 rm-new-l'}${message.hidden ? ' rm-bubble--hidden' : ''}`}
               onContextMenu={(e) => onContextMenu(e, message)}
               {...bindLongPress(message)}
             >
@@ -115,24 +128,51 @@ const RoomMessageRow = ({
                 </div>
               )}
               {message.hidden && <p className="rm-hiddennote">Hidden — only mods see this</p>}
-              <p className="rm-bubbletext">
-                {message.text}
-                <span aria-hidden className="rm-bubbletime rm-bubbletime--ghost">
-                  {timeLabel(message.ts)}
-                </span>
-              </p>
-              <time
-                className="rm-bubbletime"
-                dateTime={new Date(message.ts).toISOString()}
-              >
-                {timeLabel(message.ts)}
-              </time>
+              {message.media && (
+                <button type="button" className={`rm-media${mediaOnly ? '' : ' mb-1.5'}`} aria-label="Open photo" onClick={() => setViewing(true)}>
+                  <RenderAttachments
+                    fileType={message.media.kind === 'gif' ? 'gif' : 'image'}
+                    url={message.media.url}
+                    name={message.media.kind}
+                    overlay={
+                      mediaOnly ? (
+                        <time
+                          dateTime={new Date(message.ts).toISOString()}
+                          className={`pointer-events-none absolute bottom-0 right-0.5 z-2 ${MEDIA_TIME_CLASS}`}
+                        >
+                          {timeLabel(message.ts)}
+                        </time>
+                      ) : null
+                    }
+                  />
+                </button>
+              )}
+              {viewing && message.media && (
+                <ImageViewer
+                  mediaFiles={[{ _id: message.id, url: message.media.url, name: 'photo', fileType: 'image' }]}
+                  initialIndex={0}
+                  onClose={() => setViewing(false)}
+                />
+              )}
+              {!mediaOnly && (
+                <div className={message.media ? 'px-2 pt-0.5' : undefined}>
+                  <p className="rm-bubbletext">
+                    {message.text}
+                    <span aria-hidden className="rm-bubbletime rm-bubbletime--ghost">
+                      {timeLabel(message.ts)}
+                    </span>
+                  </p>
+                  <time className="rm-bubbletime" dateTime={new Date(message.ts).toISOString()}>
+                    {timeLabel(message.ts)}
+                  </time>
+                </div>
+              )}
             </div>
           </SwipeToReply>
           {!mine && actions}
         </div>
 
-        <RoomReactions message={message} mine={mine} myKeys={myKeys} onReact={onReact} />
+        <RoomReactions message={message} mine={mine} hasAvatar={!mine && !joinedAbove} myKeys={myKeys} onReact={onReact} />
       </div>
     </div>
   );

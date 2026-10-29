@@ -1,7 +1,7 @@
 import { onSocketEvent } from '../../middlewares/validateSocket.js';
 import { makeRedisSocketRateLimiter, makeSocketRateLimiter } from '../rateLimiter.js';
-import { ANON_MESSAGE, ANON_TYPING_START, ANON_TYPING_STOP, ANON_LIKE, ANON_NEXT, ANON_REQUEUE, MATCH_TYPING_START, MATCH_TYPING_STOP, SOMEONE_VIBING, MUTUAL_LIKE, MATCH_MESSAGE_REJECTED, MATCH_PARTNER_VIBED } from '../../constants/anon-events.js';
-import { anonMessageSchema, anonNoPayloadSchema } from '../../validators/anon.js';
+import { ANON_MESSAGE, ANON_TYPING_START, ANON_TYPING_STOP, ANON_LIKE, ANON_NEXT, ANON_REQUEUE, MATCH_TYPING_START, MATCH_TYPING_STOP, SOMEONE_VIBING, MUTUAL_LIKE, MATCH_MESSAGE_REJECTED, MATCH_PARTNER_VIBED, ANON_READ, MATCH_READ } from '../../constants/anon-events.js';
+import { anonMessageSchema, anonNoPayloadSchema, anonReadSchema } from '../../validators/anon.js';
 import { emitMatchFoundToSocket } from './emitMatchFound.js';
 import { registerReactionHandler } from './reactionHandler.js';
 import { getSession, getActiveSessionId, isParticipant, getPartner, recordLike, isVibeUnlocked, handleSocketDrop, endSessionNow, acceptAnonMessage, checkSkipQuota, relayMessage, notifyMatchEnded, requireActiveParticipant } from '../../services/match/index.js';
@@ -64,12 +64,12 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
     socket,
     ANON_MESSAGE,
     anonMessageSchema,
-    async ({ content, id }, ...rest: unknown[]) => {
+    async ({ content, id, image, gif }, ...rest: unknown[]) => {
       const ack = ackOf(rest);
 
       let outcome;
       try {
-        outcome = await acceptAnonMessage(socket.sessionId, socket.anonId, content, id);
+        outcome = await acceptAnonMessage(socket.sessionId, socket.anonId, content, id, image?.key, gif?.url);
       } catch (err) {
         // Session gone / not a participant / not active — the client needs to
         // know so it can mark the bubble failed rather than hang on 'sending'.
@@ -137,6 +137,25 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
     { before: () => typingLimiter.allow(socket.id) }
   );
 
+  // ── ANON_READ ─────────────────────────────────────────────────────────────
+  // Pure relay, like typing: the marker is not stored, so a partner who was offline
+  // when it fired simply sees single ticks until the next read. ponytail: upgrade
+  // by keeping one marker per side in the session meta hash.
+  onSocketEvent(
+    socket,
+    ANON_READ,
+    anonReadSchema,
+    async ({ messageId }) => {
+      try {
+        const session = await requireActiveParticipant(socket.sessionId, socket.anonId);
+        nsp.to(`anon:${getPartner(session, socket.anonId)}`).emit(MATCH_READ, { messageId });
+      } catch (err) {
+        logger.debug({ err, anonId: socket.anonId }, 'Dropped ANON_READ for inactive session');
+      }
+    },
+    { before: () => typingLimiter.allow(socket.id) }
+  );
+
   // ── ANON_LIKE ─────────────────────────────────────────────────────────────
   onSocketEvent(
     socket,
@@ -151,7 +170,7 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
         const sessionId = session.sessionId;
 
         if (!(await isVibeUnlocked(sessionId, session))) {
-          const reason = 'Chat a little longer before sending a vibe.';
+          const reason = 'Keep chatting a bit longer, then you can send a vibe.';
           emitError(socket, reason);
           ack?.({ ok: false, code: 'locked', reason });
           return;
@@ -218,10 +237,14 @@ export const registerAnonHandlers = (socket: AnonSocket, nsp: Namespace): void =
 
       if (sessionId) {
         const session = await getSession(sessionId);
-        if (session && isParticipant(session, socket.anonId)) {
+        // `status === 'active'` matters: an ended session record lives on for an hour,
+        // and `socket.sessionId` can still point at it (the partner skipped first). Without
+        // this check we would "end" it again and tell the old partner, who by now is in a
+        // NEW chat, that their match ended.
+        if (session && session.status === 'active' && isParticipant(session, socket.anonId)) {
           // Explicit skip: no grace period, the user clearly meant it.
           const partnerAnonId = await endSessionNow(session, socket.anonId);
-          notifyMatchEnded(nsp, partnerAnonId, 'skipped');
+          notifyMatchEnded(nsp, partnerAnonId, 'skipped', session.sessionId);
         }
       }
 

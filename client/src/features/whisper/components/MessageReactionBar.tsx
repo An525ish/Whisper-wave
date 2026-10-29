@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { ANON_REACTIONS, ANON_REACTION_LABELS } from '../constants';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
+import ReactionAddIcon from '@/shared/components/ui/icons/ReactionAdd';
+import { REACTION_SURFACE_CLASS, ReactionStrip, placeReactionStrip } from '@/features/chat';
 import type { AnonReaction } from '../types';
-import './messageReactions.css';
 
 type Props = {
   /** Reactions already on the bubble, split by side. */
@@ -9,25 +10,24 @@ type Props = {
   /** Hidden entirely until the message has actually landed. */
   enabled: boolean;
   onReact: (reaction: AnonReaction) => void;
+  /** Which side the bubble sits on: chips and picker anchor to that edge. */
+  align: 'start' | 'end';
 };
 
-const glyph = (r: AnonReaction) => ANON_REACTION_LABELS[r]?.glyph ?? '•';
-
 /**
- * Reactions on a single message.
+ * Reactions on a single message, laid out and picked exactly like the main chat:
+ * chips hang off the bubble's bottom edge, a smiley appears on hover when there are
+ * none, and it opens the SAME `ReactionStrip` (quick emojis plus "more emojis").
  *
- * One per person, and the same reaction twice removes it — that is the server's
- * rule and the store mirrors it, so a tap here and the broadcast coming back
+ * One reaction per person, and sending the same one again removes it. That is the
+ * server's rule and the store mirrors it, so a tap here and the broadcast coming back
  * agree instead of fighting.
- *
- * Opens on click, closes on Escape / outside click / selection, and the trigger
- * is a real button so it is reachable by keyboard. The picker is positioned rather
- * than centred because bubbles hug the pane edges and a centred popover would
- * detach from the thing it acts on.
  */
-export default function MessageReactionBar({ reactions, enabled, onReact }: Props) {
+export default function MessageReactionBar({ reactions, enabled, onReact, align }: Props) {
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLSpanElement>(null);
+  const [stripStyle, setStripStyle] = useState<CSSProperties>({});
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const stripWrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -35,7 +35,11 @@ export default function MessageReactionBar({ reactions, enabled, onReact }: Prop
       if (e.key === 'Escape') setOpen(false);
     };
     const onDown = (e: MouseEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || stripWrapRef.current?.contains(target)) return;
+      // The full emoji grid is its own portal; a tap in it is not an outside click.
+      if (target instanceof Element && target.closest('[data-reaction-picker]')) return;
+      setOpen(false);
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDown);
@@ -45,9 +49,8 @@ export default function MessageReactionBar({ reactions, enabled, onReact }: Prop
     };
   }, [open]);
 
-  // Don't leave a popover stranded when the bubble stops being reactable (the
-  // thread ended, or the message failed). Adjusted during render rather than in an
-  // effect — React's documented pattern, and an effect here would cascade.
+  // Don't leave a popover stranded when the bubble stops being reactable (the thread
+  // ended, or the message failed). Adjusted during render, not in an effect.
   const [wasEnabled, setWasEnabled] = useState(enabled);
   if (wasEnabled !== enabled) {
     setWasEnabled(enabled);
@@ -58,61 +61,68 @@ export default function MessageReactionBar({ reactions, enabled, onReact }: Prop
 
   const mine = reactions?.me;
   const theirs = reactions?.them;
+  const hasReactions = Boolean(mine || theirs);
+
+  // The strip speaks the main chat's shape: `{ emoji, users }`, with 'me' as my id.
+  const stripReactions = [
+    ...(mine ? [{ emoji: mine, users: ['me'] }] : []),
+    ...(theirs && theirs !== mine ? [{ emoji: theirs, users: ['them'] }] : []),
+  ];
+
+  const chip = `flex h-[22px] items-center justify-center px-1.5 text-[15px] leading-none ${REACTION_SURFACE_CLASS}`;
+  const addButton = (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={(e) => {
+          setStripStyle(placeReactionStrip(e.currentTarget.getBoundingClientRect(), align));
+          setOpen((v) => !v);
+        }}
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label="Add a reaction"
+        className={`flex h-[22px] w-[22px] items-center justify-center text-body-300 transition-all duration-150 hover:text-body ${REACTION_SURFACE_CLASS} ${open ? 'opacity-100' : hasReactions ? '' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'}`}
+      >
+        <ReactionAddIcon className="h-5 w-5" />
+      </button>
+      {open &&
+        createPortal(
+          <div ref={stripWrapRef} style={stripStyle}>
+            <ReactionStrip
+              reactions={stripReactions}
+              myUserId="me"
+              onReact={onReact}
+              onClose={() => setOpen(false)}
+            />
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+
+  if (!hasReactions) {
+    return <div className={`absolute bottom-0 z-10 ${align === 'end' ? 'right-2' : 'left-2'}`}>{addButton}</div>;
+  }
 
   return (
-    <span className="mrb" ref={wrapRef}>
+    <div className={`z-10 -mt-1 flex flex-wrap items-center gap-1 ${align === 'end' ? 'mr-2 self-end justify-end' : 'ml-2 self-start justify-start'}`}>
       {theirs && (
-        <span className="mrb__chip" title="They reacted">
-          {glyph(theirs)}
+        <span className={`${chip} text-body-700`} title="They reacted">
+          {theirs}
         </span>
       )}
       {mine && (
         <button
           type="button"
-          className="mrb__chip mrb__chip--mine"
+          className={`${chip} text-body ring-1 ring-green/35 transition-all duration-150 active:scale-95`}
           onClick={() => onReact(mine)}
-          aria-label={`Remove your ${ANON_REACTION_LABELS[mine]?.label ?? 'reaction'}`}
+          aria-label={`Remove your ${mine} reaction`}
         >
-          {glyph(mine)}
+          {mine}
         </button>
       )}
-
-      <button
-        type="button"
-        className="mrb__add"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-haspopup="true"
-        aria-label="Add a reaction"
-        title="React"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <circle cx="12" cy="12" r="9" opacity="0.5" />
-          <path d="M8.5 14.5s1.2 1.5 3.5 1.5 3.5-1.5 3.5-1.5" />
-          <path d="M9 9.5h.01M15 9.5h.01" />
-        </svg>
-      </button>
-
-      {open && (
-        <span className="mrb__menu" role="group" aria-label="Pick a reaction">
-          {ANON_REACTIONS.map((r) => (
-            <button
-              key={r}
-              type="button"
-              className={`mrb__opt${mine === r ? ' mrb__opt--on' : ''}`}
-              onClick={() => {
-                onReact(r);
-                setOpen(false);
-              }}
-              aria-pressed={mine === r}
-              aria-label={ANON_REACTION_LABELS[r]?.label ?? r}
-              title={ANON_REACTION_LABELS[r]?.label ?? r}
-            >
-              <span aria-hidden>{glyph(r)}</span>
-            </button>
-          ))}
-        </span>
-      )}
-    </span>
+      {!mine && addButton}
+    </div>
   );
 }

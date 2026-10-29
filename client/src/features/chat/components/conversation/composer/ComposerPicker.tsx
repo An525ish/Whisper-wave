@@ -12,6 +12,7 @@ import {
 import { createPortal } from 'react-dom';
 import type { GifItem } from '../../../api/gif';
 import type { ComposerPickerTab } from '../../../types/local';
+import type { MediaKind } from '../../../constants/upload';
 import { useMediaQuery } from '@/shared/hooks';
 import EmojiIcon from '@/shared/components/ui/icons/Emoji';
 
@@ -30,6 +31,8 @@ type Props = {
   setMessage: Dispatch<SetStateAction<string>>;
   onClose: () => void;
   onGifSelect: (gif: GifItem) => void;
+  /** Emoji is always on; GIF and Memes tabs only when listed. */
+  allowed: readonly MediaKind[];
 };
 
 const TABS: { id: ComposerPickerTab; label: string }[] = [
@@ -52,10 +55,12 @@ const ComposerPicker = ({
   setMessage,
   onClose,
   onGifSelect,
+  allowed,
 }: Props) => {
   const [activeTab, setActiveTab] = useState<ComposerPickerTab>('emoji');
   const containerRef = useRef<HTMLDivElement>(null);
-  const activeIndex = TABS.findIndex((t) => t.id === activeTab);
+  const tabs = TABS.filter((t) => t.id === 'emoji' || allowed.includes(t.id));
+  const activeIndex = tabs.findIndex((t) => t.id === activeTab);
   const isDesktop = useMediaQuery('(min-width: 640px)');
   const [size, setSize] = useState(measurePickerSize);
 
@@ -91,19 +96,19 @@ const ComposerPicker = ({
     <div className="shrink-0 px-2.5 pt-2.5">
       <div
         className="relative grid rounded-xl border border-border/80 bg-background-alt/80 p-0.5"
-        style={{ gridTemplateColumns: `repeat(${TABS.length}, minmax(0, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
         role="tablist"
         aria-label="Composer picker"
       >
         <span
           className="pointer-events-none absolute top-0.5 bottom-0.5 rounded-lg border border-border bg-primary shadow-[inset_0_1px_0_rgba(235,236,236,0.06)] transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
           style={{
-            left: `calc(${activeIndex} * (100% / ${TABS.length}) + 0.125rem)`,
-            width: `calc(100% / ${TABS.length} - 0.25rem)`,
+            left: `calc(${activeIndex} * (100% / ${tabs.length}) + 0.125rem)`,
+            width: `calc(100% / ${tabs.length} - 0.25rem)`,
           }}
           aria-hidden
         />
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const selected = activeTab === tab.id;
           return (
             <button
@@ -144,13 +149,13 @@ const ComposerPicker = ({
       className={emojiPickerShellClass}
       style={{ width: size.width, height: size.height }}
     >
-      {tabBar}
-      <div className="min-h-0 flex-1 overflow-hidden" style={{ height: size.contentHeight }}>
+      {tabs.length > 1 && tabBar}
+      <div className="min-h-0 flex-1 overflow-hidden" style={{ height: tabs.length > 1 ? size.contentHeight : size.height }}>
         <Suspense fallback={<div className="h-full w-full animate-pulse bg-white/5" />}>
           {activeTab === 'emoji' ? (
             <StyledEmojiPicker
               width={size.width}
-              height={size.contentHeight}
+              height={tabs.length > 1 ? size.contentHeight : size.height}
               onEmojiClick={(e) => setMessage((prev) => prev + e.emoji)}
             />
           ) : (

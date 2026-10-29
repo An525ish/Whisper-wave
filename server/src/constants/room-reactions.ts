@@ -1,10 +1,6 @@
 /**
- * Curated room reactions — a whitelist, not a string.
- *
- * Same rationale as the whisper set: the client cannot push an arbitrary
- * glyph into a public thread. Small on purpose; every entry must earn its
- * place on a crowded message row.
+ * Room reactions are any single emoji, checked by shape (`isReactionEmoji` in
+ * `anon-reactions.ts`), the same rule as anonymous chat. The cap below stops one
+ * message from collecting an endless spread of different emoji.
  */
-export const ROOM_REACTIONS = ['heart', 'laugh', 'wow', 'sad', 'fire', 'clap'] as const;
-
-export type RoomReaction = (typeof ROOM_REACTIONS)[number];
+export const ROOM_REACTION_KINDS_MAX = 24;

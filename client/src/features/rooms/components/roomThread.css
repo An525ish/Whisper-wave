@@ -1,4 +1,4 @@
-/** Live thread page: canvas, wash, rules drawer, scrolling log, empty state, jump pill. */
+/** Live thread page: canvas, wash, scrolling log, empty state, jump pill. */
 
 /* ── Inside the room: live thread (anon grammar) ────────────────────── */
 
@@ -41,54 +41,6 @@
   -webkit-mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
   mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent);
 }
-/* Rules drawer: pushed below the floating header, capped to the column. */
-.rm-rules {
-  position: relative;
-  z-index: 1;
-  flex-shrink: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  background: rgba(20, 14, 32, 0.6);
-  padding: calc(max(0.55rem, env(safe-area-inset-top)) + 4.9rem) 1.1rem 0.85rem;
-}
-
-.rm-rules > * {
-  width: 100%;
-  max-width: var(--rm-col);
-  margin-inline: auto;
-}
-
-.rm-rules__label {
-  font-family: var(--font-hw-mono, ui-monospace, monospace);
-  font-size: 0.6rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-body-300);
-}
-
-.rm-rules ul {
-  margin-top: 0.35rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.rm-rules li {
-  display: flex;
-  gap: 0.5rem;
-  font-size: 0.83rem;
-  color: var(--color-body-700);
-}
-
-.rm-rules li::before {
-  content: '';
-  margin-top: 0.45rem;
-  width: 0.3rem;
-  height: 0.3rem;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: var(--color-green);
-}
-
 /* Thread list: capped column, bottom-anchored, hidden scrollbar. */
 .rm-threadlist {
   position: relative;

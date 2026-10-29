@@ -1,4 +1,3 @@
-import type { ANON_REACTIONS } from '../constants/anon-reactions.js';
 
 // ── Messaging ───────────────────────────────────────────────────────────────
 
@@ -15,6 +14,8 @@ export type StoredAnonMessage = {
   from: string;
   content: string;
   sentAt: number;
+  /** A verified R2 photo. `key` is server-internal; clients only get `url`. */
+  image?: { key: string; url: string };
 };
 
 /** Which side of the conversation, relative to the RECIPIENT of the payload. */
@@ -29,6 +30,7 @@ export type BufferedAnonMessage = {
   from: AnonMessageSide;
   content: string;
   sentAt: number;
+  image?: { url: string };
 };
 
 /** Result of `acceptAnonMessage`. */
@@ -118,7 +120,8 @@ export type ReactionSocketAck = (res: AnonReactionAck) => void;
 
 // ── Vibe reactions (E1) ─────────────────────────────────────────────────────
 
-export type AnonReaction = (typeof ANON_REACTIONS)[number];
+/** One emoji glyph, validated by `isReactionEmoji`. */
+export type AnonReaction = string;
 
 /** What one reaction event did, broadcast to both participants. */
 export type AnonReactionAction = 'added' | 'removed';

@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import type { IdentityCardInput, IdentityCardResult, WaitingCard } from '../../types/match.js';
 import { dequeue, deleteWaitingCard, getWaitingCard, saveWaitingCard } from './queue.js';
 import { clearJoinCounted } from './quota.js';
+import { endOrphanedSession } from './presence.js';
 import { getActiveSessionId, getSession } from './session.js';
 
 /** Shown to the second tab/window of a browser that already holds a live chat. */
@@ -37,7 +38,10 @@ export const saveIdentityCard = async (
   if (existingAnonId) {
     const activeId = await getActiveSessionId(existingAnonId);
     const active = activeId ? await getSession(activeId) : null;
-    if (active?.status === 'active') throw new AppError(409, ALREADY_CHATTING_MESSAGE);
+    // Only a LIVE socket (a real second tab) blocks us; an abandoned chat is ended.
+    if (active?.status === 'active' && !(await endOrphanedSession(existingAnonId))) {
+      throw new AppError(409, ALREADY_CHATTING_MESSAGE);
+    }
   }
 
   const existing = existingAnonId ? await getWaitingCard(anonId) : null;

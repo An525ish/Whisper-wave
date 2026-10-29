@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react';
+import { ReactionStrip } from '@/features/chat';
 import useContextMenu from '@/shared/hooks/useContextMenu';
 import { useCopyToClipboard } from '@/shared/hooks/useCopyToClipboard';
 import { useLongPress } from '@/shared/hooks/useLongPress';
 import { ROOM_MUTE_MINUTES } from '../constants';
 import { menuIcon } from '../utils/menuIcon';
-import type { RoomMenuItem, RoomMessage, RoomModAction, RoomRole } from '../types';
+import type { RoomMenuItem, RoomMessage, RoomModAction, RoomReactionKey, RoomRole } from '../types';
 
 interface Params {
   role: RoomRole | undefined;
@@ -12,6 +13,9 @@ interface Params {
   onReport: (messageId: string) => void;
   onKick: (message: RoomMessage) => void;
   onMod: (action: RoomModAction) => void;
+  onReact: (messageId: string, reaction: RoomReactionKey) => void;
+  /** Emoji the viewer holds, per message id. */
+  myReactions: Record<string, RoomReactionKey[]>;
 }
 
 const MENU_ITEM = '[data-context-menu] [role="menuitem"]';
@@ -22,8 +26,8 @@ const MENU_ITEM = '[data-context-menu] [role="menuitem"]';
  * the mod tools where the role allows). Opening from the button moves focus
  * into the menu and hands it back to the button when the menu closes.
  */
-export function useRoomMessageMenu({ role, onReply, onReport, onKick, onMod }: Params) {
-  const { menuState, showContextMenu, hideContextMenu } = useContextMenu();
+export function useRoomMessageMenu({ role, onReply, onReport, onKick, onMod, onReact, myReactions }: Params) {
+  const { menuState, showContextMenu, hideContextMenu, setContextMenuOptionsVisible } = useContextMenu();
   const { copy } = useCopyToClipboard();
   const triggerRef = useRef<HTMLElement | null>(null);
   const canModerate = role !== undefined && role !== 'member';
@@ -37,12 +41,12 @@ export function useRoomMessageMenu({ role, onReply, onReport, onKick, onMod }: P
           icon: menuIcon(<path d="M9 17l-5-5 5-5 M4 12h9a7 7 0 0 1 7 7v1" />),
           run: () => onReply(message.id),
         },
-        {
+        ...(message.text ? [{
           id: 'copy',
           label: 'Copy text',
           icon: menuIcon(<><rect x="9" y="9" width="12" height="12" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></>),
           run: () => copy(message.text),
-        },
+        }] : []),
         {
           id: 'report',
           label: 'Report',
@@ -98,12 +102,23 @@ export function useRoomMessageMenu({ role, onReply, onReport, onKick, onMod }: P
   const open = useCallback(
     (message: RoomMessage, x: number, y: number) => {
       if (message.system) return;
+      // Same reaction strip the main chat puts on top of its message menu.
+      const header = (
+        <ReactionStrip
+          reactions={(myReactions[message.id] ?? []).map((emoji) => ({ emoji, users: ['me'] }))}
+          myUserId="me"
+          onReact={(emoji) => onReact(message.id, emoji)}
+          onClose={hideContextMenu}
+          onPickerOpenChange={(pickerOpen) => setContextMenuOptionsVisible(!pickerOpen)}
+        />
+      );
       showContextMenu(
         { x, y },
-        itemsFor(message).map(({ label, icon, danger, run }) => ({ label, icon, danger, onClick: run }))
+        itemsFor(message).map(({ label, icon, danger, run }) => ({ label, icon, danger, onClick: run })),
+        header
       );
     },
-    [itemsFor, showContextMenu]
+    [hideContextMenu, itemsFor, myReactions, onReact, setContextMenuOptionsVisible, showContextMenu]
   );
 
   const bindLongPress = useLongPress<RoomMessage>((message, point) => {

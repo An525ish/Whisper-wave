@@ -11,8 +11,8 @@ type Props = {
   online: number;
   you: RoomYou | null;
   connected: boolean;
-  rulesOpen: boolean;
-  onToggleRules: () => void;
+  infoOpen: boolean;
+  onToggleInfo: () => void;
   onLeave: () => void;
   onMod: (action: RoomModAction) => void;
   onOpenInvites: () => void;
@@ -21,7 +21,7 @@ type Props = {
 
 /**
  * Floating thread header: way back, art tile with live dot, title + status
- * line, the mod menu (mods and hosts) and the rules toggle.
+ * line, the mod menu (mods and hosts) and the info button (sheet only; the rail shows it).
  */
 const RoomHeader = ({
   slug,
@@ -29,8 +29,8 @@ const RoomHeader = ({
   online,
   you,
   connected,
-  rulesOpen,
-  onToggleRules,
+  infoOpen,
+  onToggleInfo,
   onLeave,
   onMod,
   onOpenInvites,
@@ -81,11 +81,11 @@ const RoomHeader = ({
         )}
         <button
           type="button"
-          onClick={onToggleRules}
-          aria-expanded={rulesOpen}
-          aria-label="Room rules"
-          title="Room rules"
-          className={`rm-hbtn${rulesOpen ? ' rm-hbtn--active' : ''}`}
+          onClick={onToggleInfo}
+          aria-expanded={infoOpen}
+          aria-label="Room info"
+          title="Room info"
+          className={`rm-hbtn rm-hbtn--sheetonly${infoOpen ? ' rm-hbtn--active' : ''}`}
         >
           <svg viewBox="0 0 24 24" fill="none" aria-hidden>
             <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />

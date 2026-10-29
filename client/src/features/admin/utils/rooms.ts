@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { ROOM_MAX_MODS, ROOM_MAX_RULES, ROOM_VISIBILITIES } from '../constants/rooms';
-import type { AdminRoomRow, AdminRoomUpsert, RoomEditForm } from '../types';
+import { ROOM_MAX_MODS, ROOM_MEDIA_KINDS, ROOM_MAX_RULES, ROOM_VISIBILITIES } from '../constants/rooms';
+import type { AdminRoomMedia, AdminRoomRow, AdminRoomUpsert, RoomEditForm } from '../types';
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 export const OBJECT_ID = /^[a-f\d]{24}$/i;
@@ -32,6 +32,7 @@ export const roomEditSchema = z
     lang: z.string().trim().min(1, 'Language is required').max(20),
     official: z.boolean(),
     requiresModPresence: z.boolean(),
+    media: z.array(z.string()).refine((m) => m.every((k) => (ROOM_MEDIA_KINDS as readonly string[]).includes(k))),
     visibility: z.enum(ROOM_VISIBILITIES),
     hoursEnabled: z.boolean(),
     days: z.array(z.string()),
@@ -58,6 +59,7 @@ export const roomToForm = (room: AdminRoomRow): RoomEditForm => ({
   lang: room.lang,
   official: room.official,
   requiresModPresence: room.requiresModPresence,
+  media: room.media ?? [],
   visibility: room.visibility,
   hoursEnabled: room.hours !== null,
   days: (room.hours?.days ?? [1, 2, 3, 4, 5]).map(String),
@@ -77,6 +79,7 @@ export const formToUpsert = (slug: string, v: RoomEditForm): AdminRoomUpsert => 
     lang: v.lang.trim(),
     official: v.official,
     requiresModPresence: v.requiresModPresence,
+    media: v.media as AdminRoomMedia[],
     visibility: v.visibility,
     hours: v.hoursEnabled
       ? { days: v.days.map(Number).sort((a, b) => a - b), start: v.start, end: v.end, tz: v.tz }

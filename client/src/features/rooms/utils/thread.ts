@@ -13,6 +13,12 @@ export const isJoinedAbove = (prev: RoomMessage | undefined, message: RoomMessag
 export const previewText = (text: string): string =>
   text.length > ROOM_PREVIEW_MAX ? `${text.slice(0, ROOM_PREVIEW_MAX)}…` : text;
 
+const MEDIA_LABEL = { image: 'Photo', gif: 'GIF', meme: 'Meme' } as const;
+
+/** Text of a message, or its media label when it is only a photo/GIF/meme. */
+export const messageLabel = (m: Pick<RoomMessage, 'text' | 'media'>): string =>
+  m.text || (m.media ? MEDIA_LABEL[m.media.kind] : '');
+
 /** Quote shown above a reply; null when the target is gone or a bot line. */
 export const quoteOf = (
   messages: RoomMessage[],
@@ -21,7 +27,7 @@ export const quoteOf = (
   if (!id) return null;
   const target = messages.find((m) => m.id === id);
   if (!target || target.system) return null;
-  return { alias: target.from.alias, preview: previewText(target.text) };
+  return { alias: target.from.alias, preview: previewText(messageLabel(target)) };
 };
 
 export const timeLabel = (ts: number): string => dayjs(ts).format('hh:mm A');

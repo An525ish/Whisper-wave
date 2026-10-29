@@ -1,4 +1,5 @@
 import { findLinks } from './findLinks';
+import type { MediaFile } from '@/shared/types/media';
 import type { AnonMessage, ThreadLink } from '../types';
 
 /**
@@ -30,3 +31,16 @@ export const extractThreadLinks = (messages: AnonMessage[]): ThreadLink[] => {
 
   return links.reverse();
 };
+
+/** A thread photo as the shared viewer wants it, plus who sent it. */
+export type ThreadPhoto = MediaFile & { mine: boolean };
+
+/**
+ * Every photo in the thread, oldest first (the order you scroll it), shaped for the
+ * shared `ImageViewer` so swiping works the same as the main chat's gallery.
+ * Failed sends are skipped: the partner never got them.
+ */
+export const extractThreadPhotos = (messages: AnonMessage[]): ThreadPhoto[] =>
+  messages
+    .filter((m) => m.image && m.delivery !== 'failed')
+    .map((m) => ({ _id: m.id, url: m.image!.url, name: 'photo', fileType: 'image', mine: m.from === 'me' }));

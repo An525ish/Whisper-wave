@@ -12,6 +12,8 @@ export type ReportReason =
 export type RoomEvidenceItem = {
   alias: string;
   text: string;
+  /** Photo/GIF/meme on the message. Photos point at the kept copy, not the live one. */
+  media?: { kind: 'image' | 'gif' | 'meme'; url: string };
   ts: number;
   /** The message was hidden (mod/auto) when the snapshot was taken. */
   hidden?: boolean;

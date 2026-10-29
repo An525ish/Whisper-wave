@@ -1,5 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import { ROOM_MSG_RING } from '../../constants/rooms.js';
+import { ROOM_REACTION_KINDS_MAX } from '../../constants/room-reactions.js';
+import { deleteManyFromR2 } from '../../utils/storage.js';
 import { instances } from './store.js';
 import type { LiveRoomMessage, RoomEvidenceWindow } from '../../types/room.js';
 
@@ -16,7 +18,11 @@ export const appendMessage = (
   const full: LiveRoomMessage = { ...message, id: uuid(), ts: message.ts ?? Date.now() };
   inst.ring.push(full);
   if (inst.ring.length > ROOM_MSG_RING) {
-    inst.ring.splice(0, inst.ring.length - ROOM_MSG_RING);
+    const evicted = inst.ring.splice(0, inst.ring.length - ROOM_MSG_RING);
+    // A photo that scrolled out of history is gone for good: free the storage now.
+    const keys = evicted.flatMap((m) => (m.media?.key ? [m.media.key] : []));
+    for (const key of keys) inst.uploads.delete(key);
+    if (keys.length > 0) void deleteManyFromR2(keys);
   }
   return full;
 };
@@ -68,6 +74,7 @@ export const getEvidenceWindow = (
     id: m.id,
     alias: m.alias,
     text: m.text,
+    ...(m.media ? { media: m.media } : {}),
     ts: m.ts,
     ...(m.hidden ? { hidden: true as const } : {}),
   }));
@@ -91,8 +98,9 @@ export const findMessageInstance = (
 };
 
 /**
- * Toggle one curated reaction. Returns per-reaction counts, or null when the
- * message is gone. Who-holds-what stays server-side — clients get counts.
+ * Toggle one emoji reaction. One reaction per person, like the other chats: picking a
+ * new emoji moves yours, picking the same one removes it. Returns per-emoji counts for
+ * the message, or null when it is gone. Who-holds-what stays server-side.
  */
 export const toggleReaction = (
   instanceId: string,
@@ -104,14 +112,21 @@ export const toggleReaction = (
   if (!(instances.get(instanceId)?.members.has(key) ?? false)) return null;
   const target = findMessage(instanceId, messageId);
   if (!target || target.hidden) return null;
-  const holders = new Set(target.reactions?.[reaction] ?? []);
-  if (holders.has(key)) holders.delete(key);
-  else holders.add(key);
-  target.reactions = { ...target.reactions, [reaction]: [...holders] };
-  if (target.reactions[reaction]?.length === 0) delete target.reactions[reaction];
-  const counts: Record<string, number> = {};
-  for (const [name, members] of Object.entries(target.reactions)) {
-    counts[name] = members.length;
+  const had = target.reactions?.[reaction]?.includes(key) ?? false;
+  // Everyone else's reactions stay; mine is dropped from every emoji first.
+  const next: Record<string, string[]> = {};
+  for (const [name, members] of Object.entries(target.reactions ?? {})) {
+    const rest = members.filter((m) => m !== key);
+    if (rest.length > 0) next[name] = rest;
   }
-  return counts;
+  if (!had) {
+    // Cap distinct emoji per message; at the cap a brand-new one is ignored (mine was already moved).
+    if (!(reaction in next) && Object.keys(next).length >= ROOM_REACTION_KINDS_MAX) return countsOf(target.reactions ?? {});
+    next[reaction] = [...(next[reaction] ?? []), key];
+  }
+  target.reactions = next;
+  return countsOf(next);
 };
+
+const countsOf = (reactions: Record<string, string[]>): Record<string, number> =>
+  Object.fromEntries(Object.entries(reactions).map(([name, members]) => [name, members.length]));

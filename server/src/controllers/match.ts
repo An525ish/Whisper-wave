@@ -3,6 +3,9 @@ import { anonCookieOptions } from '../config/cors.js';
 import { leaveQueue, saveIdentityCard } from '../services/match/index.js';
 import { peekWhisperQuota } from '../services/match/quota.js';
 import { catchAsync } from '../utils/catchAsync.js';
+import { signAnonImage } from '../services/match/image.js';
+import { getActiveSessionId } from '../services/match/index.js';
+import { AppError } from '../utils/AppError.js';
 import { anonIdSchema } from '../validators/anon.js';
 import type { JoinQueueBody } from '../types/input.js';
 
@@ -75,4 +78,19 @@ export const quotaController: RequestHandler = catchAsync(async (req, res) => {
     success: true,
     data: { limit, remaining: Math.max(0, limit - used) },
   });
+});
+
+/**
+ * POST /api/match/image/sign
+ *
+ * Guest-safe like `/join`: the httpOnly anonId cookie is the identity, and the
+ * session it points at must be live. Returns a presigned R2 PUT for one photo.
+ */
+export const signAnonImageController: RequestHandler = catchAsync(async (req, res) => {
+  const anonId = anonIdFrom(req);
+  if (!anonId) throw new AppError(401, 'Start a chat first');
+  const { mimeType } = req.body as { mimeType: string };
+  const sessionId = await getActiveSessionId(anonId);
+  const data = await signAnonImage(sessionId, anonId, mimeType);
+  res.status(200).json({ success: true, data });
 });

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 import type { z } from 'zod';
-import type { ROOM_REACTION_GLYPHS } from './constants';
 import type { RoomChallenge, RoomChallengeAnswer } from './types/challenge';
 import type { createRoomSchema, editRoomFormSchema, roomAliasSchema } from './utils/roomValidators';
 
@@ -90,15 +89,25 @@ export type RoomMessageFrom = {
   alias: string;
   color: string;
   role: RoomRole;
+  /** The sender's account photo, only when they signed in and chose to use it. */
+  avatar?: string;
 };
 
 export type RoomYou = RoomMessageFrom;
+
+/** What a room can be set to allow. Mirrors the server's `ROOM_MEDIA_KINDS`. */
+export type RoomMediaKind = 'image' | 'gif' | 'meme';
+
+/** A photo, GIF or meme on a message. */
+export type RoomMedia = { kind: RoomMediaKind; url: string };
 
 /** One thread message, as carried on the socket and in the store. */
 export type RoomMessage = {
   id: string;
   from: RoomMessageFrom;
+  /** May be empty when the message is only a photo, GIF or meme. */
   text: string;
+  media?: RoomMedia;
   ts: number;
   replyTo?: string;
   reactions?: Record<string, number>;
@@ -109,11 +118,14 @@ export type RoomMessage = {
 };
 
 /** Reaction KEY the wire carries (`heart` …); glyphs are display only. */
-export type RoomReactionKey = keyof typeof ROOM_REACTION_GLYPHS;
+/** Any single emoji; the server checks its shape. */
+export type RoomReactionKey = string;
 
 export type RoomJoinParams = {
   alias: string;
   color: string;
+  /** Signed-in members: show my account photo. The server looks the photo up itself. */
+  useAvatar?: boolean;
   invite?: string;
 };
 
@@ -132,6 +144,8 @@ export type RoomAckCode =
   | 'spam'
   | 'muted'
   | 'mod_absent'
+  | 'media_not_allowed'
+  | 'media_failed'
   | 'feature_off'
   | 'identity_required'
   | 'members_only'
@@ -158,6 +172,8 @@ export type RoomStatePayload = {
   title: string;
   rules: string[];
   recent: RoomMessage[];
+  /** Media members may post here. Empty = text only. */
+  media?: RoomMediaKind[];
   online: number;
   you: RoomYou;
   /** Listening rooms only: the strip shows, and `paused` says nobody is moderating right now. */
@@ -187,6 +203,7 @@ export type RoomActionAck = { ok: true } | { ok: false; code: RoomAckCode };
 export type RoomMessageInput = {
   id: string;
   text: string;
+  media?: { kind: 'image'; key: string } | { kind: 'gif' | 'meme'; url: string };
   replyTo?: string;
   challenge?: RoomChallengeAnswer;
 };
@@ -211,7 +228,8 @@ export type RoomModNotice =
   | { action: 'kicked' }
   | { action: 'banned' };
 
-export type RoomReactionPayload = { messageId: string; reaction: string; count: number };
+/** The message's full per-emoji counts (one reaction per person, so a pick can move a count). */
+export type RoomReactionPayload = { messageId: string; counts: Record<string, number> };
 
 // ── Full-page end states ──
 
@@ -306,6 +324,8 @@ export type RoomStore = {
   mutedUntil: number | null;
   /** Self-harm language seen in my post — show the resources card once. */
   supportNotice: boolean;
+  /** Media members may post in this room (admin-set). */
+  media: RoomMediaKind[];
   /** Listening room (strict rules + safety strip). */
   listening: boolean;
   /** Listening room with no moderator: reading only, composer disabled. */
@@ -315,7 +335,7 @@ export type RoomStore = {
   applyState: (state: RoomStatePayload) => void;
   appendMessage: (message: RoomMessage) => void;
   appendNotice: (text: string) => void;
-  applyReaction: (messageId: string, reaction: string, count: number) => void;
+  applyReaction: (messageId: string, counts: Record<string, number>) => void;
   toggleMine: (messageId: string, reaction: RoomReactionKey) => void;
   deleteMessage: (messageId: string) => void;
   restoreMessage: (message: RoomMessage) => void;
@@ -339,3 +359,8 @@ export type RoomReminderControl = {
   pending: boolean;
   onClick: () => void;
 };
+
+/** `ROOM_MEDIA_SIGN` ack: a presigned R2 PUT for one photo. */
+export type RoomMediaSignAck =
+  | { ok: true; presignedUrl: string; key: string; mimeType: string }
+  | { ok: false; code: RoomAckCode };

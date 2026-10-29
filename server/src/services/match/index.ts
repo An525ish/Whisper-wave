@@ -33,6 +33,7 @@ export {
   deleteSession,
   recordMessage,
   getMessageCounts,
+  getEngagedMs,
   getBufferedMessages,
 } from './session.js';
 

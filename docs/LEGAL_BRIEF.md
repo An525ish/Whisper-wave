@@ -7,7 +7,7 @@
 
 ## Product in one paragraph
 
-Anonymous 1:1 chat (Whisper) plus live topic rooms (text-only, ephemeral),
+Anonymous 1:1 chat (Whisper) plus live topic rooms (text plus member photos/GIFs/memes where enabled; ephemeral, except reported content and photos, which are kept until an admin deletes them),
 a joke shuffle feed (third-party text rendered as images, with an opt-in
 18+ unfiltered mode for members), and persistent
 DMs/groups after mutual opt-in. No algorithmic feed, no real names in

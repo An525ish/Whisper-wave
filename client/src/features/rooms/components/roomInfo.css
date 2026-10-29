@@ -1,0 +1,241 @@
+/* Room info panel (`.rip-*`): the main chat's group profile frame, in room terms.
+   Rail at lg+, bottom sheet below. Same numbers as the anonymous profile panel. */
+
+.rm-shell {
+  position: relative;
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.rm-shell > .rm-threadpage {
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.rm-info {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .rm-shell {
+    gap: 0.75rem;
+    padding: 0.5rem 1rem 0.75rem;
+  }
+
+  .rm-shell > .rm-threadpage {
+    border-radius: 0.75rem;
+  }
+
+  .rm-info {
+    display: flex;
+    min-height: 0;
+    min-width: 0;
+    flex: 0 0 clamp(20rem, 27vw, 25rem);
+    flex-direction: column;
+  }
+}
+
+/* ── Frame ───────────────────────────────────────────────── */
+.rip {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  margin-top: 3.5rem;
+  border-radius: 1rem;
+  background: var(--color-background-alt);
+  padding-block: 0.5rem;
+}
+
+.rip--sheet {
+  margin-top: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 0;
+  background: transparent;
+  scrollbar-width: none;
+}
+
+.rip--sheet::-webkit-scrollbar,
+.rip__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.rip__scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.rip--sheet .rip__scroll {
+  flex: none;
+  overflow: visible;
+}
+
+.rip__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem 1rem;
+}
+
+/* ── Head ────────────────────────────────────────────────── */
+.rip__head {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.rip__head--column {
+  padding: 2.5rem 1rem 0.5rem;
+}
+
+.rip__head--sheet {
+  padding: 0.25rem 1rem 0.5rem;
+}
+
+/* Overrides the 44px header tile; the doubled class wins over `.rm-chead__art`. */
+.rip .rip__art.rm-chead__art {
+  height: 5rem;
+  width: 5rem;
+  border: 4px solid var(--color-background);
+  font-size: 1.75rem;
+}
+
+.rip .rip__head--column .rip__art.rm-chead__art {
+  position: absolute;
+  top: -3.5rem;
+  left: 50%;
+  z-index: 10;
+  height: 6rem;
+  width: 6rem;
+  translate: -50% 0;
+  border-width: 8px;
+  font-size: 2.25rem;
+}
+
+.rip__name {
+  max-width: 100%;
+  margin: 0.6rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--color-body, #ebecec);
+}
+
+.rip__head--column .rip__name {
+  margin-top: 0;
+}
+
+.rip__status {
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-green);
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.rip__card {
+  border-radius: 1rem;
+  background: rgb(42 33 54 / 0.35);
+  padding: 0.85rem 0.75rem;
+}
+
+.rip__label {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(235 236 236 / 0.65);
+}
+
+.rip__empty {
+  margin: 0.55rem 0 0;
+  font-size: 0.8125rem;
+  color: rgb(235 236 236 / 0.45);
+}
+
+.rip__rules {
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rip__rules li {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.83rem;
+  color: var(--color-body-700);
+}
+
+.rip__rules li::before {
+  content: '';
+  margin-top: 0.45rem;
+  width: 0.3rem;
+  height: 0.3rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--color-green);
+}
+
+.rip__people {
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.rip__person {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.rip__pavatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
+
+.rip__pname {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  color: var(--color-body);
+}
+
+.rip__you {
+  color: rgb(235 236 236 / 0.5);
+}
+
+/* The header's info button only opens the sheet; at lg+ the rail is always there. */
+@media (min-width: 1024px) {
+  .rm-hbtn--sheetonly {
+    display: none;
+  }
+}

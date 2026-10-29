@@ -25,7 +25,7 @@ import './roomsStates.css';
 type Props = {
   slug: string;
   invite?: string;
-  onJoin: (params: RoomsPersona) => void;
+  onJoin: (params: RoomsPersona & { useAvatar?: boolean }) => void;
 };
 
 /** Page shell: the same drifting-light backdrop as the lobby, content above it. */

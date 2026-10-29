@@ -8,6 +8,7 @@ import MediaAlbumGrid, { isMediaAlbumEligible } from './MediaAlbumGrid';
 import LinkPreview from './LinkPreview';
 import MessageContent from './MessageContent';
 import ReplyQuote from '@/shared/components/ui/reply/ReplyQuote';
+import { META_ROW_CLASS, MEDIA_TIME_CLASS } from '../../constants/messageStyle';
 import type { ChatAttachment, MessageReplyTo } from '../../types/chat';
 
 export type Props = {
@@ -43,11 +44,8 @@ export type Props = {
 const resolveKind = (attachment: ChatAttachment, url: string): AttachmentKind =>
   resolveAttachmentKind({ ...attachment, url });
 
-const metaRowClass =
-  'inline-flex h-[19px] items-center whitespace-nowrap text-[11px] leading-none tabular-nums';
-
-const attachmentTimeClass =
-  'rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium leading-none tracking-wide tabular-nums text-white-pure shadow-sm backdrop-blur-[1px]';
+const metaRowClass = META_ROW_CLASS;
+const attachmentTimeClass = MEDIA_TIME_CLASS;
 
 const MessageBubble = ({
   sameSender,

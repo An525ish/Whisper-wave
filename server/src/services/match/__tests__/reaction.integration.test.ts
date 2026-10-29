@@ -48,13 +48,13 @@ describe('vibe reactions (Redis integration)', () => {
     await reactionSession('react-add');
     await bufferTestMessage('react-add', { id: MSG, from: 'react-add-a', content: 'hi', sentAt: 1 });
 
-    const result = await applyAnonReaction('react-add', 'react-add-a', MSG, 'fire');
+    const result = await applyAnonReaction('react-add', 'react-add-a', MSG, '🔥');
     assert.equal(result.action, 'added');
-    assert.equal(result.reaction, 'fire');
+    assert.equal(result.reaction, '🔥');
     assert.equal(result.anonId, 'react-add-a');
     assert.equal(result.partnerAnonId, 'react-add-b');
 
-    assert.deepEqual(await getMessageReactions('react-add', MSG), { 'react-add-a': ['fire'] });
+    assert.deepEqual(await getMessageReactions('react-add', MSG), { 'react-add-a': ['🔥'] });
   });
 
   it('toggles the same reaction off', async (t) => {
@@ -62,8 +62,8 @@ describe('vibe reactions (Redis integration)', () => {
     await reactionSession('react-toggle');
     await bufferTestMessage('react-toggle', { id: MSG, from: 'react-toggle-a', content: 'hi', sentAt: 1 });
 
-    await applyAnonReaction('react-toggle', 'react-toggle-a', MSG, 'fire');
-    const second = await applyAnonReaction('react-toggle', 'react-toggle-a', MSG, 'fire');
+    await applyAnonReaction('react-toggle', 'react-toggle-a', MSG, '🔥');
+    const second = await applyAnonReaction('react-toggle', 'react-toggle-a', MSG, '🔥');
     assert.equal(second.action, 'removed', 're-sending the same reaction should remove it');
     assert.deepEqual(await getMessageReactions('react-toggle', MSG), {});
   });
@@ -73,11 +73,11 @@ describe('vibe reactions (Redis integration)', () => {
     await reactionSession('react-replace');
     await bufferTestMessage('react-replace', { id: MSG, from: 'react-replace-a', content: 'hi', sentAt: 1 });
 
-    await applyAnonReaction('react-replace', 'react-replace-a', MSG, 'fire');
-    await applyAnonReaction('react-replace', 'react-replace-a', MSG, 'slay');
+    await applyAnonReaction('react-replace', 'react-replace-a', MSG, '🔥');
+    await applyAnonReaction('react-replace', 'react-replace-a', MSG, '💅');
     assert.deepEqual(
       await getMessageReactions('react-replace', MSG),
-      { 'react-replace-a': ['slay'] },
+      { 'react-replace-a': ['💅'] },
       'changing reaction should replace, not accumulate'
     );
   });
@@ -87,11 +87,11 @@ describe('vibe reactions (Redis integration)', () => {
     await reactionSession('react-two');
     await bufferTestMessage('react-two', { id: MSG, from: 'react-two-a', content: 'hi', sentAt: 1 });
 
-    await applyAnonReaction('react-two', 'react-two-a', MSG, 'fire');
-    await applyAnonReaction('react-two', 'react-two-b', MSG, 'peak');
+    await applyAnonReaction('react-two', 'react-two-a', MSG, '🔥');
+    await applyAnonReaction('react-two', 'react-two-b', MSG, '🏔️');
     assert.deepEqual(await getMessageReactions('react-two', MSG), {
-      'react-two-a': ['fire'],
-      'react-two-b': ['peak'],
+      'react-two-a': ['🔥'],
+      'react-two-b': ['🏔️'],
     });
   });
 
@@ -100,13 +100,13 @@ describe('vibe reactions (Redis integration)', () => {
     await reactionSession('react-side');
     const message = { id: MSG, from: 'react-side-a', content: 'hi', sentAt: 1 };
     await bufferTestMessage('react-side', message);
-    await applyAnonReaction('react-side', 'react-side-a', MSG, 'fire');
-    await applyAnonReaction('react-side', 'react-side-b', MSG, 'peak');
+    await applyAnonReaction('react-side', 'react-side-a', MSG, '🔥');
+    await applyAnonReaction('react-side', 'react-side-b', MSG, '🏔️');
 
     const forA = await getSessionReactions('react-side', [message], 'react-side-a');
     const forB = await getSessionReactions('react-side', [message], 'react-side-b');
-    assert.deepEqual(forA[MSG], { me: ['fire'], them: ['peak'] });
-    assert.deepEqual(forB[MSG], { me: ['peak'], them: ['fire'] });
+    assert.deepEqual(forA[MSG], { me: ['🔥'], them: ['🏔️'] });
+    assert.deepEqual(forB[MSG], { me: ['🏔️'], them: ['🔥'] });
     assert.equal(JSON.stringify(forA).includes('react-side-'), false, 'an anonId leaked');
   });
 
@@ -114,7 +114,7 @@ describe('vibe reactions (Redis integration)', () => {
     skipUnlessRedis(t);
     await reactionSession('react-end');
     await bufferTestMessage('react-end', { id: MSG, from: 'react-end-a', content: 'hi', sentAt: 1 });
-    await applyAnonReaction('react-end', 'react-end-a', MSG, 'fire');
+    await applyAnonReaction('react-end', 'react-end-a', MSG, '🔥');
     assert.equal(await getRedis().exists(REDIS_KEYS.reactions('react-end', MSG)), 1);
 
     await endSession('react-end');
@@ -132,7 +132,7 @@ describe('vibe reactions (Redis integration)', () => {
     // sees.
     await reactionSession('react-missing');
     await assert.rejects(
-      () => applyAnonReaction('react-missing', 'react-missing-a', 'never-sent', 'fire'),
+      () => applyAnonReaction('react-missing', 'react-missing-a', 'never-sent', '🔥'),
       /not in this chat/
     );
     assert.equal(
@@ -147,7 +147,7 @@ describe('vibe reactions (Redis integration)', () => {
     await reactionSession('react-dead');
     await endSession('react-dead');
     await assert.rejects(
-      () => applyAnonReaction('react-dead', 'react-dead-a', MSG, 'fire'),
+      () => applyAnonReaction('react-dead', 'react-dead-a', MSG, '🔥'),
       /no longer active/i
     );
   });
@@ -157,7 +157,7 @@ describe('vibe reactions (Redis integration)', () => {
     await reactionSession('react-outsider');
     await bufferTestMessage('react-outsider', { id: MSG, from: 'react-outsider-a', content: 'hi', sentAt: 1 });
     await assert.rejects(
-      () => applyAnonReaction('react-outsider', 'someone-else', MSG, 'fire'),
+      () => applyAnonReaction('react-outsider', 'someone-else', MSG, '🔥'),
       /not found or expired/i
     );
   });
@@ -166,7 +166,7 @@ describe('vibe reactions (Redis integration)', () => {
     skipUnlessRedis(t);
     await reactionSession('react-ttl');
     await bufferTestMessage('react-ttl', { id: MSG, from: 'react-ttl-a', content: 'hi', sentAt: 1 });
-    await applyAnonReaction('react-ttl', 'react-ttl-a', MSG, 'fire');
+    await applyAnonReaction('react-ttl', 'react-ttl-a', MSG, '🔥');
 
     // Reactions are private-thread data; an unexpiring key would hold a
     // conversation's contents indefinitely.

@@ -76,13 +76,13 @@ const parseHttps = (raw: string): URL | null => {
   return url.protocol === 'https:' && !url.username && !url.password && !url.port ? url : null;
 };
 
-const isKlipyUrl = (raw: string): boolean => {
+export const isKlipyUrl = (raw: string): boolean => {
   const host = parseHttps(raw)?.hostname;
   return host !== undefined && (host === 'klipy.com' || host.endsWith('.klipy.com'));
 };
 
 /** The only host the memes feed emits (`services/memes/jokeapi.ts`), `/images/...` paths only. */
-const isMemegenImageUrl = (raw: string): boolean => {
+export const isMemegenImageUrl = (raw: string): boolean => {
   const url = parseHttps(raw);
   return url?.hostname === 'api.memegen.link' && url.pathname.startsWith('/images/');
 };

@@ -27,6 +27,7 @@ import {
 } from "react";
 import toast from "react-hot-toast";
 import type { ImageQuality } from "../../../types/local";
+import { ALL_MEDIA, FILE_KIND_KEY, type MediaKind } from "../../../constants/upload";
 
 type Props = {
     className?: string;
@@ -38,6 +39,12 @@ type Props = {
     onGifSelect?: (gif: GifItem) => void;
     editMode?: boolean;
     showAttachment?: boolean;
+    /** Media this composer offers. Default: everything. A UI hint only; the server enforces the real policy. */
+    allowedMedia?: readonly MediaKind[];
+    /** Override the image picker's accepted types (e.g. no GIF). */
+    imageAccept?: string;
+    /** Detect links and show a preview card. Off where the preview request would leak URLs. */
+    linkPreview?: boolean;
     compact?: boolean;
     floating?: boolean;
     replySlot?: ReactNode;
@@ -57,6 +64,9 @@ const ChatInput = ({
     onGifSelect,
     editMode = false,
     showAttachment = true,
+    allowedMedia = ALL_MEDIA,
+    imageAccept,
+    linkPreview = true,
     compact = false,
     floating = false,
     replySlot,
@@ -108,13 +118,13 @@ const ChatInput = ({
 
     // Debounced URL detection
     useEffect(() => {
-        if (editMode) return;
+        if (editMode || !linkPreview) return;
         const id = setTimeout(() => {
             const links = extractLinksFromText(message);
             setDetectedLink(links[0] ?? null);
         }, 400);
         return () => clearTimeout(id);
-    }, [message, editMode]);
+    }, [message, editMode, linkPreview]);
 
     const activeUrl = detectedLink?.url ?? null;
     const isDismissed =
@@ -196,11 +206,12 @@ const ChatInput = ({
         }
     }, [editMode, setAttachments, setMessageWithDismissSync]);
 
+    const hasFileKinds = (Object.keys(FILE_KIND_KEY) as (keyof typeof FILE_KIND_KEY)[]).some((k) => allowedMedia.includes(k));
     const canSend = Boolean(message.trim()) || (!editMode && attachments.length > 0);
     const hasReply = Boolean(replySlot);
     const hasUrlHighlight = parsedParts.some((part) => part.type === 'url');
 
-    const showLinkPreview = !editMode && attachments.length === 0 && detectedLink && !isDismissed;
+    const showLinkPreview = linkPreview && !editMode && attachments.length === 0 && detectedLink && !isDismissed;
 
     const inputShellClass = editMode
         ? 'border-green/45 bg-green/10'
@@ -245,11 +256,14 @@ const ChatInput = ({
                                 onClose={() => setIsAttachmentOpen(false)}
                                 onFileSelect={handleFileSelect}
                                 clipIconRef={clipIconRef}
+                                allowed={allowedMedia}
+                                imageAccept={imageAccept}
                             />
                         )}
                         {!editMode && isEmojiClicked && (
                             <ComposerPicker
                                 triggerRef={emojiIconRef}
+                                allowed={allowedMedia}
                                 setMessage={setMessageWithDismissSync}
                                 onClose={() => setIsEmojiOpen(false)}
                                 onGifSelect={(gif) => {
@@ -313,7 +327,7 @@ const ChatInput = ({
                                 />
                             </div>
 
-                            {!editMode && showAttachment ? (
+                            {!editMode && showAttachment && hasFileKinds ? (
                                 <span ref={clipIconRef} className="shrink-0">
                                     <button
                                         type="button"

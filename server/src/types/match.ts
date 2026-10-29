@@ -201,11 +201,8 @@ export type SessionMessageCounts = { countA: number; countB: number };
 // ── Vibe eligibility ────────────────────────────────────────────────────────
 
 export type VibeGateInput = {
-  /** Session creation time, Unix ms. */
-  createdAt: number;
-  countA: number;
-  countB: number;
-  now?: number;
+  /** Milliseconds of sustained back-and-forth so far. */
+  engagedMs: number;
 };
 
 // ── Moderation ──────────────────────────────────────────────────────────────

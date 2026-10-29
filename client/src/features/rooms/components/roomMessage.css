@@ -48,6 +48,18 @@
   padding-right: 0.5rem;
 }
 
+/* Photo bubbles: same numbers as the shared `bubblePadding` (p-1.5, pb-2 with text,
+   pr-3.5 incoming). Plain CSS here beats Tailwind utilities, so it is spelled out. */
+.rm-bubblerow .rm-bubble.rm-bubble--media {
+  padding: 0.375rem 0.875rem 0.375rem 0.375rem;
+}
+.rm-bubblerow--mine .rm-bubble.rm-bubble--media {
+  padding-right: 0.375rem;
+}
+.rm-bubblerow .rm-bubble.rm-bubble--mediatext {
+  padding-bottom: 0.5rem;
+}
+
 .rm-bubblename {
   margin-bottom: 0.25rem;
   overflow: hidden;
@@ -145,6 +157,7 @@
 
 /* Avatar beside the bubble — merged with the head-run styling. */
 .rm-avatar {
+  overflow: hidden;
   display: grid;
   flex-shrink: 0;
   place-items: center;
@@ -153,7 +166,8 @@
   margin-top: 0.1rem;
   margin-bottom: 0.125rem;
   border-radius: 999px;
-  border: 1px solid;
+  border: 0;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
   font-size: 0.8rem;
   font-weight: 700;
   line-height: 1;
@@ -207,4 +221,19 @@
   .rm-new-l {
     animation: none !important;
   }
+}
+
+.rm-media {
+  display: block;
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  line-height: 0;
+}
+
+/* A real photo needs no colored ring. */
+.rm-avatar--photo {
+  border: 0;
+  background: none;
+  box-shadow: none;
 }

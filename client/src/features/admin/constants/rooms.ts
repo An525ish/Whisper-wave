@@ -19,3 +19,6 @@ export const ROOM_MAX_RULES = 10;
 export const ROOM_MAX_MODS = 20;
 
 export const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+
+/** Media a room can allow for members. Mirrors the server's `ROOM_MEDIA_KINDS`. */
+export const ROOM_MEDIA_KINDS = ['image', 'gif', 'meme'] as const;

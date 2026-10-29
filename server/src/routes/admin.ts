@@ -47,6 +47,8 @@ import {
   adminRoomCloseSchema,
   adminRoomUpsertSchema,
 } from '../validators/rooms.js';
+import { deleteAnonImagesController, listAnonImagesController } from '../controllers/admin/anonImages.js';
+import { adminAnonImagesQuerySchema, adminDeleteAnonImagesSchema } from '../validators/admin.js';
 import { memeBlockParamsSchema, memeBlockSchema } from '../validators/memes.js';
 import {
   adminActivityEventsQuerySchema,
@@ -102,6 +104,8 @@ adminRouter.get(
   validate(adminAttachmentsQuerySchema, 'query'),
   listAttachments
 );
+adminRouter.get('/anon-images', requireAdmin, validate(adminAnonImagesQuerySchema, 'query'), listAnonImagesController);
+adminRouter.delete('/anon-images', requireAdmin, validate(adminDeleteAnonImagesSchema), deleteAnonImagesController);
 adminRouter.get('/activity/presence', requireAdmin, getActivityPresence);
 adminRouter.get(
   '/activity/events',

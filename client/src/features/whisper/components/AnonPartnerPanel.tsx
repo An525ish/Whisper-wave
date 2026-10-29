@@ -1,7 +1,14 @@
-import dayjs from 'dayjs';
+import { useRevealedPhotos } from '../stores/revealedPhotosStore';
+import { useState } from 'react';
+import { RetryableMediaImage } from '@/shared/components/ui/media/RetryableMedia';
+import EmptyState from '@/shared/components/ui/EmptyState';
+import ImagesIcon from '@/shared/components/ui/icons/Images';
+import LinkIcon from '@/shared/components/ui/icons/Link';
+import ImageViewer from '@/shared/components/ui/image-viewer/ImageViewer';
+import type { ThreadPhoto } from '../utils/threadLinks';
 import AnonProfileHead from './AnonProfileHead';
 import SparkDeck from './SparkDeck';
-import { ANON_REACTION_LABELS, FRESH_THREAD_MESSAGES } from '../constants';
+import { FRESH_THREAD_MESSAGES } from '../constants';
 import { formatThreadDuration } from '../utils/threadSummary';
 import { vibeTagLabel } from '../utils/vibeTag';
 import type {
@@ -25,6 +32,8 @@ type Props = {
   /** Null when there is no live thread. */
   stats: ThreadStats | null;
   links: ThreadLink[];
+  /** Photos from the thread, oldest first. */
+  photos: ThreadPhoto[];
   reactions: ReactionTally[];
   typing: boolean;
   left: boolean;
@@ -54,11 +63,15 @@ export default function AnonPartnerPanel({
   sparks,
   stats,
   links,
+  photos,
   reactions,
   typing,
   left,
   onPickSpark,
 }: Props) {
+  const [viewing, setViewing] = useState<number | null>(null);
+  const revealedIds = useRevealedPhotos((s) => s.ids);
+  const reveal = useRevealedPhotos((s) => s.reveal);
   const total = stats ? stats.myMessages + stats.theirMessages : 0;
   const sharedCount = overlap.shared.length;
 
@@ -144,9 +157,8 @@ export default function AnonPartnerPanel({
                 <ul className="apn-reacts">
                   {reactions.map((row) => (
                     <li key={row.reaction} className="apn-react">
-                      <span className="apn-react__glyph" aria-hidden>{ANON_REACTION_LABELS[row.reaction].glyph}</span>
+                      <span className="apn-react__glyph" aria-hidden>{row.reaction}</span>
                       <span className="apn-react__text">
-                        {ANON_REACTION_LABELS[row.reaction].label}
                         <span className="apn-react__who">
                           {row.me > 0 && `you ${row.me}`}
                           {row.me > 0 && row.them > 0 && ' · '}
@@ -160,40 +172,83 @@ export default function AnonPartnerPanel({
             </section>
           )}
 
-          {/* ── Shared links ────────────────────────────────────────── */}
-          <section className="acp__card">
-            <p className="acp__label">Shared links</p>
-            {links.length === 0 ? (
-              <p className="apn-empty">
-                Links either of you paste collect here. Anonymous chats are text-only — no photos or files.
-              </p>
+          {/* ── Photos & Multimedia (same section as the main chat's profile) ── */}
+          <section className="rounded-2xl bg-primary/35 px-3 py-3.5">
+            <p className="mb-3 flex items-center gap-2 px-0.5 text-sm tracking-wide text-body-700">
+              <ImagesIcon className="h-4 w-4 shrink-0 fill-body-300 stroke-body-300" /> Photos & Multimedia
+            </p>
+            {photos.length === 0 ? (
+              <EmptyState
+                className="py-4"
+                imageSrc="/images/no-media.svg"
+                imageAlt="no-media"
+                imageClassName="w-16 opacity-45"
+                titleClassName="mt-2 text-center text-xs text-body-300"
+                title="No media yet"
+              />
             ) : (
-              <ul className="apn-links">
-                {links.map((link) => (
-                  <li key={link.url}>
-                    <a
-                      className="apn-link"
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                      aria-label={`Open ${link.host}, shared by ${link.from === 'me' ? 'you' : name}`}
-                    >
-                      <span className={`apn-link__icon apn-link__icon--${link.from}`} aria-hidden>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.7 1.7" />
-                          <path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.7-1.7" />
-                        </svg>
-                      </span>
-                      <span className="apn-link__text">
-                        <span className="apn-link__host">{link.host}</span>
-                        <span className="apn-link__meta">
-                          {link.from === 'me' ? 'you' : name} · {dayjs(link.sentAt).format('h:mm A')}
-                        </span>
-                      </span>
-                    </a>
-                  </li>
+              <div className="grid grid-cols-3 gap-1.5">
+                {photos.map((photo, i) => (
+                  <button
+                    type="button"
+                    key={photo._id}
+                    onClick={() => (photo.mine || revealedIds[photo._id] ? setViewing(i) : reveal(photo._id))}
+                    aria-label={`Open photo ${i + 1}`}
+                    // Blurred until revealed (here or in the chat); the first tap reveals, the next opens.
+                    className={`relative overflow-hidden rounded-lg p-0 ring-1 ring-border/50 transition duration-200 hover:opacity-90 hover:ring-green/40${photo.mine || revealedIds[photo._id] ? '' : ' [&_img]:scale-110 [&_img]:blur-[14px]'}`}
+                  >
+                    <RetryableMediaImage
+                      url={photo.url ?? ''}
+                      alt="photo"
+                      wrapperClassName="aspect-5/4 w-full rounded-lg"
+                      className="h-full w-full bg-primary object-cover"
+                      fallbackIconClassName="h-10 w-10"
+                    />
+                  </button>
                 ))}
-              </ul>
+              </div>
+            )}
+          </section>
+          {viewing !== null && (
+            <ImageViewer mediaFiles={photos} initialIndex={viewing} onClose={() => setViewing(null)} />
+          )}
+
+          {/* ── Links (same section as the main chat's profile) ── */}
+          <section className="rounded-2xl bg-primary/35 px-3 py-3.5">
+            <p className="mb-3 flex items-center gap-2 px-0.5 text-sm tracking-wide text-body-700">
+              <LinkIcon className="h-4 w-4 shrink-0 stroke-body-300" /> Links
+            </p>
+            {links.length === 0 ? (
+              <EmptyState
+                className="py-4"
+                imageSrc="/images/no-link.svg"
+                imageAlt="no links"
+                imageClassName="w-20 opacity-45"
+                titleClassName="mt-2 text-center text-xs text-body-300"
+                title="No links yet"
+              />
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                {links.map((link) => (
+                  <a
+                    key={link.url}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    aria-label={`Open ${link.host}, shared by ${link.from === 'me' ? 'you' : name}`}
+                    className="flex w-full items-start gap-3 rounded-xl bg-background-alt/70 px-3 py-2.5 text-left ring-1 ring-border/40 transition duration-200 hover:bg-background-alt hover:ring-green/35"
+                  >
+                    {/* No link-preview fetch here: that would send the URL to our server. */}
+                    <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-background-alt ring-1 ring-border/50">
+                      <LinkIcon className="h-4 w-4 stroke-body-300" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm text-body">{link.host}</span>
+                      <span className="mt-0.5 block truncate text-[11px] text-body-300">{link.url}</span>
+                    </span>
+                  </a>
+                ))}
+              </div>
             )}
           </section>
         </div>

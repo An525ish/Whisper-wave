@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { ROOM_REACTIONS } from '../constants/room-reactions.js';
+import { isReactionEmoji } from '../constants/anon-reactions.js';
 import { reportReason } from './match.js';
 import { objectIdField } from './fields.js';
-import { ROOM_RESERVED_SLUGS } from '../constants/rooms.js';
+import { ROOM_IMAGE_MAX_BYTES, ROOM_IMAGE_MIME, ROOM_MEDIA_KINDS, ROOM_RESERVED_SLUGS } from '../constants/rooms.js';
+import { isKlipyUrl, isMemegenImageUrl } from './message.js';
 
 /** IANA zone check — `Intl` throws RangeError on an unknown zone. */
 const isValidTimeZone = (tz: string): boolean => {
@@ -52,6 +53,8 @@ export const roomJoinSchema = z.object({
   slug: roomSlugSchema,
   alias: roomAliasSchema,
   color: roomColorSchema,
+  /** Signed-in members only: show my account photo next to my messages. Ignored for guests. */
+  useAvatar: z.boolean().optional(),
   /** Required for unlisted rooms; ignored otherwise. */
   invite: inviteTokenSchema.optional(),
 });
@@ -72,12 +75,29 @@ const roomChallengeAnswerSchema = z.union([
 ]);
 
 /** `ROOM_MESSAGE` — acked. `id` is the sender's idempotency key. */
-export const roomMessageSchema = z.object({
-  id: messageIdSchema.optional(),
-  text: z.string().trim().min(1).max(1000),
-  replyTo: messageIdSchema.optional(),
-  /** First-post challenge answer (guests): a Turnstile token, or the arithmetic token + typed answer. */
-  challenge: roomChallengeAnswerSchema.optional(),
+export const roomMessageSchema = z
+  .object({
+    id: messageIdSchema.optional(),
+    /** May be empty when a photo, GIF or meme is attached. */
+    text: z.string().trim().max(1000),
+    /** One attachment. Images are an R2 key from `ROOM_MEDIA_SIGN`; GIFs/memes are links on their own hosts. */
+    media: z
+      .discriminatedUnion('kind', [
+        z.object({ kind: z.literal('image'), key: z.string().min(1).max(300) }),
+        z.object({ kind: z.literal('gif'), url: z.string().url().max(600).refine(isKlipyUrl, 'Not a GIF link') }),
+        z.object({ kind: z.literal('meme'), url: z.string().url().max(600).refine(isMemegenImageUrl, 'Not a meme link') }),
+      ])
+      .optional(),
+    replyTo: messageIdSchema.optional(),
+    /** First-post challenge answer (guests): a Turnstile token, or the arithmetic token + typed answer. */
+    challenge: roomChallengeAnswerSchema.optional(),
+  })
+  .refine((m) => m.text.length > 0 || m.media, { message: 'Message is empty', path: ['text'] });
+
+/** `ROOM_MEDIA_SIGN` — acked with a presigned R2 PUT for one photo. */
+export const roomMediaSignSchema = z.object({
+  mimeType: z.enum(ROOM_IMAGE_MIME),
+  size: z.number().int().positive().max(ROOM_IMAGE_MAX_BYTES),
 });
 
 /** `ROOM_LEAVE` — payload-less. */
@@ -86,7 +106,7 @@ export const roomLeaveSchema = z.object({}).passthrough().optional();
 /** `ROOM_REACT` — acked with the new counts. */
 export const roomReactSchema = z.object({
   messageId: messageIdSchema,
-  reaction: z.enum(ROOM_REACTIONS),
+  reaction: z.string().refine(isReactionEmoji, 'Not a single emoji'),
 });
 
 /** `ROOM_MOD` — mods and hosts only; every denial acks `forbidden`. */
@@ -160,6 +180,8 @@ export const adminRoomUpsertSchema = z.object({
   mods: z.array(objectIdField).max(20).optional(),
   /** Listening room: strict automod + posting only while a mod is seated. Omitted leaves it untouched. */
   requiresModPresence: z.boolean().optional(),
+  /** Media members may post in this room. Omitted leaves it untouched; [] = text only. */
+  media: z.array(z.enum(ROOM_MEDIA_KINDS)).max(ROOM_MEDIA_KINDS.length).optional(),
 });
 
 /** Admin: close one live instance right now. */

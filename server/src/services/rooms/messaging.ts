@@ -10,6 +10,7 @@ import { strictProfileFor } from './strictProfile.js';
 import { isMuted, isShadowMuted } from './mods.js';
 import { roomMessageLimiter } from './rateLimit.js';
 import { reportSevereHit } from './severe.js';
+import { assertMediaAllowed, resolveRoomMedia } from './media.js';
 import type { PostRoomMessageInput, PostRoomMessageResult } from '../../types/room.js';
 
 /**
@@ -42,6 +43,15 @@ export const postRoomMessage = async (input: PostRoomMessageInput): Promise<Post
 
   if (isMuted(instanceId, key)) return { ok: false, code: 'muted' };
 
+  // Policy first (cheap): members only, and only kinds this room allows.
+  if (input.media) {
+    try {
+      assertMediaAllowed(settings?.media, input.media.kind, input.identity.kind === 'member');
+    } catch {
+      return { ok: false, code: ROOM_ERROR_CODES.MEDIA_NOT_ALLOWED };
+    }
+  }
+
   const senderGid = member.gid ?? input.identity.gid ?? key;
   const gate = await checkChallenge({
     gid: senderGid,
@@ -56,17 +66,40 @@ export const postRoomMessage = async (input: PostRoomMessageInput): Promise<Post
   const text = input.text.trim();
   const support = showsSelfHarmSigns(text);
   const strict = settings?.requiresModPresence ? strictProfileFor(member.role) : undefined;
-  const verdict = checkRoomMessage({
+  // The R2 check comes after the flood cap, so spam can't turn into storage reads.
+  let media;
+  if (input.media) {
+    try {
+      media = await resolveRoomMedia({
+        instanceId,
+        memberKey: key,
+        isMember: input.identity.kind === 'member',
+        media: input.media,
+      });
+    } catch {
+      return { ok: false, code: ROOM_ERROR_CODES.MEDIA_FAILED };
+    }
+  }
+
+  const slowModeMs =
+    member.role === 'member'
+      ? (settings?.slowOverrideMs ?? (input.identity.kind === 'guest' ? ROOM_SLOW_GUEST_MS : ROOM_SLOW_MEMBER_MS))
+      : 0;
+  const msSinceLastPost = member.lastPostAt === undefined ? undefined : now - member.lastPostAt;
+
+  // A photo-only post has no text to scan: it still obeys slow mode.
+  const verdict: ReturnType<typeof checkRoomMessage> = text === ''
+    ? slowModeMs > 0 && msSinceLastPost !== undefined && msSinceLastPost < slowModeMs
+      ? { allowed: false, code: 'slow_mode', retryAfterMs: slowModeMs - msSinceLastPost }
+      : { allowed: true }
+    : checkRoomMessage({
     text,
     sender: input.identity,
     // Mods, hosts and trusted members act fast and link freely; everyone
     // else is gated. Trust resolves once at join — never per message.
     linksAllowed: member.role !== 'member' || (member.trust === 'trusted' && !strict?.blockLinks),
-    slowModeMs:
-      member.role === 'member'
-        ? (settings?.slowOverrideMs ?? (input.identity.kind === 'guest' ? ROOM_SLOW_GUEST_MS : ROOM_SLOW_MEMBER_MS))
-        : 0,
-    msSinceLastPost: member.lastPostAt === undefined ? undefined : now - member.lastPostAt,
+    slowModeMs,
+    msSinceLastPost,
     recentTexts: recentMessages(instanceId)
       .filter((m) => m.alias === member.alias)
       .slice(-Math.max(5, strict?.duplicateWindow ?? 5))
@@ -103,7 +136,9 @@ export const postRoomMessage = async (input: PostRoomMessageInput): Promise<Post
     alias: member.alias,
     color: member.color,
     role: member.role,
+    ...(member.avatar ? { avatar: member.avatar } : {}),
     text,
+    ...(media ? { media } : {}),
     senderGid,
     ...(member.userId ? { senderUserId: member.userId } : {}),
     ...(replyTo ? { replyTo } : {}),

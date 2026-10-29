@@ -5,6 +5,7 @@ import { toggleReaction } from '../../services/rooms/registry.js';
 import { roomReactionLimiter } from '../../services/rooms/rateLimit.js';
 import { currentInstance, seatKeyOf, seatSockets } from './seats.js';
 import { toWireMessage } from './wire.js';
+import { signRoomImage } from '../../services/rooms/media.js';
 import type { RoomMessageInput, RoomReactInput, RoomSocket } from '../../types/room.js';
 
 /**
@@ -29,6 +30,7 @@ export const handleMessage = async (
       ? { kind: 'member', userId: socket.userId, gid: socket.gid }
       : { kind: 'guest', gid: socket.gid },
     text: input.text,
+    ...(input.media ? { media: input.media } : {}),
     ...(input.replyTo ? { replyTo: input.replyTo } : {}),
     ...(input.challenge ? { challenge: input.challenge } : {}),
   });
@@ -53,7 +55,7 @@ export const handleMessage = async (
   return { ok: true, id: result.message.id, ...(result.support ? { support: true } : {}), ...clientId };
 };
 
-/** Toggle a curated reaction on a message of the CURRENT instance. Returns the ack body. */
+/** Toggle an emoji reaction (one per person) on a message of the CURRENT instance. Returns the ack body. */
 export const handleReact = (
   nsp: Namespace,
   socket: RoomSocket,
@@ -68,8 +70,23 @@ export const handleReact = (
   if (!counts) return { ok: false, code: ROOM_ERROR_CODES.NOT_FOUND };
   nsp.to(instanceId).emit(ROOM_REACTION, {
     messageId: input.messageId,
-    reaction: input.reaction,
-    count: counts[input.reaction] ?? 0,
+    counts,
   });
   return { ok: true, counts };
+};
+
+/** Presigned PUT for one room photo. Policy, membership and rate limits are enforced in the service. */
+export const handleMediaSign = async (
+  socket: RoomSocket,
+  input: { mimeType: string; size: number }
+): Promise<Record<string, unknown>> => {
+  const instanceId = currentInstance(socket);
+  if (!instanceId) return { ok: false, code: ROOM_ERROR_CODES.NOT_JOINED };
+  const signed = await signRoomImage({
+    instanceId,
+    memberKey: seatKeyOf(socket),
+    isMember: Boolean(socket.userId),
+    mimeType: input.mimeType,
+  });
+  return { ok: true, ...signed };
 };

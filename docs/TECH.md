@@ -270,7 +270,7 @@ via the httpOnly `anonId` cookie instead of `applySocketAuth`.
 
 | Direction | Events |
 |---|---|
-| Client → server | `ANON_MESSAGE` (acked), `ANON_TYPING_START`, `ANON_TYPING_STOP`, `ANON_LIKE`, `ANON_NEXT`, `ANON_REQUEUE`, `ANON_REACT` |
+| Client → server | `ANON_MESSAGE` (acked), `ANON_TYPING_START`, `ANON_TYPING_STOP`, `ANON_LIKE`, `ANON_NEXT`, `ANON_REQUEUE`, `ANON_REACT`, `ANON_READ` |
 | Server → client | `QUEUE_JOINED`, `MATCH_FOUND`, `MATCH_MESSAGE`, `MATCH_TYPING_START`, `MATCH_TYPING_STOP`, `SOMEONE_VIBING`, `MATCH_PARTNER_VIBED`, `MATCH_REACTION`, `MUTUAL_LIKE`, `MATCH_DISCONNECTED`, `MATCH_MESSAGE_REJECTED`, `MATCH_ERROR`, `SESSION_EXPIRED`, `CONNECTION_READY` |
 
 Messages carry `from: 'me' | 'them'`; the server never sends anonIds to clients.
@@ -493,13 +493,15 @@ Cursor rules live in `.cursor/rules/` (`acknowledge-rules`, `server-architecture
 | Oct 2026 | **D6** Meme source: JokeAPI v2 + Memegen.link render; *amended*: Dark shelf and member-opt-in Unfiltered 18+ mode are kept (never in the guest/default feed). Counsel sign-off pending | No key, no bandwidth cost; opt-in keeps the default feed safe |
 | Oct 2026 | **D7** Games: skipped | Focus on Rooms/Whisper; design kept in HUB_PLAN §7.4 |
 | Oct 2026 | **D8** Guest stable id: `gid` 30-day cookie, safety-only | Bans must outlive the 24 h `anonId` without making matching identity persistent |
-| Oct 2026 | **D9** Guests may post in rooms after alias + first-post challenge, text only, no links | Low friction; abuse levers are `gid` bans and slow mode |
+| Oct 2026 | **D9** Guests may post in rooms after alias + first-post challenge, text only (members may get media per room, D18), no links | Low friction; abuse levers are `gid` bans and slow mode |
 | Oct 2026 | **D10** Owner is on call for reports | Drives the Grievance Officer page and the SLA display in the admin queue |
 | Oct 2026 | **D11** Production domain deferred | `whisper-wave.onrender.com` + localhost cover testing; buy when UGC memes (R2 custom domain) or leaving Render forces it |
 | Oct 2026 | **D12** Moderation: staff + automod at launch, volunteers in 3b | The only $0 option that is staffable |
 | Oct 2026 | **D13** Memes are a "Shuffle", not "For You" | No algorithmic feed |
 | Oct 2026 | **D14** A whisper survives navigation (provider + pill) | Nav one tap away makes reset-on-unmount a trap |
 | Oct 2026 | **D15** Both-member mutual like: one-tap Connect with a reveal note | Consent without friction |
+| Oct 2026 | **D17** Anon chat allows photos (JPG/PNG/WebP, 5 MB, 15 per person per chat) on R2. Rows live in `AnonImage` and stay until an admin deletes them in `/admin/anon-media` (R2 file + row), like main-chat media. Chat end does NOT delete them | Reports need evidence; no image moderation exists, so received photos are blurred until tapped. Signed-but-unsent uploads are not tracked and stay in R2. No retention limit yet: set one before real traffic. Privacy page must say photos are kept for moderation |
+| Oct 2026 | **D18** Rooms allow media for signed-in members, chosen per room by an admin: photos (JPG/PNG/WebP, 5 MB), GIFs, memes. Guests stay text only. Server enforces; the composer is the shared `ChatInput` | Rooms are not text only. Photos go to R2 under `ww/rooms/{slug}/{member}/` via a presigned PUT, verified (HeadObject) before the message is accepted, and deleted when the room instance closes or the message leaves the 100-message ring. A photo in a reported window is copied to `ww/kept/rooms/` and listed in admin (Anon photos page, source `room`) until an admin deletes it. Optional: an R2 lifecycle rule on `ww/rooms/` as a safety net for crashes |
 | Oct 2026 | **D16** Hosting: Oracle Always Free (2 OCPU / 12 GB), ~$5/mo VPS fallback | The only truly free always-on option |
 | Oct 2026 | Rooms/games state in process memory; Redis only for matching | Protects the Redis command budget; single-node assumption is explicit |
 | Oct 2026 | Feature flags enforced server-side + persisted (`FeatureOverride`) | A panic switch that a restart silently undoes is not a switch |

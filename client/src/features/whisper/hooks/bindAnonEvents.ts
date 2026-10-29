@@ -8,6 +8,7 @@ import {
   MATCH_MESSAGE,
   MATCH_MESSAGE_REJECTED,
   MATCH_PARTNER_VIBED,
+  MATCH_READ,
   MATCH_REACTION,
   MATCH_TYPING_START,
   MATCH_TYPING_STOP,
@@ -41,6 +42,7 @@ const toMessage = (m: BufferedAnonMessage, fallbackId: string): AnonMessage => (
   from: m.from,
   content: m.content,
   sentAt: m.sentAt,
+  ...(m.image ? { image: m.image } : {}),
   delivery: m.from === 'me' ? 'sent' : undefined,
 });
 
@@ -97,6 +99,10 @@ export function bindAnonEvents(socket: Socket, { onPartnerTyping, onError }: Par
     state.appendMessage(toMessage({ ...data, id }, id));
   });
 
+  socket.on(MATCH_READ, (data: { messageId?: string }) => {
+    if (data?.messageId) store().markRead(data.messageId);
+  });
+
   socket.on(MATCH_TYPING_START, () => onPartnerTyping(true));
   socket.on(MATCH_TYPING_STOP, () => onPartnerTyping(false));
 
@@ -123,10 +129,12 @@ export function bindAnonEvents(socket: Socket, { onPartnerTyping, onError }: Par
     store().setMutualLike(data.connectToken);
   });
 
-  socket.on(MATCH_DISCONNECTED, (data?: { reason?: string }) => {
+  socket.on(MATCH_DISCONNECTED, (data?: { reason?: string; sessionId?: string }) => {
     const state = store();
     // Not in a live thread (already skipped, or the DM opened): nothing ended.
     if (!state.sessionId || state.status === 'connected') return;
+    // A late notice about an OLD match must not end the one we are in now.
+    if (data?.sessionId && data.sessionId !== state.sessionId) return;
     const reason = data?.reason ?? 'unknown';
     track(WHISPER_EVENTS.PARTNER_LEFT, { reason });
     trackSessionEnd('partner_left');
@@ -171,8 +179,16 @@ export function bindAnonEvents(socket: Socket, { onPartnerTyping, onError }: Par
   });
 
   // The server has no identity for us (24 h card lapsed). Back to the picker.
-  socket.on(SESSION_EXPIRED, () => {
+  socket.on(SESSION_EXPIRED, (data?: { reason?: string }) => {
     const state = store();
+    // We were in a thread and the server no longer has it: the partner left or
+    // dropped while we were away. Say so, same as a live MATCH_DISCONNECTED.
+    if (state.status === 'matched' && state.sessionId && data?.reason === 'no_session') {
+      trackSessionEnd('session_ended');
+      state.markPartnerLeft();
+      onPartnerTyping(false);
+      return;
+    }
     if (state.status === 'resuming') {
       state.abortResume(RESUME_ENDED_NOTICE);
       return;

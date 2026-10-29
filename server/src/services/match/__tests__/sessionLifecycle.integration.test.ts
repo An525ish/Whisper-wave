@@ -8,12 +8,13 @@ import {
   endSession,
   getBufferedMessages,
   getMessageCounts,
+  getEngagedMs,
   isParticipant,
   getUserActiveSessions,
 } from '../session.js';
 import { recordLike } from '../like.js';
 import { REDIS_KEYS, TTL } from '../keys.js';
-import { meetsVibeGate, VIBE_UNLOCK } from '../vibeEligibility.js';
+import { meetsVibeGate } from '../vibeEligibility.js';
 import { bufferTestMessage, card, skipUnlessRedis, useTestRedis } from './redisHarness.js';
 
 /**
@@ -200,8 +201,7 @@ describe('anon session lifecycle (Redis integration)', () => {
       0,
       'precondition: side B has fallen out of the buffer'
     );
-    const old = Date.now() - VIBE_UNLOCK.minSessionMs - 1;
-    assert.equal(meetsVibeGate({ createdAt: old, ...counts }), true);
+    assert.equal(meetsVibeGate({ engagedMs: await getEngagedMs('sess-vibe') }), false);
     await endSession('sess-vibe');
   });
 

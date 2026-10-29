@@ -1,3 +1,4 @@
+import RefreshButton from '../shared/RefreshButton';
 import { useModAuditQuery } from '../../hooks';
 
 /**
@@ -12,11 +13,14 @@ const Audit = () => {
     <div className="flex flex-col gap-4 p-5">
       <div className="flex items-end justify-between gap-3">
         <h1 className="font-display text-2xl text-white">Audit</h1>
-        {entries && (
-          <p className="text-sm text-body-300" aria-live="polite">
-            last {entries.length} actions
-          </p>
-        )}
+        <div className="flex items-center gap-3">
+          {entries && (
+            <p className="text-sm text-body-300" aria-live="polite">
+              last {entries.length} actions
+            </p>
+          )}
+          <RefreshButton />
+        </div>
       </div>
 
       {isLoading && (

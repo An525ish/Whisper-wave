@@ -1,10 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { REDIS_KEYS, TTL } from '../keys.js';
-import { meetsVibeGate, VIBE_UNLOCK } from '../vibeEligibility.js';
+import { meetsVibeGate, nextEngagement, VIBE_UNLOCK } from '../vibeEligibility.js';
 import { vibePairScore } from '../queue.js';
 import { anonReactionSchema } from '../reaction.js';
-import { ANON_REACTIONS } from '../../../constants/anon-reactions.js';
 describe('redis keys', () => {
   it('namespaces every key by feature so SCAN is safe', () => {
     const anon = 'anon-1';
@@ -91,57 +90,22 @@ describe('redis keys', () => {
 });
 
 describe('vibe eligibility gate', () => {
-  const now = 1_000_000;
-  // Just past the warm-up window.
-  const old = now - VIBE_UNLOCK.minSessionMs - 1;
-  // The lowest combination that satisfies every rule: 2 each clears the
-  // per-side floor, and 3+2 clears the 5-message total (i.e. at least one
-  // person has to have carried more than the bare minimum).
-  const min = { countA: 3, countB: 2 };
-
-  it('blocks a like inside the warm-up window even with lots of messages', () => {
-    assert.equal(
-      meetsVibeGate({ createdAt: now - 1000, countA: 20, countB: 20, now }),
-      false
-    );
+  it('stays locked below five minutes of flow', () => {
+    assert.equal(meetsVibeGate({ engagedMs: VIBE_UNLOCK.engagedMs - VIBE_UNLOCK.skewMs - 1 }), false);
   });
 
-  it('blocks a like when one side has not participated', () => {
-    assert.equal(meetsVibeGate({ createdAt: old, countA: 10, countB: 1, now }), false);
-    assert.equal(meetsVibeGate({ createdAt: old, countA: 1, countB: 10, now }), false);
+  it('unlocks at the threshold', () => {
+    assert.equal(meetsVibeGate({ engagedMs: VIBE_UNLOCK.engagedMs }), true);
   });
 
-  it('blocks a one-sided monologue even past the message floor', () => {
-    // 6 messages but all from one person — the exact spam pattern we want to
-    // stop funnelling into a mutual DM.
-    assert.equal(meetsVibeGate({ createdAt: old, countA: 6, countB: 0, now }), false);
-  });
-
-  it('requires at least one side past the bare per-side minimum', () => {
-    // 2 each satisfies minMessagesPerSide but not minTotalMessages.
-    assert.equal(meetsVibeGate({ createdAt: old, countA: 2, countB: 2, now }), false);
-    assert.equal(meetsVibeGate({ createdAt: old, ...min, now }), true);
-  });
-
-  it('unlocks at exactly the time threshold', () => {
-    const exact = now - VIBE_UNLOCK.minSessionMs;
-    assert.equal(meetsVibeGate({ createdAt: exact, ...min, now }), true);
-  });
-
-  it('stays locked one millisecond before the threshold', () => {
-    const justEarly = now - VIBE_UNLOCK.minSessionMs + 1;
-    assert.equal(meetsVibeGate({ createdAt: justEarly, ...min, now }), false);
-  });
-
-  it('is symmetric — swapping who sent what does not change the verdict', () => {
-    assert.equal(
-      meetsVibeGate({ createdAt: old, countA: 3, countB: 2, now }),
-      meetsVibeGate({ createdAt: old, countA: 2, countB: 3, now })
-    );
-  });
-
-  it('does not unlock at 1 message each regardless of time', () => {
-    assert.equal(meetsVibeGate({ createdAt: old, countA: 1, countB: 1, now }), false);
+  it('only counts quick replies from the other side', () => {
+    let e = nextEngagement(null, 'a', 0);
+    e = nextEngagement(e, 'a', 10_000); // same sender: no time
+    assert.equal(e.engagedMs, 0);
+    e = nextEngagement(e, 'b', 30_000); // reply after 20s
+    assert.equal(e.engagedMs, 20_000);
+    e = nextEngagement(e, 'a', 30_000 + VIBE_UNLOCK.maxGapMs + 1); // too slow: pauses
+    assert.equal(e.engagedMs, 20_000);
   });
 });
 
@@ -165,37 +129,26 @@ describe('vibe overlap scoring', () => {
   });
 });
 
-describe('vibe reaction whitelist', () => {
-  it('accepts every curated reaction', () => {
-    for (const reaction of ANON_REACTIONS) {
+describe('vibe reaction validation', () => {
+  it('accepts any single emoji, including skin tones, flags, ZWJ and keycaps', () => {
+    for (const reaction of ['🔥', '❤️', '👍🏽', '🏳️\u200d🌈', '👨\u200d👩\u200d👧', '🇮🇳', '1️⃣', '🫠']) {
       const parsed = anonReactionSchema.safeParse({ messageId: 'msg-1', reaction });
       assert.equal(parsed.success, true, `${reaction} should be accepted`);
     }
   });
 
-  it('rejects an emoji the client made up', () => {
-    // The whole point of a whitelist: the client cannot put an arbitrary glyph
-    // into someone else's bubble, which is a moderation surface with no
-    // moderation behind it.
-    for (const reaction of ['🔥', 'porn', 'slay ', 'SLAY', 'kill', '', '🫠🫠']) {
+  it('rejects text, mixed text and emoji, and several emoji', () => {
+    // The client can put exactly one emoji in someone else's bubble, never words.
+    for (const reaction of ['porn', 'slay ', 'SLAY', 'kill', '', '🫠🫠', '🔥x', 'x🔥', 'a', ' 🔥', '🔥\n']) {
       const parsed = anonReactionSchema.safeParse({ messageId: 'msg-1', reaction });
       assert.equal(parsed.success, false, `${JSON.stringify(reaction)} must be rejected`);
-    }
-  });
-
-  it('rejects a reaction outside the set even when it is a real emoji', () => {
-    // A well-formed emoji is not a curated one. Real emoji the product has not
-    // chosen are still refused.
-    for (const reaction of ['💀', '👍', '❤️', '🙌']) {
-      if ((ANON_REACTIONS as readonly string[]).includes(reaction)) continue;
-      assert.equal(anonReactionSchema.safeParse({ messageId: 'msg-1', reaction }).success, false);
     }
   });
 
   it('rejects a missing or malformed reaction', () => {
     for (const payload of [
       { messageId: 'msg-1' },
-      { reaction: 'fire' },
+      { reaction: '🔥' },
       { messageId: 'msg-1', reaction: undefined },
       {},
     ]) {
@@ -218,7 +171,7 @@ describe('vibe reaction whitelist', () => {
       '',
       'x'.repeat(65),
     ]) {
-      const parsed = anonReactionSchema.safeParse({ messageId, reaction: 'fire' });
+      const parsed = anonReactionSchema.safeParse({ messageId, reaction: '🔥' });
       assert.equal(parsed.success, false, `${JSON.stringify(messageId)} must be rejected`);
     }
   });
@@ -228,16 +181,10 @@ describe('vibe reaction whitelist', () => {
     // produce (uuid, nanoid, timestamp+counter).
     for (const messageId of ['a', 'msg-1', 'msg_1', '550e8400-e29b-41d4-a716-446655440000', '1'.repeat(64)]) {
       assert.equal(
-        anonReactionSchema.safeParse({ messageId, reaction: 'fire' }).success,
+        anonReactionSchema.safeParse({ messageId, reaction: '🔥' }).success,
         true,
         messageId
       );
     }
-  });
-
-  it('stays a small curated set, not an emoji keyboard', () => {
-    assert.ok(ANON_REACTIONS.length >= 3, 'too few to be a reaction bar');
-    assert.ok(ANON_REACTIONS.length <= 8, 'too many to be a curated set');
-    assert.equal(new Set(ANON_REACTIONS).size, ANON_REACTIONS.length, 'duplicate reaction key');
   });
 });

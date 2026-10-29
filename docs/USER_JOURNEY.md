@@ -99,6 +99,7 @@ Two kinds of identity:
 | Types a message | `ANON_MESSAGE` `{ content, messageId }` | Verify the cookie `anonId` is in this session. Moderate + length/rate checks. **Ack** the sender (or `MATCH_MESSAGE_REJECTED`). Relay to the partner as `MATCH_MESSAGE` with `from: 'them'` (sender sees `'me'`). Keep the **last 50 messages** in `match:messages:{sessionId}` (TTL 24 h) so a refresh or the 45 s reconnect grace doesn't blank the thread. Never Mongo. |
 | Reacts to a message | `ANON_REACT` | Curated set only; stored in `match:reactions:*`; `MATCH_REACTION` to both. Sending the same reaction again removes it. |
 | Starts/stops typing | `ANON_TYPING_START/STOP` | Forward to partner. Nothing stored. |
+| Sees their messages | `ANON_READ` `{ messageId }` | Forward as `MATCH_READ` to partner (seen ticks). Nothing stored. |
 
 **We do not:** attachments, voice notes, read receipts (free anon). When the session ends, the buffer and reactions are **deleted**.
 
@@ -106,7 +107,7 @@ Two kinds of identity:
 
 ### A4. They tap Like
 
-**User:** Hits the vibe/like button. It unlocks only after the vibe gate (≥ 90 s, ≥ 2 messages from each side, ≥ 5 total; per-side counters).
+**User:** Hits the vibe/like button. It unlocks only after the vibe gate (5 minutes of sustained back-and-forth: only quick replies to the other side count, and a gap over 60 s just pauses the clock; stored as `eg`/`la`/`lf` in the session meta hash). The client never shows counts, only wording in a modal.
 
 **Backend:** Socket `ANON_LIKE`
 

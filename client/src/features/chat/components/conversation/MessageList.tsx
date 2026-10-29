@@ -106,6 +106,7 @@ const MessageList = ({
                 messageId={msg._id}
                 chatId={chatId}
                 sameSender={sameSender}
+                hasAvatar={Boolean(isGroupChat && !sameSender)}
               />
             ) : null}
           </div>

@@ -1,12 +1,12 @@
-import type { RefObject } from 'react';
+import { useMemo, type RefObject } from 'react';
 import TypingDots from '@/shared/components/ui/typing-indicator/TypingDots';
-import { groupMessages } from '@/shared/utils/groupMessages';
 import { THREAD_EXPIRY_TICK_MS, THREAD_LIFETIME_MS } from '../constants';
 import { useNowWhile } from '../hooks/useNowWhile';
 import { useThreadVirtualizer } from '../hooks/useThreadVirtualizer';
 import { expiryLabel } from '../utils/expiryLabel';
 import AnonFirstContact from './AnonFirstContact';
 import AnonMessageBubble from './AnonMessageBubble';
+import { extractThreadPhotos } from '../utils/threadLinks';
 import type { AnonMessage, AnonReaction, Spark, VibeTag } from '../types';
 
 type Props = {
@@ -50,7 +50,6 @@ export default function AnonMessageList({
   onRetry,
   onReact,
 }: Props) {
-  const groups = groupMessages(messages, (msg) => msg.from);
   const { virtualizer, rowAt } = useThreadVirtualizer({ scrollRef, messages, partnerTyping });
   // A countdown has to tick, so the clock lives in state — `Date.now()` in a
   // render body is impure and the compiler rejects it.
@@ -58,6 +57,8 @@ export default function AnonMessageList({
   const msLeft = startedAt ? startedAt + THREAD_LIFETIME_MS - now : 0;
 
   const lastIncoming = [...messages].reverse().find((m) => m.from === 'them');
+
+  const photos = useMemo(() => extractThreadPhotos(messages), [messages]);
 
   const renderRow = (index: number) => {
     const row = rowAt(index);
@@ -95,8 +96,7 @@ export default function AnonMessageList({
         return (
           <AnonMessageBubble
             msg={messages[row.index]}
-            joinedAbove={groups[row.index].joinedAbove}
-            isTail={groups[row.index].isTail}
+            photos={photos}
             live={live}
             onRetry={onRetry}
             onReact={onReact}
@@ -107,7 +107,11 @@ export default function AnonMessageList({
 
   return (
     <>
-      <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+      <div
+        key={messages.length === 0 ? 'empty-thread' : 'thread'}
+        className="relative w-full"
+        style={{ height: `${virtualizer.getTotalSize()}px` }}
+      >
         {virtualizer.getVirtualItems().map((item) => (
           <div
             key={item.key}

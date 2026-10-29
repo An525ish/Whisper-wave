@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
+import RefreshButton from '../../shared/RefreshButton';
 import Searchbar from '@/shared/components/ui/Searchbar';
 
 type Props = {
@@ -17,12 +18,15 @@ const MessagesHeader = ({ searchText, setSearchText }: Props) => (
         Review recent traffic, delivery status, and moderation actions
       </p>
     </div>
-    <Searchbar
-      className="w-full sm:w-72"
-      searchText={searchText}
-      setSearchText={setSearchText}
-      expandable={false}
-    />
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+      <Searchbar
+        className="w-full sm:w-72"
+        searchText={searchText}
+        setSearchText={setSearchText}
+        expandable={false}
+      />
+      <RefreshButton />
+    </div>
   </header>
 );
 

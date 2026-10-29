@@ -142,6 +142,10 @@ describe('room reactions', () => {
       assert.deepStrictEqual(toggleReaction(instanceId, 'b', m.id, 'fire'), { fire: 2 });
       assert.deepStrictEqual(toggleReaction(instanceId, 'a', m.id, 'fire'), { fire: 1 });
       assert.deepStrictEqual(toggleReaction(instanceId, 'b', m.id, 'fire'), {});
+      // One reaction per person: a new emoji moves mine.
+      assert.deepStrictEqual(toggleReaction(instanceId, 'a', m.id, 'wow'), { wow: 1 });
+      assert.deepStrictEqual(toggleReaction(instanceId, 'b', m.id, 'wow'), { wow: 2 });
+      assert.deepStrictEqual(toggleReaction(instanceId, 'a', m.id, 'heart'), { wow: 1, heart: 1 });
       assert.equal(toggleReaction(instanceId, 'a', 'missing', 'fire'), null);
       removeMember(instanceId, 'a');
       assert.equal(isSeated(instanceId, 'a'), false);

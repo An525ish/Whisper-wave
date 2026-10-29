@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { track } from '@/shared/lib/analytics';
 import { newClientId } from '@/shared/utils/id';
 import {
@@ -7,6 +7,7 @@ import {
   ANON_MESSAGE,
   ANON_NEXT,
   ANON_REACT,
+  ANON_READ,
   ANON_TYPING_START,
   ANON_TYPING_STOP,
   LIKE_ACK_TIMEOUT_MS,
@@ -14,7 +15,7 @@ import {
   LIKE_FAIL_FALLBACK,
   WHISPER_EVENTS,
 } from '../constants';
-import { joinQueue } from '../api/match';
+import { ANON_IMAGE_MAX_BYTES, ANON_IMAGE_TYPES, joinQueue, uploadAnonImage } from '../api/match';
 import { useAnonStore } from '../stores/anonStore';
 import { trackSessionEnd } from '../stores/trackSessionEnd';
 import { isVibeUnlocked } from '../utils/isVibeUnlocked';
@@ -41,7 +42,7 @@ export function useAnonSocket(socketRef: AnonSocketRef, onError: (msg: string) =
 
   /** Emit a message and settle its optimistic bubble from the ack. */
   const emitWithAck = useCallback(
-    (id: string, content: string) => {
+    (id: string, content: string, imageKey?: string, gifUrl?: string) => {
       const socket = socketRef.current;
       if (!socket?.connected) {
         useAnonStore.getState().settleMessage(id, 'failed', TIMEOUT_REASON);
@@ -56,7 +57,7 @@ export function useAnonSocket(socketRef: AnonSocketRef, onError: (msg: string) =
 
       socket
         .timeout(ACK_TIMEOUT_MS)
-        .emit(ANON_MESSAGE, { content, id }, (err: Error | null, res: AnonMessageAck) => {
+        .emit(ANON_MESSAGE, { content, id, ...(imageKey ? { image: { key: imageKey } } : {}), ...(gifUrl ? { gif: { url: gifUrl } } : {}) }, (err: Error | null, res: AnonMessageAck) => {
           if (err) return settle('failed', TIMEOUT_REASON);
 
           // A reused id means this exact message already landed (a retry whose
@@ -95,23 +96,81 @@ export function useAnonSocket(socketRef: AnonSocketRef, onError: (msg: string) =
     [socketRef, emitWithAck]
   );
 
+  /**
+   * Photos keep their File here (not in the store) so a failed bubble can resend.
+   * ponytail: blob URLs are never revoked; a chat holds a handful. Upgrade: revoke on session end.
+   */
+  const pendingImages = useRef(new Map<string, File>());
+
+  const deliverImage = useCallback(
+    async (id: string, file: File, caption: string) => {
+      try {
+        emitWithAck(id, caption, await uploadAnonImage(file));
+      } catch (err) {
+        const reason = err instanceof Error && err.message ? err.message : 'Photo did not send';
+        useAnonStore.getState().settleMessage(id, 'failed', `${reason}. Tap to resend.`);
+      }
+    },
+    [emitWithAck]
+  );
+
+  const sendImage = useCallback(
+    (file: File, caption: string) => {
+      const store = useAnonStore.getState();
+      if (!socketRef.current?.connected || !store.sessionId) return;
+      if (!ANON_IMAGE_TYPES.includes(file.type) || file.size > ANON_IMAGE_MAX_BYTES) {
+        onError('Only JPG, PNG or WebP photos, up to 5 MB.');
+        return;
+      }
+      const id = newClientId();
+      pendingImages.current.set(id, file);
+      store.appendMessage({
+        id,
+        from: 'me',
+        content: caption.trim(),
+        image: { url: URL.createObjectURL(file) },
+        sentAt: Date.now(),
+        delivery: 'sending',
+      });
+      track(WHISPER_EVENTS.MESSAGE_SENT, {});
+      void deliverImage(id, file, caption.trim());
+    },
+    [socketRef, onError, deliverImage]
+  );
+
+  /** A GIF or meme from the picker: no upload, the server just vets the URL. */
+  const sendGif = useCallback(
+    (url: string) => {
+      const store = useAnonStore.getState();
+      if (!socketRef.current?.connected || !store.sessionId) return;
+      const id = newClientId();
+      store.appendMessage({ id, from: 'me', content: '', image: { url }, sentAt: Date.now(), delivery: 'sending' });
+      track(WHISPER_EVENTS.MESSAGE_SENT, {});
+      emitWithAck(id, '', undefined, url);
+    },
+    [socketRef, emitWithAck]
+  );
+
   const retryMessage = useCallback(
     (id: string) => {
       const target = useAnonStore.getState().retryMessage(id);
       if (!target) return;
-      emitWithAck(id, target.content);
+      const file = pendingImages.current.get(id);
+      if (file) void deliverImage(id, file, target.content);
+      else if (target.image) emitWithAck(id, target.content, undefined, target.image.url);
+      else emitWithAck(id, target.content);
     },
-    [emitWithAck]
+    [emitWithAck, deliverImage]
   );
 
   const sendLikeEvent = useCallback(() => {
     const socket = socketRef.current;
     const state = useAnonStore.getState();
     if (!socket?.connected || !state.sessionId || state.likeSent || state.mutualLike) return;
-    if (!isVibeUnlocked(state.messages, state.matchedAt)) {
+    if (!isVibeUnlocked(state.messages)) {
       // The header heart stays tappable before the gate opens, so this is the
       // user-facing explanation. The server re-checks regardless.
-      onError('Chat a little longer before sending a vibe.');
+      onError('Keep chatting a bit longer, then you can send a vibe.');
       return;
     }
     const sessionId = state.sessionId;
@@ -209,6 +268,11 @@ export function useAnonSocket(socketRef: AnonSocketRef, onError: (msg: string) =
     [socketRef]
   );
 
+  const sendRead = useCallback(
+    (messageId: string) => socketRef.current?.emit(ANON_READ, { messageId }),
+    [socketRef]
+  );
+
   const emitTypingStart = useCallback(
     () => socketRef.current?.emit(ANON_TYPING_START, {}),
     [socketRef]
@@ -220,10 +284,13 @@ export function useAnonSocket(socketRef: AnonSocketRef, onError: (msg: string) =
 
   return {
     sendMessage,
+    sendImage,
+    sendGif,
     sendLikeEvent,
     sendNext,
     endMatch,
     sendReaction,
+    sendRead,
     retryMessage,
     emitTypingStart,
     emitTypingStop,

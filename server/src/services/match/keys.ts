@@ -116,6 +116,10 @@ export const META_FIELDS = {
   count1: 'c1',
   count2: 'c2',
   tokens: 'tk',
+  /** Vibe gate: ms of back-and-forth so far, and who spoke last and when. */
+  engaged: 'eg',
+  lastAt: 'la',
+  lastFrom: 'lf',
 } as const;
 
 export const TTL = {

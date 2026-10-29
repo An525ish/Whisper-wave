@@ -2,6 +2,7 @@ import { logger } from '../../utils/logger.js';
 import type { Namespace } from 'socket.io';
 import type { AcceptMessageResult, BufferedAnonMessage, StoredAnonMessage } from '../../types/matchMessage.js';
 import { MATCH_DISCONNECTED, MATCH_MESSAGE } from '../../constants/anon-events.js';
+import { verifyAnonImage } from './image.js';
 import { requireActiveParticipant } from './pairing.js';
 import { getPartner, recordMessage } from './session.js';
 import { inspectMessage, rejectionMessage } from './moderation.js';
@@ -23,6 +24,7 @@ export const toWireMessage = (
   from: message.from === viewerAnonId ? 'me' : 'them',
   content: message.content,
   sentAt: message.sentAt,
+  ...(message.image ? { image: { url: message.image.url } } : {}),
 });
 
 /**
@@ -36,14 +38,22 @@ export const acceptAnonMessage = async (
   sessionId: string | undefined,
   anonId: string,
   content: string,
-  id: string | undefined
+  id: string | undefined,
+  imageKey?: string,
+  gifUrl?: string
 ): Promise<AcceptMessageResult> => {
   // Throws AppError for no-session / not-a-participant / not-active.
   const session = await requireActiveParticipant(sessionId, anonId);
   const activeSessionId = session.sessionId;
+  // A picked GIF/meme is just a vetted third-party URL: nothing of ours to store or delete.
+  const image = imageKey
+    ? await verifyAnonImage(activeSessionId, anonId, imageKey)
+    : gifUrl
+      ? { key: '', url: gifUrl }
+      : undefined;
 
   // First-line moderation. Fails open on internal error (see moderation.ts).
-  const verdict = inspectMessage(content);
+  const verdict = content ? inspectMessage(content) : { allowed: true as const };
   if (!verdict.allowed) {
     logger.info(
       { sessionId: activeSessionId, anonId, reason: verdict.reason, severe: verdict.severe },
@@ -68,6 +78,7 @@ export const acceptAnonMessage = async (
     from: anonId,
     content,
     sentAt: Date.now(),
+    ...(image ? { image } : {}),
   };
 
   // Buffer in Redis (survives a refresh) — the partner is told only after this
@@ -112,7 +123,8 @@ export const relayMessage = (
 export const notifyMatchEnded = (
   nsp: Namespace,
   partnerAnonId: string,
-  reason: 'skipped' | 'disconnected'
+  reason: 'skipped' | 'disconnected',
+  sessionId?: string
 ): void => {
-  nsp.to(`anon:${partnerAnonId}`).emit(MATCH_DISCONNECTED, { reason });
+  nsp.to(`anon:${partnerAnonId}`).emit(MATCH_DISCONNECTED, { reason, sessionId });
 };

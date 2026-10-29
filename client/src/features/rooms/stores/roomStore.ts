@@ -7,6 +7,7 @@ const initial = {
   slug: null,
   title: '',
   rules: [],
+  media: [],
   messages: [],
   online: 0,
   you: null,
@@ -49,6 +50,7 @@ export const useRoomStore = create<RoomStore>()((set) => ({
       slug: state.slug,
       title: state.title,
       rules: state.rules,
+      media: state.media ?? [],
       listening: state.requiresModPresence === true,
       paused: state.paused === true,
       messages: capped(
@@ -74,17 +76,16 @@ export const useRoomStore = create<RoomStore>()((set) => ({
       messages: capped([...s.messages, noticeMessage(text)]),
     })),
 
-  applyReaction: (messageId, reaction, count) =>
+  applyReaction: (messageId, counts) =>
     set((s) => ({
-      messages: s.messages.map((m) =>
-        m.id === messageId ? { ...m, reactions: { ...m.reactions, [reaction]: count } } : m
-      ),
+      messages: s.messages.map((m) => (m.id === messageId ? { ...m, reactions: counts } : m)),
     })),
 
   toggleMine: (messageId, reaction) =>
     set((s) => {
       const held = s.myReactions[messageId] ?? [];
-      const next = held.includes(reaction) ? held.filter((r) => r !== reaction) : [...held, reaction];
+      // One reaction per person: tapping a new emoji replaces mine, tapping mine clears it.
+      const next = held.includes(reaction) ? [] : [reaction];
       return { myReactions: { ...s.myReactions, [messageId]: next } };
     }),
 

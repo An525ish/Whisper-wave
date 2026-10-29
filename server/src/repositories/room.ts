@@ -62,7 +62,7 @@ export const create = async (params: {
 
 /** Official-room seeding and admin edits share this: slug is the identity. */
 export const upsertBySlug = async (
-  params: Parameters<typeof create>[0] & { official: boolean; mods?: string[] }
+  params: Parameters<typeof create>[0] & { official: boolean; mods?: string[]; media?: IRoomFields['media'] }
 ): Promise<RoomLean> => {
   const doc = await Room.findOneAndUpdate(
     { slug: params.slug.toLowerCase() },
@@ -81,6 +81,8 @@ export const upsertBySlug = async (
         ...(params.mods !== undefined ? { mods: params.mods } : {}),
         // Same for the safety flag: an omitted value never silently drops it.
         ...(params.requiresModPresence !== undefined ? { requiresModPresence: params.requiresModPresence } : {}),
+        // Same for media: omitted never resets an admin's choice.
+        ...(params.media !== undefined ? { media: params.media } : {}),
       },
       $setOnInsert: { slug: params.slug.toLowerCase(), createdBy: params.createdBy ?? null },
     },

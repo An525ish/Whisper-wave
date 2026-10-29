@@ -78,8 +78,8 @@ export const emojiPickerShellClass =
   'flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[rgba(33,26,42,1)] shadow-2xl';
 
 type StyledEmojiPickerProps = {
-  width?: number;
-  height?: number;
+  width?: number | string;
+  height?: number | string;
   onEmojiClick: (data: EmojiClickData) => void;
   searchPlaceHolder?: string;
 } & Omit<
