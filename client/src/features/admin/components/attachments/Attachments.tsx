@@ -1,11 +1,12 @@
 import ConfirmationModal from '@/shared/components/ui/modal/confirmation-modal/ConfirmationModal';
 import ImageViewer from '@/shared/components/ui/image-viewer/ImageViewer';
+import RefreshButton from '../shared/RefreshButton';
 import Searchbar from '@/shared/components/ui/Searchbar';
 import AttachmentsContent from './feed/AttachmentsContent';
 import AttachmentsStats from './stats/AttachmentsStats';
 import KindFilterTabs from './feed/KindFilterTabs';
 import SelectionBar from './feed/SelectionBar';
-import { useAttachmentsPage } from '@/features/admin/hooks';
+import { useAttachmentsPage } from '../../hooks';
 
 const Attachments = () => {
   const {
@@ -66,19 +67,22 @@ const Attachments = () => {
               Browse images, videos, and documents shared across all chats
             </p>
           </div>
-          <Searchbar
-            className="w-full sm:w-72"
-            searchText={searchText}
-            setSearchText={setSearchText}
-            placeholder={
-              kindFilter === 'links'
-                ? 'Search links…'
-                : kindFilter === 'deleted'
-                  ? 'Search deleted files or links…'
-                  : 'Search by filename…'
-            }
-            expandable={false}
-          />
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <Searchbar
+              className="w-full sm:w-72"
+              searchText={searchText}
+              setSearchText={setSearchText}
+              placeholder={
+                kindFilter === 'links'
+                  ? 'Search links…'
+                  : kindFilter === 'deleted'
+                    ? 'Search deleted files or links…'
+                    : 'Search by filename…'
+              }
+              expandable={false}
+            />
+            <RefreshButton />
+          </div>
         </header>
 
         <AttachmentsStats

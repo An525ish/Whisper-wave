@@ -1,5 +1,6 @@
 import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
+import * as messageAdminRepo from '../../repositories/messageAdmin.js';
 import * as requestRepo from '../../repositories/request.js';
 import * as userRepo from '../../repositories/user.js';
 import type { AdminStats } from '../../types/admin.js';
@@ -22,7 +23,7 @@ export const getStats = async (): Promise<AdminStats> => {
     buildLast7DayBuckets(userRepo.countCreatedByDay),
     buildLast7DayBuckets(userRepo.countGoogleCreatedByDay),
     buildLast7DayBuckets(userRepo.countEmailCreatedByDay),
-    buildLast7DayBuckets(messageRepo.countCreatedByDay),
+    buildLast7DayBuckets(messageAdminRepo.countCreatedByDay),
     buildLast7DayBuckets(chatRepo.countGroupsCreatedByDay),
     buildLast7DayBuckets(requestRepo.countCreatedByDay),
   ]);

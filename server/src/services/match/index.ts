@@ -33,12 +33,13 @@ export {
   deleteSession,
   recordMessage,
   getMessageCounts,
+  getEngagedMs,
   getBufferedMessages,
 } from './session.js';
 
 export { recordLike } from './like.js';
 export { saveIdentityCard, leaveQueue } from './queueEntry.js';
-export { blockAnonId, isBlocked, findBlockedCandidates } from './block.js';
+export { blockAnonId, blockUsers, isBlocked, findBlockedCandidates } from './block.js';
 export { issueConnectToken, verifyConnectToken, resolveTokenAnonIds } from './connectToken.js';
 export { isVibeUnlocked, meetsVibeGate, VIBE_UNLOCK } from './vibeEligibility.js';
 export {

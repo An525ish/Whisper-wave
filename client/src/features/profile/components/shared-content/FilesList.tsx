@@ -1,7 +1,7 @@
 import EmptyState from '@/shared/components/ui/EmptyState'
 import { fileData, fileFormat } from '@/shared/utils/fileFormat'
 import type { MouseEvent } from 'react'
-import type { MediaFile } from '@/features/profile/components/shared-content/types'
+import type { MediaFile } from './types'
 
 const ExternalLinkIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 20 20" fill="none" aria-hidden>

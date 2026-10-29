@@ -18,15 +18,17 @@ export const ANON_REQUEUE = 'ANON_REQUEUE'; // ask to be matched again
 /**
  * Add or remove one curated vibe reaction on a single message.
  *
- * Client → server. The reaction must be in the curated `ANON_REACTIONS` set —
- * this is a whitelist, not an emoji keyboard.
+ * Client → server. The reaction must be a single emoji glyph (`isReactionEmoji`).
  */
 export const ANON_REACT = 'ANON_REACT';
+/** "I've seen your messages up to this id." Relayed only, never stored. */
+export const ANON_READ = 'ANON_READ';
 
 // ── Server → Client (/anon namespace) ──────────────────────────────────────
 export const QUEUE_JOINED = 'QUEUE_JOINED';
 export const MATCH_FOUND = 'MATCH_FOUND';
 export const MATCH_MESSAGE = 'MATCH_MESSAGE';
+export const MATCH_READ = 'MATCH_READ';
 export const MATCH_TYPING_START = 'MATCH_TYPING_START';
 export const MATCH_TYPING_STOP = 'MATCH_TYPING_STOP';
 export const SOMEONE_VIBING = 'SOMEONE_VIBING'; // one-sided like signal (vague)

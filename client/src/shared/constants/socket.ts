@@ -29,3 +29,34 @@ export const SOCKET_LIFECYCLE = {
   DISCONNECT: 'disconnect',
   CONNECT_ERROR: 'connect_error',
 } as const
+
+/** The rooms namespace path on the API origin. */
+export const ROOMS_NAMESPACE = '/rooms';
+
+/**
+ * `/rooms` event names — mirrors `server/src/constants/room-events.ts` exactly.
+ * One object for both directions: `MESSAGE` is the client → server post AND the
+ * server → client fan-out (same string on the wire).
+ */
+export const ROOM_SOCKET = {
+  JOIN: 'ROOM_JOIN',
+  LEAVE: 'ROOM_LEAVE',
+  MESSAGE: 'ROOM_MESSAGE',
+  REACT: 'ROOM_REACT',
+  MOD: 'ROOM_MOD',
+  MEDIA_SIGN: 'ROOM_MEDIA_SIGN',
+  STATE: 'ROOM_STATE',
+  PRESENCE: 'ROOM_PRESENCE',
+  REACTION: 'ROOM_REACTION',
+  MOD_ACTION: 'ROOM_MOD_ACTION',
+  CLOSED: 'ROOM_CLOSED',
+  ERROR: 'ROOM_ERROR',
+  PAUSED: 'ROOM_PAUSED',
+  RESUMED: 'ROOM_RESUMED',
+} as const;
+
+/** `ROOM_CLOSED` reasons the server emits as literals; admin closes carry prose. */
+export const ROOM_CLOSED_REASON = {
+  DISABLED: 'disabled',
+  RESTART: 'restart',
+} as const;

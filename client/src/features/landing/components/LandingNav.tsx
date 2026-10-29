@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/shared/utils/cn';
+import { ROUTES } from '@/shared/constants/routes';
 
 /** Shared focus ring for the nav's interactive elements. */
 const focusRing =
@@ -29,7 +30,7 @@ const LandingNav = () => {
       <div className="flex w-full max-w-[1200px] items-center justify-between gap-4">
         {/* Wordmark */}
         <Link
-          to="/"
+          to={ROUTES.landing}
           aria-label="Whisper Wave home"
           className={cn('inline-flex shrink-0 items-center rounded-lg font-display leading-none', focusRing)}
         >
@@ -50,7 +51,7 @@ const LandingNav = () => {
         <div className="flex shrink-0 items-center gap-2.5">
           {/* Ghost — Log in */}
           <Link
-            to="/auth?mode=login"
+            to={ROUTES.authLogin}
             className={cn(
               'inline-flex items-center rounded-full border border-white-pure/[0.12] px-[17px] py-[8px]',
               'text-[0.88rem] font-medium text-lw-text-dim no-underline',
@@ -66,7 +67,7 @@ const LandingNav = () => {
 
           {/* Solid — Find a stranger */}
           <Link
-            to="/whisper"
+            to={ROUTES.whisper}
             className={cn(
               'lw-sheen group inline-flex items-center gap-[7px] rounded-full border border-white-pure/[0.16] px-[18px] py-[8px]',
               'text-[0.88rem] font-semibold text-white-pure no-underline',

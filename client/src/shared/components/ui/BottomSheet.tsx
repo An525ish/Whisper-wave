@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { useDragToClose } from '@/shared/hooks';
+import { useDragToClose, useFocusTrap } from '@/shared/hooks';
 
 type BottomSheetProps = {
   open: boolean;
@@ -23,6 +23,12 @@ const BottomSheet = ({
   const [entered, setEntered] = useState(false);
   const [wasOpen, setWasOpen] = useState(open);
   const { sheetRef, handleRef, dragHandlers } = useDragToClose({ onClose });
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const setPanelRef = (node: HTMLDivElement | null) => {
+    panelRef.current = node;
+    sheetRef.current = node;
+  };
+  useFocusTrap(open, panelRef);
 
   // Clear the enter flag while the sheet is closed, adjusted during render
   // (React's documented "adjust state when a prop changes" pattern) instead of
@@ -81,8 +87,9 @@ const BottomSheet = ({
       />
 
       <div
-        ref={sheetRef}
-        className={`relative flex h-[90dvh] min-h-0 w-full max-w-none flex-col overflow-hidden rounded-t-[1.75rem] border border-b-0 border-border/70 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_48px_rgba(0,0,0,0.45)] backdrop-blur-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+        ref={setPanelRef}
+        tabIndex={-1}
+        className={`relative flex h-[90dvh] min-h-0 w-full max-w-none flex-col overflow-hidden rounded-t-[1.75rem] border border-b-0 border-border/70 bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_48px_rgba(0,0,0,0.45)] backdrop-blur-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] focus:outline-none motion-reduce:transition-none ${
           sideCardOnDesktop
             ? 'lg:h-[min(760px,calc(100dvh-1.5rem))] lg:max-w-110 lg:rounded-[1.75rem] lg:border-b lg:pb-0 lg:shadow-[0_28px_80px_rgba(0,0,0,0.55)] lg:transition-all'
             : ''

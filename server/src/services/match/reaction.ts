@@ -1,15 +1,8 @@
 import { getRedis } from '../../config/redis.js';
 import { AppError } from '../../utils/AppError.js';
 import { logger } from '../../utils/logger.js';
-import { ANON_REACTIONS } from '../../constants/anon-reactions.js';
-import type {
-  AnonMessageReactions,
-  AnonMessageReactionsBySide,
-  AnonReaction,
-  AnonReactionAction,
-  AnonSessionReactions,
-  StoredAnonMessage,
-} from '../../types/match.js';
+import { isReactionEmoji } from '../../constants/anon-reactions.js';
+import type { AnonMessageReactions, AnonMessageReactionsBySide, AnonReaction, AnonReactionAction, AnonSessionReactions, StoredAnonMessage } from '../../types/matchMessage.js';
 import { REDIS_KEYS, TTL } from './keys.js';
 import { requireActiveParticipant } from './pairing.js';
 import { getPartner } from './session.js';
@@ -24,10 +17,10 @@ import { getPartner } from './session.js';
  * One SET per message, members are `anonId:reaction`. That shape gives us three
  * things for free: a per-person reaction is a single SREM to change or drop, a
  * client can never react twice to the same message with two different reactions
- * (the member is keyed on both), and the set is bounded by the curated size.
+ * (the member is keyed on both), and each person holds at most one member, so the set stays tiny.
  *
  * Lives beside the other `match` services rather than in `socket/` so the
- * business rules (curated set, one reaction per person, message must exist) are
+ * business rules (single-emoji reactions, one reaction per person, message must exist) are
  * testable without a socket.
  */
 
@@ -56,8 +49,8 @@ const groupMembers = (raw: string[]): AnonMessageReactions => {
     const sep = entry.indexOf(':');
     if (sep <= 0) continue;
     const reaction = entry.slice(sep + 1);
-    if (!(ANON_REACTIONS as readonly string[]).includes(reaction)) continue;
-    (grouped[entry.slice(0, sep)] ??= []).push(reaction as AnonReaction);
+    if (!isReactionEmoji(reaction)) continue;
+    (grouped[entry.slice(0, sep)] ??= []).push(reaction);
   }
   return grouped;
 };

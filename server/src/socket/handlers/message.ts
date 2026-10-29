@@ -4,7 +4,7 @@ import {
   REFETCH_CHATS,
 } from '../../constants/socket-events.js';
 import { onSocketEvent } from '../../middlewares/index.js';
-import { messageService } from '../../services/index.js';
+import { isUserOnline, messageService, pushService } from '../../services/index.js';
 import { logger } from '../../utils/logger.js';
 import { chatRoom } from '../../utils/helper.js';
 import { socketNewMessageSchema } from '../../validators/socket.js';
@@ -47,6 +47,17 @@ export const registerMessageHandler = (
 
       io.to(chatRoom(chatId)).emit(NEW_MESSAGE, eventPayload);
       socket.broadcast.to(chatRoom(chatId)).emit(NEW_MESSAGE_ALERT, { chatId });
+      pushService.sendPushIntents(
+        [
+          {
+            event: NEW_MESSAGE_ALERT,
+            chatId,
+            excludeUserId: userId,
+            push: { kind: 'message', senderName: user.name, hasAttachment: false },
+          },
+        ],
+        isUserOnline
+      );
       // Let other members refetch so deleted chats reappear when a new message arrives
       socket.broadcast.to(chatRoom(chatId)).emit(REFETCH_CHATS, { chatId });
     },

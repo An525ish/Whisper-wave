@@ -1,26 +1,7 @@
-type StatChipProps = {
-  label: string;
-  value: number;
-  accent: string;
-};
+import StatChip from '../../shared/StatChip';
+import StatDivider from '../../shared/StatDivider';
 
-const StatChip = ({ label, value, accent }: StatChipProps) => (
-  <div className="min-w-0 flex-1 px-4 first:pl-0 last:pr-0">
-    <p className={`font-semibold text-2xl leading-none tabular-nums sm:text-3xl ${accent}`}>
-      {value}
-    </p>
-    <p className="mt-1.5 text-xs font-medium text-body-300">{label}</p>
-  </div>
-);
-
-const StatDivider = () => (
-  <div
-    className="hidden w-px shrink-0 self-stretch bg-linear-to-b from-transparent via-border/60 to-transparent sm:block"
-    aria-hidden
-  />
-);
-
-type MessagesStatsProps = {
+type Props = {
   platformTotal: number;
   matchesLabel: string;
   matchesValue: number;
@@ -34,7 +15,7 @@ const MessagesStats = ({
   matchesValue,
   failedLoaded,
   newThisWeek,
-}: MessagesStatsProps) => (
+}: Props) => (
   <section aria-label="Message summary" className="relative shrink-0">
     <div
       className="pointer-events-none absolute -left-6 top-0 h-28 w-48 rounded-full bg-blue/8 blur-3xl"

@@ -1,12 +1,12 @@
 import type { RefObject } from 'react';
-import InfiniteScrollSentinel from '@/features/admin/components/shared/InfiniteScrollSentinel';
-import type { AdminMessageRow } from '@/features/admin/types';
+import InfiniteScrollSentinel from '../../shared/InfiniteScrollSentinel';
+import type { AdminMessageRow } from '../../../types';
 import MessageRow from './MessageRow';
 import MessagesEmptyState from './MessagesEmptyState';
 import MessagesErrorState from './MessagesErrorState';
 import MessagesFeedSkeleton from './MessagesFeedSkeleton';
 
-type MessagesFeedProps = {
+type Props = {
   scrollRef: RefObject<HTMLDivElement | null>;
   messages: AdminMessageRow[];
   isLoading: boolean;
@@ -40,7 +40,7 @@ const MessagesFeed = ({
   onRetry,
   onLoadMore,
   onRetryFetch,
-}: MessagesFeedProps) => (
+}: Props) => (
   <div
     ref={scrollRef}
     className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-1 scrollbar-hide"

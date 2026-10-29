@@ -1,9 +1,9 @@
-import { useGroupsPage } from '@/features/admin/hooks';
+import { useGroupsPage } from '../../hooks';
 import {
   groupsEmptyDescription,
   groupsMatchesLabel,
   groupsMatchesValue,
-} from '@/features/admin/utils/groups';
+} from '../../utils/groups';
 import GroupDetailPanel from './detail/GroupDetailPanel';
 import GroupsDirectoryHeader from './feed/GroupsDirectoryHeader';
 import GroupsFeed from './feed/GroupsFeed';

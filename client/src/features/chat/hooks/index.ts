@@ -13,7 +13,6 @@ export * from './useMessageActions';
 export * from './useMessageMutations';
 export * from './useMessageQueries';
 export * from './useMessageSelection';
-export * from './useProfileQuery';
 export * from './useTypingIndicator';
 export * from './queryKeys';
 export * from './useGifHooks';

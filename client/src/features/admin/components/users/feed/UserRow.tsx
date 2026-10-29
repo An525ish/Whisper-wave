@@ -1,13 +1,13 @@
 import Image from '@/shared/components/ui/Image';
-import type { AdminUserRow } from '@/features/admin/types';
-import { formatUserJoined, userRowSubtitle } from '@/features/admin/utils/users';
+import type { AdminUserRow } from '../../../types';
+import { formatUserJoined, userRowSubtitle } from '../../../utils/users';
 
-type UserRowProps = {
+type Props = {
   user: AdminUserRow;
   onOpen: () => void;
 };
 
-const UserRow = ({ user, onOpen }: UserRowProps) => (
+const UserRow = ({ user, onOpen }: Props) => (
   <button
     type="button"
     onClick={onOpen}

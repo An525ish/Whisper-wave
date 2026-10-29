@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 interface Params {
   selectMode: boolean;
@@ -8,9 +8,11 @@ interface Params {
 export function useMessageSelection({ selectMode, onExitSelectMode }: Params) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
+  const [prevSelectMode, setPrevSelectMode] = useState(selectMode);
+  if (prevSelectMode !== selectMode) {
+    setPrevSelectMode(selectMode);
     if (!selectMode) setSelectedIds(new Set());
-  }, [selectMode]);
+  }
 
   const toggleSelected = useCallback((messageId: string) => {
     setSelectedIds((prev) => {

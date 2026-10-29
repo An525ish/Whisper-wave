@@ -1,6 +1,6 @@
-import type { splitTextByUrls } from '@/features/chat/utils/linkParser';
+import type { splitTextByUrls } from '../../../utils/linkParser';
 
-type TextHighlightMirrorProps = {
+type Props = {
   parts: ReturnType<typeof splitTextByUrls>;
   className: string;
 };
@@ -10,7 +10,7 @@ type TextHighlightMirrorProps = {
  * same text with URLs tinted so links appear highlighted while the real textarea
  * sits on top with transparent text. Typography only; no min-height.
  */
-const TextHighlightMirror = ({ parts, className }: TextHighlightMirrorProps) => (
+const TextHighlightMirror = ({ parts, className }: Props) => (
   <div
     aria-hidden
     className={`pointer-events-none col-start-1 row-start-1 overflow-hidden whitespace-pre-wrap wrap-break-word ${className}`}

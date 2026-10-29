@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { MatchArcPhase } from '@/features/landing/types';
+import type { MatchArcPhase } from '../types';
 
 const SEARCHING_MS = 3500;
 const MATCHED_MS = 900;

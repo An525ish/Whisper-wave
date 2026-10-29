@@ -1,3 +1,4 @@
+import { loadWordFilter } from './services/moderation/wordFilter.js';
 import { createServer } from 'http';
 import mongoose from 'mongoose';
 import { createApp } from './app.js';
@@ -6,7 +7,11 @@ import { env, isProd } from './config/env.js';
 import { connectRedis, disconnectRedis } from './config/redis.js';
 import { purgeQueue } from './services/match/queue.js';
 import { startPresenceSweeper, stopAllPresenceSweeps } from './services/match/presence.js';
+import { startReminderDispatcher, stopReminderDispatcher } from './services/rooms/reminderDispatch.js';
 import { createSocketServer } from './socket/index.js';
+import { closeAllRooms } from './socket/rooms/index.js';
+import { flushFeatureOverrides, hydrateFeatureOverrides } from './services/hub.js';
+import { ROOM_CLOSED_RESTART } from './constants/room-events.js';
 import { logger } from './utils/logger.js';
 
 const app = createApp();
@@ -32,6 +37,11 @@ const shutdown = async (signal: string): Promise<void> => {
   // Stop scheduling new match teardowns before we close the Redis connection
   // they depend on. Pending grace periods stay in Redis for the next boot.
   stopAllPresenceSweeps();
+  stopReminderDispatcher();
+
+  // Tell room users it is a restart (rooms are ephemeral, clients rejoin) before
+  // the sockets die, so the UI says so instead of showing a generic disconnect.
+  closeAllRooms(io, ROOM_CLOSED_RESTART, { disconnect: false });
 
   try {
     // Socket.IO first: it disconnects every client (a plain `httpServer.close`
@@ -47,6 +57,8 @@ const shutdown = async (signal: string): Promise<void> => {
       httpServer.closeIdleConnections();
     });
 
+    // An admin flip made seconds ago must reach Mongo before the connection closes.
+    await flushFeatureOverrides();
     await Promise.all([mongoose.connection.close(), disconnectRedis()]);
     logger.info('Socket.IO, HTTP, MongoDB and Redis closed');
     process.exit(0);
@@ -60,6 +72,13 @@ const shutdown = async (signal: string): Promise<void> => {
 const start = async (): Promise<void> => {
   try {
     await connectDb();
+
+    // Kill-switch overrides outlive restarts: load them before accepting any
+    // traffic, and refuse to boot if they cannot be read (a silent fall-back
+    // to env could re-enable a surface an admin shut off).
+    await hydrateFeatureOverrides();
+    // Saved blocked-word settings (falls back to the built-in list, filter on).
+    await loadWordFilter();
 
     // Redis is a hard dependency for /whisper. Booting without it produced a
     // server that looked healthy on /health while every anon route failed
@@ -89,6 +108,8 @@ const start = async (): Promise<void> => {
         'Redis unreachable at boot — whisper routes fail until it reconnects'
       );
     }
+
+    startReminderDispatcher();
 
     httpServer.listen(env.PORT, () => {
       logger.info(

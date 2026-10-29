@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { ROUTES } from '@/shared/constants/routes';
 
 const PageNotFound = () => {
   const { pathname } = useLocation();
@@ -150,7 +151,7 @@ const PageNotFound = () => {
         ) : null}
 
         <Link
-          to="/"
+          to={ROUTES.landing}
           className="mt-8 inline-flex min-h-12 items-center justify-center rounded-3xl bg-gradient-action-button-green px-8 text-base font-medium text-body outline-none transition-opacity hover:opacity-90 sm:mt-10 sm:min-h-14 sm:px-10 sm:text-lg"
         >
           Return to shore

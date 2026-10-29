@@ -16,3 +16,10 @@ export const UPLOAD_TYPES: Record<string, UploadTypeConfig> = {
   AUDIOS:    { title: 'Audios',    accept: 'audio/mpeg, audio/wav, audio/ogg',  Icon: AudiosIcon, limits: { individual: MB20,  cumulative: MB100 } },
   DOCUMENTS: { title: 'Documents', accept: '*',                                 Icon: FilesIcon,  limits: { individual: MB20,  cumulative: MB100 } },
 };
+
+/** What a composer may offer. UI hint only: the server must enforce the same policy. */
+export type MediaKind = 'image' | 'video' | 'audio' | 'document' | 'gif' | 'meme';
+export const ALL_MEDIA: readonly MediaKind[] = ['image', 'video', 'audio', 'document', 'gif', 'meme'];
+
+/** File kinds that appear in the attachment menu, keyed to their `UPLOAD_TYPES` entry. */
+export const FILE_KIND_KEY = { image: 'IMAGES', video: 'VIDEOS', audio: 'AUDIOS', document: 'DOCUMENTS' } as const;

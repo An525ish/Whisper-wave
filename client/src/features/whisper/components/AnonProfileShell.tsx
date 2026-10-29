@@ -68,6 +68,7 @@ export default function AnonProfileShell({
       sparks={partner.sparks}
       stats={partner.stats}
       links={partner.links}
+      photos={partner.photos}
       reactions={partner.reactions}
       typing={partnerTyping}
       left={partnerLeft}

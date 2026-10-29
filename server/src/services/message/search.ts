@@ -1,4 +1,4 @@
-import * as messageRepo from '../../repositories/message.js';
+import * as messageSearchRepo from '../../repositories/messageSearch.js';
 import type {
   JumpToDateInput,
   JumpToDateResult,
@@ -58,7 +58,7 @@ export const searchMessages = async (
     };
   };
 
-  const rows = await messageRepo.searchInChat({
+  const rows = await messageSearchRepo.searchInChat({
     chatId,
     query: trimmed,
     scope: options?.scope,
@@ -97,7 +97,7 @@ export const jumpToDate = async (
     throw new AppError(400, 'Invalid date');
   }
 
-  const target = await messageRepo.findJumpTargetForDay(
+  const target = await messageSearchRepo.findJumpTargetForDay(
     chatId,
     dayStart,
     dayEnd
@@ -129,8 +129,8 @@ export const listActiveDates = async (
   }
 
   const [dates, oldest] = await Promise.all([
-    messageRepo.listActiveDatesInRange(chatId, from, to, timeZone || 'UTC'),
-    messageRepo.findOldestMessage(chatId),
+    messageSearchRepo.listActiveDatesInRange(chatId, from, to, timeZone || 'UTC'),
+    messageSearchRepo.findOldestMessage(chatId),
   ]);
 
   const minYear = oldest

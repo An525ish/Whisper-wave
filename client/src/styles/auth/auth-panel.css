@@ -1,0 +1,275 @@
+.auth-panel-wrap {
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.75rem;
+}
+
+.auth-panel-orbit {
+  position: absolute;
+  inset: -18%;
+  z-index: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 180deg,
+    transparent 0deg,
+    rgba(1, 195, 109, 0.18) 40deg,
+    transparent 90deg,
+    transparent 180deg,
+    rgba(86, 152, 255, 0.1) 220deg,
+    transparent 280deg
+  );
+  filter: blur(28px);
+  opacity: 0.7;
+  animation: var(--animate-auth-orbit);
+}
+
+@media (max-width: 767px) {
+  .auth-panel-orbit,
+  .auth-panel__sheen {
+    display: none;
+  }
+}
+
+.auth-panel {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(235, 236, 236, 0.1);
+  background:
+    radial-gradient(
+      120% 80% at 50% -10%,
+      rgba(1, 195, 109, 0.14) 0%,
+      transparent 55%
+    ),
+    linear-gradient(
+      165deg,
+      rgba(57, 48, 70, 0.72) 0%,
+      rgba(42, 33, 54, 0.88) 48%,
+      rgba(33, 26, 42, 0.92) 100%
+    );
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(235, 236, 236, 0.08);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+/* Soft top highlight instead of a hard green rail */
+.auth-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(1, 195, 109, 0.55) 35%,
+    rgba(235, 236, 236, 0.35) 50%,
+    rgba(1, 195, 109, 0.45) 65%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.auth-panel__sheen {
+  position: absolute;
+  top: -20%;
+  left: 0;
+  width: 45%;
+  height: 140%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(235, 236, 236, 0.1),
+    transparent
+  );
+  pointer-events: none;
+  animation: var(--animate-auth-sheen);
+}
+
+.auth-panel__pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-green);
+  animation: var(--animate-auth-pulse);
+}
+
+.auth-panel__mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-bottom: 1.15rem;
+  text-align: center;
+}
+
+.auth-panel__mode::after {
+  content: '';
+  width: 2.75rem;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(1, 195, 109, 0.85) 50%,
+    transparent 100%
+  );
+}
+
+.auth-panel__mode-label {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.4vw, 1.65rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+/* Panel: content-sized on mobile (modest bottom gap, no huge empty stretch) */
+.auth-shell {
+  overflow-x: clip;
+}
+
+@media (max-width: 767px) {
+  .auth-shell {
+    min-height: auto !important;
+    height: auto !important;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  .auth-panel__body {
+    min-height: 0 !important;
+  }
+
+  .auth-face-body {
+    min-height: auto !important;
+  }
+
+  .auth-face-body .mt-auto {
+    margin-top: 1rem;
+  }
+
+  .auth-ambience__glow--a,
+  .auth-ambience__glow--b,
+  .auth-ambience__glow--c,
+  .auth-ripple,
+  .auth-ambience__sine,
+  .auth-ambience__signal span,
+  .auth-panel__pulse,
+  .auth-forgot__badge-dot {
+    animation: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-shell {
+    --auth-panel-min-h: 38rem;
+    overflow: hidden;
+  }
+
+  .auth-panel__body {
+    min-height: var(--auth-panel-min-h);
+  }
+
+  .auth-face-body,
+  .auth-forgot {
+    min-height: calc(var(--auth-panel-min-h) - 4.5rem);
+  }
+}
+
+/* 3D flip — login ↔ register (all breakpoints) */
+.auth-flip {
+  position: relative;
+  perspective: 1400px;
+  width: 100%;
+}
+
+.auth-flip__card {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.4, 0.05, 0.2, 1);
+}
+
+.auth-flip--back .auth-flip__card {
+  transform: rotateY(180deg);
+}
+
+.auth-flip__face {
+  width: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.auth-flip__face--front {
+  position: relative;
+  z-index: 2;
+  transform: rotateY(0deg);
+}
+
+.auth-flip__face--back {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  transform: rotateY(180deg);
+  pointer-events: none;
+}
+
+.auth-flip--back .auth-flip__face--front {
+  pointer-events: none;
+}
+
+.auth-flip--back .auth-flip__face--back {
+  pointer-events: auto;
+}
+
+/* Shared height so flip doesn’t collapse; sized from register on desktop */
+@media (min-width: 768px) {
+  .auth-flip {
+    min-height: calc(var(--auth-panel-min-h) - 4.5rem);
+  }
+
+  .auth-flip__card {
+    position: absolute;
+    inset: 0;
+  }
+
+  .auth-flip__face--front {
+    position: absolute;
+    inset: 0;
+    overflow-x: visible;
+    overflow-y: hidden;
+  }
+
+  .auth-flip__face--back {
+    position: absolute;
+    inset: 0;
+    overflow-x: visible;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
+/* Mobile: active face drives height; inactive face overlays for the flip */
+@media (max-width: 767px) {
+  .auth-flip--back .auth-flip__face--front {
+    position: absolute;
+    inset: 0;
+  }
+
+  .auth-flip--back .auth-flip__face--back {
+    position: relative;
+    inset: auto;
+    overflow: visible;
+  }
+}

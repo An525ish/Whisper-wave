@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as chatApi from '@/features/chat/api/chat';
-import { queryKeys } from '@/features/chat/hooks';
+import * as chatApi from '../api/chat';
+import { queryKeys } from '.';
 
 export function useSendFriendRequestMutation() {
   const queryClient = useQueryClient();

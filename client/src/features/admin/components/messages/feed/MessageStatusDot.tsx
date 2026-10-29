@@ -1,8 +1,8 @@
-type MessageStatusDotProps = {
+type Props = {
   status?: string;
 };
 
-const MessageStatusDot = ({ status }: MessageStatusDotProps) => {
+const MessageStatusDot = ({ status }: Props) => {
   if (status === 'sent') {
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-green">

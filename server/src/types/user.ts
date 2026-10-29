@@ -17,6 +17,10 @@ export type IUserFields = {
   lastSeen?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
+  strikes?: Array<{ reason: string; at: Date }>;
+  /** Opt-in unfiltered meme feed (18+ self-declared at enable time). */
+  memeUnfiltered?: boolean;
+  memeUnfilteredAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -29,6 +33,7 @@ export type LeanUser = {
   avatar: UserAvatar;
   bio?: string;
   lastSeen?: Date;
+  strikes?: Array<{ reason: string; at: Date }>;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -94,6 +99,8 @@ export type UpdateUserPatch = Partial<{
   lastSeen: Date;
   passwordResetToken: string | null;
   passwordResetExpires: Date | null;
+  memeUnfiltered: boolean;
+  memeUnfilteredAt: Date | null;
 }>;
 
 export type AuthResult = {

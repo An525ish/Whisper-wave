@@ -282,3 +282,24 @@
     transition: none;
   }
 }
+
+
+.acr-vibe-locked__who {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acr-vibe-locked__val {
+  font-variant-numeric: tabular-nums;
+  color: rgb(235 236 236 / 0.5);
+}
+
+.acr-vibe-locked__list .is-done .acr-vibe-locked__val {
+  color: var(--color-green);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acr-vibe-locked { animation: none; }
+  .acr-vibe-locked__bar > span { transition: none; }
+}

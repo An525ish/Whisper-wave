@@ -7,10 +7,10 @@ export {
   useAdminMeQuery,
   useAdminLoginMutation,
   useAdminLogoutMutation,
-} from '@/features/admin/hooks/useAdminAuth';
+} from './useAdminAuth';
 
 // Dashboard stats
-export { useAdminStatsQuery } from '@/features/admin/hooks/useAdminStats';
+export { useAdminStatsQuery } from './useAdminStats';
 
 // Users (+ impersonation)
 export {
@@ -19,38 +19,69 @@ export {
   useDeleteAdminUserMutation,
   useImpersonateMutation,
   useAdminImpersonationLogsQuery,
-} from '@/features/admin/hooks/useAdminUsers';
+} from './useAdminUsers';
 
 // Messages
 export {
   useAdminMessagesQuery,
   useDeleteAdminMessageMutation,
   useRetryAdminMessageMutation,
-} from '@/features/admin/hooks/useAdminMessages';
+} from './useAdminMessages';
 
 // Groups
 export {
   useAdminGroupsQuery,
   useDeleteAdminGroupMutation,
   useRemoveGroupMemberMutation,
-} from '@/features/admin/hooks/useAdminGroups';
+} from './useAdminGroups';
 
 // Attachments / media
 export {
   useAdminAttachmentsQuery,
   useDeleteAdminAttachmentsMutation,
-} from '@/features/admin/hooks/useAdminAttachments';
+} from './useAdminAttachments';
 
 // Activity feed / presence
 export {
   useAdminActivityPresenceQuery,
   useAdminActivityEventsQuery,
-} from '@/features/admin/hooks/useAdminActivity';
+} from './useAdminActivity';
+
+// Rooms / bans / feature flags
+export {
+  useAdminRoomsQuery,
+  useUpsertRoomMutation,
+  useCloseInstanceMutation,
+  useRoomBansQuery,
+  useBanIdentityMutation,
+  useLiftBanMutation,
+  useFeatureFlagMutation,
+} from './useAdminRooms';
+
+// Reports queue
+export {
+  useAdminReportsQuery,
+  useReviewReportMutation,
+  useReportActionMutation,
+} from './useAdminReports';
+
+// Memes blocklist
+export {
+  useMemeBlocklistQuery,
+  useBlockMemeMutation,
+  useUnblockMemeMutation,
+} from './useAdminMemes';
+
+// Blocked words
+export { useWordFilterQuery, useSaveWordFilterMutation } from './useAdminWordFilter';
+
+// Moderation audit trail
+export { useModAuditQuery } from './useAdminAudit';
 
 // Composed page view-models
-export { useActivityPage } from '@/features/admin/hooks/useActivityPage';
-export { useAttachmentsPage } from '@/features/admin/hooks/useAttachmentsPage';
-export { useDashboardPage } from '@/features/admin/hooks/useDashboardPage';
-export { useGroupsPage } from '@/features/admin/hooks/useGroupsPage';
-export { useUsersPage } from '@/features/admin/hooks/useUsersPage';
-export { useMessagesPage } from '@/features/admin/hooks/useMessagesPage';
+export { useActivityPage } from './useActivityPage';
+export { useAttachmentsPage } from './useAttachmentsPage';
+export { useDashboardPage } from './useDashboardPage';
+export { useGroupsPage } from './useGroupsPage';
+export { useUsersPage } from './useUsersPage';
+export { useMessagesPage } from './useMessagesPage';

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { useAdminStatsQuery } from '@/features/admin/hooks';
-import type { AdminStats } from '@/features/admin/types';
-import type { DashboardMetric } from '@/features/admin/types';
+import { useAdminStatsQuery } from '.';
+import type { AdminStats } from '../types';
+import type { DashboardMetric } from '../types';
 import {
   buildCompositionSegments,
   formatDashboardUpdated,
@@ -9,7 +9,7 @@ import {
   pendingRequestsHint,
   sumSeries,
   weekHint,
-} from '@/features/admin/utils/dashboard';
+} from '../utils/dashboard';
 
 export function useDashboardPage() {
   const { data, dataUpdatedAt } = useAdminStatsQuery();

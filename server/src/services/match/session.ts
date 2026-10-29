@@ -1,12 +1,9 @@
 import type { ChainableCommander } from 'ioredis';
 import { getRedis } from '../../config/redis.js';
 import { logger } from '../../utils/logger.js';
-import type {
-  AnonSession,
-  CreateSessionInput,
-  SessionMessageCounts,
-  StoredAnonMessage,
-} from '../../types/match.js';
+import type { AnonSession, CreateSessionInput, SessionMessageCounts } from '../../types/match.js';
+import type { StoredAnonMessage } from '../../types/matchMessage.js';
+import { nextEngagement } from './vibeEligibility.js';
 import { META_FIELDS, REDIS_KEYS, TTL } from './keys.js';
 
 /**
@@ -266,6 +263,7 @@ export const recordMessage = async (
     from: message.from,
     content: message.content,
     sentAt: message.sentAt,
+    ...(message.image ? { image: message.image } : {}),
   });
   const idPrefix = message.id ? `{"id":${JSON.stringify(message.id)},` : '';
 
@@ -282,8 +280,27 @@ export const recordMessage = async (
     String(TTL.session),
     field
   );
-  return Number(accepted) === 1;
+  if (Number(accepted) !== 1) return false;
+  // ponytail: read-modify-write, not atomic. Two sends in the same millisecond can
+  // drop one gap; harmless for a 5-minute threshold. Upgrade: fold into the Lua script.
+  const meta = REDIS_KEYS.meta(sessionId);
+  const [eg, la, lf] = await getRedis().hmget(meta, META_FIELDS.engaged, META_FIELDS.lastAt, META_FIELDS.lastFrom);
+  const next = nextEngagement(
+    la && lf ? { engagedMs: Number(eg ?? 0), lastAt: Number(la), lastFrom: lf } : null,
+    message.from,
+    message.sentAt
+  );
+  await getRedis().hset(meta, {
+    [META_FIELDS.engaged]: next.engagedMs,
+    [META_FIELDS.lastAt]: next.lastAt,
+    [META_FIELDS.lastFrom]: next.lastFrom,
+  });
+  return true;
 };
+
+/** Sustained back-and-forth time so far (the vibe gate's input). */
+export const getEngagedMs = async (sessionId: string): Promise<number> =>
+  Number((await getRedis().hget(REDIS_KEYS.meta(sessionId), META_FIELDS.engaged)) ?? 0);
 
 /** Messages accepted from each side so far (the vibe gate's input). */
 export const getMessageCounts = async (sessionId: string): Promise<SessionMessageCounts> => {

@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import AttachmentSenderMeta from './AttachmentSenderMeta';
-import DeletedTag from '@/features/admin/components/attachments/cards/DeletedTag';
+import DeletedTag from './DeletedTag';
 import CopyButton from '@/shared/components/ui/CopyButton';
 import LinkIcon from '@/shared/components/ui/icons/Link';
-import { ATTACHMENT_LIST_CARD_CLASS } from '@/features/admin/constants/attachments';
+import { ATTACHMENT_LIST_CARD_CLASS } from '../../../constants/attachments';
 import ExternalLinkIcon from '@/shared/components/ui/icons/ExternalLink';
-import type { LinkItem } from '@/features/admin/types';
-import { urlDomain } from '@/features/admin/utils/attachments';
+import type { LinkItem } from '../../../types';
+import { urlDomain } from '../../../utils/attachments';
 
-type LinkCardProps = {
+type Props = {
   item: LinkItem;
   isSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (msgId: string) => void;
 };
 
-const LinkCard = ({ item, isSelectMode, isSelected, onToggleSelect }: LinkCardProps) => {
+const LinkCard = ({ item, isSelectMode, isSelected, onToggleSelect }: Props) => {
   const { url, msg } = item;
   const sender = msg.sender;
   const domain = urlDomain(url);

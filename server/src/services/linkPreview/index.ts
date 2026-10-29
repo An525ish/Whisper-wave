@@ -1,11 +1,17 @@
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import type { LinkPreviewData } from '../../types/linkPreview.js';
 import { AppError } from '../../utils/AppError.js';
 
 const MAX_BYTES = 200_000;
 const TIMEOUT_MS = 6_000;
 
-const PRIVATE_HOST =
-  /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|::1)/;
+const MAX_REDIRECTS = 3;
+
+/** Loopback, private, link-local (cloud metadata 169.254.x), CGNAT, ULA and unspecified addresses. */
+const PRIVATE_ADDR =
+  /^(0\.|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|::1?$|f[cd][0-9a-f]{2}:|fe80:|::ffff:)/i;
+const PRIVATE_NAME = /^(localhost|.*\.(local|internal|localhost))$/i;
 
 const pick = (html: string, patterns: RegExp[]): string | null => {
   for (const re of patterns) {
@@ -42,11 +48,31 @@ const assertPublicUrl = (rawUrl: string): URL => {
     throw new AppError(400, 'Only http/https URLs are allowed');
   }
 
-  if (PRIVATE_HOST.test(parsed.hostname)) {
+  if (PRIVATE_NAME.test(parsed.hostname) || PRIVATE_ADDR.test(parsed.hostname.replace(/^\[|\]$/g, ''))) {
     throw new AppError(400, 'Private URLs are not allowed');
   }
 
   return parsed;
+};
+
+/**
+ * Resolve the host and refuse if ANY address is non-public, so a public-looking name
+ * that points at 127.0.0.1 or the cloud metadata IP is rejected.
+ * ponytail: resolve-then-fetch leaves a small DNS-rebinding window. Upgrade: pin the
+ * resolved IP in a custom undici dispatcher.
+ */
+const assertPublicHost = async (parsed: URL): Promise<void> => {
+  const host = parsed.hostname.replace(/^\[|\]$/g, '');
+  if (isIP(host)) return; // already checked by assertPublicUrl
+  let addrs: { address: string }[];
+  try {
+    addrs = await lookup(host, { all: true });
+  } catch {
+    throw new AppError(502, 'Failed to fetch URL');
+  }
+  if (addrs.length === 0 || addrs.some((a) => PRIVATE_ADDR.test(a.address))) {
+    throw new AppError(400, 'Private URLs are not allowed');
+  }
 };
 
 const readLimitedHtml = async (
@@ -137,15 +163,25 @@ export const getLinkPreview = async (rawUrl: string): Promise<LinkPreviewData> =
   const timer = setTimeout(() => ac.abort(), TIMEOUT_MS);
 
   try {
-    const response = await fetch(rawUrl, {
-      signal: ac.signal,
-      headers: {
-        'User-Agent': 'WhisperWaveBot/1.0 (link preview; +https://whisperwave.app)',
-        Accept: 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      redirect: 'follow',
-    });
+    // Redirects are followed by hand so every hop is re-checked against the private ranges.
+    let target = parsed;
+    let response: Response;
+    for (let hop = 0; ; hop++) {
+      await assertPublicHost(target);
+      response = await fetch(target.href, {
+        signal: ac.signal,
+        headers: {
+          'User-Agent': 'WhisperWaveBot/1.0 (link preview; +https://whisperwave.app)',
+          Accept: 'text/html,application/xhtml+xml',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        redirect: 'manual',
+      });
+      const location = response.status >= 300 && response.status < 400 ? response.headers.get('location') : null;
+      if (!location) break;
+      if (hop >= MAX_REDIRECTS) throw new AppError(502, 'Too many redirects');
+      target = assertPublicUrl(new URL(location, target).href);
+    }
 
     if (!response.ok) {
       throw new AppError(502, `Target URL returned ${response.status}`);
@@ -160,7 +196,7 @@ export const getLinkPreview = async (rawUrl: string): Promise<LinkPreviewData> =
     if (!reader) throw new AppError(502, 'No response body');
 
     const html = await readLimitedHtml(reader);
-    return parseOgPreview(html, rawUrl, response.url, parsed);
+    return parseOgPreview(html, rawUrl, target.href, parsed);
   } catch (err) {
     if (err instanceof AppError) throw err;
     throw new AppError(502, 'Failed to fetch URL');

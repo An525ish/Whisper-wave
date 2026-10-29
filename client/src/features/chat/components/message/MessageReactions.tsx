@@ -3,18 +3,20 @@ import { createPortal } from 'react-dom';
 import { useSocket } from '@/shared/lib/socket/SocketProvider';
 import { SOCKET_EVENTS } from '@/shared/constants/socket';
 import { useAuthStore } from '@/features/auth';
-import ReactionAddIcon from '@/features/chat/components/message/ReactionAddIcon';
-import ReactionStrip, { REACTION_SURFACE_CLASS, saveRecentEmoji } from '@/features/chat/components/message/ReactionStrip';
-import type { MessageReaction } from '@/features/chat/types/chat';
+import ReactionAddIcon from '@/shared/components/ui/icons/ReactionAdd';
+import ReactionStrip, { REACTION_SURFACE_CLASS, saveRecentEmoji } from './ReactionStrip';
+import type { MessageReaction } from '../../types/chat';
 
-type MessageReactionsProps = {
+type Props = {
   reactions: MessageReaction[];
   messageId: string;
   chatId: string;
   sameSender: boolean;
+  /** Incoming group messages have a 28px avatar plus gap before the bubble; line up with the bubble, not the avatar. */
+  hasAvatar?: boolean;
 };
 
-const MessageReactions = ({ reactions, messageId, chatId, sameSender }: MessageReactionsProps) => {
+const MessageReactions = ({ reactions, messageId, chatId, sameSender, hasAvatar = false }: Props) => {
   const socket = useSocket();
   const user = useAuthStore((s) => s.user);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -30,6 +32,7 @@ const MessageReactions = ({ reactions, messageId, chatId, sameSender }: MessageR
     const handler = (e: MouseEvent) => {
       const t = e.target as Node;
       if (triggerRef.current?.contains(t) || portalRef.current?.contains(t)) return;
+      if (t instanceof Element && t.closest('[data-reaction-picker]')) return;
       closePicker();
     };
     document.addEventListener('mousedown', handler);
@@ -52,10 +55,13 @@ const MessageReactions = ({ reactions, messageId, chatId, sameSender }: MessageR
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const gap = 6;
+      // The strip is ~44px tall: flip above the trigger when there's no room below,
+      // so a message near the bottom of the screen never hides its own picker.
+      const fitsBelow = rect.bottom + gap + 48 <= window.innerHeight - 8;
       setPickerStyle({
         position: 'fixed',
         zIndex: 9999,
-        top: rect.bottom + gap,
+        ...(fitsBelow ? { top: rect.bottom + gap } : { bottom: window.innerHeight - rect.top + gap }),
         right: Math.max(8, window.innerWidth - rect.right),
       });
     }
@@ -77,8 +83,8 @@ const MessageReactions = ({ reactions, messageId, chatId, sameSender }: MessageR
       )
     : null;
 
-  const alignClass = sameSender ? 'right-2' : 'left-2';
-  const rowClass = `-mt-1 z-10 flex flex-wrap items-center gap-1 ${sameSender ? 'self-end mr-2 justify-end' : 'self-start ml-2 justify-start'}`;
+  const alignClass = sameSender ? 'right-2' : hasAvatar ? 'left-[2.75rem]' : 'left-2';
+  const rowClass = `-mt-1 z-10 flex flex-wrap items-center gap-1 ${sameSender ? 'self-end mr-2 justify-end' : hasAvatar ? 'self-start ml-[2.75rem] justify-start' : 'self-start ml-2 justify-start'}`;
 
   const smileyTrigger = !hasReactions ? (
     <button

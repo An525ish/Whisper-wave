@@ -1,5 +1,7 @@
+import '../styles/spark-pass.css';
 import { Link } from 'react-router-dom';
-import { useScrollReveal } from '@/features/landing/hooks/useScrollReveal';
+import { useScrollReveal } from '../hooks/useScrollReveal';
+import { ROUTES } from '@/shared/constants/routes';
 
 const FEATURES = [
   { id: 'gender', label: 'Gender filters', hint: 'match who you want' },
@@ -162,7 +164,7 @@ const SparkPassSection = () => {
             <span>₹1,499 / year</span>
           </p>
 
-          <Link to="/auth" className="spark-pass__cta">
+          <Link to={ROUTES.auth} className="spark-pass__cta">
             Get Spark Pass
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path

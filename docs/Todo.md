@@ -14,6 +14,68 @@ Scope decisions settled Sep 2026:
   Sequential; the thread you just left is not archived (transcripts die with the session).
 - Guests are never capped. Any quota applies to **signed-in** users only.
 
+Hub audit gaps (HUB_PLAN §3.3) — resolved in Phase 0–1, Oct 2026:
+
+- Connected-DM reports now write userId-keyed Redis blocks (`blockUsers`) — a
+  reported account can no longer rematch the reporter anonymously.
+- Pairing skips candidates the account already keeps (one indexed
+  `Connection` lookup per join) — the DM is reused on Connect instead.
+- A guest who closes the tab after a mutual vibe redeems via Redis claims
+  (`match:claim:{anonId}:{sessionId}`, 7 d) + `GET /api/connection/pending`, visible as
+  chat-list ghost rows — the `sessionStorage` token is no longer the only proof.
+- Quota is client-visible (`GET /api/match/quota` → hub card "N left today").
+- Resolved by design: the `connectToken` `jti` stays unconsumed — seat-binding
+  already rejects cross-account replays (403), same-user replays are
+  idempotent-success, and single-use tokens would turn double-submits and
+  crash-retries into 409s without stopping first-use theft (see HUB_PLAN
+  §7.2.8).
+
+Rooms safety backlog (HUB_PLAN §9.3) — shipped Oct 2026: room lock/unlock +
+per-instance slow override (mod menu + header controls), shadow-mute (sender
+echo only), self-harm resources card (detection flags support, never bans or
+reports), moderation audit trail (mod actions + admin ban/close/feature-flips,
+admin list endpoint), mid-session hours enforcement, admin reports panel with
+SLA ages.
+
+Trust ladder (3b core) — shipped Oct 2026: computed `new → standard →
+trusted` (7 d + clean 30 d), resolved once at room join (hot path stays
+Mongo-free), trusted members may post links, trusted creators list instantly
+(owner decision D4 amended: everyone else starts unlisted + one-tap admin
+approval; unreviewed public listing for brand-new accounts stays out), admin
+bans record strikes, template `mods` assign volunteers. Remaining 3b:
+game-night hosting, unlisted invites.
+
+Games (HUB_PLAN Phase 4) is **skipped** by decision D7 — no route, no nav item.
+
+## Hub backlog (open)
+
+Product / safety:
+
+- **Counsel sign-off** on the Dark shelf + member-opt-in Unfiltered 18+ mode
+  (D6 amended), instant listing for trusted accounts (D4 amended) and the
+  strength of the first-post challenge — questions in `LEGAL_BRIEF.md`.
+- **Turnstile upgrade**: replace the arithmetic first-post challenge with a
+  real bot check (free Cloudflare Turnstile; verify terms/privacy impact first).
+- **Venting-room mod-presence rule** (open only while a mod is present) —
+  deferred; today Venting relies on strict automod + the resources card.
+- **`Private` room visibility** is not implemented — only `public` and
+  `unlisted` (invite link) exist.
+- **Remind me** for closed rooms (HUB_PLAN §7.3.2) — deferred.
+- **Persona chip on Home** (HUB_PLAN §7.1) — deferred; the alias is still edited
+  from the Whisper rail.
+
+Engineering:
+
+- **Load test script for rooms** (300 sockets in one room, 5 msg/s — the
+  HUB_PLAN §8.7 / §12 Phase 3 gate) is missing. Only `measure:whisper` exists.
+- **`rate-limit-redis`** for the HTTP limiters before running more than one
+  instance (also gates the Redis Socket.IO adapter work).
+- Whisper's room CSS sizes itself with `100dvh`; now that the hub tab bar stays
+  visible on `/whisper` it should size to its container instead.
+- Rename the older `FooProps` component types to `type Props` and move
+  component-local helper types into `types.ts` (CLAUDE.md §5) — mechanical
+  sweep, not done in the hub pass.
+
 ---
 
 ## Anonymous chat — free-tier roadmap (agreed)
@@ -240,7 +302,7 @@ job — the end-of-thread summary and the archive — so it was renamed `useThre
 rather than left named for a feature that no longer exists.
 
 The original justification was that starters raise the conversation-start rate and
-so feed the `VIBE_UNLOCK` gate (90 s + ≥2 messages each side + ≥5 total). That
+so feed the `VIBE_UNLOCK` gate (5 min of sustained back-and-forth, replies within 60 s). That
 gate is unchanged and still governs the like button; only the nudge is gone. Worth
 watching real conversation-start rates before concluding the cost was nil.
 
@@ -349,6 +411,9 @@ rebuild it. The paid upsell is *preference* on top of it.
   ways to force it are fabricating placeholder `User` docs (breaks the
   "not stored in MongoDB" privacy promise) or threading `chat.kind: 'anon'`
   through `MessageBubble` (307 lines) and every read/reaction/forward/delete path.
+- ✅ **Photos in anon (D17).** Done via R2. Still open: tell users in Privacy that
+  photos are kept until an admin deletes them, add a retention limit, and add
+  image moderation if abuse shows up.
 - ❌ **Voice notes in anon.** Moderation is text-only today
   (`services/match/moderation.ts`, 3 categories, no audio). Charging for the
   least-protected surface is the wrong order.
@@ -773,8 +838,8 @@ These were identified in a full mobile UI/UX audit against iPhone SE (375×667px
 
 ## Post-review follow-ups (deferred from the PR #3 review)
 
-- Client test runner (vitest) is not set up — client logic is untested.
+- Client unit tests (vitest) cover pure utils and stores only — no DOM
+  rendering; component behaviour is checked manually.
 - `rate-limit-redis` for the HTTP limiters before running more than one instance.
-- Report admin UI — `GET /api/admin/reports` / `PATCH /api/admin/reports/:id` exist, no panel yet.
 - Refresh-restore limits of the whisper room — see the `features/whisper` notes.
 - `socket.io-redis` adapter before horizontal scaling.

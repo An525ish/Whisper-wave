@@ -1,8 +1,8 @@
-type GroupsErrorStateProps = {
+type Props = {
   onRetry: () => void;
 };
 
-const GroupsErrorState = ({ onRetry }: GroupsErrorStateProps) => (
+const GroupsErrorState = ({ onRetry }: Props) => (
   <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
     <p className="text-sm font-medium text-body">Couldn&apos;t load groups</p>
     <button

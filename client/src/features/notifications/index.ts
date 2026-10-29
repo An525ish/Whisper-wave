@@ -5,3 +5,5 @@
 export { default as NotificationDialog } from './components/NotificationDialog';
 export { default as Title } from './components/Title';
 export { useNotificationsStore, selectTotalNotificationCount } from './store';
+export { usePushSession } from './hooks/usePushSession';
+export { usePushNotifications } from './hooks/usePushNotifications';

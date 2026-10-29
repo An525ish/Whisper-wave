@@ -1,9 +1,8 @@
 import ConfirmationModal from '@/shared/components/ui/modal/confirmation-modal/ConfirmationModal';
-import CreatorLeaveDialog from '@/features/chat/components/group/CreatorLeaveDialog';
+import CreatorLeaveDialog from '../../group/CreatorLeaveDialog';
+import type { OtherMember } from '../../../types/local';
 
-type OtherMember = { _id: string; name: string; avatar?: string; isAdmin?: boolean };
-
-type HeaderDialogsProps = {
+type Props = {
   name?: string;
   otherMembers: OtherMember[];
   isLeaveGroupLoading: boolean;
@@ -36,7 +35,7 @@ const HeaderDialogs = ({
   isConfirmDeleteChat, setIsConfirmDeleteChat, onConfirmDeleteChat,
   isConfirmUnfriend, setIsConfirmUnfriend, onConfirmUnfriend,
   isConfirmDeleteGroup, setIsConfirmDeleteGroup, onConfirmDeleteGroup,
-}: HeaderDialogsProps) => (
+}: Props) => (
   <>
     {isConfirmLeave ? (
       <ConfirmationModal

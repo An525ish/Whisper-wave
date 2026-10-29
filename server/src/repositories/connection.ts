@@ -26,12 +26,43 @@ export const findByUsers = async (
 ): Promise<ConnectionLean | null> =>
   Connection.findOne({ pairKey: pairKeyFor(userId1, userId2) }).lean<ConnectionLean>();
 
+/**
+ * Every account this user already keeps — so anonymous matching can skip them.
+ * One indexed query per queue join (signed-in users only); the caller holds
+ * the set for the scan window instead of looking up per candidate.
+ */
+export const listPartnerUserIds = async (userId: string): Promise<Set<string>> => {
+  const rows = await Connection.find({ users: userId }, { users: 1 }).lean<
+    Array<{ users: Types.ObjectId[] }>
+  >();
+  const partners = new Set<string>();
+  for (const row of rows) {
+    for (const member of row.users) {
+      const id = member.toString();
+      if (id !== userId) partners.add(id);
+    }
+  }
+  return partners;
+};
+
 /** Re-point a connection at a (re)created chat when its original was deleted. */
 export const updateChat = async (
   id: Types.ObjectId | string,
   chatId: Types.ObjectId | string
 ): Promise<void> => {
   await Connection.updateOne({ _id: id }, { $set: { chat: chatId } });
+};
+
+/**
+ * Which of these chats began as an anonymous match — one indexed query for
+ * the whole inbox page, so the list can mark whisper-origin rows.
+ */
+export const findChatsWithConnections = async (chatIds: string[]): Promise<Set<string>> => {
+  if (chatIds.length === 0) return new Set();
+  const rows = await Connection.find({ chat: { $in: chatIds } }, { chat: 1 }).lean<
+    Array<{ chat: Types.ObjectId }>
+  >();
+  return new Set(rows.map((r) => r.chat.toString()));
 };
 
 /**

@@ -38,7 +38,7 @@ export default function WaitingRoom({
   const emptyQueue = !resuming && queueSize !== null && queueSize <= 1;
 
   return (
-    <main className="auth-shell relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background text-body">
+    <main className="auth-shell wr-shell relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background text-body">
       {/* Auth ambience */}
       <AuthAmbience />
 
@@ -133,7 +133,7 @@ export default function WaitingRoom({
         </div>
 
         {/* Text */}
-        <div>
+        <div className="w-full text-center">
           <h1 className="font-display text-[1.9rem] font-bold leading-none tracking-tight text-white">
             {resuming
               ? 'Reconnecting to your chat'

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm, useController, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '@/features/auth';
@@ -24,8 +25,11 @@ type Props = {
  */
 export default function VibePickerForm({ onJoin, loading }: Props) {
   const signedIn = useAuthStore((s) => s.user !== null);
+  const username = useAuthStore((s) => s.user?.username);
   const {
     control,
+    getValues,
+    setValue,
     register,
     handleSubmit: onFormSubmit,
     formState: { errors },
@@ -35,12 +39,20 @@ export default function VibePickerForm({ onJoin, loading }: Props) {
     resolver: zodResolver(joinQueueFormSchema),
     mode: 'onChange',
     defaultValues: {
-      displayName: '',
+      displayName: username?.slice(0, MAX_DISPLAY_NAME_LENGTH) ?? '',
       gender: null,
       ageConfirmed: false,
       vibeTags: [],
     },
   });
+
+  // Auth can settle after mount: prefill once, only while the field is still empty,
+  // so we never overwrite what the person typed. They can edit it freely.
+  useEffect(() => {
+    if (username && !getValues('displayName')) {
+      setValue('displayName', username.slice(0, MAX_DISPLAY_NAME_LENGTH), { shouldValidate: true });
+    }
+  }, [username, getValues, setValue]);
 
   // `useWatch` (not `watch`) is safe under React Compiler's memoization.
   const displayName = useWatch({ control, name: 'displayName' });
@@ -187,7 +199,7 @@ export default function VibePickerForm({ onJoin, loading }: Props) {
               state. The anonymity promise still holds, because the alias is what
               the partner sees, but "no account" would now be a lie. */}
           {signedIn
-            ? 'Signed in · your alias stays anonymous to them · chats vanish when you leave'
+            ? 'Signed in · chats vanish when you leave'
             : 'No account · chats vanish when you leave · completely anonymous'}
         </p>
       </div>

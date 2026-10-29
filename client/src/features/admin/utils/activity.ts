@@ -1,4 +1,4 @@
-import type { AdminActivityEvent, AdminActivityEventGroup } from '@/features/admin/types';
+import type { AdminActivityEvent, AdminActivityEventGroup } from '../types';
 
 /** Compact relative time for activity feed rows (e.g. `5m`, `2h`). */
 export const activityRelativeTime = (dateStr: string | undefined): string => {

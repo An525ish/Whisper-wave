@@ -26,7 +26,7 @@ const menuIconClass =
 const headerBellIconClass =
   'h-[1.125rem] w-[1.125rem] stroke-[1.75] text-body-300 transition md:h-5 md:w-5 md:stroke-[1.5]';
 
-type DefaultActionsProps = {
+type Props = {
   isDotsMenu: boolean;
   searchOpen: boolean;
   buttonRef: RefObject<HTMLButtonElement | null>;
@@ -49,14 +49,6 @@ type DefaultActionsProps = {
   isUnfriendLoading?: boolean;
 };
 
-type MenuRowProps = {
-  label: string;
-  icon: ReactNode;
-  onClick?: () => void;
-  disabled?: boolean;
-  tone?: 'default' | 'accent' | 'danger';
-};
-
 const chipTone = {
   default: 'bg-white/6 text-body-700 group-hover:bg-white/10 group-hover:text-body',
   accent: 'bg-green/15 text-green group-hover:bg-green/25',
@@ -75,7 +67,7 @@ const MenuRow = ({
   onClick,
   disabled,
   tone = 'default',
-}: MenuRowProps) => (
+}: { label: string; icon: ReactNode; onClick?: () => void; disabled?: boolean; tone?: 'default' | 'accent' | 'danger' }) => (
   <button
     type="button"
     disabled={disabled}
@@ -114,7 +106,7 @@ const HeaderActions = ({
   isDeleteGroupLoading,
   isDeleteChatLoading,
   isUnfriendLoading,
-}: DefaultActionsProps) => (
+}: Props) => (
   <>
     <div className="md:hidden">
       <AccountBar

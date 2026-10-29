@@ -32,7 +32,7 @@ export const findOrCreate = async (
         expiresAt: new Date(Date.now() + SEVEN_DAYS_MS),
       },
     },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   ).lean<PendingLean>();
   if (!doc) throw new Error('PendingConnection upsert returned no document');
   return doc;
@@ -40,6 +40,77 @@ export const findOrCreate = async (
 
 export const findBySessionId = async (sessionId: string): Promise<PendingLean | null> =>
   PendingConnection.findOne({ sessionId }).lean<PendingLean>();
+
+/**
+ * Rows where this account is bound and the partner is not — "waiting for
+ * them". Only `pending` rows: `processing` is mid-completion (the announce
+ * will resolve it), `completed` is already a DM, `expired` is dead.
+ */
+export const findWaitingForUser = async (userId: string): Promise<PendingLean[]> =>
+  PendingConnection.find({
+    status: 'pending',
+    $or: [
+      { 'sides.0.userId': new Types.ObjectId(userId), 'sides.1.userId': null },
+      { 'sides.1.userId': new Types.ObjectId(userId), 'sides.0.userId': null },
+    ],
+  })
+    .sort({ createdAt: -1 })
+    .lean<PendingLean[]>();
+
+/**
+ * Of these sessions, the ones where this account already holds a seat (any
+ * status) — used to hide Redis claims that are already spent.
+ */
+export const findSessionIdsBoundToUser = async (
+  userId: string,
+  sessionIds: string[]
+): Promise<string[]> => {
+  if (sessionIds.length === 0) return [];
+  const id = new Types.ObjectId(userId);
+  const rows = await PendingConnection.find(
+    { sessionId: { $in: sessionIds }, $or: [{ 'sides.0.userId': id }, { 'sides.1.userId': id }] },
+    { sessionId: 1 }
+  ).lean<Array<{ sessionId: string }>>();
+  return rows.map((r) => r.sessionId);
+};
+
+/**
+ * Release this account's seat (cancel flow, `pending` rows only). The partner's side is left alone
+ * to expire — they get no signal, per the neutral-copy rule.
+ */
+export const unbindUser = async (sessionId: string, userId: string): Promise<boolean> => {
+  const id = new Types.ObjectId(userId);
+  const res = await PendingConnection.updateOne(
+    // Only while still `pending`: a seat must never be nulled under a
+    // `processing` or `completed` row — that would orphan a live connection.
+    { sessionId, status: 'pending', $or: [{ 'sides.0.userId': id }, { 'sides.1.userId': id }] },
+    [
+      {
+        $set: {
+          sides: {
+            $map: {
+              input: '$sides',
+              as: 'side',
+              in: {
+                $mergeObjects: [
+                  '$$side',
+                  {
+                    userId: {
+                      $cond: [{ $eq: ['$$side.userId', id] }, null, '$$side.userId'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ],
+    // Mongoose 9 rejects array (aggregation-pipeline) updates unless opted in.
+    { updatePipeline: true }
+  );
+  return res.modifiedCount > 0;
+};
 
 /**
  * Atomically claim processing rights — prevents two simultaneous /connection/complete
@@ -86,7 +157,7 @@ export const bindSideToUser = async (
   return PendingConnection.findOneAndUpdate(
     { sessionId, [field]: { $in: [null, userId] } },
     { $set: { [field]: userId } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean<PendingLean>();
 };
 
@@ -94,12 +165,12 @@ export const markCompleted = async (sessionId: string) =>
   PendingConnection.findOneAndUpdate(
     { sessionId },
     { $set: { status: 'completed', processingAt: null } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean();
 
 export const updateStatus = async (sessionId: string, status: PendingConnectionStatusDoc) =>
   PendingConnection.findOneAndUpdate(
     { sessionId },
     { $set: { status, processingAt: null } },
-    { new: true }
+    { returnDocument: 'after' }
   ).lean();

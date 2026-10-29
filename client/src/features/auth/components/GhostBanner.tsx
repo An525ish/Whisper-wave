@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useAuthStore } from '@/features/auth/store';
+import { useAuthStore } from '../store';
 
 const GhostIcon = ({ className = 'size-4' }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>

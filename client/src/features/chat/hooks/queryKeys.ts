@@ -1,5 +1,4 @@
 export const queryKeys = {
-  profile: ['profile'] as const,
   chats: ['chats'] as const,
   chatDetails: (id: string, populate?: boolean) =>
     ['chatDetails', id, populate ?? false] as const,

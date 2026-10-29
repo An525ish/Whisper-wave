@@ -21,9 +21,23 @@ export const adminReportIdParamSchema = z.object({
 });
 
 /** Mark a report reviewed; optionally extend the block between the pair. */
-export const adminReportReviewSchema = z.object({
-  reviewed: z.boolean().default(true),
-  blockAnonId: z.boolean().default(false),
+export const adminReportReviewSchema = z
+  .object({
+    reviewed: z.boolean().default(true),
+    blockAnonId: z.boolean().default(false),
+    /** What was done (RUNBOOK) — required when resolving. */
+    actionNote: z.string().trim().max(500).optional(),
+  })
+  .refine((b) => !b.reviewed || Boolean(b.actionNote), {
+    message: 'Say what was done before marking a report reviewed',
+    path: ['actionNote'],
+  });
+
+/** One-click offender action on a room report. Review stays a separate step. */
+export const adminReportActionSchema = z.object({
+  action: z.enum(['ban', 'hide']),
+  scope: z.enum(['room', 'global']).default('room'),
+  durationMin: z.number().int().min(1).max(60 * 24 * 365).default(1440),
 });
 
 export const adminRemoveMemberParamSchema = z.object({
@@ -74,4 +88,25 @@ export const adminImpersonationLogsQuerySchema = z.object({
 
 export const adminDeleteAttachmentsSchema = z.object({
   messageIds: z.array(z.string().min(1)).min(1).max(100),
+});
+
+export const adminAnonImagesQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(60).default(30),
+  before: z.string().optional(),
+});
+
+export const adminDeleteAnonImagesSchema = z.object({
+  ids: z.array(z.string().regex(/^[a-f\d]{24}$/i)).min(1).max(100),
+});
+
+/** `PUT /admin/moderation/words`. Unknown category ids are ignored by the service. */
+export const adminWordFilterSchema = z.object({
+  enabled: z.boolean(),
+  categories: z.record(
+    z.string().max(40),
+    z.object({
+      enabled: z.boolean(),
+      terms: z.array(z.string().trim().min(1).max(60)).max(500),
+    })
+  ),
 });

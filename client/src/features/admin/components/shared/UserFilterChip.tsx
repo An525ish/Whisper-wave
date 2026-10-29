@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import Image from '@/shared/components/ui/Image';
 import { SEARCH_DEBOUNCE_MS } from '@/shared/constants/app';
 import { useDebounce } from '@/shared/hooks/useDebounce';
-import { useAdminUsersQuery } from '@/features/admin/hooks';
-import type { UserFilterOption } from '@/features/admin/types';
+import { useAdminUsersQuery } from '../../hooks';
+import type { UserFilterOption } from '../../types';
 
 type Props = {
   value: UserFilterOption | null;

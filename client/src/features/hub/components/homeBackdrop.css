@@ -1,0 +1,26 @@
+/**
+ * Hub home (`hw-*`) — page canvas and the tuning of the shared `ab-*` backdrop.
+ * Motion contract: everything decorative freezes under `prefers-reduced-motion`,
+ * and entrance states end visible.
+ */
+
+/* ── Page canvas + landing-grade backdrop ─────────────────────────── */
+
+/* Plain canvas: the washes live in the viewport-fixed backdrop below, so there is
+   no pane-shaped gradient to leave a seam next to the dock. */
+.hw-page {
+  overflow-x: clip; /* decorative glows/rings must never make the page scroll sideways */
+  background: var(--color-background);
+}
+
+/* Same tuning as the Rooms backdrop (violet mesh, teal glow, soft vignette), so
+   Home and Rooms read as one place. The shared backdrop is viewport-fixed. */
+.hw-bg {
+  --ab-mesh-mask: 75% 50% at 50% 8%;
+  --ab-violet-alpha: 0.28;
+  --ab-teal-top: 14%;
+  --ab-teal-alpha: 0.11;
+  --ab-vignette-pos: 85% 60% at 50% 12%;
+  --ab-vignette-alpha: 0.65;
+  --ab-violet-mobile-anim: ab-glow-a 10s ease-in-out infinite;
+}

@@ -1,7 +1,6 @@
 import { PRODUCT_VOICE } from '@/shared/constants/app';
 import AlreadyChattingModal from './AlreadyChattingModal';
 import AuthAmbience from './AuthAmbience';
-import SignedInNote from './SignedInNote';
 import VibePickerForm from './VibePickerForm';
 import type { JoinQueuePayload } from '../types';
 import './whisperShared.css';
@@ -69,7 +68,6 @@ export default function VibePicker({
             >
               <header className="auth-panel__mode mb-6">
                 <p className="auth-panel__mode-label">Enter the void</p>
-                <SignedInNote />
               </header>
 
               <VibePickerForm onJoin={onJoin} loading={loading} />

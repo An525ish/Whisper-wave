@@ -1,4 +1,5 @@
 import type { Document, Types } from 'mongoose';
+import type { RealtimeNotify } from './chat.js';
 import type { VibeTag } from './match.js';
 
 /**
@@ -62,10 +63,40 @@ export type ConnectionAnnouncement = {
   connectionId: string;
   anonIds: string[];
   userIds: [string, string];
+  /** Offline-push intents, one per recipient (see services/push). */
+  pushNotifications: RealtimeNotify[];
 };
 
 export type CompleteConnectionOutcome = {
   result: CompleteConnectionResult;
   /** Null unless this call actually completed (or re-completed) the connection. */
   announce: ConnectionAnnouncement | null;
+};
+
+/**
+ * One row of `GET /api/connection/pending` — something this account still
+ * owes a whisper connection, or is owed. Copy stays neutral: the client never
+ * learns whether the other side has an account.
+ */
+export type PendingConnectionItem = {
+  /** `claim:<sessionId>` (redeemable by me) or `pending:<sessionId>` (waiting for them). */
+  id: string;
+  sessionId: string;
+  origin: { partnerAlias: string; tags: VibeTag[] };
+  /** ISO timestamp when this item expires. */
+  expiresAt: string;
+  state: 'action_needed' | 'waiting_for_partner';
+};
+
+/**
+ * A mutual-like claim: the proof of a seat that outlives the tab (Redis,
+ * 7 days, one per anonId+session — see `services/match/claim.ts`).
+ */
+export type ConnectionClaim = {
+  sessionId: string;
+  /** Holder's seat: 0 = anon1, 1 = anon2. */
+  seat: 0 | 1;
+  originNames: [string, string];
+  originTags: [VibeTag[], VibeTag[]];
+  createdAt: number;
 };

@@ -1,0 +1,269 @@
+/** The room's join page: tinted banner, join panel, house rules, centered state card. */
+
+/* Each room gets one of four tints (stable per slug) as an RGB triplet. */
+.rmq-tone--0 { --tone: 139 107 255; }
+.rmq-tone--1 { --tone: 53 224 200; }
+.rmq-tone--2 { --tone: 1 195 109; }
+.rmq-tone--3 { --tone: 86 152 255; }
+
+.rmq-page {
+  --tone: 139 107 255;
+  position: relative;
+  min-height: 100%;
+  overflow-x: clip;
+}
+
+.rmq-main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  max-width: 64rem;
+  flex-direction: column;
+  gap: 1.75rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+@media (min-width: 768px) {
+  .rmq-main { gap: 2.5rem; padding: 2.5rem 2rem 4rem; }
+}
+
+.rmq-center {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  min-height: 100%;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+/* ── Banner + join panel ──────────────────────────────────────────── */
+
+.rmq-grid { display: grid; gap: 1.75rem; }
+
+@media (min-width: 768px) {
+  .rmq-grid { grid-template-columns: 0.8fr 1.2fr; align-items: stretch; gap: 2.5rem; }
+}
+
+.rmq-info { display: flex; flex-direction: column; justify-content: center; gap: 1.1rem; }
+
+.rmq-hero { position: relative; }
+
+/* The gate: an art panel, tall on desktop, a wide crop on phones. */
+.rmq-scene {
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 4;
+  border-radius: 1.75rem;
+  border: 1px solid rgb(var(--tone) / 0.28);
+  box-shadow: 0 40px 90px -30px rgb(var(--tone) / 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Desktop: the gate stretches to the height of the details beside it, so the two
+   columns always end on the same line. */
+@media (min-width: 768px) {
+  .rmq-scene { height: 100%; min-height: 28rem; aspect-ratio: auto; }
+}
+
+/* Door: hinged on the left edge of the opening (x = 120). Knocking swings it wider. */
+.rmq-leaf {
+  transform-origin: 120px 300px;
+  transform: scaleX(0.6) skewY(-4deg);
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rmq-open .rmq-leaf { transform: scaleX(0.2) skewY(-9deg); }
+
+.rmq-room,
+.rmq-halo,
+.rmq-spill { opacity: 0.8; transition: opacity 0.8s ease; }
+
+.rmq-open .rmq-room,
+.rmq-open .rmq-halo,
+.rmq-open .rmq-spill { opacity: 1; }
+
+.rmq-sway { animation: rmq-sway 6s ease-in-out infinite; }
+.rmq-bubble { animation: rmq-bob 5s ease-in-out infinite; }
+.rmq-lamp { animation: rmq-flicker 3.6s ease-in-out infinite; }
+.rmq-dust { animation: rmq-dust 7s linear infinite; opacity: 0; }
+
+@keyframes rmq-sway { 0%, 100% { transform: translateX(-2px); } 50% { transform: translateX(3px); } }
+@keyframes rmq-bob { 0%, 100% { transform: translateY(0); opacity: 0.85; } 50% { transform: translateY(-9px); opacity: 1; } }
+@keyframes rmq-flicker { 0%, 100% { opacity: 0.85; } 35% { opacity: 1; } 60% { opacity: 0.78; } 80% { opacity: 0.95; } }
+@keyframes rmq-dust {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 0.7; }
+  100% { transform: translateY(-70px); opacity: 0; }
+}
+
+.rmq-pills { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+
+.rmq-pills .rm-officialpill {
+  border-color: rgb(var(--tone) / 0.5);
+  background: rgb(var(--tone) / 0.14);
+  color: rgb(var(--tone));
+}
+
+.rmq-chip {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.28rem 0.7rem;
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  color: var(--color-body-300);
+}
+
+.rmq-title {
+  margin-top: 0.7rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 5.5vw, 3.6rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.rmq-desc {
+  margin-top: 0.6rem;
+  max-width: 30rem;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: var(--color-body-300);
+}
+
+.rmq-crowd { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.9rem; }
+.rmq-crowd p { font-size: 0.85rem; font-weight: 600; color: var(--color-green); }
+
+.rmq-quiet {
+  width: fit-content;
+  margin-top: 0.9rem;
+  border-radius: 999px;
+  border: 1px dashed rgba(235, 236, 236, 0.22);
+  padding: 0.3rem 0.85rem;
+  font-size: 0.78rem;
+  color: var(--color-body-300);
+}
+
+.rmq-faces { display: flex; align-items: center; }
+
+.rmq-face {
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  margin-left: -0.5rem;
+  border-radius: 999px;
+  border: 2px solid #241c33;
+  background-clip: padding-box;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.rmq-face:first-child { margin-left: 0; }
+.rmq-face:nth-child(4n+1) { background: linear-gradient(150deg, #4b3680, #221639); }
+.rmq-face:nth-child(4n+2) { background: linear-gradient(150deg, #175048, #0d211d); }
+.rmq-face:nth-child(4n+3) { background: linear-gradient(150deg, #1a5c3a, #0e241b); }
+.rmq-face:nth-child(4n) { background: linear-gradient(150deg, #31487a, #141c30); }
+
+/* Join area: no box, just a tinted rule above it so it reads as the next step. */
+.rmq-join {
+  border-top: 1px solid rgb(var(--tone) / 0.3);
+  padding-top: 1.1rem;
+}
+
+.rmq-join .rm-persona,
+.rmq-join .rm-rulescard { border: 0; background: none; padding: 0; }
+
+/* ── House rules: a rulebook panel, numbered rows in two columns ──── */
+
+.rmq-rules {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(20, 14, 32, 0.5);
+  padding: 1.4rem 1.4rem 0.6rem;
+}
+
+.rmq-rules::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgb(var(--tone)), transparent);
+}
+
+.rmq-rules header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1rem; }
+.rmq-rules header p { font-size: 0.85rem; color: var(--color-body-300); }
+
+.rmq-rules__label {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.rmq-rules ol {
+  display: grid;
+  margin-top: 0.9rem;
+  list-style: none;
+  counter-reset: rmq-rule;
+}
+
+@media (min-width: 768px) {
+  .rmq-rules ol { grid-template-columns: 1fr 1fr; column-gap: 2.5rem; }
+}
+
+.rmq-rules li {
+  counter-increment: rmq-rule;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 1rem 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--color-body);
+}
+
+.rmq-rules li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+.rmq-rules li::before {
+  content: counter(rmq-rule, decimal-leading-zero);
+  flex-shrink: 0;
+  min-width: 2.4rem;
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  line-height: 1;
+  color: rgb(var(--tone));
+}
+
+/* ── Centered state card (loading, missing, closed) ───────────────── */
+
+.rmq-state {
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(20, 14, 32, 0.7);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 32px 70px -24px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 1.75rem 1.5rem;
+}
+
+.rmq-state--center { text-align: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rmq-sway,
+  .rmq-bubble,
+  .rmq-lamp,
+  .rmq-dust { animation: none !important; }
+
+  .rmq-leaf,
+  .rmq-room,
+  .rmq-halo,
+  .rmq-spill { transition: none; }
+}

@@ -12,6 +12,8 @@
 
 Whisper Wave is an anonymous chat app for Gen Z built around serendipity — you connect with a random stranger, no profile, no algorithm. If you vibe, you connect for real. If you don't, they're gone forever. That tension is the product.
 
+The app is a **hub**: a home page with several ways to meet people (one stranger, a room, a joke), where the persistent chat app is one destination inside it. Guests get a persona and every meeting surface; accounts get persistence. Whisper, Rooms and Memes are built (Rooms and Memes ship dark behind server flags); Games is skipped by decision. Phase status lives in the table below; the design, decisions and rollout live in [`HUB_PLAN.md`](./HUB_PLAN.md).
+
 The name works on two levels: "Whisper" = anonymous, ephemeral, secret. "Wave" = reaching out, connection, social energy.
 
 ---
@@ -33,6 +35,27 @@ Omegle proved the demand. It failed on safety, UX, and monetization. We build th
 - **Secondary**: 25–30, elder millennials with same appetite
 - What they want: authenticity, spontaneity, privacy, speed, aesthetic
 - What they hate: fake profiles, cringe algorithms, commitment before chemistry
+
+---
+
+## Voice (user-facing copy)
+
+Whisper Wave talks like a sharp friend, not a brand deck and not a chatbot.
+
+**Do**
+- Short sentences. Say what happens next.
+- Concrete product facts: anonymous, one stranger, chats not stored, find someone.
+- One clear primary action on hub home: Whisper.
+
+**Don't**
+- Em dashes (`—`). They read as AI. Use a period, comma, colon, or rewrite.
+- Stacked water metaphors (shore / tide / ripple / void) on top of the Wave brand.
+- Fake profundity ("the night is open", "quiet water", "still water").
+- Corporate warmth ("seamless", "journey", "we're thrilled", "delve").
+
+Hub `/home` is a **launcher**, not a manifesto: Whisper CTA first, Rooms/Memes only when live, pending chats in plain language for members. Trust said once, plainly.
+
+Cursor/Claude mirrors: `.cursor/rules/product-voice.mdc`, `.cursorrules`, `client/CLAUDE.md` § Product Voice.
 
 ---
 
@@ -283,6 +306,31 @@ See: [`TECH.md`](./TECH.md) for decision log.
 - New controllers: match, connection
 - **No live Stripe yet** unless we ship Spark Pass in the same phase
 
+### Hub Phases 0–1 — ✅ SHIPPED — $0
+- Hub shell (`HubShell` + `ChatsLayout`, rail + tab bar), `/home` launcher, `/chats` relocation with legacy redirect
+- Whisper session survives navigation (`WhisperSessionProvider` + live pill)
+- Mutual-like claims (tab-closing fix), pending ghost rows, client-visible quota, whisper-origin list markers
+- Stable guest identity (`gid` cookie + shared resolver); DM reports block rematching; pairing skips kept accounts
+- Measured Redis cost: ~154 cmds/session (see `HUB_PLAN.md` §10.3)
+
+### Hub Phase 2 — Laughs — ✅ SHIPPED (dark behind `FEATURE_MEMES`) — $0
+- JokeAPI v2 (no key; the default stream is safe-mode + full blacklist over Misc/Programming/Pun) rendered through Memegen URLs, proxied + cached server-side with provider blocklist and stale fallback. Source decision: [`HUB_PLAN.md`](./HUB_PLAN.md) §7.5 (D6)
+- Shuffle feed: shelf chips (Mix, Misc, Programming, Puns), virtualized infinite scroll to the server's last page, local reactions and hides, member-synced saves (guests save on-device with a sign-in nudge), report-a-joke (guests allowed; enough distinct reports auto-block it), find-someone interstitials. Home Memes preview + `/memes`; share-to-Chat for members via the GIF pipeline (`kind: 'meme'`, per-kind host allow-list)
+- **Unfiltered 18+ mode and the Dark shelf are kept** (D6 amended): a member opt-in with a stored 18+ declaration; never in the guest or default feed. Counsel sign-off is pending — see [`LEGAL_BRIEF.md`](./LEGAL_BRIEF.md)
+- Admin: memes blocklist panel (reports count, block, unblock)
+
+### Hub Phase 3a — Rooms — ✅ SHIPPED (dark until staffed hours + safety review) — $0
+- `/rooms` namespace (join/message/leave/react, acked, zero Redis per message), in-memory registry with soft/hard placement, alias disambiguation
+- Automod (slow mode, word list, link block, duplicate/flood suppression), per-gid rate limits, room/user/global bans (dual-key, TTL)
+- Mod tools: delete, mute, kick (+15-min ban), shadow-mute, lock/unlock, slow override; Wave bot prompts; mid-session hours enforcement
+- Reports with evidence snapshots + auto-hide at 3 reporters; self-harm resources card (never bans); moderation audit trail
+- 4 official rooms (seeded) + user creation: accounts with trust `trusted` (7+ days, no strikes) are listed in the lobby instantly, everyone else starts unlisted until an admin approves in one tap (D4 amended); the trust ladder (`new → standard → trusted`, link privileges) shipped early; unreviewed public listing for brand-new accounts stays out
+- Admin: rooms edit (mods, hours, rules), bans, panic card (Rooms/Memes, enforced + persisted), report queue with Hide / Ban / Mark reviewed (note required), audit; on-call runbook: [`RUNBOOK.md`](./RUNBOOK.md)
+- Still gated: stronger first-post challenge than the arithmetic one (Turnstile upgrade), lawyer pass, public user rooms for new accounts (3b)
+
+### Hub Phase 4 — Games — ⏭ SKIPPED by decision
+Not built, no route, no nav item. The `FEATURE_GAMES` flag and type still exist but nothing is surfaced. Rationale and the original design are kept in [`HUB_PLAN.md`](./HUB_PLAN.md) §7.4 in case it is revived.
+
 ### Phase 3 — Premium + Safety — first time we may spend
 - Stripe (free to integrate; we only pay % of real Spark Pass payments)
 - Content moderation APIs (paid — only after revenue)
@@ -313,6 +361,9 @@ See: [`TECH.md`](./TECH.md) for decision log.
 
 ## Non-Goals (for now)
 - Video/audio calls in anonymous phase (Phase 3+ only)
-- Public group rooms / Whisper Stories
+- Whisper Stories
 - AI companion
 - Desktop app
+
+(Public group rooms were a non-goal until the hub plan: official, moderated,
+time-boxed Rooms are now planned — see [`HUB_PLAN.md`](./HUB_PLAN.md) §7.3.)

@@ -3,17 +3,17 @@ import Image from '@/shared/components/ui/Image';
 import ConfirmationModal from '@/shared/components/ui/modal/confirmation-modal/ConfirmationModal';
 import SlideOverPanel from '@/shared/components/ui/SlideOverPanel';
 import TrashIcon from '@/shared/components/ui/icons/Trash';
-import { useDeleteAdminGroupMutation, useRemoveGroupMemberMutation } from '@/features/admin/hooks';
-import type { AdminGroupMember, AdminGroupRow } from '@/features/admin/types';
-import { formatGroupCreated } from '@/features/admin/utils/groups';
+import { useDeleteAdminGroupMutation, useRemoveGroupMemberMutation } from '../../../hooks';
+import type { AdminGroupMember, AdminGroupRow } from '../../../types';
+import { formatGroupCreated } from '../../../utils/groups';
 import { getInitial } from '@/shared/utils/helpers';
 
-type GroupDetailPanelProps = {
+type Props = {
   group: AdminGroupRow;
   onClose: () => void;
 };
 
-const GroupDetailPanel = ({ group, onClose }: GroupDetailPanelProps) => {
+const GroupDetailPanel = ({ group, onClose }: Props) => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [removeMemberTarget, setRemoveMemberTarget] = useState<AdminGroupMember | null>(null);
 

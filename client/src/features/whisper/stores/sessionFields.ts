@@ -18,6 +18,8 @@ export const sessionFields = {
   endedAt: null as number | null,
   sessionEndTracked: false,
   messages: [] as AnonMessage[],
+  /** `sentAt` of the newest of OUR messages the partner has seen. */
+  readUpTo: 0,
   chatId: null as string | null,
   connectionId: null as string | null,
   queueSize: null as number | null,

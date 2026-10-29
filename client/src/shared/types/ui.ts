@@ -21,12 +21,27 @@ export type TabItem = {
   icon?: ReactNode;
 };
 
+/** One destination in the app's primary navigation (rail on desktop, tab bar on mobile). */
+export type NavItem = {
+  id: string;
+  label: string;
+  to: string;
+  icon: ReactNode;
+  /** Attention count (e.g. unread). Zero or absent hides the badge. */
+  badge?: number;
+  /** The one action the nav wants you to take: drawn as a filled button on the tab bar. */
+  emphasis?: boolean;
+  /** Rail only: the phone tab bar leaves it out (it lives inside Home there). */
+  railOnly?: boolean;
+};
+
 export type TabVariant = 'underline' | 'pills';
 
 export type DropdownOption = {
   label: string;
   Icon?: ComponentType<IconProps>;
   handler: () => void;
+  danger?: boolean;
 };
 
 export type CarouselMember = Pick<User, '_id' | 'name'> & {
@@ -60,4 +75,11 @@ export type MessageGroup<TKey> = {
   joinedBelow: boolean;
   /** Last message of its run — the only one that draws the tail. */
   isTail: boolean;
+};
+
+/** Image/file thumbnail carried by a quoted reply preview. */
+export type ReplyPreviewAttachment = {
+  url: string;
+  name: string;
+  fileType: string;
 };

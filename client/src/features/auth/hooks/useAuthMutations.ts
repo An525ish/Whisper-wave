@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as authApi from '@/features/auth/api/auth';
-import { queryKeys } from '@/features/chat';
-import { useAuthStore } from '@/features/auth/store';
+import { runBeforeSignOut } from '@/shared/lib/api/authBridge';
+import * as authApi from '../api/auth';
+import type { ProfileResponse } from '../types';
+import { useAuthStore } from '../store';
+import { authKeys } from './queryKeys';
 
 export function useSignInMutation() {
   const setUser = useAuthStore((s) => s.setUser);
@@ -11,7 +13,7 @@ export function useSignInMutation() {
     mutationFn: authApi.signIn,
     onSuccess: (res) => {
       setUser(res.data);
-      queryClient.setQueryData(queryKeys.profile, res.data);
+      queryClient.setQueryData<ProfileResponse>(authKeys.profile, { success: true, user: res.data });
     },
   });
 }
@@ -48,7 +50,7 @@ export function useCompleteSignUpMutation() {
     mutationFn: authApi.completeSignUp,
     onSuccess: (res) => {
       setUser(res.data);
-      queryClient.setQueryData(queryKeys.profile, res.data);
+      queryClient.setQueryData<ProfileResponse>(authKeys.profile, { success: true, user: res.data });
     },
   });
 }
@@ -58,7 +60,10 @@ export function useSignOutMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: authApi.signOut,
+    mutationFn: async () => {
+      await runBeforeSignOut();
+      return authApi.signOut();
+    },
     onSettled: () => {
       clear();
       queryClient.clear();
@@ -74,7 +79,7 @@ export function useGoogleSignInMutation() {
     mutationFn: authApi.googleSignIn,
     onSuccess: (res) => {
       setUser(res.data);
-      queryClient.setQueryData(queryKeys.profile, res.data);
+      queryClient.setQueryData<ProfileResponse>(authKeys.profile, { success: true, user: res.data });
     },
   });
 }
@@ -91,7 +96,11 @@ export function useResetPasswordMutation() {
   });
 }
 
-export function useUpdateProfileMutation() {
+/**
+ * Own-profile update. `onUpdated` lets the caller refresh anything of its own
+ * that shows this user's name/avatar (auth must not know about chats).
+ */
+export function useUpdateProfileMutation(onUpdated?: () => void) {
   const setUser = useAuthStore((s) => s.setUser);
   const queryClient = useQueryClient();
 
@@ -100,9 +109,9 @@ export function useUpdateProfileMutation() {
     onSuccess: (res) => {
       if (res.user) {
         setUser(res.user);
-        queryClient.setQueryData(queryKeys.profile, res.user);
+        queryClient.setQueryData<ProfileResponse>(authKeys.profile, { success: true, user: res.user });
       }
-      void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+      onUpdated?.();
     },
   });
 }

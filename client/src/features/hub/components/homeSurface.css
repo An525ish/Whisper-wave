@@ -1,0 +1,168 @@
+/**
+ * Hub home (`hw-*`) — glass surface system, eyebrow, aurora.
+ * Motion contract: everything decorative freezes under `prefers-reduced-motion`,
+ * and entrance states end visible.
+ */
+
+/* ── Landing-grade surface system, hub-scoped ─────────────────────────── */
+
+/** Glass panel: layered light, deep blur, inner highlights. */
+.hw-glass {
+  background:
+    linear-gradient(158deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03) 42%, rgba(139, 107, 255, 0.07)),
+    linear-gradient(158deg, rgba(42, 33, 56, 0.92), rgba(26, 20, 36, 0.95));
+  backdrop-filter: blur(26px) saturate(155%);
+  -webkit-backdrop-filter: blur(26px) saturate(155%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 40px 90px -30px rgba(6, 3, 16, 0.9),
+    0 12px 40px -14px rgba(90, 63, 214, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/** Rim light: gradient border via masked pseudo-layer. Host must be relative. */
+.hw-rim {
+  position: relative;
+}
+
+.hw-rim::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(150deg, rgba(139, 107, 255, 0.65) 0%, transparent 38%, transparent 60%, rgba(1, 195, 109, 0.5) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/** Iridescent display text: violet → teal clip. */
+.hw-iri {
+  background: linear-gradient(100deg, #b6a4ff, #35e0c8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/** Aurora blobs: screen-blend color fields, slow drift. */
+.hw-aurora {
+  position: absolute;
+  border-radius: 9999px;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: hw-aurora 22s ease-in-out infinite alternate;
+}
+
+@keyframes hw-aurora {
+  from {
+    transform: translate3d(-4%, -2%, 0) scale(1.05);
+  }
+  to {
+    transform: translate3d(5%, 3%, 0) scale(1.18);
+  }
+}
+
+/** Slow orbit for dashed rings (transform-origin set inline per SVG). */
+.hw-orbit {
+  animation: hw-spin 32s linear infinite;
+}
+
+.hw-orbit-rev {
+  animation: hw-spin-rev 46s linear infinite;
+}
+
+@keyframes hw-spin-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes hw-eq {
+  0%,
+  100% {
+    transform: scaleY(0.34);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/** HUD micro-labels: mono, tracked, faint. */
+.hw-hud {
+  font-family: var(--font-hw-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/** Section eyebrows: plain-language pills, never codes. */
+.hw-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    0 8px 22px -10px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 0.36rem 0.8rem;
+  font-family: var(--font-hw-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-body-700);
+}
+
+.hw-eyebrow__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #b6a4ff;
+  box-shadow: 0 0 8px rgba(182, 164, 255, 0.8);
+}
+
+.hw-eyebrow--live {
+  border-color: rgba(1, 195, 109, 0.4);
+  background:
+    linear-gradient(180deg, rgba(1, 195, 109, 0.14), rgba(1, 195, 109, 0.04)),
+    rgba(13, 9, 18, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(1, 195, 109, 0.1),
+    0 8px 26px -8px rgba(1, 195, 109, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  color: var(--color-green);
+}
+
+.hw-eyebrow--live .hw-eyebrow__dot {
+  background: var(--color-green);
+  box-shadow: 0 0 8px rgba(1, 195, 109, 0.9);
+  animation: hw-blink-dot 2.4s ease-in-out infinite;
+}
+
+.hw-eyebrow--soon {
+  border-style: dashed;
+  border-color: rgba(235, 236, 236, 0.2);
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-body-300);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-aurora,
+  .hw-orbit-rev,
+  .hw-eyebrow__dot {
+    animation: none !important;
+  }
+}

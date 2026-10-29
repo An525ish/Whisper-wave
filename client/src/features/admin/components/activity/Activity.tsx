@@ -4,7 +4,7 @@ import ActivityHeader from './header/ActivityHeader';
 import ActivityStats from './stats/ActivityStats';
 import OnlinePanel from './presence/OnlinePanel';
 import ActivityFilterTabs from './feed/ActivityFilterTabs';
-import { useActivityPage } from '@/features/admin/hooks';
+import { useActivityPage } from '../../hooks';
 
 const Activity = () => {
   const {

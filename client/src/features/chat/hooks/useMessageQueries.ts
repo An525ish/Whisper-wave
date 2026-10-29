@@ -5,8 +5,8 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import * as chatApi from '@/features/chat/api/chat';
-import { queryKeys } from '@/features/chat/hooks';
+import * as chatApi from '../api/chat';
+import { queryKeys } from '.';
 import { isValidChatId } from '@/shared/utils/helpers';
 
 export function useInfiniteMessagesQuery(chatId?: string) {

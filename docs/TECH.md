@@ -149,7 +149,7 @@ This is the anonymous product: queue → random chat → like → connect → si
 |---|---|---|
 | **Now (dev)** | Your laptop: `npm run server` + Vite | $0 |
 | **First share with friends** | Optional: Render / Railway / Fly **free** web service + Atlas M0 + R2/ImageKit free | $0, with caveats (free hosts sleep, Socket.IO can be flaky) |
-| **Real public launch** | Cheap VPS (Hetzner/Oracle always-free) **or** paid Render when users exist | Pay only then |
+| **Real public launch** | Oracle Always Free ARM VM (**2 OCPU / 12 GB** total; older "4 / 24" figures are stale; idle reclaim if CPU/net/mem p95 stays under 20 % for 7 days) with Redis self-hosted on the same VM (D5/D16); a ~$5/mo VPS is the fallback | $0 (fallback ~$5/mo) |
 
 We do **not** use Vercel for the API. Vercel serverless cannot hold Socket.IO connections. The chat server must be a long-running Node process.
 
@@ -189,7 +189,7 @@ When Spark Pass makes money, *then* add automated text/image moderation
 | Drop MongoDB | We need it for accounts + connected chats. |
 | Put anonymous chats in Mongo | Breaks “they’re gone if you disconnect” + extra Atlas usage on free tier. |
 | Redis in Phase 1 | Extra moving part + another account. In-memory `Map` was enough until matching existed (Phase 2 has since added it). |
-| Auth0 / Firebase / Clerk | Cost at scale. JWT + cookies is enough. |
+| Auth0 / Firebase Auth / Clerk | Cost at scale. JWT + cookies is enough. (We use only Firebase Cloud Messaging as a free push transport — not Firebase Auth, DB or Analytics.) |
 | Datadog / Sentry / Logtail | Pino to stdout is free. |
 | Stripe before Spark Pass UI exists | No one to charge yet. Integrate when premium ships. |
 | Separate media worker (BullMQ) | Needs Redis + more ops. Keep compression in-process until it hurts. |
@@ -227,7 +227,8 @@ successful reveal writes to Mongo.
 Queues need atomic claim operations. Mongo has no native queue primitive, and a
 `findOneAndUpdate` poll races under concurrency. Anon sessions must also *die*
 when users leave — TTL is built for that. See `PHASE2.md` for the full rationale
-and the cost model (free tier ≈ 60–70 sessions/day, an estimate).
+and the cost model (measured Oct 2026: ~154 cmds per 10-message mutual-like
+session ≈ ~3,200 sessions/month on the 500K cmds/month Upstash free tier).
 
 Server: the `ioredis` client library with explicit `host`/`port`/`tls.servername` so TLS SNI is set
 correctly for Upstash (passing a `rediss://` URL string skips SNI and fails with
@@ -247,7 +248,7 @@ should hit; `/ready` is what a load balancer should gate traffic on.
 | `match:messages:{sessionId}` | List | 24 h | Last 50 messages, so a refresh doesn't blank the thread. |
 | `match:active:{anonId}` | String | 24 h | anonId → current sessionId (reconnect replay). |
 | `match:presence:{anonId}` | String | **45 s** | Set when a socket drops. The match is only torn down when this lapses — a network blip must not end the conversation. |
-| `match:blocked:{anonId}` | Set | 30 d | Blocked partners. Checked both ways before pairing. |
+| `match:blocked:{anonId}` | Set | 30 d | Blocked partners. Checked both ways before pairing. Sets are also keyed by `userId` (DM reports), and the read path checks every identity each side holds. |
 | `match:reactions:{sessionId}:{messageId}` | Set | 24 h | `anonId:reaction` members. Deleted when the session ends. |
 | `match:user:{userId}` | Set | 24 h | Signed-in account → sessionIds it holds (stops matching your own other device). |
 | `match:whispers:{userId}` | Counter | 24 h rolling | Signed-in users' whisper quota window. |
@@ -257,6 +258,8 @@ should hit; `/ready` is what a load balancer should gate traffic on.
 | `match:meta:{sessionId}` | Hash | 24 h | Per-side message counters (`c1`,`c2`) for the vibe gate + token-issue counter (`tk`). Deleted when the session ends. |
 | `match:autoreport:{sessionId}:{category}` | String | 24 h | Dedupe key so a sender cannot mint unlimited auto-reports. |
 | `match:joined:{anonId}` | String | 10 min | Marks a counted fresh join so refreshes/reconnects don't burn the signed-in quota. |
+| `match:claim:{anonId}:{sessionId}` | String (JSON) | 7 d | Mutual-like claim for one seat of one session (names/tags, no anonIds) — survives a closed tab so the connection can be redeemed after sign-in. One key per session, so two whispers never overwrite each other. Deleted on redeem. |
+| `match:claims:{anonId}` | Set | 7 d | Index of the sessionIds that hold a claim, so the pending list reads claims without a `SCAN`. Stale members (expired claim keys) are pruned on read. |
 
 Transcripts (`match:messages:*`, `match:reactions:*`) are deleted when a session ends.
 
@@ -267,7 +270,7 @@ via the httpOnly `anonId` cookie instead of `applySocketAuth`.
 
 | Direction | Events |
 |---|---|
-| Client → server | `ANON_MESSAGE` (acked), `ANON_TYPING_START`, `ANON_TYPING_STOP`, `ANON_LIKE`, `ANON_NEXT`, `ANON_REQUEUE`, `ANON_REACT` |
+| Client → server | `ANON_MESSAGE` (acked), `ANON_TYPING_START`, `ANON_TYPING_STOP`, `ANON_LIKE`, `ANON_NEXT`, `ANON_REQUEUE`, `ANON_REACT`, `ANON_READ` |
 | Server → client | `QUEUE_JOINED`, `MATCH_FOUND`, `MATCH_MESSAGE`, `MATCH_TYPING_START`, `MATCH_TYPING_STOP`, `SOMEONE_VIBING`, `MATCH_PARTNER_VIBED`, `MATCH_REACTION`, `MUTUAL_LIKE`, `MATCH_DISCONNECTED`, `MATCH_MESSAGE_REJECTED`, `MATCH_ERROR`, `SESSION_EXPIRED`, `CONNECTION_READY` |
 
 Messages carry `from: 'me' | 'them'`; the server never sends anonIds to clients.
@@ -290,6 +293,121 @@ compromised access token can't forge connection intent. Both sides call
 both receive `CONNECTION_READY` (anon namespace) / `WHISPER_CONNECTION_READY`
 (authenticated namespace). The token embeds no anonId. `pairKey` is a unique index on the sorted user
 pair, which is what enforces "one connection per pair".
+
+---
+
+## Hub backend — Rooms, Memes, flags (shipped dark)
+
+Design and decisions live in [`HUB_PLAN.md`](./HUB_PLAN.md); this section is the
+implementation map so it can't drift from the code.
+
+### Guest identity: `gid`
+
+A random UUID in an httpOnly cookie (`GID_COOKIE_TTL_DAYS`, default 30), minted
+by `middlewares/gid.ts` and resolved with `anonId` / JWT by `socket/identity.ts`
+into one identity shape. It exists for **safety only**: bans, rate-limit
+continuity, reporter de-duplication and persona restore. It is disclosed on the
+Privacy and Cookies pages. A forged or malformed cookie is treated as absent
+because the value ends up in ban keys.
+
+### `/rooms` namespace
+
+Identity via the shared resolver (`gid` required, JWT optional); the Origin
+allowlist below applies. Client → server: `ROOM_JOIN`, `ROOM_LEAVE`,
+`ROOM_MESSAGE` (acked), `ROOM_REACT`, `ROOM_MOD`. Server → client: `ROOM_STATE`,
+`ROOM_MESSAGE` (fan-out), `ROOM_REACTION`, `ROOM_PRESENCE`, `ROOM_MOD_ACTION`,
+`ROOM_CLOSED`, `ROOM_ERROR`, `ROOM_PAUSED`/`ROOM_RESUMED` (listening rooms with `requiresModPresence`; post refusal code `mod_absent`). Acked failures answer `{ ok: false, code }` where
+`code` is the stable contract (`server/src/constants/room-events.ts`); the client
+mirror is in `client/src/shared/constants/socket.ts`.
+
+**State is in-process, not Redis.** A registry in server memory holds instances,
+members and a ring of recent messages; room messages cost zero Redis commands
+and are rate-limited per `gid` in-process. A restart drops every room's recent
+history and reconnects clients (announced in-room). Single node is an explicit
+assumption — the scale trigger (Redis Socket.IO adapter + shared directory) is
+listed in `HUB_PLAN.md` §10.4. Mongo holds only `Room` (templates), `RoomBan`
+(TTL on `until`), `RoomInvite`, `ModAudit`, and report evidence.
+
+### Reports and evidence
+
+`Report` carries `targetGid`, `targetUserId`, `roomInstanceId`, `roomMessageId`,
+`evidence[]` (alias, text, time, optional `hidden`; no IPs), `reviewedAt`,
+`actionNote` and `retainUntil`. A TTL index deletes reviewed reports 90 days
+after resolution (1 year for child-safety). Retention policy:
+[`LEGAL_BRIEF.md`](./LEGAL_BRIEF.md).
+
+### Memes
+
+`GET /api/memes` proxies JokeAPI v2 (no key) with an in-memory cache, stale
+fallback and a Mongo `MemeBlock` blocklist (admin-managed plus auto-block when
+enough distinct `gid`s report a joke, via `POST /api/memes/report`). Images are
+**not** proxied: the server composes `api.memegen.link` URLs and the browser
+loads them, so the browser contacts Memegen directly. The default stream is `safe-mode` + the full blacklist
+over Misc/Programming/Pun; the Dark shelf and unfiltered stream exist only for
+members whose `User.unfiltered` flag is on (set with an explicit 18+
+declaration). `page` stops at 14 (page ≥ 15 is a 400). Member saves live in
+`MemeSave` (unique `{user, source, externalId}`).
+
+### Rooms REST (`/api/rooms`)
+
+`GET /` lobby · `GET /mine` (auth) own rooms + private eligibility · `GET /reminders` (auth) ·
+`POST /` create (auth; body `visibility: 'public'|'private'`, default public) · `GET /:slug` info
+(optional auth; no proof = 404) · `PATCH|DELETE /:slug` host · `POST /:slug/request-listing`
+(unlisted only; private → 409) · `GET|POST /:slug/invites`, `DELETE /:slug/invites/:id` host ·
+`PUT|DELETE /:slug/reminder` · `POST /:slug/report`. Private rooms: `GET /mine` returns
+`{ rooms: [{ slug, title, visibility, status }], privateRooms: { eligibility: 'ok'|'flag_off'|'not_entitled', active, limit } }`.
+Private lifecycle: `Room.expireAt` is refreshed on join (≤ 1 write/h/room) and an hourly purge on the rooms
+sweep tick deletes expired private rooms with their invites and reminders (no Mongo TTL — it cannot cascade).
+
+### Feature flags
+
+`FEATURE_ROOMS` / `FEATURE_GAMES` / `FEATURE_MEMES` / `FEATURE_PRIVATE_ROOMS` (all default false; `FEATURE_PRIVATE_ROOMS` is a sub-flag of rooms) are boot defaults. Admin
+panic endpoints write a `FeatureOverride` row per surface, which wins over the
+env value and **survives restarts**. Flags are **enforced server-side**:
+`/api/rooms` and `/api/memes` return 404 and the `/rooms` namespace refuses
+joins when off (and closes live rooms). The resolved values reach the client in
+`GET /api/hub/summary`, which hides what is off. Games has a flag but no
+implementation.
+
+### Push notifications
+
+Optional FCM web push, free tier, **off unless every `FCM_*` var is set** (a partial
+set = off; all push code no-ops). Sending uses FCM HTTP v1 via `google-auth-library`
+(service account, token cached) and global `fetch`.
+
+- `GET /api/push/config` (public) → `{ enabled:false }` or `{ enabled:true, firebase:{apiKey,projectId,appId,messagingSenderId}, vapidKey }`.
+- `PUT /api/push/devices` `{ token, platform?:'web' }` and `DELETE /api/push/devices` `{ token }` (signed-in, 204). `PushDevice` upserts by token (a token moves to the latest user), max 10 per user (oldest evicted), 60-day TTL on `lastSeenAt`; all removed on account deletion. Dead tokens (404 / UNREGISTERED) are deleted on send.
+- Messages are **data-only** (`title, body, url, tag`); the service worker renders them. **Privacy:** pushes cross Google's servers, so they never contain message text ("New message" / "Sent an attachment").
+- Triggers: chat message, forwarded message (`Forwarded a message`, same chat title/url/tag), friend request, room opens (`room-open`: one-shot `RoomReminder` subscriptions, `PUT/DELETE /api/rooms/:slug/reminder`, `GET /api/rooms/reminders`; a 60 s in-process tick pushes `{title} is open now`, url `/rooms/{slug}`, tag `room-{slug}` to every subscriber regardless of presence since the lobby only polls, then deletes them), mod needed (`mod-needed`: first member into a `requiresModPresence` room with no mod seated pushes the template's `mods` regardless of presence; `{title} needs a moderator` / `{n} waiting`, url `/rooms/{slug}`, tag `room-mod-{slug}`, 10 min per-tag throttle), and anonymous connection saved (`Connection saved` / `{displayName} is now in your chats`, url `/chats`, tag `connection`; sent to both account-holder sides after `bindAndComplete`, never to anon guests), only for recipients who are **offline** (`isUserOnline`) and not the sender. Hooked in `flushNotifications` via `RealtimeNotify.push` (forwards ride the existing `NEW_MESSAGE_ALERT`), plus the socket text path and the connection controller (`announce.pushNotifications`). Throttle: 1 push per (user, tag) per 30 s, in-process (not Redis, to save commands).
+
+| Env | Purpose |
+|---|---|
+| `FCM_PROJECT_ID` | Firebase project id |
+| `FCM_SERVICE_ACCOUNT_JSON` | Service-account key, raw JSON or base64 (secret) |
+| `FCM_WEB_API_KEY`, `FCM_WEB_APP_ID`, `FCM_WEB_SENDER_ID` | Web app config (public) |
+| `FCM_WEB_VAPID_KEY` | Web Push certificate key pair (public) |
+
+### Guest first-post challenge (Turnstile)
+
+Rooms guests clear one check before their first post (members skip; a pass lasts 30 min). Cloudflare
+Turnstile is free and optional: **on only when both `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` are
+set**; otherwise a stateless arithmetic question runs as the dev/CI fallback (production logs a boot warning).
+
+- Ack `challenge`: `{ provider:'turnstile', siteKey }` or `{ provider:'arithmetic', token, prompt }`. Retry `challenge`: `{ provider:'turnstile', token }` (≤ 2048) or `{ token, answer }`.
+- Server verifies via siteverify (`services/rooms/turnstile.ts`, 4 s timeout, form-encoded). Wrong/expired token → `challenge_required`/`challenge_failed` with a fresh challenge; network/5xx/timeout → fail closed, `challenge_unavailable` (retryable). Failures count against the 5/min/gid limiter. Tokens/secrets are never logged.
+- The client loads `challenges.cloudflare.com` lazily (first guest post only); the server CSP allows it in `script-src`, `frame-src`, `connect-src`.
+
+| Env | Purpose |
+|---|---|
+| `TURNSTILE_SITE_KEY` | Public widget key (test: `1x00000000000000000000AA`) |
+| `TURNSTILE_SECRET_KEY` | Secret (test: `1x0000000000000000000000000000000AA`) |
+
+### Socket Origin allowlist
+
+Socket.IO's `allowRequest` checks `Origin` (`config/cors.ts`
+`isOriginAllowed`): the CORS allowlist or the server's own host; no `Origin`
+(non-browser) is allowed because it carries no ambient cookies. CORS headers
+alone do not stop a cross-site WebSocket upgrade.
 
 ---
 
@@ -336,8 +454,8 @@ Feature-sliced: `pages → features → shared` (shared never imports features).
 client/src/
   app/                 providers, router, queryClient, RouteError
   pages/               thin route entries (compose features)
-  layout/              AppWrapper / AdminWrapper
-  features/<domain>/   auth · chat · admin · profile · notifications · landing
+  layout/              HubShell / ChatsLayout / AdminWrapper
+  features/<domain>/   auth · chat · whisper · hub · rooms · memes · admin · profile · notifications · landing
                        api/ components/ hooks/ stores/ utils/ types.ts index.ts
   shared/              domain-agnostic UI, hooks, constants, types, lib/api (fetch), lib/socket
   assets/  styles/  main.tsx
@@ -367,4 +485,26 @@ Cursor rules live in `.cursor/rules/` (`acknowledge-rules`, `server-architecture
 | Sep 2026 | `SameSite: 'none'` (not `'strict'`) on refresh cookie in prod | `strict` blocks cross-origin cookie sends when client and API are on different domains |
 | Sep 2026 | Storage migrated from Cloudinary → R2 + ImageKit | R2: cheaper ($0.015/GB vs Cloudinary's credit model), no transformation credit limit. ImageKit: transform via URL params (`tr=w-N,f-auto,q-80`), 20GB free bandwidth. Raw key in DB means zero migration when swapping CDN. |
 | Sep 2026 | GIFs bypass ImageKit transform (`transformWidth={undefined}`) | ImageKit `f-auto` may strip animation; GIF identity requires raw delivery |
+| Oct 2026 | **D1** Guests enter the hub without an account | Alias persona; the account is the reward for persistence only |
+| Oct 2026 | **D2** Mobile tabs: Home · Rooms · Whisper · Chats, Memes inside Home | Five tabs is the ergonomic max; Play is skipped, so four; Memes stays a desktop rail item |
+| Oct 2026 | **D3** One persona across surfaces | One alias per person; never derived from the account name |
+| Oct 2026 | **D4** Rooms launch scope — *amended*: accounts with trust `trusted` (7+ days, no strikes) get instant public lobby listing; everyone else starts unlisted + one-tap admin approval; trust ladder shipped early; unreviewed public listing for brand-new accounts stays out | Safe harbour rests on response capability, not disclaimers; trust gates the abuse-prone path |
+| Oct 2026 | **D5** Redis: self-host on the VM when off the laptop; Upstash for dev | 500K cmds/month is ~108 whisper sessions/day; local Redis removes the cap at $0 |
+| Oct 2026 | **D6** Meme source: JokeAPI v2 + Memegen.link render; *amended*: Dark shelf and member-opt-in Unfiltered 18+ mode are kept (never in the guest/default feed). Counsel sign-off pending | No key, no bandwidth cost; opt-in keeps the default feed safe |
+| Oct 2026 | **D7** Games: skipped | Focus on Rooms/Whisper; design kept in HUB_PLAN §7.4 |
+| Oct 2026 | **D8** Guest stable id: `gid` 30-day cookie, safety-only | Bans must outlive the 24 h `anonId` without making matching identity persistent |
+| Oct 2026 | **D9** Guests may post in rooms after alias + first-post challenge, text only (members may get media per room, D18), no links | Low friction; abuse levers are `gid` bans and slow mode |
+| Oct 2026 | **D10** Owner is on call for reports | Drives the Grievance Officer page and the SLA display in the admin queue |
+| Oct 2026 | **D11** Production domain deferred | `whisper-wave.onrender.com` + localhost cover testing; buy when UGC memes (R2 custom domain) or leaving Render forces it |
+| Oct 2026 | **D12** Moderation: staff + automod at launch, volunteers in 3b | The only $0 option that is staffable |
+| Oct 2026 | **D13** Memes are a "Shuffle", not "For You" | No algorithmic feed |
+| Oct 2026 | **D14** A whisper survives navigation (provider + pill) | Nav one tap away makes reset-on-unmount a trap |
+| Oct 2026 | **D15** Both-member mutual like: one-tap Connect with a reveal note | Consent without friction |
+| Oct 2026 | **D17** Anon chat allows photos (JPG/PNG/WebP, 5 MB, 15 per person per chat) on R2. Rows live in `AnonImage` and stay until an admin deletes them in `/admin/anon-media` (R2 file + row), like main-chat media. Chat end does NOT delete them | Reports need evidence; no image moderation exists, so received photos are blurred until tapped. Signed-but-unsent uploads are not tracked and stay in R2. No retention limit yet: set one before real traffic. Privacy page must say photos are kept for moderation |
+| Oct 2026 | **D18** Rooms allow media for signed-in members, chosen per room by an admin: photos (JPG/PNG/WebP, 5 MB), GIFs, memes. Guests stay text only. Server enforces; the composer is the shared `ChatInput` | Rooms are not text only. Photos go to R2 under `ww/rooms/{slug}/{member}/` via a presigned PUT, verified (HeadObject) before the message is accepted, and deleted when the room instance closes or the message leaves the 100-message ring. A photo in a reported window is copied to `ww/kept/rooms/` and listed in admin (Anon photos page, source `room`) until an admin deletes it. Optional: an R2 lifecycle rule on `ww/rooms/` as a safety net for crashes |
+| Oct 2026 | **D16** Hosting: Oracle Always Free (2 OCPU / 12 GB), ~$5/mo VPS fallback | The only truly free always-on option |
+| Oct 2026 | Rooms/games state in process memory; Redis only for matching | Protects the Redis command budget; single-node assumption is explicit |
+| Oct 2026 | Feature flags enforced server-side + persisted (`FeatureOverride`) | A panic switch that a restart silently undoes is not a switch |
+| Oct 2026 | Socket.IO `allowRequest` Origin allowlist | CORS does not stop cross-site WebSocket upgrades |
+| Oct 2026 | Whisper claims keyed per session (`match:claim:{anonId}:{sessionId}` + `match:claims:{anonId}`) | One key per claim cannot overwrite a second whisper's claim |
 | Sep 2026 | Cookie `path` stays `/` for refresh token (not scoped to `/api/auth/refresh`) | Scoped path causes Set-Cookie/clearCookie sync bugs on sign-in, sign-out; single-path is simpler and still httpOnly+secure |

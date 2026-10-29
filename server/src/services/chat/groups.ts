@@ -4,19 +4,8 @@ import { GROUP_MAX_MEMBERS } from '../../constants/chat.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as chatReadRepo from '../../repositories/chatRead.js';
 import * as messageRepo from '../../repositories/message.js';
-import type {
-  AddGroupMembersInput,
-  ChatAvatar,
-  ChatMutationMessageResult,
-  ChatMutationResult,
-  CreateGroupChatServiceInput,
-  DeleteGroupInput,
-  LeaveGroupInput,
-  RealtimeNotificationsResult,
-  RemoveGroupMemberInput,
-  SetGroupMemberAdminInput,
-  UpdateGroupDetailsServiceInput,
-} from '../../types/chat.js';
+import type { ChatAvatar, RealtimeNotificationsResult } from '../../types/chat.js';
+import type { AddGroupMembersInput, ChatMutationMessageResult, ChatMutationResult, CreateGroupChatServiceInput, DeleteGroupInput, LeaveGroupInput, RemoveGroupMemberInput, SetGroupMemberAdminInput, UpdateGroupDetailsServiceInput } from '../../types/chatService.js';
 import { AppError } from '../../utils/AppError.js';
 import { deleteFromR2 } from '../../utils/storage.js';
 import {

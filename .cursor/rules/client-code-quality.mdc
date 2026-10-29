@@ -65,7 +65,7 @@ No `dangerouslySetInnerHTML` for user content.
   on decorative SVGs, visible focus, honor `prefers-reduced-motion`.
 - Path alias `@/` for cross-layer imports; relative only within a feature/folder.
 - Naming: Components PascalCase; hooks `useX`; utils camelCase; scalars SCREAMING_SNAKE_CASE; folders kebab-case.
-- Before done: `npm run typecheck` and `npm run lint` must pass.
+- Before done: `npm run typecheck`, `npm run lint` and `npm test` must pass.
 
 ## Performance
 

@@ -1,74 +1,14 @@
-import type { ReactNode } from 'react';
 import CopyButton from '@/shared/components/ui/CopyButton';
+import StatBlock from './StatBlock';
+import DetailRow from './DetailRow';
 import {
   fieldValue,
   formatUserJoined,
   lastActiveAccent,
   relativeTime,
-} from '@/features/admin/utils/users';
+} from '../../../utils/users';
 
-type StatBlockProps = {
-  label: string;
-  value: string;
-  valueClass?: string;
-  loading?: boolean;
-  copyValue?: string | null;
-};
-
-const StatBlock = ({
-  label,
-  value,
-  valueClass = 'text-body',
-  loading,
-  copyValue,
-}: StatBlockProps) => (
-  <div className="group relative px-4 py-4 text-center sm:px-5">
-    {copyValue && !loading ? (
-      <div className="absolute right-1.5 top-1.5 opacity-70 transition group-hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
-        <CopyButton value={copyValue} label={label} variant="panel" />
-      </div>
-    ) : null}
-    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-body-300/45">
-      {label}
-    </p>
-    {loading ? (
-      <div className="mx-auto mt-2.5 h-4 w-20 animate-pulse rounded bg-border/25" />
-    ) : (
-      <p className={`mt-2 font-semibold text-lg leading-tight tabular-nums ${valueClass}`}>
-        {value}
-      </p>
-    )}
-  </div>
-);
-
-type DetailRowProps = {
-  label: string;
-  children: ReactNode;
-  loading?: boolean;
-  copyValue?: string | null;
-};
-
-const DetailRow = ({ label, children, loading, copyValue }: DetailRowProps) => (
-  <div className="group px-3 py-1 sm:px-4">
-    <div className="flex items-start justify-between gap-2 rounded-xl px-2 py-3 transition hover:bg-primary/15 sm:px-3">
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-body-300/45">
-          {label}
-        </p>
-        {loading ? (
-          <div className="mt-2.5 h-4 w-3/4 max-w-xs animate-pulse rounded bg-border/25" />
-        ) : (
-          <div className="mt-2">{children}</div>
-        )}
-      </div>
-      {copyValue && !loading ? (
-        <CopyButton value={copyValue} label={label} variant="panel" />
-      ) : null}
-    </div>
-  </div>
-);
-
-type UserProfileDetailsProps = {
+type Props = {
   user?: {
     username?: string;
     email?: string;
@@ -80,7 +20,7 @@ type UserProfileDetailsProps = {
   isLoading: boolean;
 };
 
-const UserProfileDetails = ({ user, isLoading }: UserProfileDetailsProps) => {
+const UserProfileDetails = ({ user, isLoading }: Props) => {
   const email = fieldValue(user?.email);
   const bio = fieldValue(user?.bio);
   const username = fieldValue(user?.username);

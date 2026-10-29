@@ -1,14 +1,14 @@
-import InfiniteScrollSentinel from '@/features/admin/components/shared/InfiniteScrollSentinel';
+import InfiniteScrollSentinel from '../../shared/InfiniteScrollSentinel';
 import AttachmentsEmptyState from './AttachmentsEmptyState';
 import AttachmentsGridSkeleton from './AttachmentsGridSkeleton';
 import DocCard from '../cards/DocCard';
 import LinkCard from '../cards/LinkCard';
 import MediaCard from '../cards/MediaCard';
-import type { FlatItem, LinkItem } from '@/features/admin/types';
-import type { AttachmentKindFilter } from '@/features/admin/types';
+import type { FlatItem, LinkItem } from '../../../types';
+import type { AttachmentKindFilter } from '../../../types';
 import type { RefObject } from 'react';
 
-type AttachmentsContentProps = {
+type Props = {
   scrollRef: RefObject<HTMLDivElement | null>;
   isLoading: boolean;
   isSearchPending: boolean;
@@ -58,7 +58,7 @@ const AttachmentsContent = ({
   isSelectMode,
   selectedIds,
   onToggleSelect,
-}: AttachmentsContentProps) => (
+}: Props) => (
   <div
     ref={scrollRef}
     className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-1 scrollbar-hide"

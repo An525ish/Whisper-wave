@@ -1,9 +1,9 @@
-import UserFilterChip from '@/features/admin/components/shared/UserFilterChip';
-import { ADMIN_MIN_SEARCH_LEN } from '@/features/admin/constants/groups';
-import type { UserFilterOption } from '@/features/admin/types';
-import { groupsDirectorySubtitle } from '@/features/admin/utils/groups';
+import UserFilterChip from '../../shared/UserFilterChip';
+import { ADMIN_MIN_SEARCH_LEN } from '../../../constants/groups';
+import type { UserFilterOption } from '../../../types';
+import { groupsDirectorySubtitle } from '../../../utils/groups';
 
-type GroupsDirectoryHeaderProps = {
+type Props = {
   memberFilter: UserFilterOption | null;
   onMemberFilterChange: (value: UserFilterOption | null) => void;
   querySearch: string;
@@ -19,7 +19,7 @@ const GroupsDirectoryHeader = ({
   searchText,
   showMinSearchHint,
   onClearSearch,
-}: GroupsDirectoryHeaderProps) => (
+}: Props) => (
   <div className="mb-4 flex shrink-0 items-start justify-between gap-4">
     <div className="min-w-0 flex-1">
       <h2 className="font-semibold text-xl leading-none tracking-tight text-body">Directory</h2>

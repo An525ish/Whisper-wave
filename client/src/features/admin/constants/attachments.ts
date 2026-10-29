@@ -1,4 +1,4 @@
-import type { AttachmentKindFilter } from '@/features/admin/types';
+import type { AttachmentKindFilter } from '../types';
 
 export { ADMIN_MIN_SEARCH_LEN } from './common';
 

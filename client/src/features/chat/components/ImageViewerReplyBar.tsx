@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useSocket } from '@/shared/lib/socket/SocketProvider';
 import { SOCKET_EVENTS } from '@/shared/constants/socket';
-import ChatInput from '@/features/chat/components/conversation/composer/ChatInput';
-import * as chatApi from '@/features/chat/api/chat';
-import type { GifItem } from '@/features/chat/api/gif';
+import ChatInput from './conversation/composer/ChatInput';
+import * as chatApi from '../api/chat';
+import type { GifItem } from '../api/gif';
 import toast from 'react-hot-toast';
 
-type ImageViewerReplyBarProps = {
+type Props = {
   chatId: string;
   replyToMessageId: string;
 };
 
-const ImageViewerReplyBar = ({ chatId, replyToMessageId }: ImageViewerReplyBarProps) => {
+const ImageViewerReplyBar = ({ chatId, replyToMessageId }: Props) => {
   const socket = useSocket();
   const [message, setMessage] = useState('');
   // Attachments kept for ChatInput API compat — file upload not supported in viewer

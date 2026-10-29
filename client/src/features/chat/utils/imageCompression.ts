@@ -12,8 +12,7 @@
  * extension is updated to .jpg so it matches. Original display name is
  * preserved separately by the caller for the commit step.
  */
-
-export type ImageQuality = 'standard' | 'hd';
+import type { ImageQuality } from '../types/local';
 
 const PRESETS: Record<ImageQuality, { maxDimension: number; quality: number }> = {
   standard: { maxDimension: 1280, quality: 0.85 },

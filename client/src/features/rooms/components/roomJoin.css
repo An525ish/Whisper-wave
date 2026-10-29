@@ -1,0 +1,93 @@
+/** Pre-join doorway: back link, pills, title, description, house rules. */
+
+.rm-backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-body-300);
+  transition: color 0.18s ease;
+}
+
+.rm-backlink:hover {
+  color: var(--color-green);
+}
+
+.rm-backlink svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.rm-officialpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(139, 107, 255, 0.45);
+  background: rgba(139, 107, 255, 0.12);
+  padding: 0.28rem 0.7rem;
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b6a4ff;
+}
+
+.rm-officialpill svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+/* Rules list. */
+.rm-rulescard {
+  border-radius: 1.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.rm-rulescard__label {
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-green);
+}
+
+.rm-rulescard ol {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  list-style: none;
+  counter-reset: rm-rule;
+}
+
+.rm-rulescard li {
+  counter-increment: rm-rule;
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--color-body-700);
+}
+
+.rm-rulescard li::before {
+  content: counter(rm-rule, decimal-leading-zero);
+  flex-shrink: 0;
+  font-family: var(--font-hw-mono, ui-monospace, monospace);
+  font-size: 0.68rem;
+  color: var(--color-green);
+  border: 1px solid rgba(1, 195, 109, 0.35);
+  background: rgba(1, 195, 109, 0.07);
+  border-radius: 0.5rem;
+  padding: 0.15rem 0.35rem;
+  margin-top: 0.1rem;
+}
+
+.rm-joinerr {
+  margin-top: 0.7rem;
+  font-size: 0.8rem;
+  color: var(--color-red);
+}

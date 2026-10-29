@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import CloseIcon from '@/shared/components/ui/icons/Close';
 import { fileData, fileFormat, type FileDocType } from '@/shared/utils/fileFormat';
 
-type FilePreviewProps = {
+type Props = {
   file: File;
   onRemove: (file: File) => void;
 };
@@ -10,19 +10,23 @@ type FilePreviewProps = {
 const thumbClass = 'h-24 w-24 rounded object-cover';
 const thumbBox = 'h-24 w-24';
 
-const FilePreview = ({ file, onRemove }: FilePreviewProps) => {
+const FilePreview = ({ file, onRemove }: Props) => {
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
   const isAudio = file.type.startsWith('audio/');
   const fileExtension = fileFormat(file.name);
-  const [previewSrc] = useState(() =>
-    isImage || isVideo || isAudio ? URL.createObjectURL(file) : null,
-  );
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
+  // Create AND revoke inside the effect. Creating in a useState initializer breaks
+  // under StrictMode: the dev double-mount runs the cleanup (revoke) and then reuses
+  // the same, now dead, URL.
   useEffect(() => {
-    if (!previewSrc) return;
-    return () => URL.revokeObjectURL(previewSrc);
-  }, [previewSrc]);
+    if (!(isImage || isVideo || isAudio)) return;
+    const url = URL.createObjectURL(file);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the URL only exists after mount
+    setPreviewSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file, isImage, isVideo, isAudio]);
 
   return (
     <div className={`relative ${thumbBox} shrink-0 overflow-visible`}>
@@ -63,12 +67,7 @@ const FilePreview = ({ file, onRemove }: FilePreviewProps) => {
   );
 };
 
-type DocPreviewProps = {
-  fileExtension: string;
-  fileName: string;
-};
-
-const DocPreview = ({ fileExtension, fileName }: DocPreviewProps) => {
+const DocPreview = ({ fileExtension, fileName }: { fileExtension: string; fileName: string }) => {
   const fileDetails = fileData.find(
     (entry) => entry.docType === (fileExtension as FileDocType),
   );

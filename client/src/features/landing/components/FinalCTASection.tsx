@@ -1,5 +1,7 @@
+import '../styles/final-cta.css';
 import { Link } from 'react-router-dom';
-import { useScrollReveal } from '@/features/landing/hooks/useScrollReveal';
+import { useScrollReveal } from '../hooks/useScrollReveal';
+import { ROUTES } from '@/shared/constants/routes';
 
 const FinalCTASection = () => {
   const { ref, isVisible } = useScrollReveal<HTMLElement>(0.25);
@@ -24,7 +26,7 @@ const FinalCTASection = () => {
           Pick a name, say what you mean, and see who&apos;s on the other end. If it&apos;s a vibe, you keep them.
         </p>
 
-        <Link to="/whisper" className="final-cta__button">
+        <Link to={ROUTES.whisper} className="final-cta__button">
           <span>Meet a stranger</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path
@@ -36,6 +38,11 @@ const FinalCTASection = () => {
             />
           </svg>
         </Link>
+        <p className="final-cta__sub">
+          <Link to={ROUTES.home} className="underline underline-offset-4">
+            Or just look around first
+          </Link>
+        </p>
       </div>
 
       <div className="final-cta__waves" aria-hidden>

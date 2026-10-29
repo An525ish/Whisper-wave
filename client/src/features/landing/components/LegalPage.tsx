@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
-import LandingNav from '@/features/landing/components/LandingNav';
-import LandingFooter from '@/features/landing/components/LandingFooter';
+import LandingNav from './LandingNav';
+import LandingFooter from './LandingFooter';
 
 /**
  * Shared shell for the static legal pages (Terms, Privacy, Report abuse). Keeps

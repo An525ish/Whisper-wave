@@ -1,11 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import LinkIcon from '@/shared/components/ui/icons/Link';
 import CloseIcon from '@/shared/components/ui/icons/Close';
-import { LINK_PREVIEW_WIDTH_CLASS } from '@/features/chat/constants/chat';
-import { useLinkPreviewQuery } from '@/features/chat/hooks/useLinkPreview';
-import type { ParsedLink } from '@/features/chat/utils/linkParser';
-
-export type LinkPreviewSurface = 'composer' | 'incoming' | 'outgoing';
+import { LINK_PREVIEW_WIDTH_CLASS } from '../../constants/chat';
+import { useLinkPreviewQuery } from '../../hooks/useLinkPreview';
+import type { ParsedLink } from '../../utils/linkParser';
+import type { LinkPreviewSurface } from '../../types/local';
 
 const thumbBox = 'h-14 w-14 shrink-0 overflow-hidden rounded-md bg-primary/60';
 
@@ -41,7 +40,7 @@ const HorizontalSkeleton = ({
   </>
 );
 
-type LinkPreviewCardProps = {
+type Props = {
   link: ParsedLink;
   surface?: LinkPreviewSurface;
   href?: string;
@@ -60,7 +59,7 @@ const LinkPreviewCard = ({
   lead = false,
   embedded = false,
   className = '',
-}: LinkPreviewCardProps) => {
+}: Props) => {
   const { data, isPending } = useLinkPreviewQuery(link.url);
   const [faviconFailed, setFaviconFailed] = useState(false);
   const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);

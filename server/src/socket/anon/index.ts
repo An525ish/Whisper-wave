@@ -1,6 +1,7 @@
 import type { Server } from 'socket.io';
 import { applyAnonAuth } from './auth.js';
-import { handleAnonConnect, registerAnonHandlers } from './handlers.js';
+import { handleAnonConnect } from './connect.js';
+import { registerAnonHandlers } from './handlers.js';
 import type { AnonSocket } from '../../types/anonSocket.js';
 import { logger } from '../../utils/logger.js';
 

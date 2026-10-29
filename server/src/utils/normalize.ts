@@ -10,3 +10,7 @@ export const trimOptional = (value?: string): string | undefined => {
 /** Canonical email for storage and lookup (trim + lowercase). */
 export const normalizeEmail = (email: string): string =>
   email.trim().toLowerCase();
+
+/** Escape user input for safe use inside a RegExp / Mongo `$regex`. */
+export const escapeRegex = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

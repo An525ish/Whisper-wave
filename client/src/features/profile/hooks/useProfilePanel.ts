@@ -1,7 +1,7 @@
 import { useCallback, useId, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth';
-import { useProfileUiStore } from '@/features/profile/store';
+import { useProfileUiStore } from '../store';
 import { useChatDetailsQuery, useGetMediaQuery } from '@/features/chat';
 import useErrors from '@/shared/hooks/useError';
 import useFileDownload from '@/shared/hooks/useFileDownload';
@@ -10,10 +10,10 @@ import useSocketEvent from '@/shared/hooks/useSocketEvent';
 import { fileFormat } from '@/shared/utils/fileFormat';
 import { resolveAvatarSrc } from '@/shared/utils/helpers';
 import { SOCKET_EVENTS } from '@/shared/constants/socket';
-import { useProfileEditing } from '@/features/profile/hooks/useProfileEditing';
-import { useProfileMediaViewer } from '@/features/profile/hooks/useProfileMediaViewer';
-import type { SharedContentTab, MediaFile, SharedLink } from '@/features/profile/components/shared-content/types';
-import type { ProfileMember, ProfileDetailsData, ProfileDetailsResponse, MediaResponse, ViewerMediaFile } from '@/features/profile/types';
+import { useProfileEditing } from './useProfileEditing';
+import { useProfileMediaViewer } from './useProfileMediaViewer';
+import type { SharedContentTab, MediaFile, SharedLink } from '../components/shared-content/types';
+import type { ProfileMember, ProfileDetailsData, ProfileDetailsResponse, MediaResponse, ViewerMediaFile } from '../types';
 
 // Single source of truth for these lives in features/profile/types.ts; re-exported
 // here so existing consumers importing from useProfilePanel keep resolving.

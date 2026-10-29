@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { useAnimatedChat } from '@/features/landing/hooks/useAnimatedChat';
-import { useGlassTilt } from '@/features/landing/hooks/useGlassTilt';
-import SearchingStage from '@/features/landing/components/ui/SearchingStage';
-import MatchedStage from '@/features/landing/components/ui/MatchedStage';
-import VibeConnectOverlay from '@/features/landing/components/ui/VibeConnectOverlay';
+import { useAnimatedChat } from '../../hooks/useAnimatedChat';
+import { useGlassTilt } from '../../hooks/useGlassTilt';
+import SearchingStage from './SearchingStage';
+import MatchedStage from './MatchedStage';
+import VibeConnectOverlay from './VibeConnectOverlay';
 import { cn } from '@/shared/utils/cn';
-import type { ChatMessage, MatchArcPhase } from '@/features/landing/types';
+import type { ChatMessage, MatchArcPhase } from '../../types';
 
 const TypingDots = () => (
   <span className="inline-flex gap-1 px-[14px] py-3 text-lw-text-dim" aria-label="typing">

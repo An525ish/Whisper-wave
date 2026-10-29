@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as adminApi from '@/features/admin/api/admin';
-import { adminQueryKeys as queryKeys } from '@/features/admin/hooks/queryKeys';
-import { useAdminStore } from '@/features/admin/store';
+import * as adminApi from '../api/admin';
+import { adminQueryKeys as queryKeys } from './queryKeys';
+import { useAdminStore } from '../store';
 
 export function useAdminMeQuery() {
   const setAdmin = useAdminStore((s) => s.setAdmin);

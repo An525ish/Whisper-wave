@@ -1,21 +1,19 @@
 import { resolveAttachmentKind } from '@/shared/utils/fileFormat';
-import { extractLinksFromText, isLinkOnlyMessage } from '@/features/chat/utils/linkParser';
+import { extractLinksFromText, isLinkOnlyMessage } from '../../utils/linkParser';
 import dayjs from 'dayjs';
 import { useAuthStore } from '@/features/auth';
 import ImageViewer, {
   type MediaFile,
 } from '@/shared/components/ui/image-viewer/ImageViewer';
-import ImageViewerReplyBar from '@/features/chat/components/ImageViewerReplyBar';
+import ImageViewerReplyBar from '../ImageViewerReplyBar';
 import useFileDownload from '@/shared/hooks/useFileDownload';
 import { useState, type MouseEvent } from 'react';
-import MessageBubble from '@/features/chat/components/message/MessageBubble';
+import MessageBubble from './MessageBubble';
 import type {
-  ChatAttachment, MessageReplyTo, ChatBoxData, MessageReaction,
-} from '@/features/chat/types/chat';
+  ChatAttachment, ChatBoxData, MessageReaction,
+} from '../../types/chat';
 
-export type { MessageReplyTo, ChatBoxData };
-
-type ChatBoxProps = {
+type Props = {
   chatData: ChatBoxData & { _id?: string; reactions?: MessageReaction[] };
   chatId?: string;
   sharedGalleryFiles?: MediaFile[];
@@ -46,7 +44,7 @@ const MessageRow = ({
   centered = false,
   onDeleteMessage,
   onForwardMessage,
-}: ChatBoxProps) => {
+}: Props) => {
   const { content, sender, attachments = [], createdAt, replyTo } = chatData;
   const links = content ? extractLinksFromText(content) : [];
   const linkOnly = content ? isLinkOnlyMessage(content) : false;

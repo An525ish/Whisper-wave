@@ -2,43 +2,31 @@ import { VIBE_UNLOCK } from '../constants';
 import type { AnonMessage } from '../types';
 
 /**
- * How close the vibe gate is to opening, 0–1.
+ * Milliseconds of real back-and-forth so far.
  *
- * The like button is the conversion funnel, so it can't be a tap-30-seconds-in
- * button — that produces mutual-like rates driven by impatience rather than
- * connection. Both people have to have actually participated, and the match has
- * to have had time to breathe. The gate is an AND of four conditions, so progress
- * is the *slowest* of them: it reaches 1 at exactly the moment the gate opens, and
- * never shows a bar that is full while something is still missing.
- *
- * Mirrors the server's gate (server/src/services/match/vibeEligibility.ts), which
- * counts only messages it accepted — so our own `sending`/`failed` bubbles don't
- * count here either.
+ * Time only accrues when someone replies to the OTHER side within `maxGapMs`.
+ * A monologue, long silences, or a ping every ten minutes add nothing, and the
+ * clock simply pauses (it never resets). Mirrors the server
+ * (server/src/services/match/vibeEligibility.ts), which counts only messages it
+ * accepted, so our own `sending`/`failed` bubbles don't count here either.
  */
-export const vibeProgress = (
-  messages: AnonMessage[],
-  matchedAt: number | null,
-  now = Date.now()
-): number => {
-  if (!matchedAt) return 0;
-
-  const mine = messages.filter((m) => m.from === 'me' && m.delivery === 'sent').length;
-  const theirs = messages.filter((m) => m.from === 'them').length;
-
-  const slowest = Math.min(
-    (now - matchedAt) / VIBE_UNLOCK.minSessionMs,
-    mine / VIBE_UNLOCK.minMessagesPerSide,
-    theirs / VIBE_UNLOCK.minMessagesPerSide,
-    (mine + theirs) / VIBE_UNLOCK.minTotalMessages
-  );
-
-  return Math.max(0, Math.min(1, slowest));
+export const engagedMs = (messages: AnonMessage[]): number => {
+  let total = 0;
+  let prev: AnonMessage | null = null;
+  for (const m of messages) {
+    if (m.from === 'me' && m.delivery !== 'sent') continue;
+    if (prev && prev.from !== m.from) {
+      const gap = m.sentAt - prev.sentAt;
+      if (gap > 0 && gap <= VIBE_UNLOCK.maxGapMs) total += gap;
+    }
+    prev = m;
+  }
+  return total;
 };
 
-// TODO(test): no client test runner yet
+/** How close the vibe gate is to opening, 0-1. Drives the header ring and the locked modal wording. */
+export const vibeProgress = (messages: AnonMessage[]): number =>
+  Math.min(1, engagedMs(messages) / VIBE_UNLOCK.engagedMs);
+
 /** Is the like/vibe button available yet? */
-export const isVibeUnlocked = (
-  messages: AnonMessage[],
-  matchedAt: number | null,
-  now = Date.now()
-): boolean => vibeProgress(messages, matchedAt, now) >= 1;
+export const isVibeUnlocked = (messages: AnonMessage[]): boolean => vibeProgress(messages) >= 1;

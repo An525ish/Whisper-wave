@@ -25,6 +25,9 @@ export const MAX_DISPLAY_NAME_LENGTH = 24;
 /** Mirrors the server cap in `server/src/socket/anon/handlers.ts`. */
 export const MAX_MESSAGE_LENGTH = 2000;
 
+/** Characters of the last message shown in the live-whisper pill. */
+export const LIVE_PILL_PREVIEW_MAX = 48;
+
 /** Debounce before we tell the partner we stopped typing. */
 export const TYPING_IDLE_MS = 1500;
 
@@ -61,9 +64,10 @@ export const DAILY_WHISPER_LIMIT = 30;
 
 /** Keep in sync with server/src/services/match/vibeEligibility.ts */
 export const VIBE_UNLOCK = {
-  minSessionMs: 90_000,
-  minMessagesPerSide: 2,
-  minTotalMessages: 5,
+  /** Time spent actually going back and forth before vibes open. */
+  engagedMs: 5 * 60_000,
+  /** A reply later than this does not count (the clock just pauses). */
+  maxGapMs: 60_000,
 } as const;
 
 /**
@@ -74,8 +78,6 @@ export const THREAD_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
 /** How often the elapsed-time stat in the identity panel refreshes. */
 export const THREAD_STATS_TICK_MS = 30_000;
-/** How often the time-based part of the vibe gate is re-evaluated. */
-export const VIBE_GATE_TICK_MS = 5_000;
 /** How often the "vanishes in …" line refreshes. */
 export const THREAD_EXPIRY_TICK_MS = 60_000;
 
@@ -104,6 +106,9 @@ export const WHISPER_RESUME_KEY = 'whisper:resume';
 /** Give up on a refresh-resume if the server hasn't answered by then. */
 export const RESUME_DEADLINE_MS = 8_000;
 export const RESUME_ENDED_NOTICE = 'That chat has ended.';
+
+/** The guest `/anon` socket namespace on the API origin. */
+export const ANON_NAMESPACE = '/anon';
 
 /** Shown once per outage when the socket can't reach the server (transport-level failure). */
 export const CONNECTION_LOST_NOTICE = "Can't reach the server. Retrying…";
@@ -161,6 +166,8 @@ export const GENDER_OPTIONS = [
 
 // Client → server
 export const ANON_MESSAGE = 'ANON_MESSAGE';
+export const ANON_READ = 'ANON_READ';
+export const MATCH_READ = 'MATCH_READ';
 export const ANON_TYPING_START = 'ANON_TYPING_START';
 export const ANON_TYPING_STOP = 'ANON_TYPING_STOP';
 export const ANON_LIKE = 'ANON_LIKE';
@@ -185,25 +192,7 @@ export const CONNECTION_READY = 'CONNECTION_READY'; // both sides completed — 
 /** Emitted to BOTH participants; `action: 'removed'` means the same reaction was resent. */
 export const MATCH_REACTION = 'MATCH_REACTION';
 
-/**
- * The curated reaction set — a whitelist, not an emoji keyboard. The server
- * validates against its own copy (`ANON_REACTIONS` in `server/src/types/match.ts`)
- * and rejects anything else, so this list is presentation, not policy.
- */
-export const ANON_REACTIONS = ['fire', 'slay', 'dead', 'fr', 'peak', 'lit'] as const;
-
-/** Display metadata for the curated set. The key is what goes on the wire. */
-export const ANON_REACTION_LABELS: Record<
-  (typeof ANON_REACTIONS)[number],
-  { glyph: string; label: string }
-> = {
-  fire: { glyph: '🔥', label: 'fire' },
-  slay: { glyph: '💅', label: 'slay' },
-  dead: { glyph: '💀', label: 'dead' },
-  fr: { glyph: '🫶', label: 'fr' },
-  peak: { glyph: '🏔️', label: 'peak' },
-  lit: { glyph: '💡', label: 'lit' },
-};
+// A reaction is one emoji glyph, sent as-is. The server validates it (`isReactionEmoji`).
 
 // ── Analytics event names (emitted via `shared/lib/analytics` `track`) ─────
 
@@ -231,6 +220,8 @@ export const WHISPER_EVENTS = {
   REPORT: 'whisper_report',
   /** Match ended — once per session, with durationMs and messageCount. */
   SESSION_END: 'whisper_session_end',
+  /** The live-whisper pill was tapped to return to the thread. */
+  PILL_CLICK: 'whisper_pill_click',
 } as const;
 
 // ── Waiting-room radar ─────────────────────────────────────────────────────
@@ -284,3 +275,8 @@ export const ANON_COMPOSER_ID = 'acr-composer-input';
 
 /** Under this many messages a thread is "young": openers say "break the ice". */
 export const FRESH_THREAD_MESSAGES = 4;
+
+/** Toast id for the "your whisper became a DM" offer shown while a room thread is open. */
+export const DM_READY_TOAST_ID = 'whisper-dm-ready';
+/** How long that offer waits for a tap before it fades (the DM stays in Chats). */
+export const DM_READY_TOAST_MS = 20_000;

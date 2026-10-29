@@ -1,4 +1,8 @@
-/** The auth-screen backdrop (mesh, glows, ripples, grain) shared by the picker and waiting room. */
+/**
+ * Backdrop (mesh, glows, ripples, grain) for the picker and waiting room.
+ * Viewport-fixed so it runs behind the floating dock. That is safe only because
+ * the NavRail, tab bar and live pill are `z-20`; keep them above it.
+ */
 export default function AuthAmbience() {
   return (
     <div className="auth-ambience pointer-events-none fixed inset-0" aria-hidden>

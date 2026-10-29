@@ -1,12 +1,12 @@
 import type { RefObject } from 'react';
-import InfiniteScrollSentinel from '@/features/admin/components/shared/InfiniteScrollSentinel';
-import type { AdminGroupRow } from '@/features/admin/types';
+import InfiniteScrollSentinel from '../../shared/InfiniteScrollSentinel';
+import type { AdminGroupRow } from '../../../types';
 import GroupRow from './GroupRow';
 import GroupsEmptyState from './GroupsEmptyState';
 import GroupsErrorState from './GroupsErrorState';
 import GroupsFeedSkeleton from './GroupsFeedSkeleton';
 
-type GroupsFeedProps = {
+type Props = {
   scrollRef: RefObject<HTMLDivElement | null>;
   groups: AdminGroupRow[];
   isLoading: boolean;
@@ -34,7 +34,7 @@ const GroupsFeed = ({
   onOpenGroup,
   onLoadMore,
   onRetry,
-}: GroupsFeedProps) => (
+}: Props) => (
   <div
     ref={scrollRef}
     className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain pr-1 scrollbar-hide"

@@ -1,8 +1,13 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { joinQueueController, leaveQueueController } from '../controllers/match.js';
-import { validate } from '../middlewares/index.js';
-import { joinQueueSchema } from '../validators/match.js';
+import {
+  joinQueueController,
+  leaveQueueController,
+  quotaController,
+  signAnonImageController,
+} from '../controllers/match.js';
+import { auth, validate } from '../middlewares/index.js';
+import { joinQueueSchema, signAnonImageSchema } from '../validators/match.js';
 
 /** 10 join attempts / minute per IP — prevents queue spam. */
 const matchJoinLimiter = rateLimit({
@@ -22,6 +27,15 @@ const matchLeaveLimiter = rateLimit({
   message: { success: false, message: 'Too many leave attempts, please slow down' },
 });
 
+/** 20 photo signs / minute per IP. A per-chat cap lives in the service. */
+const matchImageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many photos, please slow down' },
+});
+
 export const matchRouter = Router();
 
 matchRouter.post(
@@ -31,3 +45,8 @@ matchRouter.post(
   joinQueueController
 );
 matchRouter.delete('/leave', matchLeaveLimiter, leaveQueueController);
+
+/** Members only — guests are never capped, so they have no quota to read. */
+matchRouter.get('/quota', auth, quotaController);
+
+matchRouter.post('/image/sign', matchImageLimiter, validate(signAnonImageSchema), signAnonImageController);

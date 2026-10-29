@@ -1,10 +1,10 @@
-import { USERS_EMPTY_IMAGE } from '@/features/admin/constants/users';
+import { USERS_EMPTY_IMAGE } from '../../../constants/users';
 
-type UsersEmptyStateProps = {
+type Props = {
   description: string;
 };
 
-const UsersEmptyState = ({ description }: UsersEmptyStateProps) => (
+const UsersEmptyState = ({ description }: Props) => (
   <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
     <img src={USERS_EMPTY_IMAGE} alt="" className="h-24 w-24 opacity-40" aria-hidden />
     <div>

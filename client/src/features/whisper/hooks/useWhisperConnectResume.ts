@@ -37,7 +37,7 @@ export function useWhisperConnectResume(): void {
 
     void (async () => {
       try {
-        const res = await completeConnection(token);
+        const res = await completeConnection({ connectToken: token });
         sessionStorage.removeItem(WHISPER_CONNECT_TOKEN_KEY);
 
         if (res.data.status === 'connected') {

@@ -1,6 +1,6 @@
 import TabView from '@/shared/components/ui/swipeable-tabs/TabView';
-import { FriendRequestList, NotificationList } from '@/features/notifications/components/NotificationList';
-import { useNotificationsStore } from '@/features/notifications/store';
+import { FriendRequestList, NotificationList } from './NotificationList';
+import { useNotificationsStore } from '../store';
 import { useGetMyNotificationsQuery } from '@/features/chat';
 import { useMemo } from 'react';
 import type { TabItem } from '@/shared/components/ui/swipeable-tabs/Tab';
@@ -16,7 +16,7 @@ const NotificationTabView = () => {
   // Reading from the store is unreliable here because FriendRequestList resets
   // requestNotificationCount to 0 on mount, so the tab badge would always show 0.
   const { data: notifData } = useGetMyNotificationsQuery();
-  const requestCount = (notifData as { data?: unknown[] } | undefined)?.data?.length ?? 0;
+  const requestCount = notifData?.data?.length ?? 0;
 
   const tabsData = useMemo<TabItem[]>(
     () => [

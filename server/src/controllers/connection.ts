@@ -1,15 +1,25 @@
-import type { RequestHandler } from 'express';
+import type { Request, RequestHandler } from 'express';
 import type { Server } from 'socket.io';
 import { AppError } from '../utils/AppError.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { logger } from '../utils/logger.js';
-import { completeConnection, getConnectionOrigin } from '../services/connection.js';
-import { emitToMembers } from '../services/presence/index.js';
+import {
+  cancelPending,
+  completeConnection,
+  completeConnectionWithClaim,
+  getConnectionOrigin,
+  listPendingForUser,
+} from '../services/connection/index.js';
+import { emitToMembers, isUserOnline } from '../services/presence/index.js';
+import { sendPushIntents } from '../services/push/index.js';
 import { joinUsersToChatRoom } from '../socket/rooms.js';
 import { CONNECTION_READY } from '../constants/anon-events.js';
 import { WHISPER_CONNECTION_READY, REFETCH_CHATS } from '../constants/socket-events.js';
 import type { ConnectionAnnouncement } from '../types/connection.js';
 import type { CompleteConnectionBody } from '../types/input.js';
+
+/** The caller's anonymous-session id, from the identity `ensureGid` already parsed. */
+const anonIdOf = (req: Request): string | undefined => req.identity?.anonId;
 
 /**
  * Wire up the freshly created DM and tell BOTH parties it exists.
@@ -50,24 +60,56 @@ const announceConnectionReady = async (
  * POST /api/connection/complete
  *
  * Auth required — must be called after the user signs in/up post-mutual-like.
- * Consumes the connectToken issued at mutual like and either creates the
- * Connection (reusing an existing DM if these two already talk) or reports that
- * the partner hasn't connected yet.
+ * Consumes either the connectToken issued at mutual like, or a claimId naming
+ * a mutual-like claim on this browser's anonId (the tab-closing path), and
+ * either creates the Connection (reusing an existing DM if these two already
+ * talk) or reports that the partner hasn't connected yet.
  */
 export const completeConnectionController: RequestHandler = catchAsync(
   async (req, res) => {
-    const { connectToken } = req.body as CompleteConnectionBody;
+    const body = req.body as CompleteConnectionBody;
     const io = req.app.get('io') as Server | undefined;
 
     // `auth` runs before this handler, so userId is guaranteed.
-    const { result, announce } = await completeConnection(connectToken, req.userId!);
+    const userId = req.userId!;
+    const { result, announce } =
+      'claimId' in body
+        ? await completeConnectionWithClaim(body.claimId, userId, anonIdOf(req))
+        : await completeConnection(body.connectToken, userId, anonIdOf(req));
 
     // Persisted first; notify both parties (esp. the one still waiting) after.
-    if (announce) await announceConnectionReady(io, announce);
+    if (announce) {
+      await announceConnectionReady(io, announce);
+      sendPushIntents(announce.pushNotifications, isUserOnline);
+    }
 
     res.status(200).json({ success: true, data: result });
   }
 );
+
+/**
+ * GET /api/connection/pending
+ *
+ * Everything this account still owes a whisper connection — or is owed:
+ * mutual-like claims on this browser plus rows where I am bound and the
+ * partner is not.
+ */
+export const listPendingController: RequestHandler = catchAsync(async (req, res) => {
+  const items = await listPendingForUser(req.userId!, anonIdOf(req));
+  res.status(200).json({ success: true, data: { items } });
+});
+
+/**
+ * DELETE /api/connection/pending/:id
+ *
+ * Cancel one pending item. A claim is deleted outright; a row releases only
+ * my seat — the partner's side is left to expire, and they get no signal.
+ */
+export const cancelPendingController: RequestHandler = catchAsync(async (req, res) => {
+  const { id } = req.params as { id: string };
+  await cancelPending(id, req.userId!, anonIdOf(req));
+  res.status(200).json({ success: true, message: 'Pending connection cancelled' });
+});
 
 /**
  * GET /api/connection/:chatId

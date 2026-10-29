@@ -3,6 +3,7 @@ import { NEW_REQUEST } from '../../constants/socket-events.js';
 import * as chatRepo from '../../repositories/chat.js';
 import * as chatReadRepo from '../../repositories/chatRead.js';
 import * as requestRepo from '../../repositories/request.js';
+import * as userRepo from '../../repositories/user.js';
 import type {
   HandleFriendRequestInput,
   HandleFriendRequestResult,
@@ -26,10 +27,19 @@ export const sendRequest = async (
     throw new AppError(400, 'Request already sent');
   }
 
-  await requestRepo.create(userId, receiverId);
+  const [sender] = await Promise.all([
+    userRepo.findByIdNameAvatar(userId),
+    requestRepo.create(userId, receiverId),
+  ]);
 
   return {
-    notifications: [{ event: NEW_REQUEST, members: [receiverId] }],
+    notifications: [
+      {
+        event: NEW_REQUEST,
+        members: [receiverId],
+        push: { kind: 'request', senderName: sender?.name ?? 'Someone' },
+      },
+    ],
   };
 };
 

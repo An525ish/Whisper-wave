@@ -10,9 +10,9 @@ import type {
   UpdateSignupUsernameBody,
   VerifySignUpBody,
   VerifySignUpResponse,
-} from '@/features/auth/types';
+} from '../types';
 
-export type { ProfileResponse, AuthDataResponse } from '@/features/auth/types';
+export type { ProfileResponse, AuthDataResponse } from '../types';
 
 export const getProfile = () =>
   api.get<ProfileResponse>('/user/get-profile');

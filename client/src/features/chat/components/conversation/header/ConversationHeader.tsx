@@ -2,19 +2,22 @@ import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft';
 import AvatarCard from '@/shared/components/ui/AvatarCard';
 import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { useChatDetailsQuery } from '@/features/chat/hooks';
-import { useConversationHeaderActions } from '@/features/chat/hooks/useConversationHeaderActions';
+import { useChatDetailsQuery } from '../../../hooks';
+import { useConversationHeaderActions } from '../../../hooks/useConversationHeaderActions';
 import { useAuthStore } from '@/features/auth';
-import { usePresenceStore } from '@/features/chat/stores/presence';
+import { usePresenceStore } from '../../../stores/presence';
 import { formatLastSeen, normalizeMemberIds } from '@/shared/utils/helpers';
-import SelectModeActions from '@/features/chat/components/conversation/header/SelectActions';
-import DefaultActions from '@/features/chat/components/conversation/header/HeaderActions';
-import HeaderDialogs from '@/features/chat/components/conversation/header/HeaderDialogs';
+import SelectModeActions from './SelectActions';
+import DefaultActions from './HeaderActions';
+import HeaderDialogs from './HeaderDialogs';
 import { ConnectionOriginStrip } from '@/features/whisper';
-import type { ConversationPanelHandle } from '@/features/chat/components/conversation/ConversationPanel';
-import type { ChatDetailsResponse } from '@/features/chat/types/chat';
+import type { ConversationPanelHandle } from '../../../types/chat';
+import type { ChatDetailsResponse } from '../../../types/chat';
+import { ROUTES } from '@/shared/constants/routes';
+import { CONVERSATION_HEADER_INNER_CLASS, CONVERSATION_HEADER_SHELL_CLASS } from '../../../constants/chat';
+import ConversationHeaderSkeleton from './ConversationHeaderSkeleton';
 
-type ChatHeaderProps = {
+type Props = {
   chatId?: string;
   onOpenMembers?: () => void;
   onOpenSearch?: () => void;
@@ -31,38 +34,6 @@ type ChatHeaderProps = {
 };
 
 
-const headerShellClass =
-  'absolute inset-x-2 top-[max(0.5rem,env(safe-area-inset-top))] z-30 w-auto md:left-2 md:right-2 md:top-0';
-
-const headerInnerClass =
-  'rounded-xl border border-white/10 bg-[rgba(33,26,42,0.48)] px-2 py-1.5 pl-1.5 pr-3 shadow-[0_10px_28px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:pl-2.5 lg:pr-5';
-
-const bone = 'animate-pulse bg-white/18';
-
-const ConversationHeaderSkeleton = () => (
-  <div className={headerShellClass}>
-    <div className={headerInnerClass}>
-      <div className="relative flex items-center justify-between gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-1.5">
-          <div className="inline-flex h-11 w-8 shrink-0 md:hidden" aria-hidden />
-          <div className="flex min-w-0 flex-1 items-center gap-1 md:gap-1.5">
-            <div
-              className={`mx-1 h-11 w-11 shrink-0 rounded-full border-2 border-white/10 ${bone} md:mx-2 md:h-12 md:w-12`}
-            />
-            <div className="min-w-0 pr-2">
-              <div className={`h-4.75 w-28 rounded-md ${bone} md:h-5 md:w-36`} />
-              <div className={`mt-1 h-3.5 w-16 rounded-md ${bone} md:h-4 md:w-24`} />
-            </div>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2 md:gap-3">
-          <div className={`h-10 w-10 rounded-full border border-white/15 ${bone}`} />
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
 const ConversationHeader = ({
   chatId,
   onOpenMembers,
@@ -77,7 +48,7 @@ const ConversationHeader = ({
   onToggleSelectMode,
   onCancelSelect,
   panelRef,
-}: ChatHeaderProps) => {
+}: Props) => {
   const [isDotsMenu, setIsDotsMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -205,8 +176,8 @@ const ConversationHeader = ({
         onConfirmDeleteGroup={headerActions.handleDeleteGroupConfirm}
       />
 
-      <header className={headerShellClass}>
-        <div className={headerInnerClass}>
+      <header className={CONVERSATION_HEADER_SHELL_CLASS}>
+        <div className={CONVERSATION_HEADER_INNER_CLASS}>
           <div className="relative flex items-center justify-between gap-2">
             <div className="flex min-w-0 flex-1 items-center gap-0.5 md:gap-1.5">
               {selectMode ? (
@@ -220,7 +191,7 @@ const ConversationHeader = ({
                 </button>
               ) : (
                 <Link
-                  to="/"
+                  to={ROUTES.chats}
                   replace
                   className="inline-flex h-11 shrink-0 items-center rounded-lg px-1 text-body transition active:bg-primary/40 active:text-white md:hidden"
                   aria-label="Back to chats"

@@ -1,8 +1,8 @@
-import AuthField from '@/features/auth/components/AuthField';
-import AuthSubmit from '@/features/auth/components/AuthSubmit';
+import AuthField from './AuthField';
+import AuthSubmit from './AuthSubmit';
 import AvatarInput from '@/shared/components/ui/AvatarInput';
-import type { RegisterStep3Form } from '@/features/auth/types';
-import { validateFullname } from '@/features/auth/utils/authValidators';
+import type { RegisterStep3Form } from '../types';
+import { validateFullname } from '../utils/authValidators';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 

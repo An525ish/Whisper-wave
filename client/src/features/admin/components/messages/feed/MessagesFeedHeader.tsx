@@ -1,8 +1,8 @@
-import { ADMIN_MIN_SEARCH_LEN } from '@/features/admin/constants/messages';
-import { messagesFeedSubtitle } from '@/features/admin/utils/messages';
-import type { UserFilterOption } from '@/features/admin/types';
+import { ADMIN_MIN_SEARCH_LEN } from '../../../constants/messages';
+import { messagesFeedSubtitle } from '../../../utils/messages';
+import type { UserFilterOption } from '../../../types';
 
-type MessagesFeedHeaderProps = {
+type Props = {
   senderFilter: UserFilterOption | null;
   querySearch: string;
   searchText: string;
@@ -16,7 +16,7 @@ const MessagesFeedHeader = ({
   searchText,
   showMinSearchHint,
   onClearSearch,
-}: MessagesFeedHeaderProps) => (
+}: Props) => (
   <div className="mb-4 flex shrink-0 flex-wrap items-end justify-between gap-3">
     <div>
       <h2 className="font-semibold text-xl leading-none tracking-tight text-body">Recent feed</h2>

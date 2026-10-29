@@ -1,4 +1,4 @@
-import type { AdminMessageAttachment } from '@/features/admin/types';
+import type { AdminMessageAttachment } from '../../../types';
 import {
   RetryableMediaImage,
   RetryableMediaVideo,
@@ -7,13 +7,13 @@ import {
   isImageAttachment,
   isVideoAttachment,
   messageAttachmentLabel,
-} from '@/features/admin/utils/messages';
+} from '../../../utils/messages';
 import {
   ADMIN_MEDIA_CHIP_FAILED_ILLUSTRATION,
   ADMIN_MEDIA_CHIP_LOADING_ICON,
-} from '@/features/admin/constants/attachments';
+} from '../../../constants/attachments';
 
-type AttachmentChipProps = {
+type Props = {
   att: AdminMessageAttachment;
   onImageClick?: () => void;
 };
@@ -23,7 +23,7 @@ const chipButtonClass =
 
 const mediaClass = 'h-full w-full object-cover transition group-hover:scale-105';
 
-const AttachmentChip = ({ att, onImageClick }: AttachmentChipProps) => {
+const AttachmentChip = ({ att, onImageClick }: Props) => {
   const isImage = isImageAttachment(att);
   const isVideo = isVideoAttachment(att);
 

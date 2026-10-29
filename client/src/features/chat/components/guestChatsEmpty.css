@@ -1,0 +1,153 @@
+/** Guest `/chats` empty state (`gc-*`). Motion freezes under `prefers-reduced-motion`. */
+
+.gc-page { display: grid; height: 100%; min-height: 0; place-items: center; overflow-y: auto; padding: 1.5rem; }
+
+.gc-card {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-width: 30rem;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1.5rem 1.75rem;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+@media (min-width: 768px) { .gc-card { padding: 2.5rem 2.5rem 2rem; } }
+
+/* Two chat bubbles with a "Kept" tag: the whole product in one picture. */
+.gc-art { position: relative; width: 14rem; height: 6.5rem; margin-bottom: 1.5rem; }
+.gc-art::before {
+  content: '';
+  position: absolute;
+  inset: -1.5rem -2rem;
+  background: radial-gradient(closest-side, rgba(1, 195, 109, 0.22), transparent);
+}
+
+.gc-bubble {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.6rem 0.95rem;
+  font-size: 0.8rem;
+  line-height: 1;
+  animation: gc-float 6s ease-in-out infinite;
+}
+
+.gc-bubble--in {
+  top: 0;
+  left: 0;
+  border-radius: 1.1rem 1.1rem 1.1rem 0.3rem;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  color: var(--color-body, #fff);
+}
+
+.gc-bubble--out {
+  right: 0;
+  bottom: 0;
+  border-radius: 1.1rem 1.1rem 0.3rem 1.1rem;
+  background: var(--color-green, #01c36d);
+  box-shadow: 0 10px 24px -10px rgba(1, 195, 109, 0.8);
+  animation-delay: -3s;
+}
+
+.gc-bubble--out i {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 50%;
+  background: #fff;
+  animation: gc-dot 1.2s ease-in-out infinite;
+}
+.gc-bubble--out i:nth-child(2) { animation-delay: 0.15s; }
+.gc-bubble--out i:nth-child(3) { animation-delay: 0.3s; }
+
+.gc-kept {
+  position: absolute;
+  top: 38%;
+  left: 54%;
+  rotate: 8deg;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 190, 90, 0.45);
+  background: rgba(255, 190, 90, 0.12);
+  padding: 0.2rem 0.6rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ffd592;
+}
+
+.gc-title { position: relative; font-family: var(--font-display); font-size: clamp(1.6rem, 4vw, 2.1rem); line-height: 1.1; color: #fff; }
+.gc-desc { position: relative; margin-top: 0.75rem; max-width: 24rem; font-size: 0.9rem; line-height: 1.6; color: var(--color-body-300, #b8c0cc); }
+
+.gc-steps {
+  position: relative;
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 1.75rem 0;
+}
+
+/* One line runs through the centres of the three nodes and fades into the last. */
+.gc-steps::before {
+  content: '';
+  position: absolute;
+  top: 1.35rem;
+  left: 16.6%;
+  right: 16.6%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.14), rgba(1, 195, 109, 0.7));
+  border-radius: 2px;
+}
+
+.gc-steps li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--color-body-300, #b8c0cc);
+}
+
+.gc-steps strong { margin-top: 0.5rem; font-size: 0.85rem; color: #fff; }
+
+.gc-steps__node {
+  display: grid;
+  width: 2.7rem;
+  height: 2.7rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #12161c;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  color: var(--color-body-300, #b8c0cc);
+}
+.gc-steps__node svg { width: 1.2rem; height: 1.2rem; }
+
+.gc-steps li:last-child .gc-steps__node {
+  background: linear-gradient(135deg, #1ddd88, #01a85e);
+  box-shadow: 0 0 0 4px rgba(1, 195, 109, 0.16), 0 8px 22px -6px rgba(1, 195, 109, 0.8);
+  color: #fff;
+}
+
+.gc-signin { margin-top: 1rem; font-size: 0.8rem; color: var(--color-body-300, #b8c0cc); }
+.gc-signin span { font-weight: 600; color: var(--color-green, #01c36d); }
+.gc-signin:hover span { text-decoration: underline; }
+
+.gc-cta:focus-visible, .gc-signin:focus-visible { outline: 2px solid var(--color-green, #01c36d); outline-offset: 3px; }
+
+@keyframes gc-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes gc-dot { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-bubble, .gc-bubble--out i { animation: none !important; }
+}

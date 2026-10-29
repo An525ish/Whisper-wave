@@ -1,9 +1,9 @@
-import { ADMIN_MIN_SEARCH_LEN } from '@/features/admin/constants/users';
-import type { SignupMethodFilter } from '@/features/admin/types';
-import { usersDirectorySubtitle } from '@/features/admin/utils/users';
+import { ADMIN_MIN_SEARCH_LEN } from '../../../constants/users';
+import type { SignupMethodFilter } from '../../../types';
+import { usersDirectorySubtitle } from '../../../utils/users';
 import SignupMethodFilterTabs from './SignupMethodFilterTabs';
 
-type UsersDirectoryHeaderProps = {
+type Props = {
   querySearch: string;
   searchText: string;
   showMinSearchHint: boolean;
@@ -19,7 +19,7 @@ const UsersDirectoryHeader = ({
   signupMethod,
   onSignupMethodChange,
   onClearSearch,
-}: UsersDirectoryHeaderProps) => (
+}: Props) => (
   <>
     <div className="mb-4 flex shrink-0 items-end justify-between gap-3">
       <div>

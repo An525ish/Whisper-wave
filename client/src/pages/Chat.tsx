@@ -1,4 +1,4 @@
-import AppWrapper from '@/layout/AppWrapper';
+import ChatsLayout from '@/layout/ChatsLayout';
 import { ConversationHeader as ChatHeader } from '@/features/chat';
 import { MessageSearch as ChatSearch } from '@/features/chat';
 import { ConversationPanel as ChatsViewPanel, type ConversationPanelHandle } from '@/features/chat';
@@ -42,18 +42,22 @@ const Chat = () => {
     };
   }, []);
 
-  useEffect(() => {
+  const [prevCanOpenProfileSheet, setPrevCanOpenProfileSheet] = useState(canOpenProfileSheet);
+  if (prevCanOpenProfileSheet !== canOpenProfileSheet) {
+    setPrevCanOpenProfileSheet(canOpenProfileSheet);
     if (!canOpenProfileSheet) setProfileOpen(false);
-  }, [canOpenProfileSheet]);
+  }
 
-  useEffect(() => {
+  const [prevChatId, setPrevChatId] = useState(chatId);
+  if (prevChatId !== chatId) {
+    setPrevChatId(chatId);
     setSelectMode(false);
     setSelectedCount(0);
     setDeletableSelectedCount(0);
     setIsEditingMessage(false);
     setIsFetchingOlder(false);
     setProfileOpen(false);
-  }, [chatId]);
+  }
 
   const handleJumpToMessage = useCallback(
     (
@@ -104,7 +108,7 @@ const Chat = () => {
   }, []);
 
   return (
-    <AppWrapper>
+    <ChatsLayout>
       <div className="relative flex h-full min-h-0 flex-col overflow-x-clip bg-background md:bg-transparent md:pt-1">
         {/* Soft top fade so scrolled messages dissolve under the floating header */}
         <div
@@ -170,7 +174,7 @@ const Chat = () => {
           onClose={() => setProfileOpen(false)}
         />
       </div>
-    </AppWrapper>
+    </ChatsLayout>
   );
 };
 

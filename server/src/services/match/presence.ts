@@ -134,9 +134,29 @@ const finalizeDrop = async (
   if (firstNotice === 'OK') {
     nsp.to(`anon:${getPartner(session, droppedAnonId)}`).emit(MATCH_DISCONNECTED, {
       reason: 'disconnected',
+      sessionId,
     });
     logger.info({ sessionId, droppedAnonId }, 'Presence grace lapsed — match ended');
   }
+};
+
+/**
+ * End a match whose owner has no live /anon socket right now, and tell the partner.
+ *
+ * Used when the same browser starts a new whisper while the old one is still
+ * "active" in Redis: the owner's client already dropped it (sign-out, store reset,
+ * closed tab), so waiting out the 45 s grace only strands the partner and blocks
+ * the owner with a false "already in a chat". Returns false when a socket IS live
+ * (a real second tab), so the caller keeps refusing.
+ */
+export const endOrphanedSession = async (anonId: string): Promise<boolean> => {
+  const nsp = sweepNamespace;
+  if (!nsp) return false;
+  if (await hasLiveSocket(nsp, anonId)) return false;
+  const sessionId = await getActiveSessionId(anonId);
+  if (sessionId) await finalizeDrop(nsp, sessionId, anonId);
+  await clearPresence(anonId);
+  return true;
 };
 
 /**

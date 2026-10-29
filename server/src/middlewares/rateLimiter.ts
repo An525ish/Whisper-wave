@@ -73,6 +73,15 @@ export const usernameCheckLimiter = rateLimit({
   message: jsonMessage('Too many username checks, please try again later'),
 });
 
+/** Feedback (POST /api/feedback): 5 req / 10 min per IP. Each one sends an email, so keep it tight. */
+export const feedbackLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: jsonMessage('Too many messages sent, please try again later'),
+});
+
 /** Abuse reports (POST /api/report): 5 req / 10 min per IP — blocks queue flooding, allows genuine reports. */
 export const reportLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes

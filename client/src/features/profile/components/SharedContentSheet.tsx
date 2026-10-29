@@ -1,13 +1,13 @@
 import ChevronLeft from '@/shared/components/ui/icons/ChevronLeft'
 import CountBadge from '@/shared/components/ui/CountBadge'
-import { useSharedContent } from '@/features/profile/hooks/useSharedContent'
-import MediaGrid from '@/features/profile/components/shared-content/MediaGrid'
-import FilesList from '@/features/profile/components/shared-content/FilesList'
-import LinksList from '@/features/profile/components/shared-content/LinksList'
+import { useSharedContent } from '../hooks/useSharedContent'
+import MediaGrid from './shared-content/MediaGrid'
+import FilesList from './shared-content/FilesList'
+import LinksList from './shared-content/LinksList'
 import Tabs from '@/shared/components/ui/swipeable-tabs/Tab'
 import type { MouseEvent } from 'react'
-import { SHARED_CONTENT_TABS, PHOTO_FILTER_OPTIONS } from '@/features/profile/constants'
-import type { MediaFile, SharedLink, PhotoFilter, SharedContentTab } from '@/features/profile/components/shared-content/types'
+import { SHARED_CONTENT_TABS, PHOTO_FILTER_OPTIONS } from '../constants'
+import type { MediaFile, SharedLink, PhotoFilter, SharedContentTab } from './shared-content/types'
 
 
 type SharedContentSheetProps = {

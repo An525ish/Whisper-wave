@@ -2,10 +2,10 @@ import {
   attachmentEmptyStateImage,
   attachmentEmptyStateSubtitle,
   attachmentEmptyStateTitle,
-} from '@/features/admin/utils/attachments';
-import type { AttachmentKindFilter } from '@/features/admin/types';
+} from '../../../utils/attachments';
+import type { AttachmentKindFilter } from '../../../types';
 
-type AttachmentsEmptyStateProps = {
+type Props = {
   kindFilter: AttachmentKindFilter;
   senderName?: string;
   hasSearch: boolean;
@@ -15,7 +15,7 @@ const AttachmentsEmptyState = ({
   kindFilter,
   senderName,
   hasSearch,
-}: AttachmentsEmptyStateProps) => (
+}: Props) => (
   <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
     <img
       src={attachmentEmptyStateImage(kindFilter)}

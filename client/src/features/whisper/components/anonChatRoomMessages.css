@@ -81,25 +81,39 @@
 
 .acr-alert {
   display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.6rem;
   margin-bottom: 1rem;
-  border-radius: 0.85rem;
-  border: 1px solid rgb(236 195 71 / 0.3);
-  background: rgb(236 195 71 / 0.1);
-  padding: 0.6rem 0.75rem;
-  font-size: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(236 195 71 / 0.28);
+  background: rgb(236 195 71 / 0.09);
+  box-shadow: 0 10px 28px -16px rgb(0 0 0 / 0.6);
+  padding: 0.65rem 0.7rem 0.65rem 0.65rem;
+  font-size: 0.8rem;
   line-height: 1.4;
   color: rgb(250 220 140 / 0.98);
+  animation: acr-prompt-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.acr-alert__icon {
+  display: grid;
+  flex-shrink: 0;
+  width: 1.4rem;
+  height: 1.4rem;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(236 195 71 / 0.2);
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .acr-alert p { flex: 1; margin: 0; }
 
 .acr-alert button {
   flex-shrink: 0;
-  border-radius: 0.4rem;
-  padding: 0 0.25rem;
-  font-size: 1.05rem;
+  border-radius: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 1.1rem;
   line-height: 1;
   color: rgb(250 220 140 / 0.7);
 }

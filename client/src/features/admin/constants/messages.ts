@@ -1,4 +1,4 @@
-import type { AdminMessageStatusFilter } from '@/features/admin/types';
+import type { AdminMessageStatusFilter } from '../types';
 
 export { ADMIN_MIN_SEARCH_LEN } from './common';
 

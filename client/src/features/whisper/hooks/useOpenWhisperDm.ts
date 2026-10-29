@@ -6,6 +6,7 @@ import { WHISPER_EVENTS } from '../constants';
 import { useAnonStore } from '../stores/anonStore';
 import { trackSessionEnd } from '../stores/trackSessionEnd';
 import type { DmOpenSource } from '../types';
+import { ROUTES } from '@/shared/constants/routes';
 
 /**
  * The one place a whisper becomes a DM: analytics, session end and navigation.
@@ -24,7 +25,7 @@ export function useOpenWhisperDm() {
       store.markDmOpened(chatId);
       track(WHISPER_EVENTS.DM_OPENED, { source });
       trackSessionEnd('connected');
-      navigate(`/chat/${chatId}`);
+      navigate(ROUTES.chat(chatId));
       return true;
     },
     [navigate]

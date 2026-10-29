@@ -1,0 +1,58 @@
+/**
+ * Joke tap (`mm-*`) — shelf chips and the virtualized list box.
+ */
+
+/* Shelf chips: one horizontal row, scrolls on narrow screens. */
+.mm-chips {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mm-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.mm-shelf {
+  flex-shrink: 0;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-body-300);
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.mm-shelf:hover {
+  color: var(--color-body);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mm-shelf--on {
+  color: var(--color-green);
+  border-color: rgba(1, 195, 109, 0.45);
+  background: rgba(1, 195, 109, 0.1);
+}
+
+.mm-shelf:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 2px;
+}
+
+/* Virtualized list: rows are absolutely positioned inside a sized box. */
+.mm-vlist {
+  position: relative;
+  width: 100%;
+  margin-top: 0.8rem;
+}
+
+.mm-vrow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding-bottom: 0.9rem;
+}

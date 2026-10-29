@@ -1,4 +1,4 @@
-import type { UserFilterOption } from '@/features/admin/types';
+import type { UserFilterOption } from '../types';
 
 export const formatGroupCreated = (dateStr?: string): string =>
   dateStr

@@ -32,11 +32,12 @@ export const joinQueueSchema = z.object({
   }),
 });
 
-const reportReason = z.enum([
+export const reportReason = z.enum([
   'inappropriate_content',
   'harassment',
   'spam',
   'underage',
+  'impersonation',
   'other',
 ]);
 
@@ -65,6 +66,28 @@ export const submitReportSchema = z.discriminatedUnion('targetType', [
   }),
 ]);
 
-export const completeConnectionSchema = z.object({
-  connectToken: z.string().min(1, 'connectToken is required'),
+export const completeConnectionSchema = z.union([
+  z.object({
+    connectToken: z.string().min(1, 'connectToken is required'),
+  }),
+  z.object({
+    /** Mutual-like claim id (the session) — the tab-closing alternative to a token. */
+    claimId: z.string().min(1, 'claimId is required'),
+  }),
+]);
+
+/** `DELETE /api/connection/pending/:id` — `claim:<sessionId>` or `pending:<sessionId>`. */
+export const pendingIdParamSchema = z.object({
+  id: z
+    .string()
+    .regex(/^(claim|pending):[A-Za-z0-9_-]+$/, 'Unknown pending connection'),
+});
+
+/** Photos only. 5 MB keeps a phone shot sendable and the bucket inside the free tier. */
+export const ANON_IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export const ANON_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
+export const signAnonImageSchema = z.object({
+  mimeType: z.enum(ANON_IMAGE_MIME),
+  size: z.number().int().positive().max(ANON_IMAGE_MAX_BYTES, 'Photo is over 5 MB'),
 });

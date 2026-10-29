@@ -1,4 +1,4 @@
-import AccountBar from '@/features/profile/components/AccountBar';
+import AccountBar from './AccountBar';
 
 const ProfileHeader = () => {
   return (

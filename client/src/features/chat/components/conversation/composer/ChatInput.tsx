@@ -1,18 +1,18 @@
-import AttachmentMenu from "@/features/chat/components/conversation/composer/attachment-menu/AttachmentMenu";
-import ComposerFilePreviews from "@/features/chat/components/conversation/composer/ComposerFilePreviews";
-import ComposerLinkPreview from "@/features/chat/components/conversation/composer/ComposerLinkPreview";
-import ComposerPicker from "@/features/chat/components/conversation/composer/ComposerPicker";
-import TextHighlightMirror from "@/features/chat/components/conversation/composer/TextHighlightMirror";
+import AttachmentMenu from "./attachment-menu/AttachmentMenu";
+import ComposerFilePreviews from "./ComposerFilePreviews";
+import ComposerLinkPreview from "./ComposerLinkPreview";
+import ComposerPicker from "./ComposerPicker";
+import TextHighlightMirror from "./TextHighlightMirror";
 import ClipIcon from "@/shared/components/ui/icons/Clip";
 import EmojiIcon from "@/shared/components/ui/icons/Emoji";
 import SendIcon from "@/shared/components/ui/icons/Send";
-import type { GifItem } from "@/features/chat/api/gif";
+import type { GifItem } from "../../../api/gif";
 import { MAX_FILES } from "@/shared/constants/app";
 import { useAutoGrowTextarea } from "@/shared/hooks";
 import { COMPOSER_ROW_MIN_CLASS, COMPOSER_ROW_MIN_CLASS_COMPACT, COMPOSER_SEND_SIZE_CLASS, COMPOSER_SEND_SIZE_CLASS_COMPACT } from "@/shared/constants/app";
-import { readFilesFromClipboardEvent } from "@/features/chat/utils/chat";
-import { extractLinksFromText, splitTextByUrls, type ParsedLink } from "@/features/chat/utils/linkParser";
-import { useChatClipboardStore } from "@/features/chat/stores/clipboard";
+import { readFilesFromClipboardEvent } from "../../../utils/chat";
+import { extractLinksFromText, splitTextByUrls, type ParsedLink } from "../../../utils/linkParser";
+import { useChatClipboardStore } from "../../../stores/clipboard";
 import {
     useCallback,
     useEffect,
@@ -26,10 +26,10 @@ import {
     type TextareaHTMLAttributes,
 } from "react";
 import toast from "react-hot-toast";
+import type { ImageQuality } from "../../../types/local";
+import { ALL_MEDIA, FILE_KIND_KEY, type MediaKind } from "../../../constants/upload";
 
-type ImageQuality = 'standard' | 'hd';
-
-type ChatInputProps = {
+type Props = {
     className?: string;
     message: string;
     setMessage: Dispatch<SetStateAction<string>>;
@@ -39,6 +39,12 @@ type ChatInputProps = {
     onGifSelect?: (gif: GifItem) => void;
     editMode?: boolean;
     showAttachment?: boolean;
+    /** Media this composer offers. Default: everything. A UI hint only; the server enforces the real policy. */
+    allowedMedia?: readonly MediaKind[];
+    /** Override the image picker's accepted types (e.g. no GIF). */
+    imageAccept?: string;
+    /** Detect links and show a preview card. Off where the preview request would leak URLs. */
+    linkPreview?: boolean;
     compact?: boolean;
     floating?: boolean;
     replySlot?: ReactNode;
@@ -58,6 +64,9 @@ const ChatInput = ({
     onGifSelect,
     editMode = false,
     showAttachment = true,
+    allowedMedia = ALL_MEDIA,
+    imageAccept,
+    linkPreview = true,
     compact = false,
     floating = false,
     replySlot,
@@ -65,7 +74,7 @@ const ChatInput = ({
     imageQuality = 'standard',
     setImageQuality,
     onChange: onChangeProp,
-    ...props }: ChatInputProps) => {
+    ...props }: Props) => {
 
     const [isAttachmentOpen, setIsAttachmentOpen] = useState(false);
     const [isEmojiOpen, setIsEmojiOpen] = useState(false);
@@ -109,13 +118,13 @@ const ChatInput = ({
 
     // Debounced URL detection
     useEffect(() => {
-        if (editMode) return;
+        if (editMode || !linkPreview) return;
         const id = setTimeout(() => {
             const links = extractLinksFromText(message);
             setDetectedLink(links[0] ?? null);
         }, 400);
         return () => clearTimeout(id);
-    }, [message, editMode]);
+    }, [message, editMode, linkPreview]);
 
     const activeUrl = detectedLink?.url ?? null;
     const isDismissed =
@@ -197,11 +206,12 @@ const ChatInput = ({
         }
     }, [editMode, setAttachments, setMessageWithDismissSync]);
 
+    const hasFileKinds = (Object.keys(FILE_KIND_KEY) as (keyof typeof FILE_KIND_KEY)[]).some((k) => allowedMedia.includes(k));
     const canSend = Boolean(message.trim()) || (!editMode && attachments.length > 0);
     const hasReply = Boolean(replySlot);
     const hasUrlHighlight = parsedParts.some((part) => part.type === 'url');
 
-    const showLinkPreview = !editMode && attachments.length === 0 && detectedLink && !isDismissed;
+    const showLinkPreview = linkPreview && !editMode && attachments.length === 0 && detectedLink && !isDismissed;
 
     const inputShellClass = editMode
         ? 'border-green/45 bg-green/10'
@@ -246,11 +256,14 @@ const ChatInput = ({
                                 onClose={() => setIsAttachmentOpen(false)}
                                 onFileSelect={handleFileSelect}
                                 clipIconRef={clipIconRef}
+                                allowed={allowedMedia}
+                                imageAccept={imageAccept}
                             />
                         )}
                         {!editMode && isEmojiClicked && (
                             <ComposerPicker
                                 triggerRef={emojiIconRef}
+                                allowed={allowedMedia}
                                 setMessage={setMessageWithDismissSync}
                                 onClose={() => setIsEmojiOpen(false)}
                                 onGifSelect={(gif) => {
@@ -314,7 +327,7 @@ const ChatInput = ({
                                 />
                             </div>
 
-                            {!editMode && showAttachment ? (
+                            {!editMode && showAttachment && hasFileKinds ? (
                                 <span ref={clipIconRef} className="shrink-0">
                                     <button
                                         type="button"

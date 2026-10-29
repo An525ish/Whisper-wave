@@ -1,4 +1,4 @@
-type ChatMessageSkeletonProps = {
+type Props = {
   variant: 'in' | 'out';
   width: string;
   minHeight?: string;
@@ -15,7 +15,7 @@ const ChatMessageSkeleton = ({
   variant,
   width,
   minHeight = 'min-h-9.5',
-}: ChatMessageSkeletonProps) => {
+}: Props) => {
   const isOut = variant === 'out';
 
   return (
