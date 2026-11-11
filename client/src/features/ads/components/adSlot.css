@@ -1,0 +1,50 @@
+.ad-slot {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.5rem 0.75rem 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 0.02);
+  text-align: left;
+}
+/* Unfilled ads leave an empty box: collapse the whole card instead. */
+.ad-slot:has(ins[data-ad-status='unfilled']) {
+  display: none;
+}
+.ad-slot__label {
+  margin-bottom: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--color-body-700, #7b7b8c);
+}
+.ad-slot__unit {
+  display: block;
+  min-height: 90px; /* reserve space so the page does not jump when the ad arrives */
+  overflow: hidden;
+}
+.ad-slot__ask {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-body-500, #a0a0b0);
+}
+.ad-slot__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.ad-slot__actions button {
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  color: inherit;
+}
+.ad-slot__actions button:first-child {
+  color: #fff;
+  background: rgb(255 255 255 / 0.06);
+}
+.ad-slot__actions button:hover,
+.ad-slot__actions button:focus-visible {
+  border-color: rgb(255 255 255 / 0.3);
+}

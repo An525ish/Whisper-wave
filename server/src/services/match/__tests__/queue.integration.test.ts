@@ -331,3 +331,99 @@ describe('queue matching (Redis integration)', () => {
     }
   });
 });
+
+describe('Spark Pass matching (Redis integration)', () => {
+  const IDS = ['pp-seeker', 'pp-man', 'pp-woman', 'pp-in', 'pp-us', 'pp-free', 'pp-pass'];
+  const reset = async () => {
+    await getRedis().del(REDIS_KEYS.queue);
+    for (const id of IDS) await getRedis().del(REDIS_KEYS.waiting(id));
+  };
+  const wait = async (c: WaitingCard) => {
+    await saveWaitingCard(c);
+    await enqueue(c.anonId);
+  };
+
+  it('skips a gender the seeker filtered out, and takes the one they asked for', async (t) => {
+    skipUnlessRedis(t);
+    await reset();
+    await wait({ ...card('pp-man'), gender: 'male' });
+    await wait({ ...card('pp-woman'), gender: 'female' });
+    const seeker: WaitingCard = { ...card('pp-seeker'), prefer: 'female', preferSince: Date.now() };
+    await wait(seeker);
+    assert.equal(await tryMatch(seeker), 'pp-woman');
+    await reset();
+  });
+
+  it('matches nobody while the hold is on and only the wrong gender waits, then anyone once it ends', async (t) => {
+    skipUnlessRedis(t);
+    await reset();
+    await wait({ ...card('pp-man'), gender: 'male' });
+    const holding: WaitingCard = { ...card('pp-seeker'), prefer: 'female', preferSince: Date.now() };
+    await wait(holding);
+    assert.equal(await tryMatch(holding), null);
+    const expired: WaitingCard = { ...holding, preferSince: Date.now() - 21_000 };
+    assert.equal(await tryMatch(expired), 'pp-man');
+    await reset();
+  });
+
+  it('does not hand a waiting pass holder to someone they filtered out', async (t) => {
+    skipUnlessRedis(t);
+    await reset();
+    await wait({ ...card('pp-seeker'), prefer: 'female', preferSince: Date.now() });
+    const newcomer: WaitingCard = { ...card('pp-man'), gender: 'male' };
+    await wait(newcomer);
+    assert.equal(await tryMatch(newcomer), null);
+    await reset();
+  });
+
+  it('prefers a pass holder over an equal match, but not over a better vibe match', async (t) => {
+    skipUnlessRedis(t);
+    await reset();
+    // pp-free has waited longer, so on rank alone it would win.
+    await wait(card('pp-free'));
+    await wait({ ...card('pp-pass'), pass: true });
+    const seeker = card('pp-seeker');
+    await wait(seeker);
+    assert.equal(await tryMatch(seeker), 'pp-pass', 'a pass wins an exact tie');
+    await reset();
+
+    await wait(card('pp-free', ['music', 'gaming']));
+    await wait({ ...card('pp-pass'), pass: true });
+    const musical = card('pp-seeker', ['music', 'gaming']);
+    await wait(musical);
+    assert.equal(await tryMatch(musical), 'pp-free', 'a better vibe still beats a pass');
+    await reset();
+  });
+
+  it('puts a boosted person ahead of a better vibe match, but not ahead of what was asked for', async (t) => {
+    skipUnlessRedis(t);
+    await reset();
+    const boostKey = REDIS_KEYS.boost('boost-user');
+    await getRedis().set(boostKey, '1', 'PX', 60_000);
+    await wait(card('pp-free', ['music', 'gaming']));
+    await wait({ ...card('pp-pass'), userId: 'boost-user' });
+    const musical = card('pp-seeker', ['music', 'gaming']);
+    await wait(musical);
+    assert.equal(await tryMatch(musical), 'pp-pass', 'a running boost beats a better vibe');
+    await reset();
+
+    // The boost ends on its own: same setup, key gone, vibe decides again.
+    await getRedis().del(boostKey);
+    await wait(card('pp-free', ['music', 'gaming']));
+    await wait({ ...card('pp-pass'), userId: 'boost-user' });
+    const again = card('pp-seeker', ['music', 'gaming']);
+    await wait(again);
+    assert.equal(await tryMatch(again), 'pp-free');
+    await reset();
+
+    // A boost never overrides a gender the seeker asked for.
+    await getRedis().set(boostKey, '1', 'PX', 60_000);
+    await wait({ ...card('pp-woman'), gender: 'female' });
+    await wait({ ...card('pp-man'), gender: 'male', userId: 'boost-user' });
+    const seeker: WaitingCard = { ...card('pp-seeker'), prefer: 'female', preferSince: Date.now() };
+    await wait(seeker);
+    assert.equal(await tryMatch(seeker), 'pp-woman');
+    await getRedis().del(boostKey);
+    await reset();
+  });
+});

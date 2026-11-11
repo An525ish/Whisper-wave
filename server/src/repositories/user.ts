@@ -188,16 +188,19 @@ export const listForAdminPage = async ({
   before,
   q,
   signupMethod,
+  userIdIn,
 }: {
   limit: number;
   before?: Date;
   q?: string;
   signupMethod?: 'all' | 'google' | 'email';
+  userIdIn?: Types.ObjectId[];
 }): Promise<AdminUserListItem[]> => {
   const filter: Record<string, unknown> = { ...adminUserFilter(q) };
   if (before) filter.createdAt = { $lt: before };
   if (signupMethod === 'google') filter.googleId = { $exists: true };
   if (signupMethod === 'email') filter.googleId = { $exists: false };
+  if (userIdIn) filter._id = { $in: userIdIn };
 
   const rows = await User.find(filter)
     .select('name username avatar email bio lastSeen createdAt googleId')
@@ -214,10 +217,12 @@ export const listForAdminPage = async ({
 export const countForAdminFiltered = async (
   q?: string,
   signupMethod?: 'all' | 'google' | 'email',
+  userIdIn?: Types.ObjectId[],
 ): Promise<number> => {
   const filter: Record<string, unknown> = { ...adminUserFilter(q) };
   if (signupMethod === 'google') filter.googleId = { $exists: true };
   if (signupMethod === 'email') filter.googleId = { $exists: false };
+  if (userIdIn) filter._id = { $in: userIdIn };
   return User.countDocuments(filter);
 };
 

@@ -63,6 +63,21 @@ const Terms = () => (
     </section>
 
     <section>
+      <h2>Spark Pass and payments</h2>
+      <p>
+        Spark Pass is a paid pass for a fixed time (a day, a week, a month or a year). It does not renew by itself.
+        Payments are handled by Razorpay, so we never see or store your card or UPI details. Prices are shown in
+        rupees before you pay. A pass is tied to your account and can&apos;t be transferred.
+      </p>
+      <p>
+        Refunds: a day pass is not refundable. For longer passes, write to us within 7 days of paying and we&apos;ll
+        refund you if you haven&apos;t used it. If you were charged and your pass didn&apos;t show up, write to us and
+        we&apos;ll fix it or refund you. We can end a pass without a refund if the account is banned for breaking
+        these terms.
+      </p>
+    </section>
+
+    <section>
       <h2>Ending access</h2>
       <p>
         You can stop using Whisper Wave at any time. We may suspend, ban, or remove access, by account and/or guest

@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { AdSlot } from '@/features/ads';
 import { aliasFirstName } from '../utils/alias';
 import { avatarGradient, vibeTagLabel } from '../utils/vibeTag';
 import type { ThreadSummary } from '../types';
@@ -109,6 +110,8 @@ export default function ThreadSummaryCard({
           </svg>
         </button>
       </div>
+
+      <AdSlot placement="between" />
     </section>
   );
 }

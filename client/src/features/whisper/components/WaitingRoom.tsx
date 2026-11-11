@@ -1,3 +1,5 @@
+import { AdSlot } from '@/features/ads';
+import { BoostButton } from '@/features/pass';
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import AuthAmbience from './AuthAmbience';
 import WaitingRadar from './WaitingRadar';
@@ -211,6 +213,9 @@ export default function WaitingRoom({
           </div>
         </div>
 
+        {!resuming && <BoostButton />}
+
+        {!resuming && <AdSlot placement="waiting" />}
       </div>
     </main>
   );

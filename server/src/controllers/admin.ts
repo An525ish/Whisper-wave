@@ -11,6 +11,7 @@ import type {
   AdminIdParam,
   AdminImpersonationLogsQuery,
   AdminLoginInput,
+  AdminActionKeyInput,
   AdminRemoveMemberParam,
   AdminUsersQuery,
   AdminGroupsQuery,
@@ -50,6 +51,11 @@ export const me: RequestHandler = catchAsync(async (req, res) => {
   const token = (req.cookies as { adminToken?: string } | undefined)?.adminToken;
   const result = adminService.me(token);
   res.status(200).json({ success: true, isAdmin: result.isAdmin });
+});
+
+export const verifyActionKey: RequestHandler = catchAsync(async (req, res) => {
+  adminService.verifyActionKey(req.body as AdminActionKeyInput);
+  res.status(200).json({ success: true });
 });
 
 export const getWhisperStats: RequestHandler = catchAsync(async (req, res) => {

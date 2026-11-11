@@ -64,6 +64,9 @@ const LandingFooter = () => {
                 {link.label}
               </a>
             ))}
+            <Link to={ROUTES.pricing} className="landing-footer__link">
+              Pricing
+            </Link>
           </nav>
 
           <nav className="landing-footer__group" aria-label="Legal">

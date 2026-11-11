@@ -23,7 +23,7 @@ export const ROUTES = {
   /** Login entry with the mode preselected — the only sanctioned query-variant. */
   authLogin: '/auth', // default face; only register needs a param
   authRegister: '/auth?mode=register',
-  sparkPass: '/spark-pass',
+  pricing: '/pricing',
   apps: '/apps',
   feedback: '/feedback',
 } as const;

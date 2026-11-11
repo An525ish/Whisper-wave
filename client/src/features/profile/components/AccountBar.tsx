@@ -10,7 +10,8 @@ import { getFirstName } from '@/shared/utils/helpers';
 import { useAuthStore } from '@/features/auth';
 import { useNotificationsStore, selectTotalNotificationCount } from '@/features/notifications';
 import { useProfileUiStore } from '../store';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ROUTES } from '@/shared/constants/routes';
 
 type AccountBarProps = {
   className?: string;
@@ -25,6 +26,8 @@ type AccountBarProps = {
   menuPlacement?: 'down' | 'up';
   /** Avatar-only trigger for tight chrome (nav rails). */
   avatarOnly?: boolean;
+  /** On pages outside the app shell (landing, pricing): adds "Open app" and sends Edit profile into the app. */
+  outsideApp?: boolean;
 };
 
 const defaultNotificationButtonClass =
@@ -41,7 +44,9 @@ const AccountBar = ({
   notificationIconClassName,
   menuPlacement = 'down',
   avatarOnly = false,
+  outsideApp = false,
 }: AccountBarProps) => {
+  const navigate = useNavigate();
   const [notificationPath, setNotificationPath] = useState<string | null>(null);
   const notificationRef = useRef<HTMLDivElement | null>(null);
   const iconRef = useRef<HTMLButtonElement | null>(null);
@@ -78,6 +83,8 @@ const AccountBar = ({
 
   const handleEditProfile = () => {
     openSelfProfile();
+    // The profile panel only exists inside the chats layout.
+    if (outsideApp) navigate(ROUTES.chats);
   };
 
   const handleNotificationToggle = () => {
@@ -107,6 +114,7 @@ const AccountBar = ({
   }, [isFullscreenOverlay, isNotificationOpen]);
 
   const options = [
+    ...(outsideApp ? [{ label: 'Open app', handler: () => navigate(ROUTES.home) }] : []),
     {
       label: 'Edit profile',
       Icon: PencilIcon,

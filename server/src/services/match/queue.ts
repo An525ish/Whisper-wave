@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { getRedis } from '../../config/redis.js';
+import { boostedUsers } from '../boost.js';
 import { logger } from '../../utils/logger.js';
 import type {
   MatchAttempt,
@@ -10,6 +11,7 @@ import type {
 } from '../../types/match.js';
 import { REDIS_KEYS, TTL } from './keys.js';
 import { findBlockedCandidates } from './block.js';
+import { acceptsPartner, matchesPreference } from './preference.js';
 
 /**
  * Persist an anon user's identity card (display name, vibes, gender).
@@ -296,6 +298,10 @@ export const tryMatchFromQueue = async (
     identities
   );
 
+  // Who has a running boost: one more round trip, skipped when nobody has an account.
+  const boosted = await boostedUsers(identities.flatMap((i) => (i.userId ? [i.userId] : [])));
+
+  const now = Date.now();
   const eligible: MatchCandidate[] = [];
   candidates.forEach((anonId, i) => {
     const card = cards[i];
@@ -309,15 +315,30 @@ export const tryMatchFromQueue = async (
     // see that — so without this the same person is handed their own other tab,
     // and talks to themselves. Free: the card is already in hand.
     if (self.userId && card.userId === self.userId) return;
+    // Spark Pass preference, both directions: the pair only forms if each side
+    // would take the other (strict for a short hold, then anyone).
+    if (!acceptsPartner(self, card, now) || !acceptsPartner(card, self, now)) return;
     eligible.push({
       anonId,
       score: vibePairScore(self.vibeTags, card.vibeTags),
       rank: waitRank.get(anonId) ?? i,
+      preferred: matchesPreference(self, card),
+      priority: Boolean(card.pass),
+      boosted: card.userId ? boosted.has(card.userId) : false,
     });
   });
 
-  // Best vibe overlap first; tie-break by longest wait.
-  eligible.sort((a, b) => b.score - a.score || b.rank - a.rank);
+  // What was asked for first, then a boosted person (front of the line, even over a
+  // slightly better vibe match; every candidate here is already acceptable), then best vibe overlap, then a pass holder over an
+  // equal match (the "priority" in Spark Pass), then longest wait.
+  eligible.sort(
+    (a, b) =>
+      Number(b.preferred) - Number(a.preferred) ||
+      Number(b.boosted) - Number(a.boosted) ||
+      b.score - a.score ||
+      Number(b.priority) - Number(a.priority) ||
+      b.rank - a.rank
+  );
 
   return claimCandidate(
     self.anonId,

@@ -3,7 +3,7 @@ import { ADMIN_MIN_SEARCH_LEN } from '../constants/users';
 import { SEARCH_DEBOUNCE_MS } from '@/shared/constants/app';
 import { useDebounce } from '@/shared/hooks/useDebounce';
 import { useAdminStatsQuery, useAdminUsersQuery } from '.';
-import type { SignupMethodFilter } from '../types';
+import type { SignupMethodFilter, SparkPassFilter } from '../types';
 import { sumSeries } from '../utils/dashboard';
 
 export function useUsersPage() {
@@ -11,6 +11,7 @@ export function useUsersPage() {
   const [searchText, setSearchText] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [signupMethod, setSignupMethod] = useState<SignupMethodFilter>('all');
+  const [sparkPass, setSparkPass] = useState<SparkPassFilter>('all');
 
   const debouncedSearch = useDebounce(searchText.trim(), SEARCH_DEBOUNCE_MS);
 
@@ -26,7 +27,7 @@ export function useUsersPage() {
     fetchNextPage,
     isError,
     refetch,
-  } = useAdminUsersQuery(querySearch, signupMethod);
+  } = useAdminUsersQuery(querySearch, signupMethod, sparkPass);
 
   const users = useMemo(
     () => data?.pages.flatMap((page) => page.users) ?? [],
@@ -57,6 +58,8 @@ export function useUsersPage() {
     querySearch,
     signupMethod,
     setSignupMethod,
+    sparkPass,
+    setSparkPass,
     selectedUserId,
     setSelectedUserId,
     users,

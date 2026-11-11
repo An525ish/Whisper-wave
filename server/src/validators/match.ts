@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { normalizeVibeTag } from '../types/match.js';
 
-const GENDERS = ['male', 'female', 'other', 'prefer_not_to_say'] as const;
+const JOIN_GENDERS = ['male', 'female', 'other'] as const;
 
 export const joinQueueSchema = z.object({
   displayName: z
@@ -24,7 +24,9 @@ export const joinQueueSchema = z.object({
     // overlap scoring silently never matches.
     .transform((tags) => [...new Set(tags.map(normalizeVibeTag).filter(Boolean))])
     .default([]),
-  gender: z.enum(GENDERS).default('prefer_not_to_say'),
+  gender: z.enum(JOIN_GENDERS, { error: 'Pick your gender' }),
+  // Spark Pass. Checked against the account's pass in the controller, not here.
+  prefer: z.enum(['male', 'female', 'other']).optional(),
   // Anonymous chat is 18+. This is a real gate, not a checkbox decoration —
   // the report model has an `underage` reason precisely because people lie.
   ageConfirmed: z.literal(true, {

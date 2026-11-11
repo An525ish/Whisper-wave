@@ -7,6 +7,7 @@ import type {
   adminIdParamSchema,
   adminImpersonationLogsQuerySchema,
   adminLoginSchema,
+  adminActionKeySchema,
   adminMessagesQuerySchema,
   adminRemoveMemberParamSchema,
   adminReportActionSchema,
@@ -23,6 +24,7 @@ import type {
 // Validated admin request shapes. Schemas (validators/admin.ts) stay the single
 // source of truth; types are derived here so services never import validators/.
 export type AdminLoginInput = z.infer<typeof adminLoginSchema>;
+export type AdminActionKeyInput = z.infer<typeof adminActionKeySchema>;
 export type AdminIdParam = z.infer<typeof adminIdParamSchema>;
 export type AdminRemoveMemberParam = z.infer<typeof adminRemoveMemberParamSchema>;
 export type AdminActivityEventsQuery = z.infer<typeof adminActivityEventsQuerySchema>;

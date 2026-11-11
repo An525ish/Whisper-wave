@@ -5,14 +5,16 @@ import { adminQueryKeys as queryKeys } from './queryKeys';
 export function useAdminUsersQuery(
   search = '',
   signupMethod: 'all' | 'google' | 'email' = 'all',
+  sparkPass: 'all' | 'active' = 'all',
   enabled = true,
 ) {
   return useInfiniteQuery({
-    queryKey: queryKeys.users(search, signupMethod),
+    queryKey: queryKeys.users(search, signupMethod, sparkPass),
     queryFn: ({ pageParam }) =>
       adminApi.getAdminUsers({
         q: search || undefined,
         signupMethod,
+        sparkPass,
         limit: adminApi.USERS_PAGE_SIZE,
         before: pageParam,
       }),
@@ -51,6 +53,28 @@ export function useDeleteAdminUserMutation() {
 export function useImpersonateMutation() {
   return useMutation({
     mutationFn: adminApi.impersonateUser,
+  });
+}
+
+const passInvalidation = (queryClient: ReturnType<typeof useQueryClient>, userId: string) => {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.usersPrefix });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.userDetail(userId) });
+};
+
+export function useGrantAdminUserPassMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, planId }: { userId: string; planId: 'day' | 'week' | 'month' | 'year' }) =>
+      adminApi.grantAdminUserPass(userId, planId),
+    onSuccess: (_data, { userId }) => passInvalidation(queryClient, userId),
+  });
+}
+
+export function useRevokeAdminUserPassMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: adminApi.revokeAdminUserPass,
+    onSuccess: (_data, userId) => passInvalidation(queryClient, userId),
   });
 }
 

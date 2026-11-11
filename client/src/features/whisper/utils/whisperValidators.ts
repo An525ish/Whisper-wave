@@ -13,8 +13,7 @@ const tagSchema = z
  * `zodResolver`. Field-level rules and the submit guard are derived from this
  * rather than restated, so the rules live in one place.
  *
- * `gender` is nullable: not answering is expressed by having nothing selected
- * (tap the active option again to clear it), not by a separate "Skip" button.
+ * `gender` is required before join. Pass holders can also set `prefer` below.
  */
 export const joinQueueFormSchema = z.object({
   displayName: z
@@ -26,7 +25,11 @@ export const joinQueueFormSchema = z.object({
       `Keep it under ${MAX_DISPLAY_NAME_LENGTH} characters`
     ),
   vibeTags: z.array(tagSchema).max(MAX_TAGS, `Pick up to ${MAX_TAGS} vibes`),
-  gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']).nullable(),
+  gender: z
+    .enum(['male', 'female', 'other'])
+    .nullable()
+    .refine((v) => v !== null, { message: 'Pick your gender' }),
+  prefer: z.enum(['male', 'female', 'other']).nullable(),
   // `refine` rather than `z.literal(true)`: the field is editable, so its
   // runtime type has to stay `boolean` — a literal would make the unchecked
   // state unrepresentable in the form's own types.
@@ -45,6 +48,7 @@ export type JoinQueueFormValues = z.infer<typeof joinQueueFormSchema>;
 export const toJoinPayload = (values: JoinQueueFormValues): JoinQueuePayload => ({
   displayName: values.displayName.trim(),
   vibeTags: values.vibeTags,
-  gender: values.gender ?? 'prefer_not_to_say',
+  gender: values.gender!,
+  ...(values.prefer ? { prefer: values.prefer } : {}),
   ageConfirmed: true,
 });

@@ -5,6 +5,7 @@ import { catchAsync } from '../utils/catchAsync.js';
 import { signAnonImage } from '../services/match/image.js';
 import { getActiveSessionId } from '../services/match/index.js';
 import { AppError } from '../utils/AppError.js';
+import { hasPass } from '../services/user/entitlements.js';
 import { anonIdSchema } from '../validators/anon.js';
 import type { JoinQueueBody } from '../types/input.js';
 
@@ -22,7 +23,7 @@ const anonIdFrom = (req: { cookies?: Record<string, string | undefined> }): stri
 /**
  * POST /api/match/join
  *
- * Guest-safe — no auth middleware.
+ * Guest-safe: `optionalAuth` only reads who you are (for the Spark Pass check).
  *
  * Validates the age gate and saves the user's identity card — it does NOT enqueue.
  * ALL queueing and matching happens in one place, the `/anon` socket's connect
@@ -36,10 +37,16 @@ const anonIdFrom = (req: { cookies?: Record<string, string | undefined> }): stri
  * OWN id.
  */
 export const joinQueueController: RequestHandler = catchAsync(async (req, res) => {
-  const { displayName, vibeTags, gender } = req.body as JoinQueueBody;
+  const { displayName, vibeTags, gender, prefer } = req.body as JoinQueueBody;
+
+  // A gender preference is a Spark Pass feature, decided here on the server: the
+  // client hiding the control is a courtesy, not the gate.
+  if (prefer && !(await hasPass(req.userId))) {
+    throw new AppError(403, 'Choosing who to meet needs Spark Pass.');
+  }
 
   const { anonId, isNewIdentity } = await saveIdentityCard(
-    { displayName, vibeTags, gender },
+    { displayName, vibeTags, gender, prefer },
     anonIdFrom(req)
   );
 

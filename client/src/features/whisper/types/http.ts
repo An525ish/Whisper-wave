@@ -1,12 +1,14 @@
 /** HTTP request/response shapes for the whisper endpoints. Types only. */
 
 import type { REPORT_REASONS } from '../constants';
-import type { Gender, VibeTag } from './core';
+import type { Gender, PreferGender, VibeTag } from './core';
 
 export type JoinQueuePayload = {
   displayName: string;
   vibeTags: VibeTag[];
   gender: Gender;
+  /** Spark Pass only; the server rejects it without a live pass. */
+  prefer?: PreferGender;
   /** 18+ attestation. Required — anonymous chat is not for minors. */
   ageConfirmed: boolean;
 };

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '@/features/auth';
+import { AccountBar } from '@/features/profile';
 import { cn } from '@/shared/utils/cn';
 import { ROUTES } from '@/shared/constants/routes';
 
@@ -9,6 +11,7 @@ const focusRing =
 
 const LandingNav = () => {
   const [scrolled, setScrolled] = useState(false);
+  const signedIn = useAuthStore((s) => s.user !== null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 24);
@@ -49,22 +52,6 @@ const LandingNav = () => {
 
         {/* Right CTAs */}
         <div className="flex shrink-0 items-center gap-2.5">
-          {/* Ghost — Log in */}
-          <Link
-            to={ROUTES.authLogin}
-            className={cn(
-              'inline-flex items-center rounded-full border border-white-pure/[0.12] px-[17px] py-[8px]',
-              'text-[0.88rem] font-medium text-lw-text-dim no-underline',
-              'bg-white-pure/[0.04] backdrop-blur-[8px]',
-              'transition-[border-color,color,background] duration-200',
-              'hover:border-lw-teal/40 hover:bg-white-pure/[0.07] hover:text-lw-text',
-              'max-[400px]:hidden',
-              focusRing,
-            )}
-          >
-            Log in
-          </Link>
-
           {/* Solid — Find a stranger */}
           <Link
             to={ROUTES.whisper}
@@ -89,6 +76,26 @@ const LandingNav = () => {
               />
             </svg>
           </Link>
+
+          {signedIn ? (
+            <AccountBar variant="account" outsideApp className="w-auto!" />
+          ) : (
+          /* Ghost — Log in */
+          <Link
+            to={ROUTES.authLogin}
+            className={cn(
+              'inline-flex items-center rounded-full border border-white-pure/[0.12] px-[17px] py-[8px]',
+              'text-[0.88rem] font-medium text-lw-text-dim no-underline',
+              'bg-white-pure/[0.04] backdrop-blur-[8px]',
+              'transition-[border-color,color,background] duration-200',
+              'hover:border-lw-teal/40 hover:bg-white-pure/[0.07] hover:text-lw-text',
+              'max-[400px]:hidden',
+              focusRing,
+            )}
+          >
+            Log in
+          </Link>
+          )}
         </div>
       </div>
     </nav>

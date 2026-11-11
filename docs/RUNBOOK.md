@@ -73,3 +73,44 @@ If you cannot staff it, leave it paused or set room hours / switch Rooms off.
 - After your own first sign-in, add your `userId` to each official room's
   `mods` (Admin → Rooms → edit, or `PUT /api/admin/rooms`) — until then no
   account can moderate the official rooms.
+
+## Payments (Spark Pass, Razorpay)
+
+Setup, once: create a Razorpay account, finish KYC, then use TEST keys first.
+Set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` in
+`server/.env` (all three, or buying stays off). In the dashboard add the webhook
+`https://<domain>/api/payments/webhook` with events `payment.captured` and
+`order.paid`, using the same secret. Smoke test: buy a day pass with a test UPI
+id, check `/pricing` shows "Spark Pass is on", then replay the webhook from
+the dashboard and confirm the time does not grow.
+
+Switch off: unset any one of the three keys and restart. Passes already bought
+keep working; only buying stops.
+
+A user says "I paid and have no pass":
+1. Find the order: Mongo `paymentorders` by their user id or Razorpay order id.
+2. `status: paid` and a pass exists: they need to refresh. Done.
+3. `status: created`: Razorpay never told us. Open the payment in the Razorpay
+   dashboard. If it is captured, Webhooks > replay the event. Retries are safe.
+4. Cannot fix quickly: grant by hand (`POST /api/admin/users/:id/pass`
+   `{ "planId": "month" }`) and refund or reconcile later.
+Refund: refund in the Razorpay dashboard, then `DELETE /api/admin/users/:id/pass`.
+
+
+### Boosts
+
+Credits live in the `boostwallets` collection (`credits`, `activeUntil`); each purchase is a normal `PaymentOrder` with `planId` `boost1` or `boost5`. A running boost is a Redis key `match:boost:<userId>` that expires on its own.
+- "I paid for a boost and have none": find the order by Razorpay order id, then check `boostwallets`. If the order is `paid` but credits are missing, add them by hand (`$inc credits`).
+- A Redis flush ends running boosts early while the wallet still shows them active. Credits are never lost; the person can add another.
+- Support grant: `db.boostwallets.updateOne({user: ObjectId('...')}, {$inc: {credits: 1}}, {upsert: true})`.
+
+## Ads (Google AdSense)
+
+Off until configured. Slots: waiting screen and thread-ended screen only. Pass holders and people who tap "No thanks" see none.
+
+1. Apply for AdSense with the production domain. Anonymous chat sites can be refused: if so, ads stay off, nothing else breaks.
+2. Create two ad units (display, responsive). Copy the publisher id and each numeric slot id.
+3. Set `ADSENSE_CLIENT_ID=ca-pub-...`, `ADSENSE_SLOT_WAITING`, `ADSENSE_SLOT_BETWEEN` on the server and redeploy. The server then serves `/ads.txt` and opens the CSP to Google ad origins.
+4. Check: `curl https://<domain>/ads.txt`, then open the waiting screen signed out, tap "Show ads". A blank slot for the first day is normal while AdSense reviews.
+5. EEA/UK traffic needs a Google-certified consent tool before AdSense will serve there. Not built: launch India-first.
+6. Switch off: unset the three vars and redeploy. The slots, the script and the CSP entries all disappear.

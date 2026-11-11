@@ -4,29 +4,11 @@ import { GlassSphere, Spark, Tile } from './BentoGlass';
 
 /* ── 5 · Spark Pass teaser (full-width iridescent strip) ──────────────────────
    The premium tier, previewed as a glass "pass": a brand line + a real CTA, over
-   a row of three perks (each tied to getting more/better connections). */
+   the one perk that exists today. */
 const SPARK_PERKS = [
   {
-    label: 'Priority queue',
-    desc: 'Skip the wait',
-    icon: (
-      <svg viewBox="0 0 24 24" className="size-4" fill="none" aria-hidden>
-        <path d="M13 2 4 14h6l-1 8 9-12h-6z" fill="currentColor" opacity="0.9" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Rewind a skip',
-    desc: 'Give them a second look',
-    icon: (
-      <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="M11 5 5 11l6 6M18 5l-6 6 6 6" />
-      </svg>
-    ),
-  },
-  {
     label: 'Choose who',
-    desc: 'Finer match control',
+    desc: 'Ask for a gender to meet',
     icon: (
       <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
         <path d="M4 7h10M17 7h3M4 17h3M10 17h10" />
@@ -65,25 +47,21 @@ export const SparkPassTeaser = () => (
               <h3 className="font-lw-display text-[1.3rem] font-medium tracking-[-0.01em] text-lw-text">
                 <span className="lw-iri">Spark Pass</span>
               </h3>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-lw-teal/30 bg-lw-teal/10 px-2 py-0.5 font-lw-mono text-[0.5rem] uppercase tracking-[0.22em] text-lw-teal-2">
-                <span className="size-1 rounded-full bg-lw-teal animate-lw-blink" aria-hidden />
-                coming soon
-              </span>
             </div>
-            <p className="text-[0.84rem] leading-snug text-lw-text-dim">More sparks, better odds of clicking with someone.</p>
+            <p className="text-[0.84rem] leading-snug text-lw-text-dim">Whisper stays free. Pay only if you want to pick who you meet.</p>
           </div>
         </div>
         <Link
-          to={ROUTES.sparkPass}
+          to={ROUTES.pricing}
           className="lw-sheen inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-lw-teal/40 bg-lw-teal/10 px-4 py-2 text-[0.82rem] font-medium text-lw-teal-2 transition-colors hover:bg-lw-teal/20 sm:self-auto"
         >
-          Get early access
+          See pricing
           <span aria-hidden>→</span>
         </Link>
       </div>
 
       {/* perks */}
-      <div className="grid grid-cols-1 gap-2.5 border-t border-white-pure/10 pt-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2.5 border-t border-white-pure/10 pt-4 sm:grid-cols-1">
         {SPARK_PERKS.map((p) => (
           <div
             key={p.label}

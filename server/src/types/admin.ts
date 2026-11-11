@@ -32,6 +32,10 @@ export type AdminUserListItem = {
   lastSeen?: Date;
   createdAt: Date;
   isGoogleUser?: boolean;
+  /** Live Spark Pass at list time. */
+  sparkPassActive?: boolean;
+  sparkPassExpiresAt?: string | null;
+  sparkPassPlanId?: string | null;
 };
 
 export type AdminUsersPage = {

@@ -11,6 +11,7 @@ import {
 } from '../../../hooks';
 import { presenceMeta } from '../../../utils/users';
 import UserProfileDetails from './UserProfileDetails';
+import UserSparkPassSection from './UserSparkPassSection';
 
 type Props = {
   userId: string;
@@ -28,6 +29,7 @@ const UserDetailPanel = ({ userId, onClose }: Props) => {
   const { data, isLoading, isError, refetch } = useAdminUserDetailQuery(userId);
   const user = data?.user;
   const presence = presenceMeta(user?.lastSeen);
+  const passActive = Boolean(!isLoading && user?.sparkPassActive);
 
   const { mutate: deleteUser, isPending: deleting } = useDeleteAdminUserMutation();
   const { mutate: impersonate, isPending: impersonating } = useImpersonateMutation();
@@ -62,8 +64,15 @@ const UserDetailPanel = ({ userId, onClose }: Props) => {
 
             <div className="relative mt-8 flex flex-col items-center text-center">
               <div className="relative">
-                <div className="absolute inset-0 scale-110 rounded-full bg-blue/20 blur-xl" aria-hidden />
-                <div className="relative h-28 w-28 overflow-hidden rounded-full ring-[3px] ring-blue/25 ring-offset-2 ring-offset-background">
+                <div
+                  className={`absolute inset-0 scale-110 rounded-full blur-xl ${passActive ? 'bg-gold/25' : 'bg-blue/20'}`}
+                  aria-hidden
+                />
+                <div
+                  className={`relative h-28 w-28 overflow-hidden rounded-full ring-[3px] ring-offset-2 ring-offset-background ${
+                    passActive ? 'ring-gold/55 shadow-[0_0_20px_-6px] shadow-gold/35' : 'ring-blue/25'
+                  }`}
+                >
                   {isLoading ? (
                     <div className="h-full w-full animate-pulse bg-border/25" />
                   ) : (
@@ -111,7 +120,10 @@ const UserDetailPanel = ({ userId, onClose }: Props) => {
                 </button>
               </div>
             ) : (
-              <UserProfileDetails user={user} isLoading={isLoading} />
+              <>
+                <UserProfileDetails user={user} isLoading={isLoading} />
+                <UserSparkPassSection userId={userId} user={user} isLoading={isLoading} />
+              </>
             )}
           </div>
 

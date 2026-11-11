@@ -135,8 +135,23 @@ DMs stay sender-only for edit/delete. Clear-all in DMs remains available to eith
 
 ## Premium — "Spark Pass"
 
-| Feature | Free | Spark Pass |
-|---|---|---|
+Built and live behind Razorpay keys. Plan and rollout: [`MONETIZATION.md`](./MONETIZATION.md).
+
+| Feature | Free | Spark Pass | Status |
+|---|---|---|---|
+| Random matching | Yes | Yes | live |
+| Prefer a gender to meet (soft, 20 second hold, then anyone) | No | Yes | live |
+| Go first: wins ties between equal matches | No | Yes | live |
+| No ads | A couple of small ads | None | live (ads need `ADSENSE_*` env) |
+| Create private rooms (invite-only) | No | Yes | live behind `FEATURE_PRIVATE_ROOMS` |
+| Boosts: go first for 30 minutes (sold separately, no pass needed) | Buy 1 for ₹9 or 5 for ₹29 | Same price | live |
+| Vibe routing | No | Planned | not built |
+| Voice notes, read receipts, re-find, see who liked you | No | Dropped | see `Todo.md` |
+
+### Pricing
+One-time passes, no auto-renew: Day ₹19, Week ₹49, Month ₹99, Year ₹699. The price table lives in `server/src/constants/plans.ts`.
+
+---|---|---|
 | Random matching | Yes | Yes |
 | Gender preference filter | No | Yes |
 | Vibe/interest-aligned matching | No | Yes |

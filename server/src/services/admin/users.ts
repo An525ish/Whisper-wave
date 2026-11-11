@@ -3,11 +3,13 @@ import * as chatRepo from '../../repositories/chat.js';
 import * as messageRepo from '../../repositories/message.js';
 import * as requestRepo from '../../repositories/request.js';
 import * as userRepo from '../../repositories/user.js';
+import * as subscriptionRepo from '../../repositories/subscription.js';
 import type { AdminUserListItem, AdminUsersPage } from '../../types/admin.js';
 import { AppError } from '../../utils/AppError.js';
 import { trimOptional } from '../../utils/normalize.js';
 import type { AdminUsersQuery } from '../../types/adminInput.js';
 import { parseBeforeCursor } from './shared.js';
+import { getEntitlements } from '../user/entitlements.js';
 
 export const listUsers = async (input: AdminUsersQuery): Promise<AdminUsersPage> => {
   const before = input.before ? parseBeforeCursor(input.before) : undefined;
@@ -16,18 +18,35 @@ export const listUsers = async (input: AdminUsersQuery): Promise<AdminUsersPage>
   const q = trimOptional(input.q);
   const signupMethod = input.signupMethod === 'all' ? undefined : input.signupMethod;
   const isFirstPage = !before;
+  const passOnly = input.sparkPass === 'active';
+  const passUserIds = passOnly ? await subscriptionRepo.distinctActivePassUserIds() : undefined;
+  if (passOnly && (!passUserIds || passUserIds.length === 0)) {
+    return {
+      users: [],
+      nextCursor: null,
+      hasMore: false,
+      ...(isFirstPage ? { total: 0 } : {}),
+    };
+  }
 
   const [rows, total] = await Promise.all([
-    userRepo.listForAdminPage({ limit: fetchLimit, before, q, signupMethod }),
-    isFirstPage ? userRepo.countForAdminFiltered(q, input.signupMethod) : Promise.resolve(undefined),
+    userRepo.listForAdminPage({ limit: fetchLimit, before, q, signupMethod, userIdIn: passUserIds }),
+    isFirstPage
+      ? userRepo.countForAdminFiltered(q, input.signupMethod, passUserIds)
+      : Promise.resolve(undefined),
   ]);
 
   const users = rows.slice(0, limit);
-  const last = users[users.length - 1];
+  const passActive = await subscriptionRepo.activePassUserIds(users.map((u) => String(u._id)));
+  const withPass = users.map((u) => ({
+    ...u,
+    sparkPassActive: passActive.has(String(u._id)),
+  }));
+  const last = withPass[withPass.length - 1];
   const hasMore = rows.length > limit;
 
   return {
-    users,
+    users: withPass,
     nextCursor: hasMore && last ? new Date(last.createdAt).toISOString() : null,
     hasMore,
     ...(total !== undefined ? { total } : {}),
@@ -37,7 +56,13 @@ export const listUsers = async (input: AdminUsersQuery): Promise<AdminUsersPage>
 export const getUser = async (id: string): Promise<AdminUserListItem> => {
   const user = await userRepo.findByIdForAdmin(id);
   if (!user) throw new AppError(404, 'User not found');
-  return user;
+  const { pass } = await getEntitlements(id);
+  return {
+    ...user,
+    sparkPassActive: pass.active,
+    sparkPassExpiresAt: pass.expiresAt,
+    sparkPassPlanId: pass.planId,
+  };
 };
 
 export const deleteUser = async (id: string): Promise<void> => {

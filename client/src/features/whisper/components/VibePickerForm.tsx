@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useForm, useController, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '@/features/auth';
+import { useHasPass } from '@/features/pass';
 import { MAX_DISPLAY_NAME_LENGTH } from '../constants';
 import GenderPicker from './GenderPicker';
 import TagPicker from './TagPicker';
@@ -26,6 +27,7 @@ type Props = {
 export default function VibePickerForm({ onJoin, loading }: Props) {
   const signedIn = useAuthStore((s) => s.user !== null);
   const username = useAuthStore((s) => s.user?.username);
+  const hasPass = useHasPass();
   const {
     control,
     getValues,
@@ -41,6 +43,7 @@ export default function VibePickerForm({ onJoin, loading }: Props) {
     defaultValues: {
       displayName: username?.slice(0, MAX_DISPLAY_NAME_LENGTH) ?? '',
       gender: null,
+      prefer: null,
       ageConfirmed: false,
       vibeTags: [],
     },
@@ -64,6 +67,7 @@ export default function VibePickerForm({ onJoin, loading }: Props) {
   // initial state — the submit button could never enable. `useController`
   // registers the field, so the resolver actually validates these values too.
   const { field: genderField } = useController({ control, name: 'gender' });
+  const { field: preferField } = useController({ control, name: 'prefer' });
   const { field: ageField } = useController({ control, name: 'ageConfirmed' });
   const { field: tagsField } = useController({ control, name: 'vibeTags' });
 
@@ -100,7 +104,14 @@ export default function VibePickerForm({ onJoin, loading }: Props) {
         )}
       </div>
 
-      <GenderPicker value={genderField.value} onChange={genderField.onChange} />
+      <GenderPicker
+        value={genderField.value}
+        onChange={genderField.onChange}
+        genderError={errors.gender?.message}
+        prefer={preferField.value}
+        onPreferChange={preferField.onChange}
+        hasPass={hasPass}
+      />
 
       <TagPicker tags={tagsField.value} onChange={tagsField.onChange} />
 

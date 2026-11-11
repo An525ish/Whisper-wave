@@ -108,7 +108,7 @@ export const ROOM_VISIBILITY_COPY = {
     ],
   },
   flag_off: 'Private rooms are switched off right now.',
-  not_entitled: 'Private rooms open up once your account has been around for a week with a clean record.',
+  not_entitled: 'Private rooms are part of Spark Pass.',
   limit: `You already host ${ROOM_PRIVATE.MAX_PER_USER} private rooms. Delete one to make another.`,
 } as const;
 

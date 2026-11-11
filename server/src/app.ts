@@ -12,6 +12,7 @@ import { redisHealth } from './config/redis.js';
 import { helmetOptions } from './config/helmet.js';
 import { globalErrorHandler } from './middlewares/index.js';
 import { registerRoutes } from './routes/index.js';
+import { adsConfigured, adsTxt } from './services/ads.js';
 import { logger } from './utils/logger.js';
 import { AppError } from './utils/AppError.js';
 
@@ -26,7 +27,18 @@ export const createApp = () => {
   app.use(helmet(helmetOptions));
   app.use(compression());
   app.use(cors(corsOptions));
-  app.use(express.json({ limit: '10kb' }));
+  app.use(
+    express.json({
+      limit: '10kb',
+      // The payment webhook is signed over the exact bytes sent, so keep them. Only
+      // that one path: every other body stays a parsed object and nothing else holds a Buffer.
+      verify: (req, _res, buf) => {
+        if ((req as express.Request).originalUrl === '/api/payments/webhook') {
+          (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
+        }
+      },
+    })
+  );
   app.use(cookieParser());
   app.use(
     pinoHttp({
@@ -65,6 +77,16 @@ export const createApp = () => {
       redis,
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // AdSense checks this file at the site root. Only answers when ads are configured, so a
+  // deploy without ads does not publish an ads.txt at all.
+  app.get('/ads.txt', (_req, res, next) => {
+    if (!adsConfigured()) {
+      next();
+      return;
+    }
+    res.type('text/plain').set('Cache-Control', 'public, max-age=3600').send(adsTxt());
   });
 
   registerRoutes(app);

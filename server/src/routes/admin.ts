@@ -18,6 +18,7 @@ import {
   login,
   logout,
   me,
+  verifyActionKey,
   removeGroupMember,
   retryMessage,
 } from '../controllers/admin.js';
@@ -43,6 +44,12 @@ import {
   unblockJokeController,
 } from '../controllers/admin/memes.js';
 import {
+  getUserPassController,
+  grantUserPassController,
+  revokeUserPassController,
+} from '../controllers/admin/pass.js';
+import { adminGrantPassSchema, adminPassParamsSchema } from '../validators/payments.js';
+import {
   adminFeatureFlagSchema,
   adminRoomBanSchema,
   adminRoomCloseSchema,
@@ -59,6 +66,7 @@ import {
   adminIdParamSchema,
   adminImpersonationLogsQuerySchema,
   adminLoginSchema,
+  adminActionKeySchema,
   adminRemoveMemberParamSchema,
   adminReportActionSchema,
   adminReportIdParamSchema,
@@ -73,6 +81,7 @@ export const adminRouter = Router();
 
 adminRouter.post('/login', authLimiter, validate(adminLoginSchema), login);
 adminRouter.post('/logout', logout);
+adminRouter.post('/verify-action-key', authLimiter, requireAdmin, validate(adminActionKeySchema), verifyActionKey);
 // Soft session probe — returns { isAdmin } without 401 when no admin cookie.
 adminRouter.get('/me', me);
 adminRouter.get('/stats', requireAdmin, getStats);
@@ -190,6 +199,17 @@ adminRouter.delete(
   validate(memeBlockParamsSchema, 'params'),
   unblockJokeController
 );
+
+// Spark Pass: grant / revoke without a payment (support, testing, giveaways). Admin only.
+adminRouter.get('/users/:id/pass', requireAdmin, validate(adminPassParamsSchema, 'params'), getUserPassController);
+adminRouter.post(
+  '/users/:id/pass',
+  requireAdmin,
+  validate(adminPassParamsSchema, 'params'),
+  validate(adminGrantPassSchema),
+  grantUserPassController
+);
+adminRouter.delete('/users/:id/pass', requireAdmin, validate(adminPassParamsSchema, 'params'), revokeUserPassController);
 
 adminRouter.delete('/users/:id', requireAdmin, validate(adminIdParamSchema, 'params'), deleteUser);
 adminRouter.delete('/groups/:id', requireAdmin, validate(adminIdParamSchema, 'params'), deleteGroup);

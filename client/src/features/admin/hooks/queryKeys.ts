@@ -1,8 +1,11 @@
+import type { SparkPassFilter } from '../types';
+
 export const adminQueryKeys = {
   me: ['adminMe'] as const,
   stats: ['adminStats'] as const,
   // list factories
-  users: (q: string, signupMethod = 'all') => ['adminUsers', 'list', q, signupMethod] as const,
+  users: (q: string, signupMethod = 'all', sparkPass: SparkPassFilter = 'all') =>
+    ['adminUsers', 'list', q, signupMethod, sparkPass] as const,
   userDetail: (id: string) => ['adminUsers', 'detail', id] as const,
   messages: (status: string, q: string, senderId = '') => ['adminMessages', 'list', status, q, senderId] as const,
   groups: (q: string, memberId = '') => ['adminGroups', 'list', q, memberId] as const,

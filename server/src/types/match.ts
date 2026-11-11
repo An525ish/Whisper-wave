@@ -4,6 +4,9 @@ import type { Types } from 'mongoose';
 
 export type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
 
+/** What a Spark Pass holder can ask for. There is no "prefer not to say" to prefer. */
+export type PreferGender = Exclude<Gender, 'prefer_not_to_say'>;
+
 /**
  * Preset vibe tags live in ONE place: `ALL_VIBE_TAGS` in
  * client/src/features/whisper/constants.ts. The server deliberately does NOT
@@ -132,9 +135,25 @@ export type WaitingCard = {
   userId?: string;
   /** Unix ms — when the user last entered the queue (drives fairness). */
   joinedAt: number;
+  /** Spark Pass: the gender this person would like to meet. Set only for pass holders. */
+  prefer?: PreferGender;
+  /** True while the account holds a live pass (set at queue entry). Breaks ties in matching. */
+  pass?: boolean;
+  /** Unix ms the strict window started (each time they enter the queue). See `preference.ts`. */
+  preferSince?: number;
 };
 
-export type MatchCandidate = { anonId: string; score: number; rank: number };
+export type MatchCandidate = {
+  anonId: string;
+  score: number;
+  rank: number;
+  /** Fits what the searcher asked for (Spark Pass). Ranks first. */
+  preferred: boolean;
+  /** The candidate holds a pass: wins ties between equally good matches. */
+  priority: boolean;
+  /** The candidate has a running boost: ranks ahead of vibe score. */
+  boosted: boolean;
+};
 
 /**
  * Outcome of one match attempt.
@@ -152,6 +171,8 @@ export type IdentityCardInput = {
   displayName: string;
   vibeTags: VibeTag[];
   gender: Gender;
+  /** Spark Pass only. The controller rejects it for anyone without a live pass. */
+  prefer?: PreferGender;
 };
 
 export type IdentityCardResult = {

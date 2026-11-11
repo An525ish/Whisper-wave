@@ -33,7 +33,7 @@ const Privacy = () => (
       <h2>What we don&apos;t do</h2>
       <p>
         We don&apos;t build advertising profiles, we don&apos;t sell your data, and we don&apos;t run a public feed or follower
-        graph. Anonymous conversations aren&apos;t tied to a real-world identity.
+        graph. Ads, if shown, are non-personalised (see Ads below). Anonymous conversations aren&apos;t tied to a real-world identity.
       </p>
     </section>
 
@@ -63,6 +63,26 @@ const Privacy = () => (
         When a guest posts in a room for the first time, we show a short bot check from Cloudflare Turnstile. Its
         script loads from Cloudflare only at that moment, not on other pages. Cloudflare receives your IP address and
         browser signals to tell humans from bots, and may set cookies to do so. Signed-in members skip the check.
+      </p>
+    </section>
+
+    <section>
+      <h2>Ads</h2>
+      <p>
+        Free accounts may see one ad on the waiting screen and one after a chat ends. Never inside a chat. Spark Pass
+        holders see none. Ads come from Google AdSense, and nothing loads from Google until you tap &quot;Show ads&quot;.
+        We ask for non-personalised ads, so what you say and who you match with is not used to pick them. Google still
+        receives your IP address and browser details to serve the ad, and may set its own cookies. We never send chat
+        content or your name to an ad network. Say no and we won&apos;t ask again on this device.
+      </p>
+    </section>
+
+    <section>
+      <h2>Payments</h2>
+      <p>
+        If you buy Spark Pass, the payment page is run by Razorpay, which loads in your browser only when you tap
+        buy. They collect your payment details, not us. We keep the order id, the plan, the amount and the time, tied
+        to your account, so we can give you your pass and answer refund requests.
       </p>
     </section>
 

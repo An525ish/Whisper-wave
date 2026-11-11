@@ -5,7 +5,7 @@ import {
   leaveQueueController,
   signAnonImageController,
 } from '../controllers/match.js';
-import { validate } from '../middlewares/index.js';
+import { optionalAuth, validate } from '../middlewares/index.js';
 import { joinQueueSchema, signAnonImageSchema } from '../validators/match.js';
 
 /** 10 join attempts / minute per IP — prevents queue spam. */
@@ -40,6 +40,7 @@ export const matchRouter = Router();
 matchRouter.post(
   '/join',
   matchJoinLimiter,
+  optionalAuth,
   validate(joinQueueSchema),
   joinQueueController
 );

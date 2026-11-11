@@ -5,6 +5,9 @@ export type VibeTag = string;
 
 export type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
 
+/** What a Spark Pass holder can ask for. */
+export type PreferGender = Exclude<Gender, 'prefer_not_to_say'>;
+
 export type AnonMatchStatus =
   | 'idle'
   /** The identity card is being saved. The socket must NOT connect yet. */

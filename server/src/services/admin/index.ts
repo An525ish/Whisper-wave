@@ -1,4 +1,4 @@
-export { login, me } from './auth.js';
+export { login, me, verifyActionKey } from './auth.js';
 export { getStats } from './stats.js';
 export { getWhisperStats } from './whisper.js';
 export { listUsers, getUser, deleteUser } from './users.js';

@@ -1,6 +1,7 @@
 import Image from '@/shared/components/ui/Image';
 import type { AdminUserRow } from '../../../types';
 import { formatUserJoined, userRowSubtitle } from '../../../utils/users';
+import SparkPassBadge from '../detail/SparkPassBadge';
 
 type Props = {
   user: AdminUserRow;
@@ -31,6 +32,7 @@ const UserRow = ({ user, onOpen }: Props) => (
             Google
           </span>
         )}
+        {user.sparkPassActive ? <SparkPassBadge /> : null}
       </div>
       <p className="mt-0.5 line-clamp-1 text-xs text-body-300/50">{userRowSubtitle(user)}</p>
     </div>

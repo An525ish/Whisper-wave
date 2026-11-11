@@ -36,14 +36,23 @@ const Cookies = () => (
     </section>
 
     <section>
+      <h2>Ads (only if you allow them)</h2>
+      <p>
+        If you tap &quot;Show ads&quot;, Google AdSense loads on the waiting screen and the screen after a chat. Google may
+        set its own cookies or storage to serve and measure the ad. Nothing from Google loads before you agree, and
+        Spark Pass holders never load it. Your choice is saved on this device as <strong>ww-ad-consent</strong>.
+      </p>
+    </section>
+
+    <section>
       <h2>What we don&apos;t use</h2>
-      <p>No advertising or tracking cookies.</p>
+      <p>No tracking cookies of our own, and no advertising cookies unless you allow ads above.</p>
     </section>
 
     <section>
       <h2>Device storage</h2>
       <p>
-        Your browser&apos;s local storage keeps your persona and your meme preferences and hidden jokes. This stays on your
+        Your browser&apos;s local storage keeps your persona, your meme preferences and hidden jokes, and your ads choice. This stays on your
         device and is not sent to us. Clearing your browser data removes it.
       </p>
     </section>

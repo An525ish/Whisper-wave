@@ -1,6 +1,7 @@
 import type { HelmetOptions } from 'helmet';
 import helmet from 'helmet';
 import { env } from './env.js';
+import { adsConfigured } from '../services/ads.js';
 
 /** R2 presigned PUT URLs hit the bucket-specific or account S3 endpoint. */
 const r2ConnectOrigins = [
@@ -10,7 +11,27 @@ const r2ConnectOrigins = [
 
 const turnstileOrigin = 'https://challenges.cloudflare.com';
 
+// Razorpay Checkout: script from checkout.razorpay.com, its iframe + calls to api.razorpay.com.
+const razorpayScript = 'https://checkout.razorpay.com';
+const razorpayApi = 'https://api.razorpay.com';
+const razorpayEvents = 'https://lumberjack.razorpay.com';
+
 const imageKitOrigin = new URL(env.IMAGEKIT_URL_ENDPOINT).origin;
+
+/**
+ * AdSense origins. Added to the CSP ONLY when ads are configured, so a deploy
+ * without ads keeps a closed policy and can never load an ad script by accident.
+ */
+const ads = adsConfigured();
+const adScript = ads
+  ? ['https://pagead2.googlesyndication.com', 'https://*.googlesyndication.com', 'https://adservice.google.com', 'https://www.googletagservices.com']
+  : [];
+const adFrame = ads
+  ? ['https://googleads.g.doubleclick.net', 'https://*.googlesyndication.com', 'https://tpc.googlesyndication.com', 'https://www.google.com']
+  : [];
+const adConnect = ads
+  ? ['https://pagead2.googlesyndication.com', 'https://*.googlesyndication.com', 'https://ep1.adtrafficquality.google', 'https://*.adtrafficquality.google']
+  : [];
 
 /** Origins `/apps` may iframe — from FRAME_SRC_ORIGINS (comma-separated full origins). */
 const appFrameOrigins = env.FRAME_SRC_ORIGINS.split(',')
@@ -35,11 +56,11 @@ export const helmetOptions: HelmetOptions = {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
       // challenges.cloudflare.com: Turnstile (guest first-post check in Rooms) loads its script + iframe from there.
-      'script-src': ["'self'", 'https://accounts.google.com', turnstileOrigin],
-      'script-src-elem': ["'self'", 'https://accounts.google.com', turnstileOrigin],
+      'script-src': ["'self'", 'https://accounts.google.com', turnstileOrigin, razorpayScript, ...adScript],
+      'script-src-elem': ["'self'", 'https://accounts.google.com', turnstileOrigin, razorpayScript, ...adScript],
       // `/apps` embeds maker apps (e.g. Whispr). Those origins must be listed — `'self'`
       // only covers this server's own origin, not a sibling site on another host.
-      'frame-src': ["'self'", 'https://accounts.google.com', turnstileOrigin, ...appFrameOrigins],
+      'frame-src': ["'self'", 'https://accounts.google.com', turnstileOrigin, razorpayScript, razorpayApi, ...adFrame, ...appFrameOrigins],
       'connect-src': [
         "'self'",
         ...r2ConnectOrigins,
@@ -48,6 +69,9 @@ export const helmetOptions: HelmetOptions = {
         'https://ik.imagekit.io',
         'https://accounts.google.com',
         turnstileOrigin,
+        razorpayApi,
+        razorpayEvents,
+        ...adConnect,
         'https://oauth2.googleapis.com',
         'https://www.googleapis.com',
       ],

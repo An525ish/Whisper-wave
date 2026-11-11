@@ -1,6 +1,7 @@
 import type { Express } from 'express';
 import { apiLimiter, ensureGid, requireFeature } from '../middlewares/index.js';
 import { adminRouter } from './admin.js';
+import { adsRouter } from './ads.js';
 import { authRouter } from './auth.js';
 import { chatRouter } from './chat.js';
 import { connectionRouter } from './connection.js';
@@ -11,6 +12,7 @@ import { linkPreviewRouter } from './linkPreview.js';
 import { matchRouter } from './match.js';
 import { memesRouter } from './memes.js';
 import { messageRouter } from './message.js';
+import { paymentsRouter } from './payments.js';
 import { roomsRouter } from './rooms.js';
 import { friendRequestRouter } from './request.js';
 import { pushRouter } from './push.js';
@@ -33,6 +35,8 @@ export const registerRoutes = (app: Express): void => {
   app.use('/api/gif', gifRouter);
   app.use('/api/hub', hubRouter);
   app.use('/api/push', pushRouter);
+  app.use('/api/payments', paymentsRouter);
+  app.use('/api/ads', adsRouter);
   app.use('/api/link-preview', linkPreviewRouter);
   app.use('/api/friend-request', friendRequestRouter);
   // Phase 2 — anonymous matchmaking

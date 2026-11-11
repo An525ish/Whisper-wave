@@ -51,6 +51,7 @@ export const saveIdentityCard = async (
     displayName: input.displayName,
     vibeTags: input.vibeTags,
     gender: input.gender,
+    ...(input.prefer ? { prefer: input.prefer } : {}),
     ...(existing?.userId ? { userId: existing.userId } : {}),
     joinedAt: Date.now(),
   };

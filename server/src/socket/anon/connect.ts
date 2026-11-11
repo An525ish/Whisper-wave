@@ -3,6 +3,9 @@ import { emitMatchFound, emitMatchFoundToSocket } from './emitMatchFound.js';
 import { getSession, getActiveSessionId, getUserActiveSessions, isParticipant, getWaitingCard, setWaitingCardUser, enqueue, queueSize, clearPresence, pairOrEnqueue } from '../../services/match/index.js';
 import { logger } from '../../utils/logger.js';
 import { emitError } from './shared.js';
+import { hasPass } from '../../services/user/entitlements.js';
+import { holdRemainingMs } from '../../services/match/preference.js';
+import { saveWaitingCard } from '../../services/match/index.js';
 import type { AnonSocket } from '../../types/anonSocket.js';
 import type { Namespace } from 'socket.io';
 import type { WaitingCard } from '../../types/match.js';
@@ -106,11 +109,53 @@ const enterQueue = async (
   nsp: Namespace,
   card: WaitingCard
 ): Promise<void> => {
+  const entering = await withPreferenceWindow(card);
   if (!(await enqueue(socket.anonId))) {
     logger.debug({ anonId: socket.anonId }, 'Skipped enqueue — already in an active match');
     return;
   }
-  await attemptPair(socket, nsp, card);
+  await attemptPair(socket, nsp, entering);
+  scheduleHoldRetry(socket, nsp, entering);
+};
+
+/**
+ * Settle this queue entry's Spark Pass state: flag the card as a pass holder (it
+ * wins ties) and start the preference window, or strip preferences from a lapsed
+ * pass. The card outlives a skip and a pass can expire, so it is re-checked on
+ * every entry. Guests have no account, so no lookup. A lookup failure reads as "no
+ * pass": it fails closed, never open.
+ */
+const withPreferenceWindow = async (card: WaitingCard): Promise<WaitingCard> => {
+  const wantsPrefs = Boolean(card.prefer);
+  if (!card.userId && !wantsPrefs) return card;
+  const pass = await hasPass(card.userId);
+  const { prefer: _p, preferSince: _s, pass: _f, ...plain } = card;
+  const next: WaitingCard = pass
+    ? {
+        ...plain,
+        pass: true,
+        ...(card.prefer ? { prefer: card.prefer } : {}),
+        ...(wantsPrefs ? { preferSince: Date.now() } : {}),
+      }
+    : plain;
+  await saveWaitingCard(next);
+  return next;
+};
+
+/**
+ * When the strict window ends nobody is guaranteed to be joining, so try once more
+ * at that moment: the person is then open to anyone. A timer, not a poll; it checks
+ * the socket is still here and `pairOrEnqueue` is safe if they were paired meanwhile.
+ */
+const scheduleHoldRetry = (socket: AnonSocket, nsp: Namespace, card: WaitingCard): void => {
+  const wait = holdRemainingMs(card, Date.now());
+  if (wait <= 0) return;
+  setTimeout(() => {
+    if (!socket.connected) return;
+    void getWaitingCard(socket.anonId)
+      .then((fresh) => (fresh ? attemptPair(socket, nsp, fresh) : undefined))
+      .catch((err: unknown) => logger.warn({ err, anonId: socket.anonId }, 'Preference retry failed'));
+  }, wait + 50).unref();
 };
 
 /**

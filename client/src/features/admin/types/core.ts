@@ -127,9 +127,14 @@ export type AdminUserRow = {
   lastSeen?: string;
   createdAt?: string;
   isGoogleUser?: boolean;
+  sparkPassActive?: boolean;
+  sparkPassExpiresAt?: string | null;
+  sparkPassPlanId?: string | null;
 };
 
 export type SignupMethodFilter = 'all' | 'google' | 'email';
+
+export type SparkPassFilter = 'all' | 'active';
 
 export type UserFilterOption = Pick<AdminUserRow, '_id' | 'name' | 'username'> & {
   avatarUrl?: string;

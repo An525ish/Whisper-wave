@@ -36,6 +36,10 @@ export const adminLogin = (secretKey: string) =>
 
 export const adminLogout = () => api.post<ApiSuccess>('/admin/logout');
 
+/** Sensitive admin actions: re-enter ADMIN_ACTION_KEY (server env, not login). */
+export const verifyAdminActionKey = (actionKey: string) =>
+  api.post<ApiSuccess>('/admin/verify-action-key', { actionKey });
+
 export const adminMe = () => api.get<AdminMeResponse>('/admin/me');
 
 export const getAdminStats = () =>
@@ -48,16 +52,26 @@ export const getAdminUsers = (params: {
   before?: string;
   q?: string;
   signupMethod?: 'all' | 'google' | 'email';
+  sparkPass?: 'all' | 'active';
 }) =>
   api.get<ApiSuccess & AdminUsersPage>('/admin/users', {
     limit: params.limit ?? USERS_PAGE_SIZE,
     before: params.before,
     q: params.q,
     signupMethod: params.signupMethod ?? 'all',
+    sparkPass: params.sparkPass ?? 'all',
   });
 
 export const getAdminUser = (id: string) =>
   api.get<ApiSuccess & { user: AdminUserRow }>(`/admin/users/${id}`);
+
+export const grantAdminUserPass = (userId: string, planId: 'day' | 'week' | 'month' | 'year') =>
+  api.post<ApiSuccess & { data: import('@/features/pass/types').Entitlements }>(`/admin/users/${userId}/pass`, {
+    planId,
+  });
+
+export const revokeAdminUserPass = (userId: string) =>
+  api.delete<ApiSuccess & { data: import('@/features/pass/types').Entitlements }>(`/admin/users/${userId}/pass`);
 
 export const GROUPS_PAGE_SIZE = 20;
 export const MESSAGES_PAGE_SIZE = 20;

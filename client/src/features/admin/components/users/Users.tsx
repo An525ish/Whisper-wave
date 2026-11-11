@@ -18,6 +18,8 @@ const Users = () => {
     querySearch,
     signupMethod,
     setSignupMethod,
+    sparkPass,
+    setSparkPass,
     selectedUserId,
     setSelectedUserId,
     users,
@@ -53,6 +55,8 @@ const Users = () => {
           showMinSearchHint={showMinSearchHint}
           signupMethod={signupMethod}
           onSignupMethodChange={setSignupMethod}
+          sparkPass={sparkPass}
+          onSparkPassChange={setSparkPass}
           onClearSearch={() => setSearchText('')}
         />
 

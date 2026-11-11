@@ -1,5 +1,5 @@
 import { ADMIN_MIN_SEARCH_LEN } from '../../../constants/users';
-import type { SignupMethodFilter } from '../../../types';
+import type { SignupMethodFilter, SparkPassFilter } from '../../../types';
 import { usersDirectorySubtitle } from '../../../utils/users';
 import SignupMethodFilterTabs from './SignupMethodFilterTabs';
 
@@ -9,6 +9,8 @@ type Props = {
   showMinSearchHint: boolean;
   signupMethod: SignupMethodFilter;
   onSignupMethodChange: (v: SignupMethodFilter) => void;
+  sparkPass: SparkPassFilter;
+  onSparkPassChange: (v: SparkPassFilter) => void;
   onClearSearch: () => void;
 };
 
@@ -18,6 +20,8 @@ const UsersDirectoryHeader = ({
   showMinSearchHint,
   signupMethod,
   onSignupMethodChange,
+  sparkPass,
+  onSparkPassChange,
   onClearSearch,
 }: Props) => (
   <>
@@ -43,7 +47,12 @@ const UsersDirectoryHeader = ({
         )}
       </div>
     </div>
-    <SignupMethodFilterTabs value={signupMethod} onChange={onSignupMethodChange} />
+    <SignupMethodFilterTabs
+      signupMethod={signupMethod}
+      onSignupMethodChange={onSignupMethodChange}
+      sparkPass={sparkPass}
+      onSparkPassChange={onSparkPassChange}
+    />
   </>
 );
 

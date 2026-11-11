@@ -43,15 +43,18 @@ function GuestOnly() {
   return <ProtectedRoutes allow={!user} redirect={ROUTES.landing} />;
 }
 
-/** Landing for guests; members skip straight to the hub home. */
+/**
+ * The landing page for everyone. Members see it too (with their account menu in the nav)
+ * unless a gated feature stashed where to go after sign-in, in which case they go there.
+ */
 function RootIndex() {
   const user = useAuthStore((s) => s.user);
-  // A gated feature (e.g. a private-room invite) may have stashed where to go after sign-in;
   // peek in render (pure), spend it once the redirect is issued.
+  const returnTo = user ? peekPostAuthReturn() : null;
   useEffect(() => {
-    if (user) clearPostAuthReturn();
-  }, [user]);
-  if (user) return <Navigate to={peekPostAuthReturn() ?? ROUTES.home} replace />;
+    if (returnTo) clearPostAuthReturn();
+  }, [returnTo]);
+  if (returnTo) return <Navigate to={returnTo} replace />;
   return (
     <Suspense fallback={<AppLoader />}>
       <Landing />
@@ -223,12 +226,14 @@ const appRoutes = [
     ],
   },
   {
-    path: '/spark-pass',
+    path: ROUTES.pricing,
     lazy: async () => {
-      const module = await import('@/pages/SparkPass');
+      const module = await import('@/pages/Pricing');
       return { Component: module.default };
     },
   },
+  // Old name for the pricing page: keep bookmarks and shared links working.
+  { path: '/spark-pass', element: <Navigate to={ROUTES.pricing} replace /> },
   {
     path: '/terms',
     lazy: async () => {

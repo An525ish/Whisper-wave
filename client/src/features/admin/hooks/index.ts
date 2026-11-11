@@ -18,6 +18,8 @@ export {
   useAdminUserDetailQuery,
   useDeleteAdminUserMutation,
   useImpersonateMutation,
+  useGrantAdminUserPassMutation,
+  useRevokeAdminUserPassMutation,
   useAdminImpersonationLogsQuery,
 } from './useAdminUsers';
 

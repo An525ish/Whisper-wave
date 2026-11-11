@@ -38,7 +38,7 @@ export const assertCanCreatePrivateRoom = async (userId: string): Promise<void> 
   const { eligibility, active, limit } = await privateRoomCapability(userId);
   if (eligibility === 'flag_off') throw new AppError(403, 'Private rooms are switched off right now');
   if (eligibility === 'not_entitled') {
-    throw new AppError(403, 'Private rooms are available to established accounts — keep using Wave and try again later');
+    throw new AppError(403, 'Private rooms are part of Spark Pass');
   }
   if (active >= limit) throw new AppError(409, `You can host up to ${limit} private rooms — delete one first`);
 };

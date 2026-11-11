@@ -27,6 +27,12 @@ Approved at $0 (self-hosted or free tier, no vendor contract):
 - **Cloudflare Turnstile** — free, no quota charge. Optional: set both `TURNSTILE_SITE_KEY` and
   `TURNSTILE_SECRET_KEY`, else the weak arithmetic fallback runs (dev/CI). Third-party script that loads
   only on a guest's first room post (disclosed in Privacy + Cookies).
+- **Google AdSense** — free to join, we earn from it. Optional and OFF by default (`ADSENSE_CLIENT_ID` plus a
+ slot id). Waiting and thread-ended screens only, consent first, non-personalised, none for pass holders
+ (TECH.md D20). Disclosed in Privacy + Cookies.
+- **Razorpay** — no setup or monthly fee, only a % of real sales. One-time passes only, server-side
+ signature checks, provider kept behind `services/payments/` (TECH.md D19, `docs/MONETIZATION.md`).
+ Not Stripe, not app stores.
 - **Analytics** — a self-hosted/free collector via `VITE_ANALYTICS_ENDPOINT`
   (see `client/src/shared/lib/analytics.ts`). Disabled when the var is unset.
   Never a paid product (no Sentry/PostHog/Amplitude paid tier) without a new

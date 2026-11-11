@@ -5,6 +5,10 @@ export const adminLoginSchema = z.object({
   secretKey: z.string().min(1, 'Secret key is required'),
 });
 
+export const adminActionKeySchema = z.object({
+  actionKey: z.string().min(1, 'Action key is required'),
+});
+
 export const adminIdParamSchema = z.object({
   id: z.string().min(1, 'ID is required'),
 });
@@ -56,6 +60,7 @@ export const adminUsersQuerySchema = z.object({
   before: z.string().min(1).optional(),
   q: z.string().max(120).optional(),
   signupMethod: z.enum(['all', 'google', 'email']).default('all'),
+  sparkPass: z.enum(['all', 'active']).default('all'),
 });
 
 export const adminGroupsQuerySchema = z.object({

@@ -15,6 +15,13 @@ const envSchema = z.object({
     .refine((value) => value === '' || value.length >= 16, {
       message: 'ADMIN_SECRET must be at least 16 characters when set',
     }),
+  /** Separate from login: typed in AdminConfirmModal before risky ops. Never in VITE_*. */
+  ADMIN_ACTION_KEY: z
+    .string()
+    .default('')
+    .refine((value) => value === '' || value.length >= 8, {
+      message: 'ADMIN_ACTION_KEY must be at least 8 characters when set',
+    }),
   ADMIN_TOKEN_SECRET: z
     .string()
     .min(32, 'ADMIN_TOKEN_SECRET must be at least 32 characters')
@@ -100,6 +107,31 @@ const envSchema = z.object({
   // Both must be set to enable it; otherwise the weak arithmetic fallback runs.
   TURNSTILE_SITE_KEY: z.string().optional().default(''),
   TURNSTILE_SECRET_KEY: z.string().optional().default(''),
+  // Razorpay (optional, no fixed fee: only a % of real sales). All three must be set
+  // to turn payments on; a partial set leaves them OFF. KEY_ID is public (sent to the
+  // checkout widget), the other two never leave the server. See docs/MONETIZATION.md.
+  RAZORPAY_KEY_ID: z.string().optional().default(''),
+  RAZORPAY_KEY_SECRET: z.string().optional().default(''),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional().default(''),
+  // Google AdSense (optional). Ads show only on the Whisper waiting screen and the
+  // thread-ended screen, never mid-chat, never to a Spark Pass holder. The publisher
+  // id plus at least one slot id turns them on; unset = no ads, no ad scripts, and
+  // the CSP stays closed to ad origins. See docs/MONETIZATION.md.
+  ADSENSE_CLIENT_ID: z
+    .string()
+    .optional()
+    .default('')
+    .refine((v) => v === '' || /^ca-pub-\d{10,20}$/.test(v), 'ADSENSE_CLIENT_ID must look like ca-pub-1234567890123456'),
+  ADSENSE_SLOT_WAITING: z
+    .string()
+    .optional()
+    .default('')
+    .refine((v) => v === '' || /^\d{6,20}$/.test(v), 'ADSENSE_SLOT_WAITING must be the numeric ad slot id'),
+  ADSENSE_SLOT_BETWEEN: z
+    .string()
+    .optional()
+    .default('')
+    .refine((v) => v === '' || /^\d{6,20}$/.test(v), 'ADSENSE_SLOT_BETWEEN must be the numeric ad slot id'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -141,6 +173,7 @@ const testFallback = {
   DB_URI: 'mongodb://localhost:27017/test',
   ACCESS_TOKEN_SECRET: 'test-access-secret-long-enough-000000',
   ADMIN_SECRET: '',
+  ADMIN_ACTION_KEY: '',
   ADMIN_TOKEN_SECRET: undefined,
   CLIENT_URL: '',
   TRUST_PROXY_HOPS: 1,
@@ -177,6 +210,12 @@ const testFallback = {
   FCM_WEB_VAPID_KEY: '',
   TURNSTILE_SITE_KEY: '',
   TURNSTILE_SECRET_KEY: '',
+  RAZORPAY_KEY_ID: '',
+  RAZORPAY_KEY_SECRET: '',
+  RAZORPAY_WEBHOOK_SECRET: '',
+  ADSENSE_CLIENT_ID: '',
+  ADSENSE_SLOT_WAITING: '',
+  ADSENSE_SLOT_BETWEEN: '',
 };
 
 export const env = parsed.success ? parsed.data : testFallback;

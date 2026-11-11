@@ -6,6 +6,8 @@
 export const REDIS_KEYS = {
   queue: 'match:queue:global',
   waiting: (anonId: string) => `match:waiting:${anonId}`,
+  /** Exists while this account has a running boost; expires on its own at the end. */
+  boost: (userId: string) => `match:boost:${userId}`,
   session: (sessionId: string) => `match:session:${sessionId}`,
   likes: (sessionId: string) => `match:likes:${sessionId}`,
   messages: (sessionId: string) => `match:messages:${sessionId}`,

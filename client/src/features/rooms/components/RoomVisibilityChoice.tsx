@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom';
 import type { UseFormRegister } from 'react-hook-form';
+import { ROUTES } from '@/shared/constants/routes';
 import { ROOM_VISIBILITY_COPY } from '../constants';
 import type { CreateRoomForm, MyRoomsData } from '../types';
 import './roomPrivate.css';
@@ -46,7 +48,17 @@ const RoomVisibilityChoice = ({ register, capability }: Props) => {
           <span className="rm-vis__sub">{ROOM_VISIBILITY_COPY.private.sub}</span>
         </span>
       </label>
-      {blocked && <p className="rm-vis__note">{blocked}</p>}
+      {blocked && (
+        <p className="rm-vis__note">
+          {blocked}
+          {capability?.eligibility === 'not_entitled' && (
+            <>
+              {' '}
+              <Link to={ROUTES.pricing} className="underline">See pricing</Link>
+            </>
+          )}
+        </p>
+      )}
       {(['public', 'private'] as const).map((k) => (
         <ul key={k} className={`rm-vis__facts rm-vis__facts--${k}`}>
           {ROOM_VISIBILITY_COPY[k].facts.map((f) => <li key={f}>{f}</li>)}

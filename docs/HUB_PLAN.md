@@ -219,7 +219,7 @@ From `.cursor/rules/product-and-cost.mdc` and the architecture rules, restated a
 /chats               Messages app                        members only
 /chats/:chatId       A conversation
 /me                  Persona, account, settings          — not built (persona chip on Home deferred)
-/auth, /spark-pass, /terms, /privacy, /report, /admin/*   unchanged
+/auth, /pricing, /terms, /privacy, /report, /admin/*   unchanged
 ```
 
 Why `/` stays a landing: it is the marketing/SEO page and the guest's first impression; the

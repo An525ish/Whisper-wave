@@ -80,21 +80,21 @@ describe('listing and admin boundaries', () => {
 });
 
 describe('private room entitlement seam', () => {
-  it('needs the flag AND a trusted account', () => {
-    assert.equal(decidePrivateRoomEligibility({ flagOn: false, trust: 'trusted' }), 'flag_off');
-    assert.equal(decidePrivateRoomEligibility({ flagOn: true, trust: 'standard' }), 'not_entitled');
-    assert.equal(decidePrivateRoomEligibility({ flagOn: true, trust: null }), 'not_entitled');
-    assert.equal(decidePrivateRoomEligibility({ flagOn: true, trust: 'trusted' }), 'ok');
+  it('needs the flag AND a live pass', () => {
+    assert.equal(decidePrivateRoomEligibility({ flagOn: false, pass: true }), 'flag_off');
+    assert.equal(decidePrivateRoomEligibility({ flagOn: true, pass: false }), 'not_entitled');
+    assert.equal(decidePrivateRoomEligibility({ flagOn: true, pass: true }), 'ok');
   });
-  it('fails closed when the trust lookup throws', async () => {
-    const eligibility = await privateRoomEligibility('u', {
-      flagOn: () => true,
-      trust: async () => {
-        throw new Error('db down');
-      },
-    });
-    assert.equal(eligibility, 'not_entitled');
-    assert.equal(await privateRoomEligibility('u', { flagOn: () => false, trust: async () => 'trusted' }), 'flag_off');
+  it('asks for the pass only when the flag is on, and trust no longer matters', async () => {
+    let asked = 0;
+    const pass = async () => {
+      asked++;
+      return true;
+    };
+    assert.equal(await privateRoomEligibility('u', { flagOn: () => false, pass }), 'flag_off');
+    assert.equal(asked, 0);
+    assert.equal(await privateRoomEligibility('u', { flagOn: () => true, pass }), 'ok');
+    assert.equal(await privateRoomEligibility('u', { flagOn: () => true, pass: async () => false }), 'not_entitled');
   });
 });
 
